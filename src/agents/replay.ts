@@ -10,7 +10,7 @@ import { replayPlanFor } from "./replay-plan";
 // scorer — the drama is scripted, the verdicts are honest.
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-const BEAT = 60;
+const BEAT = Number(process.env.REPLAY_BEAT_MS ?? 60);
 
 /** The five scripted day plans (D-3 .. D+1), all valid under the night profile. */
 export function scriptedDays(citations: Citation[]): DayPlan[] {

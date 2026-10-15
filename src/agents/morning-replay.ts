@@ -12,7 +12,7 @@ import { replayPlanFor } from "./replay-plan";
 // even though the drafts are scripted.
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-const BEAT = 60;
+const BEAT = Number(process.env.REPLAY_BEAT_MS ?? 60);
 
 async function* speak(agent: AgentId, text: string): AsyncGenerator<CrewEvent> {
   const chunks = text.match(/.{1,24}(\s|$)/g) ?? [text];

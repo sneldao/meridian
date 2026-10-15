@@ -235,7 +235,10 @@ export function ShiftBoard({ days, drafts, verdicts, locked, activeLabel, active
                   <span className="text-[9px] text-[#4a5470]">{plan?.shiftMin}m today</span>
                 </>
               ) : state === "rejected" && last?.violations[0] ? (
-                <span className="text-right text-[9px] font-bold text-[#ff7a7a]">
+                <span
+                  className="max-w-[72px] truncate text-right text-[9px] font-bold text-[#ff7a7a]"
+                  title={last.violations[0].message}
+                >
                   {last.violations[0].code}
                 </span>
               ) : (
