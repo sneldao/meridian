@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { CrewMemory } from "@/domain/types";
 import Link from "next/link";
+import { Card } from "@/components/ui";
 
 interface Outcome {
   savedAt: string;
@@ -79,7 +80,7 @@ export default function OutcomePage() {
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           rows={4}
-          className="mt-2 w-full rounded-lg border border-line bg-ink-2 p-2 text-[12px] text-paper"
+          className="mt-2 w-full rounded-lg border border-line bg-ink-2 p-2 text-xs text-paper"
         />
       </label>
 
@@ -91,7 +92,7 @@ export default function OutcomePage() {
       </div>
 
       {memory?.learned && (
-        <section className="mt-8 rounded-xl border border-line bg-ink-2 p-4">
+        <Card className="mt-8 p-4">
           <h2 className="text-sm font-bold text-paper">What Meridian has learned</h2>
           {memory.learned.skippedKinds?.length ? (
             <div className="mt-2 text-[12px] text-mist">
@@ -114,7 +115,7 @@ export default function OutcomePage() {
           {memory.runs?.length ? (
             <div className="mt-2 text-[12px] text-mist">{memory.runs.length} prior shift(s) on file.</div>
           ) : null}
-        </section>
+        </Card>
       )}
     </main>
   );

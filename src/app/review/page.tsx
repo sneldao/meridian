@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Card } from "@/components/ui";
 import { fmtMin } from "@/domain/circadian";
 import type { Citation, DayPlan, DaySpec, EvalResult } from "@/domain/types";
 import { INTERVENTION_ICONS } from "@/lib/intervention-icons";
@@ -165,13 +166,13 @@ export default function ReviewPage() {
           <p className="mt-1 text-[12px] leading-relaxed text-mist">
             Body-clock time across 24 hours. The sleep bar steps earlier day by day — that diagonal is the shift.
           </p>
-          <div className="mt-3 h-[380px] overflow-hidden rounded-xl border border-line bg-ink-2">
+          <Card className="mt-3 h-[380px] overflow-hidden">
             <ShiftBoard days={specs} drafts={NO_DRAFTS} verdicts={NO_VERDICTS} locked={locked} readOnly />
-          </div>
+          </Card>
 
           <div className="mt-6 space-y-4">
             {plan.days.map((d) => (
-              <article key={d.dayIndex} className="rounded-xl border border-line bg-ink-2 p-4">
+              <Card key={d.dayIndex} className="p-4">
                 <div className="flex items-baseline justify-between">
                   <h3 className="text-[13px] font-bold text-paper">{d.label}</h3>
                   <span className="font-mono2 text-[12px] text-mist">{d.shiftMin} min shift</span>
@@ -202,7 +203,7 @@ export default function ReviewPage() {
                     );
                   })}
                 </ul>
-              </article>
+              </Card>
             ))}
           </div>
         </div>

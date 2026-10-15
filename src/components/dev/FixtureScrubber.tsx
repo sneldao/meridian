@@ -7,7 +7,7 @@ import type { FixturePlayback } from "@/state/playback";
 export function FixtureScrubber({ pb }: { pb: FixturePlayback }) {
   const btn = "rounded-md border border-line bg-ink-2 px-2.5 py-1 text-[12px] text-paper hover:border-mist";
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-ink-2/90 px-3 py-2 font-mono2 text-[12px] text-mist backdrop-blur">
+    <div className="flex flex-wrap items-center gap-2 bg-ink-2/90 px-3 py-2 font-mono2 text-xs text-mist backdrop-blur">
       <button className={btn} onClick={pb.toggle}>{pb.playing ? "pause" : "play"}</button>
       <button className={btn} onClick={pb.restart}>restart</button>
       <select

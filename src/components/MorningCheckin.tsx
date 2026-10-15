@@ -13,6 +13,7 @@
 import { useEffect, useRef, useState } from "react";
 import { parseCheckInText } from "@/domain/adherence";
 import { AnchoredPopover } from "@/components/AnchoredPopover";
+import { Card } from "@/components/ui";
 
 interface Props {
   phase: "idle" | "running" | "done";
@@ -86,7 +87,7 @@ export function MorningCheckin({ phase, lockedCount, totalDays, sessionStartedAt
 
       {open && phase === "done" && (
         <AnchoredPopover anchorRef={ref}>
-          <div className="w-72 rounded-xl border border-line bg-ink-2 p-3 shadow-xl">
+          <Card className="w-72 p-3 shadow-xl">
             <p className="font-voice text-base leading-snug text-paper">
               Your crew is on it.
             </p>
@@ -107,7 +108,7 @@ export function MorningCheckin({ phase, lockedCount, totalDays, sessionStartedAt
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder={DEFAULT_NOTE}
-              className="mt-1 w-full rounded-lg border border-line bg-ink px-2.5 py-1.5 text-[12px] text-paper placeholder:text-dim focus:border-mist focus:outline-none"
+              className="mt-1 w-full rounded-lg border border-line bg-ink px-2.5 py-1.5 text-[12px] text-paper placeholder:text-dim focus:border-mist"
             />
 
             <label className="mt-2.5 block text-[11px] tracking-wide text-dim">
@@ -118,7 +119,7 @@ export function MorningCheckin({ phase, lockedCount, totalDays, sessionStartedAt
               value={time}
               onChange={(e) => setTime(e.target.value)}
               title="When the crew should expect to hear from you"
-              className="mt-1 w-full rounded-lg border border-line bg-ink px-2.5 py-1.5 text-[12px] text-paper focus:border-mist focus:outline-none"
+              className="mt-1 w-full rounded-lg border border-line bg-ink px-2.5 py-1.5 text-[12px] text-paper focus:border-mist"
             />
 
             <button
@@ -131,7 +132,7 @@ export function MorningCheckin({ phase, lockedCount, totalDays, sessionStartedAt
             >
               Check in now
             </button>
-          </div>
+          </Card>
         </AnchoredPopover>
       )}
     </div>

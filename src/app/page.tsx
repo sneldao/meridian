@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { fmtMin } from "@/domain/circadian";
 import { summarizeCheckIn } from "@/domain/adherence";
 import type {
@@ -12,8 +13,8 @@ import type {
   WearableBaseline,
 } from "@/domain/types";
 import { CREW } from "@/agents/crew";
-import { AGENT_ICONS } from "@/lib/agent-icons";
 import { MoonStar } from "lucide-react";
+import { Button, Card, Badge, KeyHint, AgentChip } from "@/components/ui";
 import { BriefingCard } from "@/components/BriefingCard";
 import { MorningCheckin } from "@/components/MorningCheckin";
 import { AnchoredPopover } from "@/components/AnchoredPopover";
@@ -29,6 +30,7 @@ import { useRunState, calendarWithMoves, ledgerEvents, ghostGapDeg } from "@/sta
 import { meetingReadiness } from "@/domain/readiness";
 import { initVoice, setVoiceEnabled, speakDialogue, speakOnce, speakSentence, stopAll as stopVoiceAll } from "@/lib/voice/engine";
 import { takeChunks } from "@/lib/voice/split";
+import { easeSmoothOut } from "@/lib/motion";
 
 interface TripData {
   trip: Trip;
@@ -44,6 +46,7 @@ function clockAt(offsetMin: number, now = new Date()): string {
 }
 
 export default function Home() {
+  const reduce = useReducedMotion();
   const [origin, setOrigin] = useState("LHR");
   const [dest, setDest] = useState("HND");
   const [departureDate, setDepartureDate] = useState("2026-10-18");
@@ -355,11 +358,11 @@ export default function Home() {
 
   return (
     <main className="flex min-h-screen flex-col p-4 lg:h-screen">
-      <header className="mb-4 flex items-center gap-3 overflow-x-auto">
+      <header className="mb-4 flex flex-wrap items-center gap-3">
         <div className="shrink-0">
           <div className="flex items-baseline gap-3">
             <h1 className="text-lg font-bold tracking-[0.3em] text-paper">MERIDIAN</h1>
-            <span className="text-[12px] tracking-wide text-mist">
+            <span className="hidden text-xs tracking-wide text-mist sm:inline">
               agents that fly ahead of you
             </span>
           </div>
@@ -367,7 +370,7 @@ export default function Home() {
 
         {baseline && (
           <div
-            className="hidden shrink-0 items-center gap-1.5 rounded-lg border border-line bg-ink-2 px-3 py-1.5 font-mono2 text-[12px] text-mist xl:flex"
+            className="hidden shrink-0 items-center gap-1.5 rounded-lg border border-line bg-ink-2 px-3 py-1.5 font-mono2 text-xs text-mist xl:flex"
             title="From the wearable baseline — who this plan is shaped around"
           >
             <MoonStar size={12} className="text-sleep" />
@@ -384,25 +387,20 @@ export default function Home() {
             }} disabled={run.phase === "running"} />
         </div>
 
-        <button
+        <Button
           onClick={startShift}
           disabled={run.phase === "running"}
-          className={`shrink-0 rounded-lg px-5 py-2 text-xs font-bold transition-colors ${
-            run.phase === "running"
-              ? "cursor-not-allowed bg-line text-dim"
-              : "bg-paper text-ink hover:bg-white"
-          }`}
+          variant="primary"
         >
           {run.phase === "running" ? "shift in progress…" : run.phase === "done" ? "run it again" : "start the night shift"}
-        </button>
+        </Button>
+
         {run.phase === "running" && (
-          <button
-            onClick={cancelShift}
-            className="shrink-0 rounded-lg border border-fail/27 bg-fail/7 px-3 py-2 text-xs font-bold text-fail transition-colors hover:bg-fail/13"
-          >
+          <Button variant="danger" onClick={cancelShift}>
             cancel
-          </button>
+          </Button>
         )}
+
         <MorningCheckin
           phase={run.phase}
           lockedCount={run.locked.size}
@@ -412,26 +410,29 @@ export default function Home() {
         />
 
         <div className="relative ml-auto shrink-0" ref={menuRef}>
-          <button
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => setMenuOpen((v) => !v)}
-            className="rounded-lg border border-line bg-ink-2 px-3 py-1.5 font-mono2 text-[12px] text-mist transition-colors hover:border-mist"
+            aria-expanded={menuOpen}
+            aria-haspopup="menu"
           >
             menu
-          </button>
+          </Button>
           {menuOpen && (
             <AnchoredPopover anchorRef={menuRef}>
-              <div className="w-52 rounded-xl border border-line bg-ink-2 p-2 shadow-xl">
+              <Card className="w-52 p-2 shadow-xl">
                 <div className="space-y-1">
                   {hasSavedPlan && (
-                    <Link href="/review" className="block rounded-lg px-3 py-1.5 text-[12px] text-paper hover:bg-line">
+                    <Link href="/review" className="block rounded-lg px-3 py-1.5 text-xs text-paper hover:bg-line focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-dest focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
                       view saved handoff →
                     </Link>
                   )}
-                  <Link href="/history" className="block rounded-lg px-3 py-1.5 text-[12px] text-mist hover:bg-line">
+                  <Link href="/history" className="block rounded-lg px-3 py-1.5 text-xs text-mist hover:bg-line focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-dest focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
                     history
                   </Link>
                   {runCount > 0 && (
-                    <Link href="/history" className="block rounded-lg px-3 py-1.5 text-[12px] text-mist hover:bg-line">
+                    <Link href="/history" className="block rounded-lg px-3 py-1.5 text-xs text-mist hover:bg-line focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-dest focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
                       {runCount} runs
                     </Link>
                   )}
@@ -447,50 +448,59 @@ export default function Home() {
                     }}
                     disabled={!voiceAvail}
                     title={voiceAvail ? undefined : "No ElevenLabs key on this deployment"}
-                    className="w-full rounded-lg px-3 py-1.5 text-left text-[12px] text-mist hover:bg-line hover:text-paper disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-mist"
+                    className="w-full rounded-lg px-3 py-1.5 text-left text-xs text-mist hover:bg-line hover:text-paper disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-dest focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
                   >
                     voice {voiceAvail ? (voiceOn ? "on" : "off") : "unavailable"}
                   </button>
                   {providerLabel && (
-                    <div className="rounded-lg px-3 py-1.5 text-[12px] text-dim">
+                    <div className="rounded-lg px-3 py-1.5 text-xs text-dim">
                       {providerLabel}{providerFallback ? " · fallback" : ""}
                     </div>
                   )}
                 </div>
-              </div>
+              </Card>
             </AnchoredPopover>
           )}
         </div>
       </header>
 
       {showOnboarding && (
-        <div className="mb-3 flex items-center gap-3 rounded-lg border border-line bg-ink-2 px-4 py-2 text-[12px] text-mist">
-          <span className="text-paper">First run?</span>
-          <span className="hidden md:inline">
-            Agents propose; the deterministic scorer disposes.
-          </span>
-          <span className="hidden lg:inline">
-            Press space to send the crew out, then watch the plan lock day by day.
-          </span>
-          <button
-            onClick={() => {
-              try { localStorage.setItem("meridian:onboarded", "1"); } catch { /* ignore */ }
-              setShowOnboarding(false);
-            }}
-            className="ml-auto shrink-0 rounded-lg border border-line px-3 py-1 text-[12px] text-mist transition-colors hover:text-paper"
-          >
-            got it
-          </button>
-        </div>
+        <motion.div
+          initial={reduce ? false : { opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25, ease: easeSmoothOut }}
+          className="mb-3"
+        >
+          <Card className="flex flex-wrap items-center gap-3 px-4 py-2">
+            <Badge>First run?</Badge>
+            <span className="hidden text-xs text-mist md:inline">
+              Agents propose; the deterministic scorer disposes.
+            </span>
+            <span className="hidden text-xs text-mist lg:inline">
+              Press space to send the crew out, then watch the plan lock day by day.
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                try { localStorage.setItem("meridian:onboarded", "1"); } catch { /* ignore */ }
+                setShowOnboarding(false);
+              }}
+              className="ml-auto"
+            >
+              got it
+            </Button>
+          </Card>
+        </motion.div>
       )}
 
       {providerFallback && (
-        <div className="mb-3 rounded-lg border border-fail/27 bg-fail/7 px-4 py-2 text-[12px] text-fail">
+        <div className="mb-3 rounded-lg border border-fail/20 bg-fail/10 px-4 py-2 text-xs text-fail">
           Crew fell back mid-run — review the plan before acting.
         </div>
       )}
       {data?.calendarSource === "fixture" && (
-        <div className="mb-3 rounded-lg border border-line bg-ink-2 px-4 py-2 text-[12px] text-mist">
+        <div className="mb-3 rounded-lg border border-line bg-ink-2 px-4 py-2 text-xs text-mist">
           Sample calendar in use — your live Google Calendar isn&apos;t being read.
         </div>
       )}
@@ -549,6 +559,58 @@ export default function Home() {
                 <Ledger events={ledgerEvents(run)} />
               </div>
             )}
+
+            {run.phase === "idle" && (
+              <motion.div
+                initial={reduce ? false : { opacity: 0, scale: 0.98, y: 8 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{ duration: 0.45, ease: easeSmoothOut }}
+                className="absolute inset-0 z-10 flex items-center justify-center p-6"
+              >
+                <Card className="max-w-md border-mist/20 p-6 text-center shadow-2xl">
+                  {hook ? (
+                    <>
+                      <p className="font-voice text-2xl leading-snug text-paper">
+                        It&apos;s {hook.body} in your body.
+                      </p>
+                      <p className="mt-1 font-mono2 text-xs text-mist">
+                        It&apos;s {hook.dest} in {trip?.destination.name ?? "your destination"}.
+                      </p>
+                    </>
+                  ) : (
+                    <p className="font-voice text-2xl text-paper">
+                      Your body clock is still in {trip?.origin.name ?? "London"}.
+                    </p>
+                  )}
+                  <p className="mt-4 text-xs leading-relaxed text-mist">
+                    {data
+                      ? "Five agents read your wearable, pull the science, then rewrite your week around the shift."
+                      : "reading your calendar…"}
+                  </p>
+
+                  <div className="mt-5 flex flex-wrap justify-center gap-2">
+                    {(Object.keys(CREW) as AgentId[]).map((id) => (
+                      <AgentChip key={id} id={id} />
+                    ))}
+                  </div>
+
+                  <div className="mt-5 flex justify-center">
+                    <Button onClick={startShift}>
+                      Start the night shift
+                    </Button>
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 font-mono2 text-xs text-dim">
+                    <span className="inline-flex items-center gap-1">
+                      <KeyHint>space</KeyHint> to start
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <KeyHint>1</KeyHint><KeyHint>2</KeyHint><KeyHint>3</KeyHint><KeyHint>4</KeyHint> to switch views
+                    </span>
+                  </div>
+                </Card>
+              </motion.div>
+            )}
           </LensShell>
 
           {run.briefing && !briefingDismissed && (
@@ -567,51 +629,14 @@ export default function Home() {
             </div>
           )}
 
-          {run.phase === "idle" && (
-            <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center px-6">
-              <div className="max-w-xl text-center">
-                {hook ? (
-                  <>
-                    <p className="font-voice text-3xl leading-snug text-paper">
-                      It&apos;s {hook.body} in your body.
-                    </p>
-                    <p className="mt-1 font-mono2 text-[12px] text-mist">
-                      It&apos;s {hook.dest} in {trip?.destination.name ?? "your destination"}.
-                    </p>
-                  </>
-                ) : (
-                  <p className="font-voice text-2xl text-paper">
-                    Your body clock is still in {trip?.origin.name ?? "London"}.
-                  </p>
-                )}
-                <p className="mt-4 text-[12px] leading-relaxed text-mist">
-                  {data
-                    ? "Five agents read your wearable, pull the science, then rewrite your week around the shift."
-                    : "reading your calendar…"}
-                </p>
-                <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 text-[12px]">
-                  {(Object.keys(CREW) as AgentId[]).map((id) => {
-                    const Icon = AGENT_ICONS[id];
-                    return (
-                      <span key={id} className="inline-flex items-center gap-1.5" title={CREW[id].title}>
-                        <Icon size={14} style={{ color: CREW[id].color }} />
-                        <span className="text-paper">{CREW[id].name}</span>
-                      </span>
-                    );
-                  })}
-                </div>
-                <p className="mt-4 font-mono2 text-[12px] text-dim">press space, or start the night shift</p>
-              </div>
-            </div>
-          )}
           {trip && (
             <DayStrip days={trip.days} locked={run.locked} activeLabel={run.activeLabel} rejectedLabels={run.rejected} />
           )}
         </div>
 
-        <div className="min-h-0 overflow-hidden rounded-2xl border border-line bg-ink-2 p-3">
+        <Card className="min-h-0 overflow-hidden p-3">
           <CrewFeed entries={entries} running={run.phase === "running"} />
-        </div>
+        </Card>
       </div>
     </main>
   );

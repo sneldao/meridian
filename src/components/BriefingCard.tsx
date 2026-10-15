@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { X } from "lucide-react";
 import { fmtMin } from "@/domain/circadian";
 import { speakDialogue, speakOnce } from "@/lib/voice/engine";
@@ -22,6 +22,7 @@ interface Props {
 }
 
 export function BriefingCard({ summary, score, citations, days, ics, lines, coverage, onClose, fallback }: Props) {
+  const reduce = useReducedMotion();
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [voiceState, setVoiceState] = useState<"idle" | "loading" | "playing" | "error">("idle");
   const playGen = useRef(0);
@@ -71,9 +72,9 @@ export function BriefingCard({ summary, score, citations, days, ics, lines, cove
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 30, scale: 0.97 }}
+      initial={reduce ? false : { opacity: 0, y: 30, scale: 0.97 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ type: "spring", stiffness: 90, damping: 16 }}
+      transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 90, damping: 16 }}
       className="absolute inset-x-8 bottom-8 z-10 rounded-2xl border border-sun-dest/27 bg-ink-2/95 p-5 shadow-[0_0_80px_rgba(255,196,107,0.12)] backdrop-blur"
     >
       <button

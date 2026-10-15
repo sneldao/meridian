@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Card } from "@/components/ui";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { CrewEvent } from "@/domain/types";
 import { meetingReadiness } from "@/domain/readiness";
@@ -128,7 +129,7 @@ export default function TeamPage() {
                   : { text: r.phase === "done" ? "DONE" : "PLANNING", cls: "bg-line text-mist" };
           const pct = Math.round(r.sunProgress * 100);
           return (
-            <article key={t.id} className="rounded-xl border border-line bg-ink-2 p-4">
+            <Card key={t.id} className="p-4">
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <div className="text-[12px] font-bold">{t.name}</div>
@@ -167,7 +168,7 @@ export default function TeamPage() {
                   </span>
                 </div>
               ))}
-            </article>
+            </Card>
           );
         })}
       </div>

@@ -5,6 +5,7 @@
 // pipeline running. Not linked from the app.
 
 import { useState } from "react";
+import { Card } from "@/components/ui";
 import { FixtureScrubber } from "@/components/dev/FixtureScrubber";
 import { RoutePicker } from "@/components/RoutePicker";
 import { ShiftBoard } from "@/components/lenses/ShiftBoard";
@@ -48,27 +49,27 @@ export default function DevLenses() {
         </section>
       </div>
       <section className="grid grid-cols-1 gap-3 font-mono2 text-[12px] text-mist lg:grid-cols-3">
-        <div className="rounded-xl border border-line bg-ink-2 p-3">
+        <Card className="p-3">
           <div className="text-paper">state</div>
           <div>phase {run.phase} · agent {run.activeAgent ?? "—"} · day {run.activeLabel ?? "—"}</div>
           <div>tools {run.toolCalls} · attempts {run.attempts} · rejected {run.rejections}</div>
           <div>sun {(run.sunProgress * 100).toFixed(0)}% · ghost gap {ghostGapDeg(run).toFixed(0)}°</div>
           {run.lastTool && <div>last tool {run.lastTool.agent} → {run.lastTool.tool}</div>}
-        </div>
-        <div className="rounded-xl border border-line bg-ink-2 p-3">
+        </Card>
+        <Card className="p-3">
           <div className="text-paper">calendar (after moves)</div>
           {calendarAfter(run).map((e) => (
             <div key={e.id} className={run.moves.some((m) => m.eventId === e.id) ? "text-sun-home" : ""}>
               d{e.dayIndex} {e.title} {e.movable ? "" : "⚓"}
             </div>
           ))}
-        </div>
-        <div className="max-h-48 overflow-auto rounded-xl border border-line bg-ink-2 p-3">
+        </Card>
+        <Card className="max-h-48 overflow-auto p-3">
           <div className="text-paper">ledger (last 12)</div>
           {run.log.filter((l) => l.event.type !== "agent_token").slice(-12).map((l, i) => (
             <div key={i}>{(l.t / 1000).toFixed(2)}s {l.event.type}</div>
           ))}
-        </div>
+        </Card>
       </section>
     </main>
   );

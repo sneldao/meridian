@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Card } from "@/components/ui";
 
 interface HistEntry {
   id: number;
@@ -77,7 +78,7 @@ export default function HistoryPage() {
 
       <ul className="space-y-3">
         {items.map((it) => (
-          <li key={it.id} className="rounded-xl border border-line bg-ink-2 p-4">
+          <li key={it.id}><Card className="p-4">
             <div className="flex items-baseline justify-between">
               <div className="font-mono2 text-[12px] text-paper">
                 {it.trip ? `${it.trip.origin.code} → ${it.trip.destination.code} · ${Math.abs(it.trip.requiredShiftMin / 60)}h ${it.trip.direction}` : "Demo trip"}
@@ -97,6 +98,7 @@ export default function HistoryPage() {
                 </span>
               ))}
             </div>
+          </Card>
           </li>
         ))}
       </ul>

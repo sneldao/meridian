@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { CREW } from "@/agents/crew";
 import { fmtMin, passes } from "@/domain/circadian";
 import type { AgentId, DayPlan, DaySpec, EvalResult } from "@/domain/types";
@@ -89,6 +89,7 @@ const STATE_COLOR: Record<RowState, string> = {
 };
 
 export function ShiftBoard({ days, drafts, verdicts, locked, activeLabel, activeAgent, readOnly }: ShiftBoardProps) {
+  const reduce = useReducedMotion();
   // Morning dissolve: a replan drops a day's plan and the row snaps to queued
   // instantly. Keep the vanished plan for a beat and let it fade out, so the
   // "work unhappening" reads as a dissolve instead of a jump cut.
@@ -137,8 +138,8 @@ export function ShiftBoard({ days, drafts, verdicts, locked, activeLabel, active
             <motion.span
               className="inline-block h-2 w-2 rounded-full"
               style={{ background: agent.color }}
-              animate={{ opacity: [1, 0.25, 1] }}
-              transition={{ repeat: Infinity, duration: 1.1 }}
+              animate={reduce ? { opacity: 1 } : { opacity: [1, 0.25, 1] }}
+              transition={reduce ? { duration: 0 } : { repeat: Infinity, duration: 1.1 }}
             />
             {agent.name} · {agent.callsign}
           </span>
@@ -186,15 +187,23 @@ export function ShiftBoard({ days, drafts, verdicts, locked, activeLabel, active
             {/* the 24h row. Re-keyed on attempt so a new verdict re-triggers the bounce. */}
             <motion.div
               key={`${d.label}-${attempt}-${state}`}
-              initial={state === "locked" ? { scale: 0.96, opacity: 0.6 } : false}
+              initial={state === "locked" && !reduce ? { scale: 0.96, opacity: 0.6 } : false}
               animate={
                 state === "rejected"
-                  ? { x: [0, -10, 10, -6, 6, 0], opacity: 1, scale: 1 }
+                  ? reduce
+                    ? { opacity: 1, scale: 1 }
+                    : { x: [0, -10, 10, -6, 6, 0], opacity: 1, scale: 1 }
                   : state === "locked"
                     ? { scale: 1, opacity: 1 }
                     : { opacity: 1, scale: 1, x: 0 }
               }
-              transition={state === "locked" ? { type: "spring", stiffness: 380, damping: 18 } : { duration: 0.45 }}
+              transition={
+                reduce
+                  ? { duration: 0 }
+                  : state === "locked"
+                    ? { type: "spring", stiffness: 380, damping: 18 }
+                    : { duration: 0.45 }
+              }
               className={`relative h-10 overflow-hidden rounded-md border ${
                 state === "locked"
                   ? "border-pass/40 bg-ink-3"
@@ -306,8 +315,8 @@ export function ShiftBoard({ days, drafts, verdicts, locked, activeLabel, active
                 <motion.span
                   className="absolute top-0 bottom-0 w-0.5 bg-progress shadow-[0_0_8px_var(--color-progress)]"
                   initial={{ left: "0%" }}
-                  animate={{ left: "100%" }}
-                  transition={{ repeat: Infinity, duration: 1.2, ease: "linear" }}
+                  animate={reduce ? { left: "50%" } : { left: "100%" }}
+                  transition={reduce ? { duration: 0 } : { repeat: Infinity, duration: 1.2, ease: "linear" }}
                 />
               )}
             </motion.div>

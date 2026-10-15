@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { findAirport, searchAirports, type Airport } from "@/domain/airports";
 import { buildTrip } from "@/domain/fixtures";
 import { fmtUtcOffset, utcOffsetMinOn } from "@/domain/timezones";
+import { Card } from "@/components/ui";
 
 // Route control for any of ~1,100 airports: two type-ahead fields, a date,
 // and a live readout of the real (DST-aware, wrapped) shift.
@@ -29,7 +30,7 @@ export function RoutePicker({ origin, dest, date, onChange, disabled }: Props) {
   }, [origin, dest, date]);
 
   return (
-    <div className="flex items-center gap-2 rounded-xl border border-line bg-ink-2 px-2 py-1.5 font-mono2 text-[12px]">
+    <Card className="flex items-center gap-2 px-2 py-1.5 font-mono2 text-xs">
       <AirportField label="from" value={origin} date={date} disabled={disabled} onPick={(c) => onChange({ origin: c, dest, date })} />
       <button
         type="button"
@@ -55,7 +56,7 @@ export function RoutePicker({ origin, dest, date, onChange, disabled }: Props) {
           <span className="text-paper">{Math.abs(shift.requiredShiftMin / 60)}h</span> {shift.direction}
         </span>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -117,7 +118,7 @@ function AirportField({
         placeholder={open ? "city or code" : value}
         aria-label={`${label} airport`}
         title={current ? `${current.airport} · ${current.tz}` : undefined}
-        className="w-14 bg-transparent text-paper uppercase placeholder:normal-case placeholder:text-dim focus:w-36 focus:outline-none"
+        className="w-14 bg-transparent text-paper uppercase placeholder:normal-case placeholder:text-dim focus:w-36"
       />
       {open && results.length > 0 && (
         <ul

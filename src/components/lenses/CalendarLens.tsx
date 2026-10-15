@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { fmtMin } from "@/domain/circadian";
 import type { MeetingReadiness } from "@/domain/readiness";
 import type { CalendarEvent, DaySpec } from "@/domain/types";
@@ -31,6 +31,7 @@ export interface CalendarLensProps {
 }
 
 export function CalendarLens({ days, events, readiness, ics }: CalendarLensProps) {
+  const reduce = useReducedMotion();
   const col = 100 / Math.max(1, days.length);
   const badgeFor = new Map(readiness.map((r) => [r.eventId, r]));
 
@@ -124,7 +125,7 @@ export function CalendarLens({ days, events, readiness, ics }: CalendarLensProps
                     left: moved ? newLeft : origLeft,
                     top: top(moved?.startMin ?? e.startMin),
                   }}
-                  transition={{ type: "spring", stiffness: 160, damping: 22 }}
+                  transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 160, damping: 22 }}
                 >
                   <div className="font-bold" style={{ color: tone }}>
                     {e.title}

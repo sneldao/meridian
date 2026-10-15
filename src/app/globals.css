@@ -5,17 +5,18 @@
      readouts, and nothing below 12px. `font-voice` / `font-mono2` are the two
      voices; body copy uses the default sans. */
   --font-voice: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+
+  /* One colour, one meaning.
+     Pass and fail are *state*: design-vision.md §8 reserves them, so they are
+     never reused for a button, an agent or the sun. Paper is the action
+     colour — the one thing to press is white. Amber belongs to the destination
+     and its sun; home blue to the origin; progress cyan to work in flight. */
   --color-ink: #07090f;
   --color-ink-2: #0c1018;
   --color-ink-3: #131826;
   --color-line: #1e2637;
   --color-mist: #8b93a7;
   --color-paper: #e8eaf2;
-  /* One colour, one meaning.
-     Pass and fail are *state*: design-vision.md §8 reserves them, so they are
-     never reused for a button, an agent or the sun. Paper is the action
-     colour — the one thing to press is white. Amber belongs to the destination
-     and its sun; home blue to the origin; progress cyan to work in flight. */
   --color-pass: #b8e356;
   --color-fail: #ff7a7a;
   --color-progress: #7adfff;
@@ -27,6 +28,45 @@
   --color-ghost: #ffd98a;
   --color-sleep: #b8a8ff;
   --color-dim: #4a5470;
+
+  /* Typography: a fluid ramp so the UI breathes across viewports. */
+  --text-2xs: clamp(0.65rem, 0.7vw, 0.7rem);
+  --text-xs: clamp(0.7rem, 0.85vw, 0.8rem);
+  --text-sm: clamp(0.8rem, 1vw, 0.9rem);
+  --text-base: clamp(0.9rem, 1.1vw, 1rem);
+  --text-lg: clamp(1.05rem, 1.5vw, 1.25rem);
+  --text-xl: clamp(1.25rem, 2vw, 1.5rem);
+  --text-2xl: clamp(1.5rem, 2.8vw, 2rem);
+  --text-3xl: clamp(1.75rem, 3.6vw, 2.5rem);
+
+  /* Motion tokens: durations and easings used by components + CSS transitions. */
+  --duration-micro: 80ms;
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+  --duration-medium: 350ms;
+  --duration-slow: 500ms;
+
+  --ease-smooth-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: ease-in-out;
+  --ease-bounce: cubic-bezier(0.34, 1.36, 0.64, 1);
+
+  /* Radius scale. */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+
+  /* Opacity ramp: use these fractions instead of ad-hoc magic numbers. */
+  --opacity-5: 0.05;
+  --opacity-10: 0.10;
+  --opacity-20: 0.20;
+  --opacity-40: 0.40;
+  --opacity-60: 0.60;
+  --opacity-80: 0.80;
+
+  /* Focus ring colour. */
+  --color-focus: var(--color-sun-dest);
 }
 
 html,
@@ -43,6 +83,29 @@ body {
 
 ::selection {
   background: rgba(255, 196, 107, 0.25);
+}
+
+/* Visible focus rings for every focusable element. Components can override
+   with their own focus-visible styles, but the default is never invisible. */
+*:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:not([tabindex="-1"]):focus-visible {
+  outline-color: var(--color-focus);
+}
+
+/* Kill focus outline for non-keyboard interactions when a component supplies
+   its own ring. */
+.focus-ring:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-ink), 0 0 0 4px var(--color-focus);
 }
 
 @media (prefers-reduced-motion: reduce) {
