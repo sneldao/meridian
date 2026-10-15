@@ -53,6 +53,15 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
             <stop offset="0%" stopColor="#050812" />
             <stop offset="100%" stopColor="#151a2a" />
           </linearGradient>
+          {/* warm bleed at the terminator edges — dawn/dusk, not flat cut */}
+          <linearGradient id="dawn-glow" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#ffc46b" stopOpacity="0" />
+            <stop offset="100%" stopColor="#ffc46b" stopOpacity="0.14" />
+          </linearGradient>
+          <linearGradient id="dusk-glow" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#ffc46b" stopOpacity="0.14" />
+            <stop offset="100%" stopColor="#ffc46b" stopOpacity="0" />
+          </linearGradient>
         </defs>
         <rect width={W} height={H} fill="url(#world-night)" />
         {/* grid */}
@@ -73,11 +82,27 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
             <rect key={i} x={r.x} y={0} width={r.w} height={H} fill="#000" opacity="0.45" />
           ));
         })()}
+        {/* warm bleed just inside the day band at dawn and dusk */}
+        <rect x={terminatorX(sunLon - 90)} y={0} width={56} height={H} fill="url(#dawn-glow)" />
+        <rect x={terminatorX(sunLon + 90) - 56} y={0} width={56} height={H} fill="url(#dusk-glow)" />
         {/* ghost body-clock terminator, closing to zero as days lock */}
         <rect x={0} y={0} width={terminatorX(ghostLon)} height={H} fill="#ffd98a" opacity="0.08" />
         <line x1={terminatorX(sunLon - 90)} y1={0} x2={terminatorX(sunLon - 90)} y2={H} stroke="#9db8ff" strokeWidth="2" />
         <line x1={terminatorX(sunLon + 90)} y1={0} x2={terminatorX(sunLon + 90)} y2={H} stroke="#9db8ff" strokeWidth="2" />
         <line x1={terminatorX(ghostLon)} y1={0} x2={terminatorX(ghostLon)} y2={H} stroke="#ffd98a" strokeWidth="2" strokeDasharray="6 4" />
+        {trip && (
+          <text
+            x={Math.min(Math.max(terminatorX(ghostLon), 44), W - 44)}
+            y={H - 12}
+            textAnchor="middle"
+            fill="#ffd98a"
+            fontSize="10"
+            fontWeight="700"
+            letterSpacing="2"
+          >
+            YOUR DAWN
+          </text>
+        )}
 
         {/* flight arc */}
         {trip && (

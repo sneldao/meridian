@@ -13,6 +13,7 @@ import type {
 } from "@/domain/types";
 import { CREW } from "@/agents/crew";
 import { AGENT_ICONS } from "@/lib/agent-icons";
+import { MoonStar } from "lucide-react";
 import { BriefingCard } from "@/components/BriefingCard";
 import { LensShell, type LensId } from "@/components/lenses/LensShell";
 import { WorldLens } from "@/components/lenses/WorldLens";
@@ -63,6 +64,11 @@ function pumpVoice(
     .catch(() => pumpVoice(queue, audioSlot));
 }
 
+/** Wall-clock time (HH:MM) in a city, from its DST-aware UTC offset. */
+function clockAt(offsetMin: number, now = new Date()): string {
+  return fmtMin(now.getUTCHours() * 60 + now.getUTCMinutes() + offsetMin);
+}
+
 export default function Home() {
   const [origin, setOrigin] = useState("LHR");
   const [dest, setDest] = useState("HND");
@@ -110,6 +116,14 @@ export default function Home() {
       .then(setData)
       .catch(() => {});
   }, [tripQuery]);
+
+  // The opening hook — the wearer's body time against the destination's.
+  // Derived during render (no setState in an effect) and only reachable once
+  // the trip is known, which is always after hydration, so there is no clock
+  // on the server-rendered HTML.
+  const hook = trip
+    ? { body: clockAt(trip.origin.utcOffsetMin), dest: clockAt(trip.destination.utcOffsetMin) }
+    : null;
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -331,6 +345,7 @@ export default function Home() {
   const providerFallback = run.errors.length > 0;
   const journey = data?.provider;
   const providerLabel = journey ?? run.provider ?? process.env.NEXT_PUBLIC_AGENT_PROVIDER;
+  const baseline = run.baseline ?? data?.baseline;
 
   return (
     <main className="flex min-h-screen flex-col p-4 lg:h-screen">
@@ -338,11 +353,21 @@ export default function Home() {
         <div className="shrink-0">
           <div className="flex items-baseline gap-3">
             <h1 className="text-lg font-bold tracking-[0.3em] text-[#e8eaf2]">MERIDIAN</h1>
-            <span className="text-[10px] tracking-widest text-[#8b93a7] uppercase">
+            <span className="text-[12px] tracking-wide text-[#8b93a7]">
               agents that fly ahead of you
             </span>
           </div>
         </div>
+
+        {baseline && (
+          <div
+            className="hidden shrink-0 items-center gap-1.5 rounded-lg border border-[#1e2637] bg-[#0c1018] px-3 py-1.5 font-mono2 text-[11px] text-[#8b93a7] xl:flex"
+            title="From the wearable baseline — who this plan is shaped around"
+          >
+            <MoonStar size={12} className="text-[#b8a8ff]" />
+            <span className="text-[#e8eaf2]">{baseline.chronotype}</span> · {fmtMin(baseline.avgBedtimeMin)}→{fmtMin(baseline.avgWakeMin)}
+          </div>
+        )}
 
         <div className="shrink-0">
           <RoutePicker origin={origin} dest={dest} date={departureDate} onChange={(next) => {
@@ -384,7 +409,7 @@ export default function Home() {
         <div className="relative ml-auto shrink-0" ref={menuRef}>
           <button
             onClick={() => setMenuOpen((v) => !v)}
-            className="rounded-lg border border-[#1e2637] bg-[#0c1018] px-3 py-1.5 font-mono2 text-[11px] text-[#8b93a7] transition-colors hover:border-[#8b93a7]"
+            className="rounded-lg border border-[#1e2637] bg-[#0c1018] px-3 py-1.5 font-mono2 text-[12px] text-[#8b93a7] transition-colors hover:border-[#8b93a7]"
           >
             menu
           </button>
@@ -392,15 +417,15 @@ export default function Home() {
             <div className="absolute right-0 top-full z-50 mt-2 w-52 rounded-xl border border-[#1e2637] bg-[#0c1018] p-2 shadow-xl">
               <div className="space-y-1">
                 {hasSavedPlan && (
-                  <Link href="/review" className="block rounded-lg px-3 py-1.5 text-[11px] text-[#b8e356] hover:bg-[#1e2637]">
+                  <Link href="/review" className="block rounded-lg px-3 py-1.5 text-[12px] text-[#b8e356] hover:bg-[#1e2637]">
                     view saved handoff →
                   </Link>
                 )}
-                <Link href="/history" className="block rounded-lg px-3 py-1.5 text-[11px] text-[#8b93a7] hover:bg-[#1e2637]">
+                <Link href="/history" className="block rounded-lg px-3 py-1.5 text-[12px] text-[#8b93a7] hover:bg-[#1e2637]">
                   history
                 </Link>
                 {runCount > 0 && (
-                  <Link href="/history" className="block rounded-lg px-3 py-1.5 text-[11px] text-[#8b93a7] hover:bg-[#1e2637]">
+                  <Link href="/history" className="block rounded-lg px-3 py-1.5 text-[12px] text-[#8b93a7] hover:bg-[#1e2637]">
                     {runCount} runs
                   </Link>
                 )}
@@ -412,12 +437,12 @@ export default function Home() {
                     if (!next) stopVoice();
                     setMenuOpen(false);
                   }}
-                  className="w-full rounded-lg px-3 py-1.5 text-left text-[11px] text-[#7adfff] hover:bg-[#1e2637]"
+                  className="w-full rounded-lg px-3 py-1.5 text-left text-[12px] text-[#7adfff] hover:bg-[#1e2637]"
                 >
                   voice {voiceOn ? "on" : "off"}
                 </button>
                 {providerLabel && (
-                  <div className="rounded-lg px-3 py-1.5 text-[10px] text-[#4a5470]">
+                  <div className="rounded-lg px-3 py-1.5 text-[12px] text-[#4a5470]">
                     {providerLabel}{providerFallback ? " · fallback" : ""}
                   </div>
                 )}
@@ -426,6 +451,27 @@ export default function Home() {
           )}
         </div>
       </header>
+
+      {showOnboarding && (
+        <div className="mb-3 flex items-center gap-3 rounded-lg border border-[#1e2637] bg-[#0c1018] px-4 py-2 text-[12px] text-[#8b93a7]">
+          <span className="text-[#e8eaf2]">First run?</span>
+          <span className="hidden md:inline">
+            Agents propose; the deterministic scorer disposes.
+          </span>
+          <span className="hidden lg:inline">
+            Press space to send the crew out, then watch the plan lock day by day.
+          </span>
+          <button
+            onClick={() => {
+              try { localStorage.setItem("meridian:onboarded", "1"); } catch { /* ignore */ }
+              setShowOnboarding(false);
+            }}
+            className="ml-auto shrink-0 rounded-lg border border-[#1e2637] px-3 py-1 text-[12px] text-[#8b93a7] transition-colors hover:text-[#e8eaf2]"
+          >
+            got it
+          </button>
+        </div>
+      )}
 
       {providerFallback && (
         <div className="mb-3 rounded-lg border border-[#ff7a7a44] bg-[#ff7a7a11] px-4 py-2 text-[12px] text-[#ff7a7a]">
@@ -509,46 +555,39 @@ export default function Home() {
           )}
 
           {run.phase === "idle" && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center">
-              <div className="text-center">
-                <div className="text-sm text-[#8b93a7]">Your body clock is still in {trip?.origin.name ?? "London"}.</div>
-                <div className="mt-1 text-xs text-[#4a5470]">
-                  {data ? "The crew is waiting for the order." : "reading your calendar…"}
-                </div>
-              </div>
-            </div>
-          )}
-          {showOnboarding && (
-            <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#07090fcc] backdrop-blur">
-              <div className="max-w-md rounded-2xl border border-[#1e2637] bg-[#0c1018] p-6 shadow-xl">
-                <h2 className="text-sm font-bold tracking-[0.3em] text-[#e8eaf2]">WELCOME TO MERIDIAN</h2>
-                <p className="mt-3 text-[12px] leading-relaxed text-[#8b93a7]">
-                  A crew of agents flies ahead of your body clock — reads your wearable, pulls the science, and
-                  rewrites your calendar around the shift.
+            <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center px-6">
+              <div className="max-w-xl text-center">
+                {hook ? (
+                  <>
+                    <p className="font-voice text-3xl leading-snug text-[#e8eaf2]">
+                      It&apos;s {hook.body} in your body.
+                    </p>
+                    <p className="mt-1 font-mono2 text-[12px] text-[#8b93a7]">
+                      It&apos;s {hook.dest} in {trip?.destination.name ?? "your destination"}.
+                    </p>
+                  </>
+                ) : (
+                  <p className="font-voice text-2xl text-[#e8eaf2]">
+                    Your body clock is still in {trip?.origin.name ?? "London"}.
+                  </p>
+                )}
+                <p className="mt-4 text-[12px] leading-relaxed text-[#8b93a7]">
+                  {data
+                    ? "Five agents read your wearable, pull the science, then rewrite your week around the shift."
+                    : "reading your calendar…"}
                 </p>
-                <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1.5 text-[11px] text-[#8b93a7]">
+                <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 text-[12px]">
                   {(Object.keys(CREW) as AgentId[]).map((id) => {
                     const Icon = AGENT_ICONS[id];
                     return (
-                      <span key={id} className="inline-flex items-center gap-1" title={CREW[id].title}>
-                        <Icon size={12} style={{ color: CREW[id].color }} />
+                      <span key={id} className="inline-flex items-center gap-1.5" title={CREW[id].title}>
+                        <Icon size={14} style={{ color: CREW[id].color }} />
                         <span className="text-[#e8eaf2]">{CREW[id].name}</span>
                       </span>
                     );
                   })}
                 </div>
-                <p className="mt-3 text-[11px] text-[#ff7a7a]">Agents propose; the deterministic scorer disposes.</p>
-                <div className="mt-4 flex justify-end">
-                  <button
-                    onClick={() => {
-                      try { localStorage.setItem("meridian:onboarded", "1"); } catch {}
-                      setShowOnboarding(false);
-                    }}
-                    className="rounded-lg bg-[#b8e356] px-4 py-2 text-xs font-bold text-[#07090f]"
-                  >
-                    Got it
-                  </button>
-                </div>
+                <p className="mt-4 font-mono2 text-[12px] text-[#4a5470]">press space, or start the night shift</p>
               </div>
             </div>
           )}
@@ -558,7 +597,7 @@ export default function Home() {
         </div>
 
         <div className="min-h-0 overflow-hidden rounded-2xl border border-[#1e2637] bg-[#0c1018] p-3">
-          <CrewFeed entries={entries} />
+          <CrewFeed entries={entries} running={run.phase === "running"} />
         </div>
       </div>
     </main>
