@@ -1,75 +1,87 @@
-# Demo runbook
+# Meridian
 
-## The safe path
+**Agents that fly ahead of you.** A crew of long-running agents resets your
+body clock before you land — turning a trip across time zones into a
+day-by-day circadian shift plan grounded in real literature and your actual
+calendar.
 
-```bash
-AGENT_PROVIDER=replay bun run dev    # verified end-to-end, zero tokens, works offline
-```
+Built at Accel AI Innovate London, Oct 2026.
 
-Click **start the night shift**. ~45 s of scripted-but-honest transcript: the
-scorer really runs, the rejections are real verdicts against real plans, and
-the `.ics` is a genuine artifact. Two visible recoveries (`CALENDAR_CONFLICT`
-on D-2 and D-1) — each one bounces red, goes back under Iris's scan line on the
-retry, then snaps locked — and five day locks. The mission clock ticks on wall
-time even while the model is quiet.
+**Agents propose, code disposes.** A deterministic placement solver drafts the
+times, the crew debates intent, and a scorer backed by a phase-response model
+decides — a plan's declared shift is checked against what its zeitgeber timing
+can actually deliver.
 
-Pacing knob: `REPLAY_BEAT_MS` env var (default `60`, read in `replay.ts` and
-`morning-replay.ts`) — ms between streamed events. Default is too fast to
-narrate (~7.5 s for a full night shift); set `REPLAY_BEAT_MS=300` in
-`.env.local` on the stage machine (~40 s, narratable). Keep the default for
-tests and fixture recording — see `docs/hackathon-plan.md` §11.
+**Live:** https://meridian-afud.onrender.com · deck: `/pitch`
 
-## The morning replan (replay)
-
-The recorded morning beat needs no keys. Open the run with a start day and a
-check-in (base64 JSON array of `CheckIn`):
-
-```
-https://meridian-afud.onrender.com/?startDay=2&checkins=<base64 of [{"id":"c1","dayIndex":1,"kind":"light_exposure","startMin":300,"status":"skipped","text":"skipped the 5am light","at":0}]>
-```
-
-The feed shows `wearer reported: …` then `replan — …`. On the board, the
-dropped days' plans visibly dissolve (the old sleep bars fade out) and re-draft;
-D-1, Flight and D+1 are re-locked; D-3 and D-2 carry over as lived.
-
-## The live path
+## Quickstart
 
 ```bash
-ANTHROPIC_API_KEY=... AGENT_PROVIDER=anthropic bun run dev
+bun install
+cp .env.example .env.local    # AGENT_PROVIDER=replay works with zero keys
+bun run dev                   # http://localhost:3000
 ```
 
-If the provider throws, the run falls back to replay mid-stream — the audience
-sees an `error` event and the show continues. Still: do one full live run
-before judging; the planner prompt assumes exactly one `submitDayPlan` call
-per day and may need tuning.
+Optional: `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` in `.env.local` persist
+run history server-side (project `vpeakvspljdoxbwfsdvw`, see
+[providers.md](docs/providers.md#supabase-persistence-optional)).
 
-## Routes for the pitch
+## The crew
 
-- `/pitch` — the slide deck (scrollytelling, self-contained)
-- `/` — the run: sun-track scene + crew feed + eval verdict cards
-- `/review` — the artifact: plan, citations, `.ics` download (persists via
-  localStorage, survives refresh)
-- `/history` — past runs (`meridian:history` localStorage capped at 20, plus
-  Supabase `meridian_events` when `SUPABASE_URL` is configured)
-- `/outcome` — post-trip self-report; the hook for the adherence story
-
-## localStorage keys
-
-| Key | Written by |
+| Agent | Job |
 |---|---|
-| `meridian:lastPlan` | `/` on briefing → read by `/review` |
-| `meridian:lastTrip` | `/` on `run_start` → read by `/review` |
-| `meridian:history` | `/` on briefing → read by `/history` |
-| `meridian:onboarded` | `/` onboarding dismiss |
-| `meridian:outcomes` | `/outcome` submissions |
-| `meridian:checkins` | `/outcome` (structured via `/api/crew/checkin`) → read by replan runs |
+| Mara · ANALYST | Reads the wearable baseline + adherence profile |
+| Jun · RESEARCH | Pulls real papers (ScienceMadeReadable → Firecrawl) with DOIs |
+| Otto · PLANNER | Drafts each day's shift plan from a solver-placed skeleton, one at a time |
+| Iris · EVAL | Fresh-context evaluator — explains the scorer's verdict |
+| Rex · NEGOTIATOR | Reschedules movable calendar events, commits the .ics |
 
-## Troubleshooting
+## Routes
 
-| Symptom | Fix |
+| Path | What |
 |---|---|
-| Stream dies instantly | Provider misconfigured → check `.env.local`; replay needs nothing |
-| Plan stuck locked at 0 | `bun run replay:check` — prints every eval verdict |
-| Fresh clone, hooks silent | `git config core.hooksPath .githooks` |
-| Stage wifi dead | `replay` needs no network at all — that's the point |
-| Morning replan shows the night script | URL has no `startDay` or `checkins` — add them |
+| `/pitch` | Slide deck — scrollytelling pitch, self-contained
+| `/` | Live crew run — lens shell (world/board/calendar/ledger), crew feed (SSE) |
+| `/review` | Saved plan: days, citations, .ics download |
+| `/history` | Past runs (with provider + fallback provenance) |
+| `/outcome` | Post-trip self-report (adherence, jetlag, notes); learned cross-run memory |
+| `/team` | Travel-manager view: 12 travellers, 12 crews in parallel (stretch) |
+| `/dev` | Lens workbench + recorded-event fixture playback (dev only) |
+
+## Docs
+
+- [Architecture](docs/architecture.md) — pipeline, event stream, artifacts, adherence loop
+- [Scoring](docs/scoring.md) — the deterministic gate every plan must pass
+- [Providers](docs/providers.md) — replay / anthropic / featherless, env vars, fallbacks
+- [Demo runbook](docs/demo.md) — stage path, pacing, localStorage keys, troubleshooting
+- [Hackathon plan](docs/hackathon-plan.md) — today's build: 4 lenses, any route, team split, demo script, business case
+- [Design vision](docs/design-vision.md) — the Ghost Terminator, immersive-world plan, build tiers, current UI fixes
+- [Graph Hacks plan](docs/graph-hackathon.md) — FalkorDB participation strategy, tracks, scope guardrails
+- [Evals](docs/evals.md) — the harness that tracks plan quality over time (`bun run eval`), not a hillclimb yet, the shape of one
+
+## Checks
+
+```bash
+bun run typecheck
+bun run lint
+bun run replay:check   # streams the replay transcript, prints eval verdicts
+bun run eval            # scores the crew against a fixed scenario matrix, persists the trend
+bun run build
+```
+
+Commits run `gitleaks` + typecheck + lint via `.githooks/` (enabled through
+`git config core.hooksPath .githooks` — already set in this clone).
+
+## Offline / PWA
+
+Meridian ships a minimal service worker (`public/sw.js`) that caches the app
+shell and serves `public/offline.html` when the network is gone. Saved handoffs
+live in `localStorage`, so a completed plan stays readable offline.
+
+## Tests
+
+```bash
+bun test                 # pure-function tests (scorer, adherence)
+bun run smoke            # SSE smoke against a running dev server: night run + morning replan
+bun run replay:check     # streams the replay transcript; prints eval verdicts
+```
