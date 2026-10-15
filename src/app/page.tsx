@@ -54,6 +54,8 @@ export default function Home() {
   const [briefingDismissed, setBriefingDismissed] = useState(false);
   const [hasSavedPlan, setHasSavedPlan] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [runCount, setRunCount] = useState(0);
+  const [providerFallback, setProviderFallback] = useState(false);
   const esRef = useRef<EventSource | null>(null);
 
   useEffect(() => {
@@ -68,6 +70,10 @@ export default function Home() {
       try {
         setHasSavedPlan(Boolean(localStorage.getItem("meridian:lastPlan")));
         setShowOnboarding(!localStorage.getItem("meridian:onboarded"));
+        fetch("/api/memory")
+          .then((r) => r.json())
+          .then((d) => setRunCount(Array.isArray(d?.runs) ? d.runs.length : 0))
+          .catch(() => {});
         if (typeof window !== "undefined") {
           const sp = new URLSearchParams(window.location.search);
           if (sp.get("origin")) setOrigin(sp.get("origin")!);
@@ -101,6 +107,7 @@ export default function Home() {
           setRejected(new Set());
           setCitationCount(0);
           setBriefing(null);
+          setProviderFallback(false);
           try {
             localStorage.setItem("meridian:lastTrip", JSON.stringify(e.trip));
           } catch {
@@ -194,6 +201,7 @@ export default function Home() {
           push({ kind: "system", text: "morning handoff ready" });
           break;
         case "error":
+          setProviderFallback(true);
           push({ kind: "error", text: e.message });
           break;
         case "done":
@@ -296,9 +304,14 @@ export default function Home() {
           >
             history
           </Link>
+          {runCount > 0 && (
+            <Link href="/history" className="rounded-lg border border-[#1e2637] bg-[#0c1018] px-3 py-1.5 font-mono2 text-[11px] text-[#8b93a7] transition-colors hover:border-[#8b93a7]">
+              {runCount} runs
+            </Link>
+          )}
           {data && (
             <div className="rounded-lg border border-[#1e2637] bg-[#0c1018] px-3 py-1.5 font-mono2 text-[11px] text-[#4a5470]">
-              {data.provider}
+              {data.provider}{providerFallback ? " · fallback" : ""}
             </div>
           )}
           <button
