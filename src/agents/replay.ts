@@ -227,7 +227,7 @@ export async function* runReplay(): AsyncGenerator<CrewEvent> {
     summary:
       "Night shift complete. 5 days locked, 380 minutes of the 540-minute shift covered before you land — the crew keeps working after touchdown. 4 papers cited. Calendar: 3 events rescheduled, every fixed commitment intact.",
     ics,
-    score: 0.86,
+    score: 0.9,
     citations,
     days: locked,
   };

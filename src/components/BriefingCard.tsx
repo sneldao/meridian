@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { X } from "lucide-react";
 import { fmtMin } from "@/domain/circadian";
 import type { Citation, DayPlan } from "@/domain/types";
 
@@ -10,9 +11,10 @@ interface Props {
   citations: Citation[];
   days: DayPlan[];
   ics: string;
+  onClose: () => void;
 }
 
-export function BriefingCard({ summary, score, citations, days, ics }: Props) {
+export function BriefingCard({ summary, score, citations, days, ics, onClose }: Props) {
   const downloadIcs = () => {
     const blob = new Blob([ics], { type: "text/calendar" });
     const a = document.createElement("a");
@@ -29,6 +31,13 @@ export function BriefingCard({ summary, score, citations, days, ics }: Props) {
       transition={{ type: "spring", stiffness: 90, damping: 16 }}
       className="absolute inset-x-8 bottom-8 z-10 rounded-2xl border border-[#ffc46b44] bg-[#0c1018f2] p-5 shadow-[0_0_80px_rgba(255,196,107,0.12)] backdrop-blur"
     >
+      <button
+        onClick={onClose}
+        className="absolute top-3 right-3 rounded-md p-1 text-[#4a5470] transition-colors hover:bg-[#1e2637] hover:text-[#e8eaf2]"
+        aria-label="Dismiss handoff"
+      >
+        <X size={14} />
+      </button>
       <div className="flex items-start justify-between gap-6">
         <div className="min-w-0 flex-1">
           <div className="text-[10px] font-bold tracking-[0.2em] text-[#ffc46b] uppercase">

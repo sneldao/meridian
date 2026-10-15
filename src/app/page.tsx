@@ -43,6 +43,7 @@ export default function Home() {
   const [rejected, setRejected] = useState<Set<string>>(new Set());
   const [citationCount, setCitationCount] = useState(0);
   const [briefing, setBriefing] = useState<Briefing | null>(null);
+  const [briefingDismissed, setBriefingDismissed] = useState(false);
   const esRef = useRef<EventSource | null>(null);
 
   useEffect(() => {
@@ -120,6 +121,7 @@ export default function Home() {
           break;
         case "briefing":
           setBriefing({ summary: e.summary, score: e.score, citations: e.citations, days: e.days, ics: e.ics });
+          setBriefingDismissed(false);
           push({ kind: "system", text: "morning handoff ready" });
           break;
         case "error":
@@ -203,14 +205,23 @@ export default function Home() {
                 running={phase === "running"}
               />
             )}
-            {briefing && (
+            {briefing && !briefingDismissed && (
               <BriefingCard
                 summary={briefing.summary}
                 score={briefing.score}
                 citations={briefing.citations}
                 days={briefing.days}
                 ics={briefing.ics}
+                onClose={() => setBriefingDismissed(true)}
               />
+            )}
+            {briefing && briefingDismissed && (
+              <button
+                onClick={() => setBriefingDismissed(false)}
+                className="absolute bottom-4 right-4 rounded-lg border border-[#ffc46b66] bg-[#0c1018e6] px-3 py-1.5 text-[10px] font-bold tracking-widest text-[#ffc46b] uppercase"
+              >
+                show handoff
+              </button>
             )}
             {phase === "idle" && (
               <div className="absolute inset-0 flex items-center justify-center">

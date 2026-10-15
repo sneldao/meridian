@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "replay:check": "bun scripts/replay-check.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "4.0.80",
