@@ -18,7 +18,7 @@ can actually deliver.
 
 ```bash
 bun install
-cp .env.example .env.local    # set AGENT_PROVIDER=replay to run with zero keys
+cp .env.example .env.local    # defaults to featherless (needs a key) — AGENT_PROVIDER=replay runs with zero keys
 bun run dev                   # http://localhost:3000
 ```
 

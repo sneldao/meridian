@@ -50,8 +50,9 @@ citations, plan candidates, eval verdicts, day locks, calendar moves,
 check-ins, replans, errors.
 
 Errors are `recoverable: true` where the run can continue (e.g. planner
-submitted nothing → `continue`). A provider-level throw mid-run falls back to
-the replay transcript — see [providers.md](providers.md).
+submitted nothing → `continue`). A provider-level throw mid-run retries once on
+`AGENT_PROVIDER_FALLBACK`, then drains the replay transcript — see
+[providers.md](providers.md).
 
 The voice layer is a consumer of the same stream: `agent_token` deltas are
 sentence-chunked client-side and queued to `POST /api/voice` while generation

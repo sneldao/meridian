@@ -49,7 +49,7 @@ key, voice reads as "unavailable" in the menu and everything else works.
   content hash (memory + Supabase Storage bucket `meridian-voice`), and the
   replay transcript is deterministic — verified: second run serves 23/23
   sentences from cache at ~7ms each. Warm the cache with one full run before
-  the slot; the live (anthropic) path never caches because text differs per run.
+  the slot; live paths never cache because text differs per run.
 - Failures are visible, not silent: a bad key or exhausted quota posts a
   `voice unavailable: …` error to the feed and switches the layer off for the
   session.
@@ -59,11 +59,15 @@ key, voice reads as "unavailable" in the menu and everything else works.
 ## The live path
 
 ```bash
-ANTHROPIC_API_KEY=... AGENT_PROVIDER=anthropic bun run dev
+bun run dev          # AGENT_PROVIDER=featherless, fallback=nebius — see providers.md
+ANTHROPIC_API_KEY=... AGENT_PROVIDER=anthropic bun run dev   # quality path
 ```
 
-If the provider throws, the run falls back to replay mid-stream — the audience
-sees an `error` event and the show continues. Still: do one full live run
+If the primary provider throws, the run retries once on
+`AGENT_PROVIDER_FALLBACK`, then drains replay mid-stream — the audience sees
+`error` events and the show continues. Verify a configured provider with
+`bun run provider:check` (one forced tool call, seconds) before a full run —
+cheap open models fail per-model, not per-key. Still: do one full live run
 before judging; the planner prompt assumes exactly one `submitDayPlan` call
 per day and may need tuning.
 

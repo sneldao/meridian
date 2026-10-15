@@ -28,6 +28,14 @@ export interface TravelerNudge {
   actionSummary: string;
   whyItHelps: string;
   citation?: Citation;
+  /** Provenance chain — populated from the run's CrewEvents so "why" expands
+   *  into real evidence. Absent means there is no evidence; never fabricate. */
+  evidence?: {
+    citationId?: string;
+    evalVerdict?: { score: number; violations: string[] };
+    memoryPath?: string;
+    draftRejected?: boolean;
+  };
   calendarMove?: {
     eventTitle: string;
     fromTime: string;

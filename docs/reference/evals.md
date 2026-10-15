@@ -33,8 +33,10 @@ connected Google Calendar.
 
 It respects `AGENT_PROVIDER` like everything else: `replay` is free and
 deterministic (good for a pre-commit regression check, same spirit as
-`bun run replay:check`); `anthropic` spends real tokens and is where the
-trend actually gets interesting, since the live model's attempts vary.
+`bun run replay:check`); `featherless` is the cheap live path (real model
+variance, pennies per matrix); `anthropic` is the quality ceiling. A failed
+primary retries on `AGENT_PROVIDER_FALLBACK` before replay — see
+[providers.md](providers.md).
 
 ## What gets measured, per scenario run
 

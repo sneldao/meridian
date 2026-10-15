@@ -6,7 +6,50 @@ submitting — Devpost deadlines shift.
 
 **Already in flight:** Graph Hacks (FalkorDB × WeMakeDevs), deadline
 **2026-10-18** — see [graph-hackathon.md](graph-hackathon.md) and
-[graph-memory.md](../reference/graph-memory.md).
+[graph-memory.md](../reference/graph-memory.md). Same-day deadline:
+**DEV Hacktoberfest Open-Source AI Challenge, Week 2 (Side Hustle)** —
+deliverable is a DEV post, not a Devpost package. Post draft:
+[dev-week2-post.md](dev-week2-post.md).
+
+## DEV Challenge — Hacktoberfest Week 2: Side Hustle
+
+- Contest page: https://dev.to/challenges/hacktoberfest-week2-2026-10-12
+  · rules: `/page/hacktoberfest-week2-2026-10-12-contest-rules`
+- Entry period **Oct 12 12:00 PDT → Oct 18 11:59 PM PDT**; winners week of
+  Oct 19. One entry per participant. **Max one prize per participant** —
+  entries may *declare* multiple categories but win at most one, so declare
+  every category genuinely used and let judges award the best.
+- Target: **Best Use of Render, $200** (featured). Already deployed —
+  Render is the AI runtime per `render.yaml` (web + private FalkorDB
+  service, autodeploy on main, ~$7/mo). Also genuinely qualifies:
+  ElevenLabs ($100 — voice layer shipped) and Entire ($100 — DevRelay
+  session link needed).
+- Eligibility verified 2026-10-15: repo started + completed inside the
+  window (first commit Oct 15). Rules: "repositories must be started and
+  completed within the challenge window"; commits after the deadline must
+  be noted in the README or it's a DQ risk.
+- Required elements: template post w/ `#devchallenge` + `#hf26challenge`,
+  live URL or video ✓, public repo ✓ (sneldao/meridian is public),
+  open-innovation explanation, team DEV handles if any.
+- Judging: writing quality weighted most; tiebreak = post reactions.
+- Open-model angle: provider-agnostic crew (Qwen3-32B/Featherless default,
+  Nemotron/Nebius); scorer gate holds identical outcomes on Nemotron vs
+  Claude (verified run: 18 tool calls, 2 rejections, score 0.91, 15
+  citations) — "cheap model + deterministic verifier" IS the pitch.
+
+### Meridian angle — post drafted, actions open
+
+- [ ] Publish `docs/plan/dev-week2-post.md` before Oct 18 11:59 PM PDT
+- [ ] Decide: keep public URL on `AGENT_PROVIDER=replay`, or add a second
+      Render service on `featherless` so judges hit live open-model
+      inference (strengthens the Render claim; ~pennies/run risk)
+- [ ] ~2–3 min demo video (reuse shot list below, Render voiceover)
+- [ ] DevRelay session link for Entire category
+- [ ] "First user" bonus: one real traveller/advisor runs a trip, quote it
+- [ ] README note about any post-deadline commits
+- [ ] Optional cheap adds: free .tech domain → $100 category; Gemma swap
+      via Featherless (`FEATHERLESS_*_MODEL` to a Gemma ID, verify with
+      `bun run provider:check`) → $200 category
 
 ## Top three targets
 
@@ -77,9 +120,12 @@ hitting the endpoint), public repo, submission text.
   skills (crew tools), cross-run learning (`/outcome` loop). "Best Apps &
   Agents" is the fallback category.
 - Free credits via the Nebius Builder Program (Token Factory + Tavily).
-- Remaining: one full `plan_shift` run on Nemotron (tool fidelity is proven,
-  but watch whether the multi-step crew loop stays coherent on a non-Claude
-  model — replay fallback covers a bad run anyway), submission text.
+- **Multi-step coherence verified (2026-10-15):** full `plan_shift` on
+  Nemotron in 143s — 18 tool calls all answered, scorer rejected 2 drafts and
+  the retry loop recovered (4/5 days locked, score 0.91, 15 citations, .ics
+  committed). Same D-1 physiological-limit outcome as the Claude run — the
+  gate holds regardless of provider.
+- Remaining: submission text only.
 
 ## 3. Qloo Agentic Hackathon
 

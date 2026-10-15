@@ -48,7 +48,9 @@ serve — several catalogued models return `no_response` at inference time, so
 verify with a real chat completion before bumping. Featherless limits how
 many distinct models an account can switch between
 (`model_switching_limit_exceeded`), so both roles share `Qwen/Qwen3-32B`.
-Verify Nebius IDs against the Token Factory catalog the same way.
+Verify Nebius IDs against the Token Factory catalog the same way. Fastest
+sanity check for whatever is configured: `bun run provider:check` — resolves
+the provider, forces one tool call, prints the round-trip.
 
 ## Other env vars
 

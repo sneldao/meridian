@@ -17,7 +17,6 @@ import { HandoffBanner } from "@/components/HandoffBanner";
 import { AgentDrawer } from "@/components/AgentDrawer";
 import { useRunState, calendarWithMoves, ledgerEvents, ghostGapDeg } from "@/state/run";
 import { meetingReadiness } from "@/domain/readiness";
-import { fallbackCitations } from "@/tools/science";
 import {
   initVoice,
   setVoiceEnabled,
@@ -42,7 +41,7 @@ function clockAt(offsetMin: number, now = new Date()): string {
   return fmtMin(now.getUTCHours() * 60 + now.getUTCMinutes() + offsetMin);
 }
 
-const DEFAULT_CITATIONS = fallbackCitations();
+
 
 export default function Home() {
   const [activeScreen, setActiveScreen] = useState<"guide" | "setup">("guide");
@@ -413,7 +412,7 @@ export default function Home() {
   const currentReadiness = trip
     ? meetingReadiness(trip, currentEvents, [...run.locked.values()], baseline)
     : [];
-  const activeCitations = run.citations.length > 0 ? run.citations : DEFAULT_CITATIONS;
+  const activeCitations = run.citations;
 
   return (
     <div className="root" ref={menuRef}>
