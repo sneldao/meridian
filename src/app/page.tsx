@@ -15,6 +15,7 @@ import { CREW } from "@/agents/crew";
 import { AGENT_ICONS } from "@/lib/agent-icons";
 import { MoonStar } from "lucide-react";
 import { BriefingCard } from "@/components/BriefingCard";
+import { MorningCheckin } from "@/components/MorningCheckin";
 import { LensShell, type LensId } from "@/components/lenses/LensShell";
 import { WorldLens } from "@/components/lenses/WorldLens";
 import { CrewFeed, type LogEntry } from "@/components/CrewFeed";
@@ -315,10 +316,6 @@ export default function Home() {
   }, [dispatch, handleSideEffects, push, reset, run.phase, tripQuery, checkInsParam, startDayParam]);
 
   const startShift = useCallback(() => beginStream(), [beginStream]);
-  const startMorning = useCallback(() => beginStream({
-    checkins: btoa(JSON.stringify([{ id: "ci-1", dayIndex: 1, kind: "light_exposure", startMin: 300, status: "skipped", text: "couldn't face 5am light", at: Date.now() }])),
-    startDay: 2,
-  }), [beginStream]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -397,14 +394,7 @@ export default function Home() {
             cancel
           </button>
         )}
-        {run.phase === "done" && (
-          <button
-            onClick={startMorning}
-            className="shrink-0 rounded-lg border border-[#ffc46b44] bg-[#ffc46b11] px-3 py-2 text-xs font-bold text-[#ffc46b] transition-colors hover:bg-[#ffc46b22]"
-          >
-            Morning check-in · D-2 07:10
-          </button>
-        )}
+        <MorningCheckin phase={run.phase} onCheckIn={(extra) => beginStream(extra)} />
 
         <div className="relative ml-auto shrink-0" ref={menuRef}>
           <button

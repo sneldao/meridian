@@ -400,12 +400,12 @@ CalendarLens day headers aren't offset by the 32 px hour gutter.
 7. Checks: cold load shows hero (no modal), header fits 1200px, no agent/state color clash. `48 pass / 0 fail`, `typecheck` + `lint` clean (verified 13:20).
 
 **Dev 3 · Proof & ship — verification + deploy**
-1. New `src/components/MorningCheckin.tsx` — extract `startMorning()` (`page.tsx:304`) into an always-visible `Morning check-in · D-2 07:10` button (currently only after `done`). Dev 2 mounts it. Reducer already dissolves dropped rows; confirm ShiftBoard fade-out → re-draft visibly. **Not started.**
+1. ✅ **Done (13:25, committed)** — new `src/components/MorningCheckin.tsx` (`buildMorningCheckIn` + always-visible `Morning check-in · D-2 07:10` button, hidden only on `idle`, disabled while running); `page.tsx` mounts it (`<MorningCheckin phase onCheckIn>`), inline `startMorning` deleted. NOTE: the in-flight `voice-bus` audio fix (`src/lib/voice-bus.ts` + voice hunks) was deliberately left OUT of this commit — it lives on in the working tree for its author to finish/test/commit separately.
 2. ✅ **Verified live by dev A, 13:00** — westward route (`LHR→JFK`): 5h west computed correctly, 5/5 days locked, 3 calendar moves, readiness badge correct (*"body thinks it's 19:00; with the plan, 14:00. Ready."*). `/team`: 12-crew concurrent stream ran twice live, no console errors, no `CITY_TABLE` crash. Check-in → replan dissolve: ran live, D-1/Flight/D+1 re-drafted and re-locked cleanly, no stale rows. **Don't re-verify — move straight to items 3–6.**
 3. Stage machine: `REPLAY_BEAT_MS=300` in `.env.local` (~40 s, narratable). Keep `60` for tests/fixtures. **Not started** — deliberately held off so it doesn't slow down everyone else's dev loop before freeze; do this at 14:15.
-4. Live risk: two Anthropic rehearsals + record sped-up backup. If shaky, demo on `replay` and say so. **Not started — highest remaining risk, nothing watched on the live provider yet.**
-5. Deploy public URL on `AGENT_PROVIDER=replay` (config, not code) — see [commercial.md](commercial.md). Update `docs/demo.md` stage path if anything changed. **Not started — needs a host/account decision first.**
-6. Checks: `bun test`, `bun run smoke` (night + morning SSE), westward + team watched live (✅ already done, see item 2).
+4. Live risk: two Anthropic rehearsals + record sped-up backup. If shaky, demo on `replay` and say so. **Owner: pitch lead (you) — not started, highest remaining risk.**
+5. Deploy public URL on `AGENT_PROVIDER=replay` (config, not code) — see [commercial.md](commercial.md). Update `docs/demo.md` stage path if anything changed. **Not started — needs a host/account decision first (discussing next).**
+6. Checks (13:25): `bun test` 48 pass, `typecheck` + `lint` clean. `bun run smoke` not run (needs a live dev server; will run against the stage machine once the beat flips).
 
 **Merge order:** 1 → 2 → 3 (integrity first, look second, proof last). Stage own files only (`git add <paths>`), never `git add -A`.
 
