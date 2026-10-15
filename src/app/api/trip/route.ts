@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ADHERENCE_PROFILE, CITY_TABLE, DEMO_TRIP, GARMIN_BASELINE, buildTrip } from "@/domain/fixtures";
-import { buildCalendar } from "@/tools/calendar";
+import { ADHERENCE_PROFILE, CITY_TABLE, GARMIN_BASELINE, buildTrip } from "@/domain/fixtures";
+import { fetchCalendar } from "@/tools/calendar";
 import { providerKind } from "@/agents/providers";
 
 export const dynamic = "force-dynamic";
@@ -27,11 +27,13 @@ export async function GET(req: NextRequest) {
   }
 
   const trip = buildTrip(originRaw, destRaw, date);
+  const cal = await fetchCalendar(trip);
   return NextResponse.json({
     trip,
     baseline: GARMIN_BASELINE,
     adherence: ADHERENCE_PROFILE,
-    calendar: buildCalendar(trip),
+    calendar: cal.events,
+    calendarSource: cal.source,
     provider: providerKind(),
   });
 }

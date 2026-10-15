@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
-import { CITY_TABLE, DEMO_TRIP, buildTrip } from "@/domain/fixtures";
-import { buildCalendar } from "@/tools/calendar";
+import { CITY_TABLE, buildTrip } from "@/domain/fixtures";
+import { fetchCalendar } from "@/tools/calendar";
 import { runCrew } from "@/agents/runtime";
 import type { CheckIn } from "@/domain/types";
 
@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
   }
 
   const trip = buildTrip(originRaw, destRaw, date);
-  const calendar = buildCalendar(trip);
+  const { events: calendar, source: calendarSource } = await fetchCalendar(trip);
 
   let checkIns: CheckIn[] = [];
   const rawCI = sp.get("checkins");
@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
   const stream = new ReadableStream({
     async start(controller) {
       try {
-        for await (const event of runCrew({ trip, calendar, checkIns, startDayIndex })) {
+        for await (const event of runCrew({ trip, calendar, calendarSource, checkIns, startDayIndex })) {
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
         }
       } catch (err) {

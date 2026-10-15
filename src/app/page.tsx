@@ -34,6 +34,36 @@ interface Briefing {
 
 type Phase = "idle" | "running" | "done";
 
+// Voice pump — module-level because it only touches refs; keeps the agent
+// utterances sequential instead of talking over each other.
+function pumpVoice(
+  queue: { agent: string; text: string }[],
+  audioSlot: { current: HTMLAudioElement | null },
+) {
+  if (audioSlot.current || !queue.length) return;
+  const job = queue.shift()!;
+  fetch("/api/voice", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(job),
+  })
+    .then(async (r) => {
+      if (!r.ok) return pumpVoice(queue, audioSlot);
+      const url = URL.createObjectURL(await r.blob());
+      const a = new Audio(url);
+      audioSlot.current = a;
+      const done = () => {
+        audioSlot.current = null;
+        URL.revokeObjectURL(url);
+        pumpVoice(queue, audioSlot);
+      };
+      a.onended = done;
+      a.onerror = done;
+      a.play().catch(done);
+    })
+    .catch(() => pumpVoice(queue, audioSlot));
+}
+
 export default function Home() {
   const [origin, setOrigin] = useState("LHR");
   const [dest, setDest] = useState("HND");
@@ -57,6 +87,24 @@ export default function Home() {
   const [runCount, setRunCount] = useState(0);
   const [providerFallback, setProviderFallback] = useState(false);
   const esRef = useRef<EventSource | null>(null);
+  const [voiceOn, setVoiceOn] = useState(true);
+  const voiceOnRef = useRef(true);
+  const utterRef = useRef<Record<string, string>>({});
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const voiceQueueRef = useRef<{ agent: string; text: string }[]>([]);
+
+  const speak = useCallback((agent: string, text: string) => {
+    if (!text.trim() || !voiceOnRef.current) return;
+    voiceQueueRef.current.push({ agent, text: text.trim() });
+    pumpVoice(voiceQueueRef.current, audioRef);
+  }, []);
+
+  const stopVoice = useCallback(() => {
+    voiceQueueRef.current = [];
+    utterRef.current = {};
+    audioRef.current?.pause();
+    audioRef.current = null;
+  }, []);
 
   useEffect(() => {
     fetch("/api/trip" + tripQuery)
@@ -101,6 +149,7 @@ export default function Home() {
     (e: CrewEvent) => {
       switch (e.type) {
         case "run_start":
+          stopVoice();
           setEntries([{ kind: "system", text: "shift started — crew assembling" }]);
           setSunProgress(0);
           setLockedDays(new Map());
@@ -118,6 +167,7 @@ export default function Home() {
           push({ kind: "agent", agent: e.agent, title: e.title });
           break;
         case "agent_token":
+          utterRef.current[e.agent] = (utterRef.current[e.agent] ?? "") + e.text;
           setEntries((prev) => {
             const last = prev[prev.length - 1];
             if (last?.kind === "text" && last.agent === e.agent) {
@@ -125,6 +175,10 @@ export default function Home() {
             }
             return [...prev, { kind: "text", agent: e.agent, text: e.text }];
           });
+          break;
+        case "agent_end":
+          speak(e.agent, utterRef.current[e.agent] ?? "");
+          utterRef.current[e.agent] = "";
           break;
         case "tool_call":
           push({ kind: "tool", agent: e.agent, text: `→ ${e.tool} ${e.detail}` });
@@ -165,6 +219,7 @@ export default function Home() {
           });
           break;
         case "briefing":
+          speak("evaluator", e.summary);
           setBriefing({ summary: e.summary, score: e.score, citations: e.citations, days: e.days, ics: e.ics });
           setBriefingDismissed(false);
           setHasSavedPlan(true);
@@ -212,14 +267,15 @@ export default function Home() {
           break;
       }
     },
-    [push],
+    [push, speak, stopVoice, data, providerFallback],
   );
 
   const cancelShift = useCallback(() => {
     esRef.current?.close();
+    stopVoice();
     setPhase("done");
     push({ kind: "system", text: "shift cancelled by operator" });
-  }, [push]);
+  }, [push, stopVoice]);
 
   const startShift = useCallback(() => {
     if (phase === "running") return;
@@ -316,6 +372,21 @@ export default function Home() {
               {data.provider}{providerFallback ? " · fallback" : ""}
             </div>
           )}
+          <button
+            onClick={() => {
+              const next = !voiceOn;
+              voiceOnRef.current = next;
+              setVoiceOn(next);
+              if (!next) stopVoice();
+            }}
+            className={`rounded-lg border px-3 py-1.5 font-mono2 text-[11px] transition-colors ${
+              voiceOn
+                ? "border-[#7adfff44] bg-[#0c1018] text-[#7adfff] hover:border-[#7adfff]"
+                : "border-[#1e2637] bg-[#0c1018] text-[#4a5470] hover:border-[#8b93a7]"
+            }`}
+          >
+            voice {voiceOn ? "on" : "off"}
+          </button>
           <button
             onClick={startShift}
             disabled={phase === "running"}
