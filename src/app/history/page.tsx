@@ -10,6 +10,8 @@ interface HistEntry {
   score: number;
   summary: string;
   days: { label: string; shiftMin: number }[];
+  provider?: string;
+  fallback?: boolean;
 }
 
 export default function HistoryPage() {
@@ -69,7 +71,11 @@ export default function HistoryPage() {
               <div className="font-mono2 text-[12px] text-[#e8eaf2]">
                 {it.trip ? `${it.trip.origin.code} → ${it.trip.destination.code} · ${Math.abs(it.trip.requiredShiftMin / 60)}h ${it.trip.direction}` : "Demo trip"}
               </div>
-              <div className="font-mono2 text-[12px] text-[#b8e356]">{it.score.toFixed(2)}</div>
+              <div className="flex items-center gap-2">
+                {it.provider && <span className="font-mono2 text-[10px] text-[#8b93a7]">{it.provider}</span>}
+                {it.fallback && <span className="rounded bg-[#ff7a7a22] px-1.5 py-0.5 text-[10px] text-[#ff7a7a]">fallback</span>}
+                <div className="font-mono2 text-[12px] text-[#b8e356]">{it.score.toFixed(2)}</div>
+              </div>
             </div>
             <div className="mt-1 text-[10px] text-[#4a5470]">{new Date(it.savedAt).toLocaleString()}</div>
             <div className="mt-2 text-[11px] text-[#8b93a7]">{it.summary}</div>

@@ -1,17 +1,35 @@
-import { NextRequest, NextResponse } from "next/server";
-import { parseCheckInText } from "@/domain/adherence";
-import { recordCheckIn } from "@/domain/memory";
+import { NextResponse } from "next/server";
+import { foldCheckIns, parseCheckInText } from "@/domain/adherence";
+import { listCheckIns, recordCheckIn } from "@/domain/memory";
+import { ADHERENCE_PROFILE } from "@/domain/fixtures";
+import type { CheckInRequest } from "@/domain/types";
 
 export const dynamic = "force-dynamic";
 
-export async function POST(req: NextRequest) {
-  let body: unknown = {};
+// Record what the wearer actually did. Free text ("skipped the 5am light")
+// parses into a structured check-in; structured fields pass straight through.
+// GET returns the history so the UI can show what the crew knows.
+
+export async function POST(req: Request) {
+  let body: CheckInRequest;
   try {
-    body = await req.json();
+    body = (await req.json()) as CheckInRequest;
   } catch {
-    body = {};
+    return NextResponse.json({ ok: false, error: "Invalid JSON" }, { status: 400 });
   }
-  const checkIn = parseCheckInText(body as { text?: string; dayIndex?: number });
-  await recordCheckIn(checkIn);
-  return NextResponse.json({ checkIn });
+  if (!body.text && !body.status) {
+    return NextResponse.json({ ok: false, error: "Provide text or status" }, { status: 400 });
+  }
+
+  const checkIn = parseCheckInText(body);
+  const memory = await recordCheckIn(checkIn);
+  const adherence = foldCheckIns(ADHERENCE_PROFILE, memory.checkIns);
+
+  return NextResponse.json({ ok: true, checkIn, adherence, learned: memory.learned });
+}
+
+export async function GET() {
+  const checkIns = await listCheckIns();
+  const adherence = foldCheckIns(ADHERENCE_PROFILE, checkIns);
+  return NextResponse.json({ checkIns, adherence });
 }

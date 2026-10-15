@@ -43,6 +43,7 @@ bun run dev                   # http://localhost:3000
 - [Scoring](docs/scoring.md) — the deterministic gate every plan must pass
 - [Providers](docs/providers.md) — replay / anthropic / featherless, env vars, fallbacks
 - [Demo runbook](docs/demo.md) — stage path, pacing, localStorage keys, troubleshooting
+- [Design vision](docs/design-vision.md) — the Ghost Terminator, immersive-world plan, build tiers, current UI fixes
 
 ## Checks
 

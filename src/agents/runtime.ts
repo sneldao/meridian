@@ -406,7 +406,7 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
     lockedDays: state.lockedDays.length,
     meanScore,
   });
-  await persistArtifacts(state, trip);
+  await persistArtifacts(state, trip, calendarSource);
   emit({ type: "done" });
 }
 
@@ -510,11 +510,11 @@ function summarizeOutput(output: unknown): string {
   return "ok";
 }
 
-async function persistArtifacts(state: RunState, trip: Trip) {
+async function persistArtifacts(state: RunState, trip: Trip, calendarSource: string) {
   await mkdir(ARTIFACTS_DIR, { recursive: true });
   await writeFile(
     path.join(ARTIFACTS_DIR, "shift-plan.json"),
-    JSON.stringify({ trip, days: state.lockedDays }, null, 2),
+    JSON.stringify({ trip, days: state.lockedDays, provider: providerKind(), calendarBackend: calendarSource }, null, 2),
   );
   await writeFile(
     path.join(ARTIFACTS_DIR, "shift-log.json"),

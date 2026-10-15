@@ -12,9 +12,10 @@ interface Props {
   days: DayPlan[];
   ics: string;
   onClose: () => void;
+  fallback?: boolean;
 }
 
-export function BriefingCard({ summary, score, citations, days, ics, onClose }: Props) {
+export function BriefingCard({ summary, score, citations, days, ics, onClose, fallback }: Props) {
   // One action, not an information dump — surface the single next ask.
   const firstMove = days
     .flatMap((d) => d.interventions.map((iv) => ({ day: d, iv })))
@@ -48,6 +49,11 @@ export function BriefingCard({ summary, score, citations, days, ics, onClose }: 
           <div className="text-[10px] font-bold tracking-[0.2em] text-[#ffc46b] uppercase">
             Morning handoff
           </div>
+          {fallback && (
+            <div className="mt-2 rounded-md border border-[#ff7a7a44] bg-[#ff7a7a11] px-2.5 py-1.5 text-[11px] text-[#ff7a7a]">
+              Fell back to the recorded shift mid-run — review before acting.
+            </div>
+          )}
           <p className="mt-1.5 text-sm leading-relaxed text-[#e8eaf2]">{summary}</p>
 
           {firstMove && (

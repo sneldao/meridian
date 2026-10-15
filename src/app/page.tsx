@@ -189,6 +189,8 @@ export default function Home() {
               score: e.score,
               summary: e.summary,
               days: e.days,
+              provider: data?.provider,
+              fallback: providerFallback,
             };
             const prev = (() => {
               try { return JSON.parse(localStorage.getItem("meridian:history") || "[]"); } catch { return []; }
@@ -337,6 +339,11 @@ export default function Home() {
       </header>
 
       {/* main grid */}
+      {providerFallback && (
+        <div className="mb-3 rounded-lg border border-[#ff7a7a44] bg-[#ff7a7a11] px-4 py-2 text-[12px] text-[#ff7a7a]">
+          Crew fell back mid-run — review the plan before acting.
+        </div>
+      )}
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[1.6fr_1fr]">
         <div className="relative flex min-h-0 flex-col gap-3">
           <div className="relative min-h-0 flex-1 overflow-hidden rounded-2xl border border-[#1e2637]">
@@ -357,6 +364,7 @@ export default function Home() {
                 citations={briefing.citations}
                 days={briefing.days}
                 ics={briefing.ics}
+                fallback={providerFallback}
                 onClose={() => setBriefingDismissed(true)}
               />
             )}
