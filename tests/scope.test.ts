@@ -65,5 +65,18 @@ describe("scope guard", () => {
       const guard = new ScopeGuard(32);
       expect(guard.push("short")).toBe("");
     });
+
+    test("two separate spans in one push redact cleanly, without corrupting the text between them", () => {
+      const guard = new ScopeGuard(10);
+      const text =
+        "Take 5 mg now, take 3 mg later, light at 07:00 continues fine after this padding text";
+      const shown = guard.push(text) + guard.flush();
+      expect(shown).not.toContain("5 mg");
+      expect(shown).not.toContain("3 mg");
+      expect(shown).toContain("now, take");
+      expect(shown).toContain("later, light at 07:00 continues fine");
+      // exactly two redaction markers — neither span ate the other's text
+      expect(shown.split("[withheld: outside crew scope]")).toHaveLength(3);
+    });
   });
 });

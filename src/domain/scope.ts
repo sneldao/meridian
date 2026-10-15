@@ -123,15 +123,22 @@ export class ScopeGuard {
   }
 
   /** Redact spans intersecting [0, cut); spans reaching past cut are redacted
-   *  up to cut and complete naturally once their tail is scrubbed. */
+   *  up to cut and complete naturally once their tail is scrubbed.
+   *
+   *  Builds the output with a cursor into the *original* text rather than
+   *  re-slicing the already-redacted head: start/end indices are only valid
+   *  against `text`, and REDACTION's length differs from what it replaces,
+   *  so a second span's offset would land in the wrong place once the first
+   *  redaction had already shortened (or lengthened) `head`. */
   private redactUpTo(text: string, cut: number): string {
-    const spans = unsafeSpans(text);
-    let head = text.slice(0, cut);
-    for (const [start, end] of merge(spans)) {
-      if (start >= cut) break;
-      if (start < head.length) head = head.slice(0, start) + REDACTION;
-      void end;
+    const spans = merge(unsafeSpans(text)).filter(([start]) => start < cut);
+    let out = "";
+    let cursor = 0;
+    for (const [start, end] of spans) {
+      out += text.slice(cursor, start) + REDACTION;
+      cursor = end;
+      if (cursor >= cut) return out; // tail of this span is still in the buffer
     }
-    return head;
+    return out + text.slice(cursor, cut);
   }
 }
