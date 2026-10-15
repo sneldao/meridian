@@ -32,6 +32,21 @@ export function CrewFeed({ entries }: { entries: LogEntry[] }) {
       aria-label="Crew activity feed"
       className="scroll-thin h-full overflow-y-auto pr-2 font-mono2 text-[12px] leading-relaxed"
     >
+      {entries.length === 0 && (
+        <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
+          <div className="text-[12px] text-[#e8eaf2]">The crew is on standby.</div>
+          <p className="max-w-xs text-[11px] leading-relaxed text-[#8b93a7]">
+            Start the night shift and you&apos;ll see each agent think, research and check its work here, in order.
+          </p>
+          <div className="mt-1 flex flex-wrap justify-center gap-x-3 gap-y-1 text-[10px] text-[#4a5470]">
+            <span>Mara · analyst</span>
+            <span>Jun · research</span>
+            <span>Otto · planner</span>
+            <span>Iris · eval</span>
+            <span>Rex · negotiator</span>
+          </div>
+        </div>
+      )}
       {entries.map((e, i) => {
         switch (e.kind) {
           case "agent":
