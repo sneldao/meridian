@@ -18,6 +18,8 @@ passes(result) = result.feasible && result.score >= PASS_SCORE   // 0.75
 | `LIGHT_WRONG_WINDOW` | Light exposure inside the wrong phase-response window |
 | `CAFFEINE_TOO_LATE` | Caffeine cutoff inside 8 h of target bedtime |
 | `CALENDAR_CONFLICT` | Intervention overlaps a calendar event (wrap-aware; `meal_timing` is exempt — meals are supposed to coincide) |
+| `DOSE_PRESCRIPTION` | Note prescribes a dose or names medication — the crew advises on timing, never medication |
+| `UNSAFE_CLAIM` | Note makes a clinical claim (cure/treat/diagnose/proven-to-fix) |
 
 ## Soft score (`feasible = true`)
 

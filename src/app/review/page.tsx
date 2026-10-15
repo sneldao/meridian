@@ -144,6 +144,7 @@ export default function ReviewPage() {
         <button onClick={downloadMarkdown} className="rounded-lg border border-line bg-ink-2 px-4 py-2 text-xs font-bold text-paper transition-colors hover:border-mist">Export markdown</button>
         <button onClick={clearPlan} className="rounded-lg px-4 py-2 text-xs text-mist transition-colors hover:text-rose">Clear saved plan</button>
         <Link href="/outcome" className="rounded-lg border border-line bg-ink-2 px-4 py-2 text-xs text-mist transition-colors hover:text-paper">Log outcome</Link>
+        <ReplanLink trip={trip} />
       </div>
 
       <section className="mt-8 space-y-4">
@@ -213,5 +214,29 @@ export default function ReviewPage() {
         </section>
       )}
     </main>
+  );
+}
+function ReplanLink({ trip }: { trip: SavedTrip | null }) {
+  let href = "/";
+  try {
+    const checkIns = JSON.parse(localStorage.getItem("meridian:checkins") || "[]");
+    if (checkIns.length) {
+      const params = new URLSearchParams();
+      if (trip?.origin?.code) params.set("origin", trip.origin.code);
+      if (trip?.destination?.code) params.set("dest", trip.destination.code);
+      // Review doesn't persist the departure date; fall back to today's ISO date never,
+      // so leave date to home defaults if absent.
+      params.set("checkins", btoa(JSON.stringify(checkIns)));
+      params.set("startDay", "0");
+      href = "/?" + params.toString();
+    }
+  } catch {
+    /* ignore */
+  }
+  if (href === "/") return null;
+  return (
+    <Link href={href} className="rounded-lg border border-line bg-ink-2 px-4 py-2 text-xs text-mist transition-colors hover:text-paper">
+      Replan with check-ins
+    </Link>
   );
 }

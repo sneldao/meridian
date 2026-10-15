@@ -45,6 +45,17 @@ export default function HistoryPage() {
           <h1 className="mt-2 text-lg font-bold tracking-[0.3em] text-[#e8eaf2]">TRIP HISTORY</h1>
         </div>
         <button onClick={clear} className="text-[10px] text-[#8b93a7] hover:text-[#ff7a7a]">clear</button>
+        <button
+          onClick={() => {
+            ["meridian:lastPlan","meridian:lastTrip","meridian:history","meridian:outcomes","meridian:checkins"].forEach((k) => {
+              try { localStorage.removeItem(k); } catch {}
+            });
+            setItems([]);
+          }}
+          className="ml-3 text-[10px] text-[#8b93a7] hover:text-[#ff7a7a]"
+        >
+          reset all
+        </button>
       </header>
 
       {items.length === 0 && (

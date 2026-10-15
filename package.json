@@ -9,7 +9,9 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "replay:check": "bun scripts/replay-check.ts"
+    "replay:check": "bun scripts/replay-check.ts",
+    "test": "bun test",
+    "smoke": "bun scripts/smoke.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "4.0.80",

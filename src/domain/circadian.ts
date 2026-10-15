@@ -133,6 +133,29 @@ export function evaluatePlan(input: EvalInput): EvalResult {
       }
     }
 
+    // --- Scope gate ---------------------------------------------------------
+    // The crew advises on timing and evidence, never on dosing or medicine.
+    // Notes that prescribe a dose or make clinical claims fail hard — the same
+    // boundary a production health product would enforce before anything
+    // reaches a user.
+    for (const iv of day.interventions) {
+      const note = iv.note.toLowerCase();
+      if (/\b\d+(\.\d+)?\s*(mg|mcg|g|iu|milligram|microgram)\b/.test(note) || /\b(take|prescribe|dose of)\b.{0,20}\b(melatonin|pill|tablet|supplement)\b/.test(note)) {
+        violations.push({
+          code: "DOSE_PRESCRIPTION",
+          dayIndex: day.dayIndex,
+          message: `${day.label}: "${iv.note.slice(0, 60)}" prescribes a dose — the crew advises on timing, not medication.`,
+        });
+      }
+      if (/\b(cure|cures|treats?|diagnos|prevents? disease|medical advice|clinically proven to fix)\b/.test(note)) {
+        violations.push({
+          code: "UNSAFE_CLAIM",
+          dayIndex: day.dayIndex,
+          message: `${day.label}: "${iv.note.slice(0, 60)}" makes a clinical claim — cite evidence, never diagnose or prescribe.`,
+        });
+      }
+    }
+
     // --- Adherence ----------------------------------------------------------
     // Only the candidate day's asks count against the gate — previously
     // locked days were already accepted, re-punishing them would make every

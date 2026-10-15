@@ -41,6 +41,7 @@ per day and may need tuning.
 | `meridian:history` | `/` on briefing → read by `/history` |
 | `meridian:onboarded` | `/` onboarding dismiss |
 | `meridian:outcomes` | `/outcome` submissions |
+| `meridian:checkins` | `/outcome` (structured via `/api/crew/checkin`) → read by replan runs |
 
 ## Troubleshooting
 

@@ -38,6 +38,8 @@ export default function Home() {
   const [origin, setOrigin] = useState("LHR");
   const [dest, setDest] = useState("HND");
   const [departureDate, setDepartureDate] = useState("2026-10-18");
+  const [checkInsParam, setCheckInsParam] = useState("");
+  const [startDayParam, setStartDayParam] = useState(0);
   const tripQuery = `?origin=${origin}&dest=${dest}&date=${departureDate}`;
   const [data, setData] = useState<TripData | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
@@ -66,6 +68,15 @@ export default function Home() {
       try {
         setHasSavedPlan(Boolean(localStorage.getItem("meridian:lastPlan")));
         setShowOnboarding(!localStorage.getItem("meridian:onboarded"));
+        if (typeof window !== "undefined") {
+          const sp = new URLSearchParams(window.location.search);
+          if (sp.get("origin")) setOrigin(sp.get("origin")!);
+          if (sp.get("dest")) setDest(sp.get("dest")!);
+          if (sp.get("date")) setDepartureDate(sp.get("date")!);
+          if (sp.get("checkins")) setCheckInsParam(sp.get("checkins")!);
+          const sd = Number(sp.get("startDay"));
+          if (!Number.isNaN(sd)) setStartDayParam(sd);
+        }
       } catch {
         /* ignore */
       }
@@ -209,7 +220,10 @@ export default function Home() {
     setPhase("running");
     setEntries([]);
     setBriefing(null);
-    const es = new EventSource("/api/crew/run" + tripQuery);
+    const params = new URLSearchParams(tripQuery.replace(/^\?/, ""));
+    if (checkInsParam) params.set("checkins", checkInsParam);
+    if (startDayParam) params.set("startDay", String(startDayParam));
+    const es = new EventSource("/api/crew/run?" + params.toString());
     esRef.current = es;
     es.onmessage = (m) => handleEvent(JSON.parse(m.data) as CrewEvent);
     es.onerror = () => {
@@ -217,7 +231,7 @@ export default function Home() {
       setPhase("done");
       es.close();
     };
-  }, [handleEvent, phase, push, tripQuery]);
+  }, [handleEvent, phase, push, tripQuery, checkInsParam, startDayParam]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
