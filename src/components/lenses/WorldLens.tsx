@@ -50,7 +50,15 @@ const worldGeo = feature(
 const hhmm = (min: number) =>
   `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
 
-export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0 }: Props) {
+/** DaySpec index for a Board label ("D-3".."D+1", "Flight"). Unknown → null. */
+function dayIndexForLabel(label: string): number | null {
+  if (label === "Flight") return 3;
+  const m = label.match(/^D([+-])(\d+)$/);
+  if (!m) return null;
+  return m[1] === "-" ? 3 - Number(m[2]) : 3 + Number(m[2]);
+}
+
+export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0, activeLabel }: Props) {
   const reduce = useReducedMotion();
   const [now, setNow] = useState(() => new Date());
   const svgRef = useRef<SVGSVGElement>(null);
@@ -396,7 +404,9 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
             />
           )}
 
-          {/* the ghost terminator — where your body thinks the sun is */}
+          {/* the ghost terminator — where your body thinks the sun is.
+              While the crew is working (running, gap still open) the dash
+              marches — motion that says "working" without needing to read. */}
           {ghostPath && (
             <path
               d={ghostPath}
@@ -405,7 +415,11 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
               strokeWidth={1.6}
               strokeDasharray="7 5"
               opacity={0.85}
-            />
+            >
+              {!reduce && running && ghostGap > 0 && (
+                <animate attributeName="stroke-dashoffset" values="0;-24" dur="1.1s" repeatCount="indefinite" />
+              )}
+            </path>
           )}
 
           {/* flight arc — true great circle */}
@@ -425,10 +439,26 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
             </path>
           )}
 
-          {/* origin / destination / you — inverse-scaled so zoom never eats them */}
+          {/* origin / destination / you — inverse-scaled so zoom never eats them.
+              While a day is being planned or judged, its endpoints pulse so a
+              judge parked on World still sees where the work is happening. */}
           {trip && originXY && (
             <g transform={`translate(${originXY[0]} ${originXY[1]}) scale(${invScale})`}>
-              <circle r={5} fill="var(--color-sun-home)" stroke="var(--color-paper)" strokeWidth={1.4} />
+              {(() => {
+                const dayIdx = activeLabel ? dayIndexForLabel(activeLabel) : null;
+                const isOriginActive = running && dayIdx !== null && dayIdx <= trip.departureDayIndex;
+                return (
+                  <>
+                    {!reduce && isOriginActive && (
+                      <circle r={5} fill="none" stroke="var(--color-sun-home)" strokeWidth={1.2} opacity={0.7}>
+                        <animate attributeName="r" values="5;11;5" dur="1.6s" repeatCount="indefinite" />
+                        <animate attributeName="opacity" values="0.7;0.1;0.7" dur="1.6s" repeatCount="indefinite" />
+                      </circle>
+                    )}
+                    <circle r={5} fill="var(--color-sun-home)" stroke="var(--color-paper)" strokeWidth={1.4} />
+                  </>
+                );
+              })()}
               <text
                 y={18}
                 textAnchor="middle"
@@ -443,7 +473,21 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
           )}
           {trip && destXY && (
             <g transform={`translate(${destXY[0]} ${destXY[1]}) scale(${invScale})`}>
-              <circle r={6.5} fill="var(--color-sun-dest)" stroke="#fff3d6" strokeWidth={1.4} />
+              {(() => {
+                const dayIdx = activeLabel ? dayIndexForLabel(activeLabel) : null;
+                const isDestActive = running && dayIdx !== null && dayIdx > trip.departureDayIndex;
+                return (
+                  <>
+                    {!reduce && isDestActive && (
+                      <circle r={6.5} fill="none" stroke="var(--color-sun-dest)" strokeWidth={1.2} opacity={0.7}>
+                        <animate attributeName="r" values="6.5;13;6.5" dur="1.6s" repeatCount="indefinite" />
+                        <animate attributeName="opacity" values="0.7;0.1;0.7" dur="1.6s" repeatCount="indefinite" />
+                      </circle>
+                    )}
+                    <circle r={6.5} fill="var(--color-sun-dest)" stroke="#fff3d6" strokeWidth={1.4} />
+                  </>
+                );
+              })()}
               <text
                 y={21}
                 textAnchor="middle"
