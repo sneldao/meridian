@@ -59,13 +59,19 @@ export default function TeamPage() {
   }, [open]);
 
   const done = TEAM_TRAVELLERS.filter((t) => runs.get(t.id)?.phase === "done").length;
-  const atRisk = TEAM_TRAVELLERS.filter((t) => {
+  const riskOf = (t: (typeof TEAM_TRAVELLERS)[number]) => {
     const r = runs.get(t.id);
     if (!r) return false;
     return meetingReadiness(r.trip ?? teamTrip(t), calendarWithMoves(r), [...r.locked.values()]).some(
       (x) => x.status === "risk",
     );
-  }).length;
+  };
+  const atRisk = TEAM_TRAVELLERS.filter(riskOf).length;
+  // Once the run is over, at-risk crews lead. While streaming the order stays put
+  // so tiles don't jump under the cursor.
+  const ordered = streaming
+    ? TEAM_TRAVELLERS
+    : [...TEAM_TRAVELLERS].sort((a, b) => Number(riskOf(b)) - Number(riskOf(a)));
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-8 font-mono2 text-[#e8eaf2]">
@@ -77,8 +83,10 @@ export default function TeamPage() {
           <h1 className="mt-2 text-lg font-bold tracking-[0.3em]">TEAM · 12 CREWS</h1>
           <p className="mt-1 text-[11px] text-[#8b93a7]">
             {streaming
-              ? "Twelve crews running in parallel, one stream."
-              : "Run finished. Each tile is a complete crew run."}
+              ? runs.size === 0
+                ? "Connecting the twelve crews…"
+                : "Twelve crews running in parallel, one stream."
+              : "Run finished. At-risk crews are listed first."}
           </p>
         </div>
         <div className="text-right text-[11px] text-[#8b93a7]">
@@ -94,13 +102,17 @@ export default function TeamPage() {
             {streaming ? "running…" : "run the team again"}
           </button>
           <div className="mt-1 text-[10px] text-[#4a5470]">
-            Pricing hypothesis: about £20–30 per traveller per month.
+            ~£25/traveller/mo →{" "}
+            <span className="font-bold text-[#8b93a7]">
+              £{TEAM_TRAVELLERS.length * 25}/mo for this team
+            </span>{" "}
+            <span className="text-[#3a4358]">(hypothesis)</span>
           </div>
         </div>
       </header>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {TEAM_TRAVELLERS.map((t) => {
+        {ordered.map((t) => {
           const r = runs.get(t.id) ?? initialRunState();
           const trip = r.trip ?? teamTrip(t);
           const readiness = meetingReadiness(trip, calendarWithMoves(r), [...r.locked.values()]);
