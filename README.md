@@ -38,6 +38,7 @@ run history server-side (project `vpeakvspljdoxbwfsdvw`, see
 
 | Path | What |
 |---|---|
+| `/pitch` | Slide deck — scrollytelling pitch, self-contained
 | `/` | Live crew run — lens shell (world/board/calendar/ledger), crew feed (SSE) |
 | `/review` | Saved plan: days, citations, .ics download |
 | `/history` | Past runs (with provider + fallback provenance) |

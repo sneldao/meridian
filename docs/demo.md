@@ -45,6 +45,7 @@ per day and may need tuning.
 
 ## Routes for the pitch
 
+- `/pitch` — the slide deck (scrollytelling, self-contained)
 - `/` — the run: sun-track scene + crew feed + eval verdict cards
 - `/review` — the artifact: plan, citations, `.ics` download (persists via
   localStorage, survives refresh)
