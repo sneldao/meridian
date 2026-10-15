@@ -63,7 +63,7 @@ export function scriptedDays(citations: Citation[]): DayPlan[] {
       targetWakeMin: 18 * 60 + 30,
       interventions: [
         { kind: "avoid_light", startMin: 11 * 60 + 20, endMin: 12 * 60 + 30, note: "Mask on from boarding — it's already night on the body's new clock." },
-        { kind: "sleep_window", startMin: 12 * 60 + 30, endMin: 18 * 60 + 30, note: "Sleep the middle sector — matches Tokyo night." },
+        { kind: "sleep_window", startMin: 12 * 60 + 30, endMin: 18 * 60 + 30, note: "Sleep the middle sector — matches destination night." },
         { kind: "light_exposure", startMin: 18 * 60 + 30, endMin: 20 * 60, note: "Cabin lights up + screen on for the last stretch — the arrival-morning anchor.", citationId: citations[2].id },
         { kind: "nap", startMin: 20 * 60 + 30, endMin: 21 * 60, note: "Optional 20min if destroyed — no more." },
       ],
@@ -75,10 +75,10 @@ export function scriptedDays(citations: Citation[]): DayPlan[] {
       targetBedtimeMin: 21 * 60,
       targetWakeMin: 5 * 60,
       interventions: [
-        { kind: "light_exposure", startMin: 5 * 60, endMin: 7 * 60, note: "Outside within 30min of waking — Tokyo does the work now.", citationId: citations[2].id },
+        { kind: "light_exposure", startMin: 5 * 60, endMin: 7 * 60, note: "Outside within 30min of waking — destination daylight does the work now.", citationId: citations[2].id },
         { kind: "caffeine_cutoff", startMin: 13 * 60, note: "Local-time cutoff, 8h before bed." },
         { kind: "exercise", startMin: 7 * 60 + 30, endMin: 8 * 60 + 15, note: "Light movement in daylight reinforces the anchor.", citationId: citations[0].id },
-        { kind: "sleep_window", startMin: 21 * 60, endMin: 5 * 60, note: "First full Tokyo night." },
+        { kind: "sleep_window", startMin: 21 * 60, endMin: 5 * 60, note: "First full night on destination time." },
       ],
     },
   ];

@@ -142,7 +142,12 @@ export function BriefingCard({ summary, score, citations, days, ics, onClose, fa
 
         <div className="shrink-0 text-right">
           <div className="font-mono2 text-3xl font-bold text-[#b8e356]">{score.toFixed(2)}</div>
-          <div className="text-[10px] tracking-widest text-[#8b93a7] uppercase">plan score</div>
+          <div
+            className="text-[10px] tracking-widest text-[#8b93a7] uppercase"
+            title="Mean of the passing eval verdicts across locked days — not the last day's score."
+          >
+            plan score · mean of {days.length} locked day{days.length === 1 ? "" : "s"}
+          </div>
           <button
             onClick={downloadIcs}
             className="mt-4 rounded-lg bg-[#ffc46b] px-4 py-2 text-xs font-bold text-[#07090f] transition-colors hover:bg-[#ffd98a]"

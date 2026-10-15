@@ -18,7 +18,7 @@ export type LogEntry =
 
 const agentColor = (id: AgentId) => CREW[id]?.color ?? "#8b93a7";
 
-export function CrewFeed({ entries }: { entries: LogEntry[] }) {
+export function CrewFeed({ entries, running }: { entries: LogEntry[]; running?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -66,13 +66,19 @@ export function CrewFeed({ entries }: { entries: LogEntry[] }) {
               </div>
             );
           }
-          case "text":
+          case "text": {
+            // Typing cursor marks the live edge only — the latest text entry
+            // while the run is streaming. Finished paragraphs stay still.
+            const isLiveEdge = running && i === entries.length - 1;
             return (
-              <p key={i} className="mb-1 line-clamp-2 text-[#e8eaf2]" title={e.text}>
+              <p key={i} className="mb-1 line-clamp-2 font-sans text-[13px] text-[#e8eaf2]" title={e.text}>
                 {e.text}
-                <span className="ml-0.5 inline-block h-3 w-1 animate-pulse bg-[#8b93a7] align-middle opacity-40" />
+                {isLiveEdge && (
+                  <span className="ml-0.5 inline-block h-3 w-1 animate-pulse bg-[#8b93a7] align-middle opacity-40" />
+                )}
               </p>
             );
+          }
           case "tool":
             return (
               <div key={i} className="pl-4 text-[#8b93a7]">

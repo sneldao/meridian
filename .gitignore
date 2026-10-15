@@ -6,3 +6,4 @@ out/
 next-env.d.ts
 artifacts/*.json
 !artifacts/.gitkeep
+artifacts/slides/
