@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { CrewEvent } from "../src/domain/types";
 import fixture from "../src/state/fixture-events.json";
-import { calendarAfter, dayStatus, ghostGapDeg, initialRunState, reduceRun, type StampedEvent } from "../src/state/run";
+import { calendarAfter, calendarWithMoves, dayStatus, ledgerEvents, ghostGapDeg, initialRunState, reduceRun, type StampedEvent } from "../src/state/run";
 
 const events = (fixture as unknown as { events: StampedEvent[] }).events;
 const replay = (n = events.length) =>
@@ -55,6 +55,27 @@ describe("run state reducer", () => {
     const start = replay(1);
     const end = replay();
     expect(ghostGapDeg(start)).toBeGreaterThan(ghostGapDeg(end));
+  });
+
+  test("director focus sees every beat even when events arrive in one batch", () => {
+    const run = replay();
+    const focusEvents = events.filter((e) =>
+      ["citation", "run_start", "plan_candidate", "eval_result", "day_locked", "briefing", "calendar_move", "error", "check_in", "replan"].includes(e.event.type),
+    ).length;
+    expect(run.focusSeq).toBe(focusEvents);
+    const firstMove = events.findIndex((e) => e.event.type === "calendar_move");
+    expect(replay(firstMove + 1).focus).toBe("calendar");
+  });
+
+  test("calendarWithMoves keeps the original slot and sets movedTo", () => {
+    const run = replay();
+    const cal = calendarWithMoves(run);
+    for (const m of run.moves) {
+      const e = cal.find((x) => x.id === m.eventId)!;
+      expect(e.startMin).toBe(m.from.startMin);
+      expect(e.movedTo?.startMin).toBe(m.to.startMin);
+    }
+    expect(ledgerEvents(run).some((e) => e.type === "agent_token")).toBe(false);
   });
 
   test("replan dissolves the dropped days", () => {

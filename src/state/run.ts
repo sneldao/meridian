@@ -79,8 +79,42 @@ export interface RunState {
   /** ms since run_start of the latest event. */
   elapsedMs: number;
 
+  /**
+   * Director focus: the lens the latest *meaningful* event belongs to, and a
+   * counter that bumps on every such event. Computed here, inside the reducer,
+   * because React batches fast event bursts — a `lastEvent` effect only sees
+   * the final event of a batch and misses plan_candidate / calendar_move.
+   *   useEffect(() => { if (auto && run.focus) setLens(run.focus) }, [run.focusSeq])
+   */
+  focus?: Focus;
+  focusSeq: number;
+
   lastEvent?: CrewEvent;
   log: StampedEvent[];
+}
+
+export type Focus = "world" | "board" | "calendar" | "ledger";
+
+/** Which lens an event belongs to (null = doesn't move the camera). */
+export function focusFor(event: CrewEvent): Focus | null {
+  switch (event.type) {
+    case "citation":
+    case "run_start":
+      return "world";
+    case "plan_candidate":
+    case "eval_result":
+    case "day_locked":
+    case "check_in":
+    case "replan":
+    case "briefing":
+      return "board";
+    case "calendar_move":
+      return "calendar";
+    case "error":
+      return "ledger";
+    default:
+      return null;
+  }
 }
 
 export const initialRunState = (): RunState => ({
@@ -102,6 +136,7 @@ export const initialRunState = (): RunState => ({
   attempts: 0,
   rejections: 0,
   elapsedMs: 0,
+  focusSeq: 0,
   log: [],
 });
 
@@ -119,6 +154,12 @@ const withoutSet = <T,>(s: Set<T>, v: T) => {
 
 /** Apply one event. Pure; never mutates `s`. */
 export function applyEvent(s: RunState, event: CrewEvent, t = s.elapsedMs): RunState {
+  const next = applyEventInner(s, event, t);
+  const f = focusFor(event);
+  return f ? { ...next, focus: f, focusSeq: s.focusSeq + 1 } : next;
+}
+
+function applyEventInner(s: RunState, event: CrewEvent, t: number): RunState {
   const base: RunState = { ...s, lastEvent: event, elapsedMs: t, log: [...s.log, { t, event }] };
 
   switch (event.type) {
@@ -268,6 +309,23 @@ export function calendarAfter(run: RunState): CalendarEvent[] {
     const m = byId.get(e.id);
     return m ? { ...e, dayIndex: m.to.dayIndex, startMin: m.to.startMin, endMin: m.to.endMin } : e;
   });
+}
+
+/**
+ * Original events with `movedTo` set from the negotiator's moves — the shape
+ * CalendarLens animates (ghost at the old slot, solid block at the new one).
+ */
+export function calendarWithMoves(run: RunState): CalendarEvent[] {
+  const byId = new Map(run.moves.map((m) => [m.eventId, m]));
+  return run.calendar.map((e) => {
+    const m = byId.get(e.id);
+    return m ? { ...e, movedTo: { ...m.to } } : e;
+  });
+}
+
+/** The ledger's events, oldest first, with streamed token fragments folded away. */
+export function ledgerEvents(run: RunState): CrewEvent[] {
+  return run.log.map((l) => l.event).filter((e) => e.type !== "agent_token");
 }
 
 export type DayStatus = "queued" | "draft" | "scanning" | "rejected" | "locked";
