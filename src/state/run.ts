@@ -8,7 +8,7 @@
 // Lenses take slices of `run` as props; see docs/hackathon-plan.md §3.
 
 import { useCallback, useReducer, useRef } from "react";
-import { passes } from "@/domain/circadian";
+import { passes, sunProgress } from "@/domain/circadian";
 import type {
   AgentId,
   CalendarEvent,
@@ -63,6 +63,15 @@ export interface RunState {
   locked: Map<string, DayPlan>;
   /** Days whose latest verdict failed and that are not (yet) locked. */
   rejected: Set<string>;
+  /**
+   * Days already lived when a morning replan starts. They come from the
+   * previous run's locks (same route), scaled by what the check-ins say was
+   * actually done, and stay in `locked` so readiness and the ghost gap count
+   * them. Render them as "lived", not editable.
+   */
+  lived: Set<string>;
+  /** The previous run's locks, kept across run_start for the morning carry-over. */
+  priorLocked?: { route: string; days: Map<string, DayPlan> };
 
   moves: CalendarMove[];
   citations: Citation[];
@@ -126,6 +135,7 @@ export const initialRunState = (): RunState => ({
   verdicts: new Map(),
   locked: new Map(),
   rejected: new Set(),
+  lived: new Set(),
   moves: [],
   citations: [],
   checkIns: [],
@@ -163,7 +173,13 @@ function applyEventInner(s: RunState, event: CrewEvent, t: number): RunState {
   const base: RunState = { ...s, lastEvent: event, elapsedMs: t, log: [...s.log, { t, event }] };
 
   switch (event.type) {
-    case "run_start":
+    case "run_start": {
+      // Keep the previous run's locks (merged over any older carry-over) so a
+      // morning replan on the same route can mark the lived days.
+      const route = routeKey(event.trip);
+      const prior = s.trip && routeKey(s.trip) === route
+        ? new Map([...(s.priorLocked?.route === route ? s.priorLocked.days : []), ...s.locked])
+        : undefined;
       return {
         ...initialRunState(),
         phase: "running",
@@ -171,10 +187,12 @@ function applyEventInner(s: RunState, event: CrewEvent, t: number): RunState {
         trip: event.trip,
         baseline: event.baseline,
         calendar: event.calendar,
+        priorLocked: prior?.size ? { route, days: prior } : undefined,
         lastEvent: event,
         elapsedMs: 0,
         log: [{ t: 0, event }],
       };
+    }
 
     case "agent_start":
       return { ...base, activeAgent: event.agent, utterance: { ...s.utterance, [event.agent]: "" } };
@@ -250,18 +268,27 @@ function applyEventInner(s: RunState, event: CrewEvent, t: number): RunState {
       return { ...base, checkIns: [...s.checkIns, event.checkIn] };
 
     case "replan": {
-      // Dropped days dissolve: their drafts, verdicts and locks go back to queued.
-      const dropped = new Set(
-        (s.trip?.days ?? []).filter((d) => event.droppedDays.includes(d.dayIndex)).map((d) => d.label),
-      );
-      const keep = <V,>(m: Map<string, V>) => new Map([...m].filter(([k]) => !dropped.has(k)));
+      // `droppedDays` are the days already lived (before the morning's start
+      // day): they're dropped from *planning*, not from the trip. Carry them
+      // over from the previous run, scaled by the check-ins. Every other day
+      // dissolves back to queued and is re-planned.
+      const days = s.trip?.days ?? [];
+      const lived = new Set(days.filter((d) => event.droppedDays.includes(d.dayIndex)).map((d) => d.label));
+      const keepLived = <V,>(m: Map<string, V>) => new Map([...m].filter(([k]) => lived.has(k)));
+      const locked = keepLived(s.locked);
+      for (const label of lived) {
+        const plan = locked.get(label) ?? s.priorLocked?.days.get(label);
+        if (plan) locked.set(label, asLived(plan, s.checkIns));
+      }
       return {
         ...base,
-        drafts: keep(s.drafts),
-        verdicts: keep(s.verdicts),
-        locked: keep(s.locked),
-        rejected: new Set([...s.rejected].filter((l) => !dropped.has(l))),
+        drafts: keepLived(s.drafts),
+        verdicts: keepLived(s.verdicts),
+        locked,
+        lived: new Set([...lived].filter((l) => locked.has(l))),
+        rejected: new Set([...s.rejected].filter((l) => lived.has(l))),
         replans: [...s.replans, { droppedDays: event.droppedDays, reason: event.reason }],
+        sunProgress: s.trip ? sunProgress(s.trip, [...locked.values()]) : s.sunProgress,
         briefing: undefined,
       };
     }
@@ -272,6 +299,24 @@ function applyEventInner(s: RunState, event: CrewEvent, t: number): RunState {
     default:
       return base;
   }
+}
+
+const routeKey = (trip: Trip) => `${trip.origin.code}-${trip.destination.code}`;
+
+/**
+ * What a lived day actually achieved. A skipped light anchor counts the day's
+ * shift at half; a partial or harder-than-planned one at three quarters. This
+ * is a display heuristic for readiness, not physiology — the scorer never
+ * sees it.
+ */
+const CHECK_IN_FACTOR: Partial<Record<CheckIn["status"], number>> = { skipped: 0.5, partial: 0.75, harder: 0.75 };
+
+export function asLived(plan: DayPlan, checkIns: CheckIn[]): DayPlan {
+  const factor = checkIns
+    .filter((c) => c.dayIndex === plan.dayIndex && (!c.kind || c.kind === "light_exposure"))
+    .reduce((f, c) => Math.min(f, CHECK_IN_FACTOR[c.status] ?? 1), 1);
+  if (factor === 1) return plan;
+  return { ...plan, shiftMin: Math.round((plan.shiftMin * factor) / 5) * 5 };
 }
 
 export function reduceRun(s: RunState, a: RunAction): RunState {

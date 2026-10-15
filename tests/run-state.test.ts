@@ -78,14 +78,38 @@ describe("run state reducer", () => {
     expect(ledgerEvents(run).some((e) => e.type === "agent_token")).toBe(false);
   });
 
-  test("replan dissolves the dropped days", () => {
-    const run = replay();
-    const next = reduceRun(run, {
-      kind: "event",
-      event: { type: "replan", droppedDays: [2, 3, 4], reason: "check-in" },
+  test("morning replan keeps the lived days from the night run, scaled by check-ins", () => {
+    const night = replay();
+    const start = events[0].event; // run_start, same route
+    const morning = reduceRun(night, {
+      kind: "batch",
+      items: [
+        { t: 0, event: start },
+        {
+          t: 1,
+          event: {
+            type: "check_in",
+            checkIn: { id: "ci-1", dayIndex: 1, kind: "light_exposure", status: "skipped", at: 0 },
+          },
+        },
+        { t: 2, event: { type: "replan", droppedDays: [0, 1], reason: "morning shift" } },
+      ],
     });
-    expect(next.locked.size).toBe(2);
-    expect(next.briefing).toBeUndefined();
-    expect(dayStatus(next, run.trip!.days[3].label)).toBe("queued");
+    const [d3, d2, d1] = night.trip!.days.map((d) => d.label);
+    expect([...morning.lived]).toEqual([d3, d2]);
+    expect(morning.locked.get(d3)!.shiftMin).toBe(night.locked.get(d3)!.shiftMin);
+    // D-2's light anchor was skipped: counted at half.
+    expect(Math.abs(morning.locked.get(d2)!.shiftMin)).toBeLessThan(Math.abs(night.locked.get(d2)!.shiftMin));
+    expect(dayStatus(morning, d1)).toBe("queued");
+    expect(morning.sunProgress).toBeGreaterThan(0);
+    expect(morning.briefing).toBeUndefined();
+  });
+
+  test("a run on a different route carries nothing over", () => {
+    const night = replay();
+    const other = { ...(events[0].event as Extract<CrewEvent, { type: "run_start" }>) };
+    other.trip = { ...other.trip, destination: { ...other.trip.destination, code: "SIN" } };
+    const next = reduceRun(night, { kind: "event", event: other });
+    expect(next.priorLocked).toBeUndefined();
   });
 });

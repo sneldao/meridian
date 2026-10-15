@@ -2,6 +2,29 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
+// One voice per crew member (ElevenLabs premade voices, available on every
+// account). The old default (21m00Tcm4TlvBq8ikWAM, "Rachel") is not in the
+// current premade library and 404s. Override any of them via env:
+// ELEVENLABS_VOICE_ID (default / handoff) or ELEVENLABS_VOICE_<AGENT>.
+const CREW_VOICES: Record<string, string> = {
+  analyst: "Xb7hH8MSUJpSbSDYk0k2", // Mara — Alice, clear
+  researcher: "JBFqnCBsd6RMkjVDRZzb", // Jun — George, storyteller
+  planner: "IKne3meq5aSn9XLyUdCD", // Otto — Charlie, energetic
+  evaluator: "XrExE9yKIg1WjnnlVkGX", // Iris — Matilda, professional
+  negotiator: "CwhRBWXzGAHq8TQ4Fs17", // Rex — Roger, laid-back
+};
+const DEFAULT_VOICE = "EXAVITQu4vr4xnSDxMaL"; // Sarah — the morning handoff
+
+function voiceFor(agent?: string): string {
+  const key = agent?.toUpperCase();
+  return (
+    (key && process.env[`ELEVENLABS_VOICE_${key}`]) ||
+    (agent && CREW_VOICES[agent]) ||
+    process.env.ELEVENLABS_VOICE_ID ||
+    DEFAULT_VOICE
+  );
+}
+
 export async function GET() {
   return NextResponse.json({ enabled: Boolean(process.env.ELEVENLABS_API_KEY) });
 }
@@ -13,9 +36,11 @@ export async function POST(req: NextRequest) {
   }
 
   let text = "";
+  let agent: string | undefined;
   try {
-    const body = (await req.json()) as { text?: string };
+    const body = (await req.json()) as { text?: string; agent?: string };
     text = (body.text ?? "").trim();
+    agent = body.agent;
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
@@ -23,7 +48,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing text" }, { status: 400 });
   }
 
-  const voiceId = process.env.ELEVENLABS_VOICE_ID ?? "21m00Tcm4TlvBq8ikWAM";
+  const voiceId = voiceFor(agent);
   const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
     method: "POST",
     headers: {
