@@ -1,0 +1,62 @@
+{
+  "previewPort": 3000,
+  "healthPath": "/",
+  "startCommand": "docker compose -f docker-compose.base44.yml up -d",
+  "secrets": [
+    {
+      "name": "AGENT_PROVIDER",
+      "description": "Primary model provider: replay (default, zero-key), anthropic, featherless, or nebius",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "ANTHROPIC_API_KEY",
+      "description": "Anthropic API key from console.anthropic.com (when AGENT_PROVIDER=anthropic)",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "FEATHERLESS_API_KEY",
+      "description": "Featherless API key from featherless.ai (when AGENT_PROVIDER=featherless)",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "NEBIUS_API_KEY",
+      "description": "Nebius Token Factory API key from studio.nebius.com (when AGENT_PROVIDER=nebius or fallback)",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "ELEVENLABS_API_KEY",
+      "description": "ElevenLabs API key from elevenlabs.io for multi-voice crew speech synthesis",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "SUPABASE_URL",
+      "description": "Supabase project URL from Supabase Dashboard -> Settings -> API for cross-run persistence",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "SUPABASE_SERVICE_ROLE_KEY",
+      "description": "Supabase service role secret key from Supabase Dashboard -> Settings -> API",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "COMPOSIO_API_KEY",
+      "description": "Composio MCP consumer key (x-consumer-api-key) for live Google Calendar integration",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "TAVILY_API_KEY",
+      "description": "Tavily API key from app.tavily.com for live researcher web search",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "QLOO_API_KEY",
+      "description": "Qloo API key for destination taste recommendations",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "FIRECRAWL_API_KEY",
+      "description": "Firecrawl API key from firecrawl.dev for secondary science paper retrieval",
+      "requiredAtBoot": false
+    }
+  ]
+}

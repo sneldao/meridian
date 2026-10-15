@@ -1,0 +1,81 @@
+services:
+  falkordb:
+    image: falkordb/falkordb:latest
+    restart: on-failure
+    volumes:
+      - falkordb_data:/var/lib/falkordb/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  seed-graph:
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM node:22
+        COPY --from=oven/bun:1.2.17 /usr/local/bin/bun /usr/local/bin/bun
+        RUN ln -sf /usr/local/bin/bun /usr/local/bin/bunx
+    working_dir: /app
+    volumes:
+      - .:/app
+    environment:
+      - FALKORDB_URL=falkor://falkordb:6379
+    depends_on:
+      falkordb:
+        condition: service_healthy
+    command:
+      - sh
+      - -ec
+      - |
+        CI=true bun install --frozen-lockfile
+        bun scripts/seed-graph.ts --reset
+        SEED_TENANT=other bun scripts/seed-graph.ts --reset
+
+  web:
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM node:22
+        COPY --from=oven/bun:1.2.17 /usr/local/bin/bun /usr/local/bin/bun
+        RUN ln -sf /usr/local/bin/bun /usr/local/bin/bunx
+    working_dir: /app
+    restart: on-failure
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+    env_file:
+      - ./.env.base44-defaults
+      - /run/base44/app.env
+    environment:
+      - BASE44_PREVIEW_MODE
+      - BASE44_PUBLIC_HOST_SUFFIX
+      - FALKORDB_URL=falkor://falkordb:6379
+      - WATCHPACK_POLLING=true
+    depends_on:
+      falkordb:
+        condition: service_healthy
+      seed-graph:
+        condition: service_completed_successfully
+    command:
+      - sh
+      - -ec
+      - CI=true bun install --frozen-lockfile && exec ./node_modules/.bin/next dev --hostname 0.0.0.0 --port 3000
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "sh",
+          "-ec",
+          "curl -fsS http://127.0.0.1:3000/ >/dev/null || { echo 'frontend failed' >&2; exit 1; }; curl -fsS http://127.0.0.1:3000/api/graph/health >/dev/null || { echo 'api/graph/health failed' >&2; exit 1; }",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  falkordb_data:
