@@ -110,8 +110,17 @@ function draftDay(
   citations: Citation[],
 ): DayPlan {
   const spec = trip.days[dayIndex];
+  const dayEvents = calendar.filter((e) => e.dayIndex === dayIndex);
   const bed = wrap(GARMIN_BASELINE.avgBedtimeMin + cumulative);
-  const wake = wrap(GARMIN_BASELINE.avgWakeMin + cumulative);
+  // Wake no later than the first fixed commitment that would land inside the
+  // sleep window (e.g. a 07:30 team breakfast on a delay day). The search in
+  // plannedDays then shrinks the shift until the night still clears 6 h.
+  const rawWake = wrap(GARMIN_BASELINE.avgWakeMin + cumulative);
+  const morningFrom = bed < rawWake ? bed : 0;
+  const wall = dayEvents
+    .filter((e) => e.blocksInterventions !== false && e.startMin >= morningFrom && e.startMin < rawWake)
+    .reduce((m, e) => Math.min(m, e.startMin), rawWake);
+  const wake = wall;
   const east = trip.direction === "east";
   const cite = (i: number) => citations[i % Math.max(1, citations.length)]?.id;
   const ivs: Intervention[] = east
@@ -125,7 +134,6 @@ function draftDay(
         { kind: "caffeine_cutoff", startMin: wrap(bed - 8 * 60 - 5), note: "Cutoff tracks the later bedtime.", citationId: cite(0) },
         { kind: "light_exposure", startMin: wrap(bed - 180), endMin: wrap(bed - 120), note: "Evening light — the delay lever.", citationId: cite(2) },
       ];
-  const dayEvents = calendar.filter((e) => e.dayIndex === dayIndex);
   return {
     dayIndex,
     label: spec.label,

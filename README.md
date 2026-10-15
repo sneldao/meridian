@@ -32,10 +32,12 @@ bun run dev                   # http://localhost:3000
 
 | Path | What |
 |---|---|
-| `/` | Live crew run — sun-track scene + crew feed (SSE) |
+| `/` | Live crew run — lens shell (world/board/calendar/ledger), crew feed (SSE) |
 | `/review` | Saved plan: days, citations, .ics download |
-| `/history` | Past runs |
-| `/outcome` | Post-trip self-report (adherence, jetlag, notes) |
+| `/history` | Past runs (with provider + fallback provenance) |
+| `/outcome` | Post-trip self-report (adherence, jetlag, notes); learned cross-run memory |
+| `/team` | Travel-manager view: 12 travellers, 12 crews in parallel (stretch) |
+| `/dev` | Lens workbench + recorded-event fixture playback (dev only) |
 
 ## Docs
 
@@ -45,6 +47,7 @@ bun run dev                   # http://localhost:3000
 - [Demo runbook](docs/demo.md) — stage path, pacing, localStorage keys, troubleshooting
 - [Hackathon plan](docs/hackathon-plan.md) — today's build: 4 lenses, any route, team split, demo script, business case
 - [Design vision](docs/design-vision.md) — the Ghost Terminator, immersive-world plan, build tiers, current UI fixes
+- [Graph Hacks plan](docs/graph-hackathon.md) — FalkorDB participation strategy, tracks, scope guardrails
 
 ## Checks
 
