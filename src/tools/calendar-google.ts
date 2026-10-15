@@ -68,7 +68,7 @@ interface GoogleEvent {
   status?: string;
   start?: { dateTime?: string; date?: string };
   end?: { dateTime?: string; date?: string };
-  attendees?: unknown[];
+  attendees?: { self?: boolean }[];
 }
 
 /** Lists the wearer's real events across the trip window, mapped into
@@ -87,7 +87,7 @@ export async function fetchGoogleCalendar(trip: Trip): Promise<CalendarEvent[]> 
     orderBy: "startTime",
     timeZone: TZ(),
     maxResults: 250,
-    fields: "items(id,summary,status,start,end,attendees)",
+    fields: "items(id,summary,status,start,end,attendees(self,email))",
   });
 
   const items = (data.items as GoogleEvent[] | undefined) ?? [];
@@ -106,7 +106,9 @@ export async function fetchGoogleCalendar(trip: Trip): Promise<CalendarEvent[]> 
       dayIndex,
       startMin: toMin(startDt),
       endMin: Math.max(toMin(endDt), toMin(startDt) + 15),
-      movable: !ev.attendees?.length, // meetings with attendees are walls
+      // Meetings with other attendees are walls; personal blocks (no
+      // attendees, or only the wearer listed as self) are movable.
+      movable: !(ev.attendees ?? []).some((a) => !a.self),
     });
   }
   return out;
