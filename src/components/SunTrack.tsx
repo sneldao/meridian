@@ -1,7 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import type { DaySpec } from "@/domain/types";
+import { fmtUtcOffset } from "@/domain/timezones";
+import type { DaySpec, Trip } from "@/domain/types";
 
 // The hero scene: two suns on an arc — London's (behind, cool) and Tokyo's
 // (ahead, warm). Your body-clock sun is dragged east as days lock.
@@ -22,9 +23,13 @@ interface Props {
   activeLabel?: string;
   citationCount: number;
   running: boolean;
+  /** Route labels; defaults to the demo route. Pass `trip` from the run. */
+  trip?: Trip | null;
 }
 
-export function SunTrack({ progress, days, lockedLabels, activeLabel, citationCount, running }: Props) {
+export function SunTrack({ progress, days, lockedLabels, activeLabel, citationCount, running, trip }: Props) {
+  const from = trip?.origin ?? { code: "LHR", name: "London", utcOffsetMin: 60 };
+  const to = trip?.destination ?? { code: "HND", name: "Tokyo", utcOffsetMin: 540 };
   const body = arcPoint(progress);
   const origin = arcPoint(0);
   const dest = arcPoint(1);
@@ -81,19 +86,19 @@ export function SunTrack({ progress, days, lockedLabels, activeLabel, citationCo
         {/* origin sun — where you are */}
         <circle cx={origin.x} cy={origin.y} r="13" fill="#9db8ff" opacity="0.85" />
         <text x={origin.x} y={origin.y + 42} textAnchor="middle" fill="#9db8ff" fontSize="13" fontWeight="600" letterSpacing="2">
-          LHR
+          {from.code}
         </text>
         <text x={origin.x} y={origin.y + 58} textAnchor="middle" fill="#8b93a7" fontSize="10">
-          London · UTC+0
+          {from.name} · {fmtUtcOffset(from.utcOffsetMin)}
         </text>
 
         {/* destination sun — where you're going */}
         <circle cx={dest.x} cy={dest.y} r="20" fill="#ffc46b" opacity="0.95" />
         <text x={dest.x} y={dest.y + 46} textAnchor="middle" fill="#ffc46b" fontSize="13" fontWeight="600" letterSpacing="2">
-          HND
+          {to.code}
         </text>
         <text x={dest.x} y={dest.y + 62} textAnchor="middle" fill="#8b93a7" fontSize="10">
-          Tokyo · UTC+9
+          {to.name} · {fmtUtcOffset(to.utcOffsetMin)}
         </text>
 
         {/* citation pins along the arc */}
@@ -178,7 +183,7 @@ export function SunTrack({ progress, days, lockedLabels, activeLabel, citationCo
           {Math.round(progress * 100)}%
         </div>
         <div className="text-[10px] tracking-widest text-[#8b93a7] uppercase">
-          across the dateline
+          of the shift locked
         </div>
       </div>
 
