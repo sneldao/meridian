@@ -1,6 +1,7 @@
 // Domain types for Meridian.
-// Shapes deliberately mirror the Orbura care types so the agent layer can
-// port back into the monorepo later (observation -> plan -> outcome loop).
+// Shapes deliberately follow a longitudinal-care record model so the agent
+// layer can port back into a larger health platform later
+// (observation -> plan -> outcome loop).
 
 export type CityCode = "LHR" | "HND" | "JFK" | "SFO" | "CDG" | "SIN";
 

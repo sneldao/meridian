@@ -15,6 +15,11 @@ interface Props {
 }
 
 export function BriefingCard({ summary, score, citations, days, ics, onClose }: Props) {
+  // One action, not an information dump — surface the single next ask.
+  const firstMove = days
+    .flatMap((d) => d.interventions.map((iv) => ({ day: d, iv })))
+    .find(({ iv }) => iv.kind === "light_exposure" || iv.kind === "sleep_window");
+
   const downloadIcs = () => {
     const blob = new Blob([ics], { type: "text/calendar" });
     const a = document.createElement("a");
@@ -44,6 +49,15 @@ export function BriefingCard({ summary, score, citations, days, ics, onClose }: 
             Morning handoff
           </div>
           <p className="mt-1.5 text-sm leading-relaxed text-[#e8eaf2]">{summary}</p>
+
+          {firstMove && (
+            <div className="mt-2 inline-flex items-center gap-2 rounded-md border border-[#b8e35644] bg-[#b8e3560f] px-2.5 py-1 text-[11px] text-[#b8e356]">
+              <span className="font-bold tracking-wider uppercase">first move</span>
+              <span className="text-[#e8eaf2]">
+                {firstMove.day.label} · {fmtMin(firstMove.iv.startMin)} — {firstMove.iv.note}
+              </span>
+            </div>
+          )}
 
           <div className="mt-3 flex flex-wrap gap-1.5">
             {days.map((d) => (

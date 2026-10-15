@@ -1,8 +1,8 @@
 import type { AgentId } from "@/domain/types";
 
 // The crew. Each agent is a specialist with its own context, tools and job.
-// Deterministic orchestration decides WHO acts when — the same boundary
-// Orbura keeps between agents and safety-critical decisions.
+// Deterministic orchestration decides WHO acts when — the same boundary a
+// clinical system keeps between agents and safety-critical decisions.
 
 export interface CrewMember {
   id: AgentId;

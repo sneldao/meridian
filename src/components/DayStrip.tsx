@@ -1,6 +1,7 @@
 "use client";
 
 import { fmtMin } from "@/domain/circadian";
+import { INTERVENTION_ICONS } from "@/lib/intervention-icons";
 import type { DayPlan, DaySpec } from "@/domain/types";
 
 interface Props {
@@ -42,7 +43,12 @@ export function DayStrip({ days, locked, activeLabel, rejectedLabels }: Props) {
               <div className="mt-1 font-mono2 text-[10px] text-[#e8eaf2]">
                 <div>bed {fmtMin(plan.targetBedtimeMin)}</div>
                 <div>wake {fmtMin(plan.targetWakeMin)}</div>
-                <div className="mt-0.5 text-[#8b93a7]">{plan.interventions.length} interventions</div>
+                <div className="mt-1 flex gap-1">
+                  {plan.interventions.map((iv, j) => {
+                    const { icon: Icon, tint } = INTERVENTION_ICONS[iv.kind];
+                    return <Icon key={j} size={11} color={tint} strokeWidth={2.2} />;
+                  })}
+                </div>
               </div>
             ) : (
               <div className="mt-1 font-mono2 text-[10px] text-[#4a5470]">
