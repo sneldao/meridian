@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fmtMin } from "@/domain/circadian";
+import { summarizeCheckIn } from "@/domain/adherence";
 import { CITY_TABLE } from "@/domain/fixtures";
 import type {
   CalendarEvent,
@@ -162,6 +163,12 @@ export default function Home() {
           } catch {
             /* ignore */
           }
+          break;
+        case "check_in":
+          push({ kind: "system", text: `wearer reported: ${summarizeCheckIn(e.checkIn)}` });
+          break;
+        case "replan":
+          push({ kind: "system", text: `replan — ${e.reason}` });
           break;
         case "agent_start":
           push({ kind: "agent", agent: e.agent, title: e.title });

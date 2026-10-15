@@ -19,6 +19,7 @@ import type {
 import { CREW, type CrewMember } from "./crew";
 import { providerKind, resolveModel } from "./providers";
 import { runReplay } from "./replay";
+import { runMorningReplay } from "./morning-replay";
 import { buildIcs, fetchCalendar, proposeMove } from "@/tools/calendar";
 import { createPlanEvents, patchGoogleEvent } from "@/tools/calendar-google";
 import { searchScience } from "@/tools/science";
@@ -60,7 +61,7 @@ export function runCrew(opts?: {
   void (async () => {
     try {
       if (providerKind() === "replay") {
-        await drain(runReplay(), emit);
+        await drain(replayFor(opts), emit);
       } else {
         const trip = opts?.trip ?? DEMO_TRIP;
         const cal = opts?.calendar
@@ -81,7 +82,7 @@ export function runCrew(opts?: {
         message: `crew uplink failed: ${err instanceof Error ? err.message : String(err)} — switching to recorded shift`,
         recoverable: true,
       });
-      await drain(runReplay(), emit);
+      await drain(replayFor(opts), emit);
     } finally {
       finished = true;
       notifier.fn?.();
@@ -102,6 +103,16 @@ export function runCrew(opts?: {
 
 async function drain(gen: AsyncGenerator<CrewEvent>, emit: Emit) {
   for await (const e of gen) emit(e);
+}
+
+/** Recorded transcript for this run: a morning shift (check-ins or a later
+ * start day) gets the replan script, otherwise the night script. */
+function replayFor(opts?: { checkIns?: CheckIn[]; startDayIndex?: number }): AsyncGenerator<CrewEvent> {
+  const checkIns = opts?.checkIns ?? [];
+  const startDayIndex = opts?.startDayIndex ?? 0;
+  return checkIns.length > 0 || startDayIndex > 0
+    ? runMorningReplay({ startDayIndex, checkIns })
+    : runReplay();
 }
 
 // --- orchestrator ------------------------------------------------------------
@@ -140,6 +151,7 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
     baseline: GARMIN_BASELINE,
     calendar: state.calendar,
   });
+  for (const checkIn of checkIns) emit({ type: "check_in", checkIn });
   if (startDayIndex > 0) {
     emit({
       type: "replan",

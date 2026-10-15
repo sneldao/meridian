@@ -1,6 +1,6 @@
 import { evaluatePlan, passes, sunProgress } from "@/domain/circadian";
 import { ADHERENCE_PROFILE, CALENDAR, DEMO_TRIP, GARMIN_BASELINE } from "@/domain/fixtures";
-import type { AgentId, CalendarEvent, CrewEvent, DayPlan } from "@/domain/types";
+import type { AgentId, Citation, CalendarEvent, CrewEvent, DayPlan } from "@/domain/types";
 import { buildIcs, proposeMove } from "@/tools/calendar";
 import { fallbackCitations } from "@/tools/science";
 
@@ -11,59 +11,9 @@ import { fallbackCitations } from "@/tools/science";
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const BEAT = 60;
 
-export async function* runReplay(): AsyncGenerator<CrewEvent> {
-  const citations = fallbackCitations();
-  const locked: DayPlan[] = [];
-  const cal: CalendarEvent[] = CALENDAR.map((e) => ({ ...e }));
-
-  const speak = async function* (agent: AgentId, text: string) {
-    const chunks = text.match(/.{1,24}(\s|$)/g) ?? [text];
-    for (const c of chunks) {
-      yield { type: "agent_token", agent, text: c } as CrewEvent;
-      await sleep(30);
-    }
-  };
-
-  yield {
-    type: "run_start",
-    provider: "replay",
-    trip: DEMO_TRIP,
-    baseline: GARMIN_BASELINE,
-    calendar: cal,
-  };
-  await sleep(8 * BEAT);
-
-  // --- Analyst -------------------------------------------------------------
-  yield { type: "agent_start", agent: "analyst", title: "Mara · ANALYST" };
-  yield { type: "tool_call", agent: "analyst", tool: "getWearableBaseline", detail: "" };
-  yield { type: "tool_result", agent: "analyst", tool: "getWearableBaseline", detail: "Garmin Fenix 8 · 5 nights" };
-  yield { type: "tool_call", agent: "analyst", tool: "getAdherenceProfile", detail: "" };
-  yield { type: "tool_result", agent: "analyst", tool: "getAdherenceProfile", detail: "compliance floor 07:00" };
-  yield* speak(
-    "analyst",
-    "Garmin says: late chronotype, bed 23:55, up 06:45, 6h50 of sleep. HRV stable. And he ignores anything scheduled before 07:00 — mornings get one shot, evenings are where we win.",
-  );
-  yield { type: "agent_end", agent: "analyst" };
-
-  // --- Researcher ----------------------------------------------------------
-  yield { type: "agent_start", agent: "researcher", title: "Jun · RESEARCH" };
-  yield { type: "tool_call", agent: "researcher", tool: "searchScience", detail: '"circadian phase shift timed light exposure eastward travel"' };
-  yield { type: "tool_result", agent: "researcher", tool: "searchScience", detail: "4 results" };
-  for (const c of citations.slice(0, 3)) {
-    yield { type: "citation", agent: "researcher", citation: c };
-    await sleep(4 * BEAT);
-  }
-  yield { type: "tool_call", agent: "researcher", tool: "searchScience", detail: '"caffeine timing sleep onset phase advance jet lag"' };
-  yield { type: "tool_result", agent: "researcher", tool: "searchScience", detail: "3 results" };
-  yield { type: "citation", agent: "researcher", citation: citations[3] };
-  yield* speak(
-    "researcher",
-    "Four papers worth building on. Morning light advances the clock — that's our lever. Caffeine's half-life makes anything after ~8h pre-bed a tax on the shift.",
-  );
-  yield { type: "agent_end", agent: "researcher" };
-
-  // --- Planner + evaluator, day by day --------------------------------------
-  const days: DayPlan[] = [
+/** The five scripted day plans (D-3 .. D+1), all valid under the night profile. */
+export function scriptedDays(citations: Citation[]): DayPlan[] {
+  return [
     {
       dayIndex: 0,
       label: "D-3",
@@ -131,6 +81,61 @@ export async function* runReplay(): AsyncGenerator<CrewEvent> {
       ],
     },
   ];
+}
+
+export async function* runReplay(): AsyncGenerator<CrewEvent> {
+  const citations = fallbackCitations();
+  const locked: DayPlan[] = [];
+  const cal: CalendarEvent[] = CALENDAR.map((e) => ({ ...e }));
+
+  const speak = async function* (agent: AgentId, text: string) {
+    const chunks = text.match(/.{1,24}(\s|$)/g) ?? [text];
+    for (const c of chunks) {
+      yield { type: "agent_token", agent, text: c } as CrewEvent;
+      await sleep(30);
+    }
+  };
+
+  yield {
+    type: "run_start",
+    provider: "replay",
+    trip: DEMO_TRIP,
+    baseline: GARMIN_BASELINE,
+    calendar: cal,
+  };
+  await sleep(8 * BEAT);
+
+  // --- Analyst -------------------------------------------------------------
+  yield { type: "agent_start", agent: "analyst", title: "Mara · ANALYST" };
+  yield { type: "tool_call", agent: "analyst", tool: "getWearableBaseline", detail: "" };
+  yield { type: "tool_result", agent: "analyst", tool: "getWearableBaseline", detail: "Garmin Fenix 8 · 5 nights" };
+  yield { type: "tool_call", agent: "analyst", tool: "getAdherenceProfile", detail: "" };
+  yield { type: "tool_result", agent: "analyst", tool: "getAdherenceProfile", detail: "compliance floor 07:00" };
+  yield* speak(
+    "analyst",
+    "Garmin says: late chronotype, bed 23:55, up 06:45, 6h50 of sleep. HRV stable. And he ignores anything scheduled before 07:00 — mornings get one shot, evenings are where we win.",
+  );
+  yield { type: "agent_end", agent: "analyst" };
+
+  // --- Researcher ----------------------------------------------------------
+  yield { type: "agent_start", agent: "researcher", title: "Jun · RESEARCH" };
+  yield { type: "tool_call", agent: "researcher", tool: "searchScience", detail: '"circadian phase shift timed light exposure eastward travel"' };
+  yield { type: "tool_result", agent: "researcher", tool: "searchScience", detail: "4 results" };
+  for (const c of citations.slice(0, 3)) {
+    yield { type: "citation", agent: "researcher", citation: c };
+    await sleep(4 * BEAT);
+  }
+  yield { type: "tool_call", agent: "researcher", tool: "searchScience", detail: '"caffeine timing sleep onset phase advance jet lag"' };
+  yield { type: "tool_result", agent: "researcher", tool: "searchScience", detail: "3 results" };
+  yield { type: "citation", agent: "researcher", citation: citations[3] };
+  yield* speak(
+    "researcher",
+    "Four papers worth building on. Morning light advances the clock — that's our lever. Caffeine's half-life makes anything after ~8h pre-bed a tax on the shift.",
+  );
+  yield { type: "agent_end", agent: "researcher" };
+
+  // --- Planner + evaluator, day by day --------------------------------------
+  const days = scriptedDays(citations);
 
   // Scripted failures that make the recovery visible.
   const badD2: DayPlan = {
