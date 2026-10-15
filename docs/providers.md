@@ -34,6 +34,28 @@ Featherless equivalents: `FEATHERLESS_ORCHESTRATOR_MODEL`,
 | `FIRECRAWL_API_KEY` | Optional second science provider. Chain: ScienceMadeReadable (free, no key) → Firecrawl → verified static citations |
 | `ELEVENLABS_API_KEY` | Voice layer — reserved, not yet wired |
 
+## Calendar backend
+
+The negotiator's calendar is fixture-backed by default. With Composio
+configured it becomes a **real Google Calendar** — `proposeMove` patches actual
+events and `commitPlan` writes every locked intervention as a `Meridian — …`
+block. Any Google failure falls back to fixtures; a failed patch rolls the
+local move back and surfaces as a tool error the negotiator can route around.
+
+| Var | Purpose |
+|---|---|
+| `COMPOSIO_API_KEY` | Composio project key — enables the Google backend |
+| `COMPOSIO_USER_ID` | Entity whose connected Google account is used |
+| `CALENDAR_BACKEND` | `fixture` forces fixtures even with keys present |
+| `GOOGLE_CALENDAR_ID` | Default `primary` |
+| `MERIDIAN_CALENDAR_TZ` | Wall-time zone for read/write — default `Europe/London` |
+| `COMPOSIO_GOOGLECALENDAR_VERSION` | Toolkit pin — default `20261010_00` |
+
+Setup: create a Composio project, connect Google Calendar for the entity id,
+drop the two env vars in `.env.local`. Events with attendees are treated as
+fixed walls; personal blocks are movable — same semantics as the fixtures.
+`send_updates: "none"` on every write, so the demo never emails attendees.
+
 ## Cost notes
 
 - `replay` is fully offline — safe default for UI work.
