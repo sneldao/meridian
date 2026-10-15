@@ -16,6 +16,7 @@ import { AGENT_ICONS } from "@/lib/agent-icons";
 import { MoonStar } from "lucide-react";
 import { BriefingCard } from "@/components/BriefingCard";
 import { MorningCheckin } from "@/components/MorningCheckin";
+import { AnchoredPopover } from "@/components/AnchoredPopover";
 import { LensShell, type LensId } from "@/components/lenses/LensShell";
 import { WorldLens } from "@/components/lenses/WorldLens";
 import { CrewFeed, type LogEntry } from "@/components/CrewFeed";
@@ -394,7 +395,13 @@ export default function Home() {
             cancel
           </button>
         )}
-        <MorningCheckin phase={run.phase} onCheckIn={(extra) => beginStream(extra)} />
+        <MorningCheckin
+          phase={run.phase}
+          lockedCount={run.locked.size}
+          totalDays={trip?.days.length ?? 5}
+          sessionStartedAt={run.sessionStartedAt}
+          onCheckIn={(extra) => beginStream(extra)}
+        />
 
         <div className="relative ml-auto shrink-0" ref={menuRef}>
           <button
@@ -404,40 +411,42 @@ export default function Home() {
             menu
           </button>
           {menuOpen && (
-            <div className="absolute right-0 top-full z-50 mt-2 w-52 rounded-xl border border-line bg-ink-2 p-2 shadow-xl">
-              <div className="space-y-1">
-                {hasSavedPlan && (
-                  <Link href="/review" className="block rounded-lg px-3 py-1.5 text-[12px] text-paper hover:bg-line">
-                    view saved handoff →
-                  </Link>
-                )}
-                <Link href="/history" className="block rounded-lg px-3 py-1.5 text-[12px] text-mist hover:bg-line">
-                  history
-                </Link>
-                {runCount > 0 && (
+            <AnchoredPopover anchorRef={menuRef}>
+              <div className="w-52 rounded-xl border border-line bg-ink-2 p-2 shadow-xl">
+                <div className="space-y-1">
+                  {hasSavedPlan && (
+                    <Link href="/review" className="block rounded-lg px-3 py-1.5 text-[12px] text-paper hover:bg-line">
+                      view saved handoff →
+                    </Link>
+                  )}
                   <Link href="/history" className="block rounded-lg px-3 py-1.5 text-[12px] text-mist hover:bg-line">
-                    {runCount} runs
+                    history
                   </Link>
-                )}
-                <button
-                  onClick={() => {
-                    const next = !voiceOn;
-                    voiceOnRef.current = next;
-                    setVoiceOn(next);
-                    if (!next) stopVoice();
-                    setMenuOpen(false);
-                  }}
-                  className="w-full rounded-lg px-3 py-1.5 text-left text-[12px] text-mist hover:bg-line hover:text-paper"
-                >
-                  voice {voiceOn ? "on" : "off"}
-                </button>
-                {providerLabel && (
-                  <div className="rounded-lg px-3 py-1.5 text-[12px] text-dim">
-                    {providerLabel}{providerFallback ? " · fallback" : ""}
-                  </div>
-                )}
+                  {runCount > 0 && (
+                    <Link href="/history" className="block rounded-lg px-3 py-1.5 text-[12px] text-mist hover:bg-line">
+                      {runCount} runs
+                    </Link>
+                  )}
+                  <button
+                    onClick={() => {
+                      const next = !voiceOn;
+                      voiceOnRef.current = next;
+                      setVoiceOn(next);
+                      if (!next) stopVoice();
+                      setMenuOpen(false);
+                    }}
+                    className="w-full rounded-lg px-3 py-1.5 text-left text-[12px] text-mist hover:bg-line hover:text-paper"
+                  >
+                    voice {voiceOn ? "on" : "off"}
+                  </button>
+                  {providerLabel && (
+                    <div className="rounded-lg px-3 py-1.5 text-[12px] text-dim">
+                      {providerLabel}{providerFallback ? " · fallback" : ""}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            </AnchoredPopover>
           )}
         </div>
       </header>

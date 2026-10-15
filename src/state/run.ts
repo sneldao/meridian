@@ -86,12 +86,24 @@ export interface RunState {
   sunProgress: number;
   briefing?: Briefing;
 
-  /** Counters for the mission clock. */
+  /** Counters for the mission clock. Per-stream — reset on every run_start. */
   toolCalls: number;
   attempts: number;
   rejections: number;
   /** ms since run_start of the latest event. */
   elapsedMs: number;
+
+  /**
+   * Session-level counters: survive across the night → morning boundary on
+   * the same route, so "the crew" reads as one continuing engagement rather
+   * than two unrelated runs. `sessionStartedAt` is wall-clock time (for the
+   * consumer-facing "on the job since" framing); `priorToolCalls`/
+   * `priorAttempts` are every earlier stream's totals, added to the current
+   * stream's counts for a cumulative figure.
+   */
+  sessionStartedAt?: number;
+  priorToolCalls: number;
+  priorAttempts: number;
 
   /**
    * Director focus: the lens the latest *meaningful* event belongs to, and a
@@ -151,6 +163,8 @@ export const initialRunState = (): RunState => ({
   attempts: 0,
   rejections: 0,
   elapsedMs: 0,
+  priorToolCalls: 0,
+  priorAttempts: 0,
   focusSeq: 0,
   log: [],
 });
@@ -182,6 +196,9 @@ function applyEventInner(s: RunState, event: CrewEvent, t: number): RunState {
       // Keep the previous run's locks (merged over any older carry-over) so a
       // morning replan on the same route can mark the lived days.
       const route = routeKey(event.trip);
+      const sameRoute = Boolean(
+        s.priorLocked?.route === route || (s.trip && routeKey(s.trip) === route),
+      );
       const prior = new Map([
         ...(s.priorLocked?.route === route ? s.priorLocked.days : []),
         ...(s.trip && routeKey(s.trip) === route ? s.locked : []),
@@ -200,6 +217,11 @@ function applyEventInner(s: RunState, event: CrewEvent, t: number): RunState {
               moves: s.moves.length && s.trip && routeKey(s.trip) === route ? s.moves : (s.priorLocked?.moves ?? []),
             }
           : undefined,
+        // Same route picks up the running session clock and cumulative
+        // counters from reset(); a genuinely new trip starts a fresh session.
+        sessionStartedAt: sameRoute ? (s.sessionStartedAt ?? Date.now()) : Date.now(),
+        priorToolCalls: sameRoute ? s.priorToolCalls : 0,
+        priorAttempts: sameRoute ? s.priorAttempts : 0,
         lastEvent: event,
         elapsedMs: 0,
         log: [{ t: 0, event }],
@@ -341,6 +363,9 @@ export function reduceRun(s: RunState, a: RunAction): RunState {
     case "reset": {
       // Clear the screen but remember this run's locks for a morning replan
       // on the same route (run_start checks the route before using them).
+      // The session clock and cumulative counters carry forward the same way
+      // — run_start decides whether to keep or discard them once it knows
+      // whether the next trip is actually the same route.
       const carry = s.trip && s.locked.size
         ? {
             route: routeKey(s.trip),
@@ -348,7 +373,13 @@ export function reduceRun(s: RunState, a: RunAction): RunState {
             moves: s.moves.length ? s.moves : (s.priorLocked?.moves ?? []),
           }
         : s.priorLocked;
-      return { ...initialRunState(), priorLocked: carry };
+      return {
+        ...initialRunState(),
+        priorLocked: carry,
+        sessionStartedAt: s.trip ? (s.sessionStartedAt ?? Date.now()) : undefined,
+        priorToolCalls: s.trip ? s.priorToolCalls + s.toolCalls : 0,
+        priorAttempts: s.trip ? s.priorAttempts + s.attempts : 0,
+      };
     }
     case "event":
       return applyEvent(s, a.event, a.t);

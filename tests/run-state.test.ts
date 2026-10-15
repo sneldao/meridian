@@ -175,4 +175,31 @@ describe("run state reducer", () => {
     const next = reduceRun(night, { kind: "event", event: other });
     expect(next.priorLocked).toBeUndefined();
   });
+
+  test("the session clock and tool-call count survive reset() on the same route", () => {
+    const night = replay();
+    expect(night.toolCalls).toBeGreaterThan(0);
+    const cleared = reduceRun(night, { kind: "reset" });
+    expect(cleared.sessionStartedAt).toBeDefined();
+    expect(cleared.priorToolCalls).toBe(night.toolCalls);
+    const morning = reduceRun(cleared, { kind: "event", event: events[0].event });
+    // Same route as the night run: the morning stream resumes the session
+    // instead of starting the clock and counters over from zero.
+    expect(morning.sessionStartedAt).toBe(cleared.sessionStartedAt);
+    expect(morning.priorToolCalls).toBe(night.toolCalls);
+    expect(morning.toolCalls).toBe(0); // per-stream counter does reset
+  });
+
+  test("a run on a different route starts a fresh session", () => {
+    const night = replay();
+    const cleared = reduceRun(night, { kind: "reset" });
+    const other = { ...(events[0].event as Extract<CrewEvent, { type: "run_start" }>) };
+    other.trip = { ...other.trip, destination: { ...other.trip.destination, code: "SIN" } };
+    const next = reduceRun(cleared, { kind: "event", event: other });
+    // A genuinely different trip doesn't inherit the old session's work —
+    // exact timestamps aren't asserted since both paths legitimately call
+    // Date.now() and could coincide at millisecond resolution.
+    expect(next.priorToolCalls).toBe(0);
+    expect(next.priorAttempts).toBe(0);
+  });
 });
