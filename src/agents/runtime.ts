@@ -3,9 +3,8 @@ import path from "node:path";
 import { stepCountIs, streamText, tool, type ToolSet } from "ai";
 import { z } from "zod";
 import { evaluatePlan, fmtMin, passes, sunProgress } from "@/domain/circadian";
-import { ADHERENCE_PROFILE, CALENDAR, DEMO_TRIP, GARMIN_BASELINE } from "@/domain/fixtures";
+import { ADHERENCE_PROFILE, DEMO_TRIP, GARMIN_BASELINE } from "@/domain/fixtures";
 import type {
-  AgentId,
   CalendarEvent,
   CalendarMove,
   Citation,
