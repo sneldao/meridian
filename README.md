@@ -52,6 +52,7 @@ run history server-side (project `vpeakvspljdoxbwfsdvw`, see
 - [Hackathon plan](docs/hackathon-plan.md) — today's build: 4 lenses, any route, team split, demo script, business case
 - [Design vision](docs/design-vision.md) — the Ghost Terminator, immersive-world plan, build tiers, current UI fixes
 - [Graph Hacks plan](docs/graph-hackathon.md) — FalkorDB participation strategy, tracks, scope guardrails
+- [Evals](docs/evals.md) — the harness that tracks plan quality over time (`bun run eval`), not a hillclimb yet, the shape of one
 
 ## Checks
 
@@ -59,6 +60,7 @@ run history server-side (project `vpeakvspljdoxbwfsdvw`, see
 bun run typecheck
 bun run lint
 bun run replay:check   # streams the replay transcript, prints eval verdicts
+bun run eval            # scores the crew against a fixed scenario matrix, persists the trend
 bun run build
 ```
 

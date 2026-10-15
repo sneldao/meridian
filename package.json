@@ -10,6 +10,7 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "replay:check": "bun scripts/replay-check.ts",
+    "eval": "bun scripts/eval.ts",
     "test": "bun test",
     "smoke": "bun scripts/smoke.ts",
     "seed:graph": "bun scripts/seed-graph.ts"

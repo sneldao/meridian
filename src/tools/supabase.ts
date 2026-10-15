@@ -23,6 +23,20 @@ interface RunPayload {
   fallback?: boolean;
 }
 
+export interface EvalPayload {
+  savedAt: string;
+  scenario: string;
+  provider: string;
+  fallback: boolean;
+  daysLocked: number;
+  daysTotal: number;
+  meanScore: number | null;
+  attempts: number;
+  toolCalls: number;
+  violations: Record<string, number>;
+  durationMs: number;
+}
+
 let client: SupabaseClient | null | undefined;
 
 export function supabaseEnabled(): boolean {
@@ -67,6 +81,29 @@ export async function listRuns(limit = 20): Promise<RunPayload[]> {
   if (error || !data) return [];
   return data.map((row) => {
     const payload = (row.payload ?? {}) as RunPayload;
+    return { ...payload, savedAt: payload.savedAt ?? row.created_at };
+  });
+}
+
+export async function persistEval(evalRun: EvalPayload): Promise<boolean> {
+  const c = clientOrNone();
+  if (!c) return false;
+  const { error } = await c.from("meridian_events").insert({ kind: "eval", payload: evalRun });
+  return !error;
+}
+
+export async function listEvals(limit = 200): Promise<EvalPayload[]> {
+  const c = clientOrNone();
+  if (!c) return [];
+  const { data, error } = await c
+    .from("meridian_events")
+    .select("payload, created_at")
+    .eq("kind", "eval")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error || !data) return [];
+  return data.map((row) => {
+    const payload = (row.payload ?? {}) as EvalPayload;
     return { ...payload, savedAt: payload.savedAt ?? row.created_at };
   });
 }
