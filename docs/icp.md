@@ -1,9 +1,10 @@
 # ICP — who the night shift serves
 
-The demo persona. Everything in the fixtures, the seeded Google Calendar, and
-the pitch hangs off this person.
+Two personas. **ICP-1 is the wedge** (revenue, frequent-flyer spend). **ICP-2 is
+the insight** — she is a real customer interview, and her answer shaped the
+product's core claim.
 
-## The wearer
+## ICP-1 · Alex — the wedge
 
 **Alex, 34 — strategy consultant.** London-based, flies LHR→HND (or similar
 long-haul east) roughly quarterly for client weeks. The week of travel is the
@@ -45,3 +46,36 @@ deviates.
 | `ADHERENCE_PROFILE` | Compliance floor 07:00, weak at early alarms |
 | `CALENDAR` / seeded Google events | Fixed meetings w/ attendees vs movable personal blocks |
 | `DEMO_TRIP` | LHR → HND, +9h eastward, departs 2026-10-18 |
+
+## ICP-2 · Valentina — the insight
+
+**Valentina, mid-20s — student.** Mexican, in London for her degree. Works
+hard on her studies, worries about her sleep and stress, and flies home
+LHR→MEX to visit family — a 6–7h *westward* delay, the opposite shift from
+Alex.
+
+Interviewed this morning. Her verdict on wellness advice: **wouldn't pay for
+it, wouldn't adhere to it.** That answer is the product. Meridian doesn't
+sell advice — it sells a crew that does the doing and adapts when adherence
+fails.
+
+- **Wears a Garmin** — the wearable data is already there.
+- **Stress-aware, not performance-obsessed** — her motivation is feeling
+  okay, not peak output. Softer sell: "your trip home shouldn't cost you the
+  first three days."
+- **Price-sensitive** — not the revenue wedge; the expansion + evidence that
+  the problem generalises beyond execs.
+- **Westward shift exercises the other half of the scorer** — delay plans,
+  evening light, sleep-in windows. LHR→MEX is already demoable (MEX is in
+  the airport table).
+
+## Demo mapping
+
+| Persona | Trip | Scorer path | Story |
+|---|---|---|---|
+| Alex | LHR → HND (+9h, advance) | morning light anchors, caffeine cutoff | the wedge — exec travel |
+| Valentina | LHR → MEX (−6h, delay) | evening light, delayed windows | the insight — adherence engine |
+
+Pitches lead with Alex (commercial), land the Valentina line as the origin
+story: *"We asked her if she'd pay for advice or follow it. She said no to
+both. So we didn't build advice."*
