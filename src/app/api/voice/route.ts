@@ -1,79 +1,192 @@
 import { NextRequest, NextResponse } from "next/server";
+import {
+  chatModel,
+  dialogueModel,
+  karaokeEnabled,
+  outputFormat,
+  streamHeaders,
+  tagFor,
+  voiceEnabled,
+  voiceFor,
+  voiceSeed,
+  voiceSettings,
+} from "@/lib/voice/config";
+import { dialogueStream, speakStream, VoiceProviderError } from "@/lib/voice/elevenlabs";
+import { lookupVoice, storeVoice, voiceCacheBackend, voiceCacheKey } from "@/lib/voice/cache";
+import { cleanForTts } from "@/lib/voice/clean";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
-// One voice per crew member (ElevenLabs premade voices, available on every
-// account). The old default (21m00Tcm4TlvBq8ikWAM, "Rachel") is not in the
-// current premade library and 404s. Override any of them via env:
-// ELEVENLABS_VOICE_ID (default / handoff) or ELEVENLABS_VOICE_<AGENT>.
-const CREW_VOICES: Record<string, string> = {
-  analyst: "Xb7hH8MSUJpSbSDYk0k2", // Mara — Alice, clear
-  researcher: "JBFqnCBsd6RMkjVDRZzb", // Jun — George, storyteller
-  planner: "IKne3meq5aSn9XLyUdCD", // Otto — Charlie, energetic
-  evaluator: "XrExE9yKIg1WjnnlVkGX", // Iris — Matilda, professional
-  negotiator: "CwhRBWXzGAHq8TQ4Fs17", // Rex — Roger, laid-back
-};
-const DEFAULT_VOICE = "EXAVITQu4vr4xnSDxMaL"; // Sarah — the morning handoff
+// Audio tags ([calm, clinical] …) are honoured by v3/v4 only; flash ignores
+// them and, worse, they shift alignment indices on the timestamps path.
+const tagCapable = (m: string) => /eleven_v[34]/.test(m);
 
-function voiceFor(agent?: string): string {
-  const key = agent?.toUpperCase();
-  return (
-    (key && process.env[`ELEVENLABS_VOICE_${key}`]) ||
-    (agent && CREW_VOICES[agent]) ||
-    process.env.ELEVENLABS_VOICE_ID ||
-    DEFAULT_VOICE
-  );
+const DIALOGUE_FORMAT = "mp3_44100_96"; // decoded whole via Web Audio — no PCM needed
+
+// Stream the upstream body to the client while accumulating a copy for the
+// cache. A cancelled stream writes nothing — partial audio must never be a hit.
+function tee(upstream: ReadableStream<Uint8Array>, onDone: (buf: Uint8Array) => void): ReadableStream<Uint8Array> {
+  const reader = upstream.getReader();
+  const chunks: Uint8Array[] = [];
+  return new ReadableStream<Uint8Array>({
+    async pull(ctrl) {
+      const { done, value } = await reader.read();
+      if (done) {
+        ctrl.close();
+        if (chunks.length) {
+          const total = chunks.reduce((n, c) => n + c.length, 0);
+          const buf = new Uint8Array(total);
+          let off = 0;
+          for (const c of chunks) {
+            buf.set(c, off);
+            off += c.length;
+          }
+          onDone(buf);
+        }
+        return;
+      }
+      chunks.push(value);
+      ctrl.enqueue(value);
+    },
+    async cancel() {
+      try {
+        await reader.cancel();
+      } catch {
+        /* upstream may already be closed */
+      }
+    },
+  });
+}
+
+function fail(err: unknown) {
+  if (err instanceof VoiceProviderError) {
+    // Local validation codes pass through; upstream failures read as 502 so a
+    // provider 401 never masquerades as our own auth problem.
+    const status = ["not_configured", "missing_text", "missing_inputs", "too_many_voices", "text_too_long"].includes(err.code)
+      ? err.status
+      : 502;
+    return NextResponse.json({ error: err.message, code: err.code, fatal: err.fatal }, { status });
+  }
+  console.error("[voice] unexpected", err);
+  return NextResponse.json({ error: "voice synthesis failed" }, { status: 500 });
 }
 
 export async function GET() {
-  return NextResponse.json({ enabled: Boolean(process.env.ELEVENLABS_API_KEY) });
+  // 204 when unset — absence is a state, not a payload (docs/reference/providers.md).
+  if (!voiceEnabled()) return new Response(null, { status: 204 });
+  return NextResponse.json({
+    enabled: true,
+    models: { crew: chatModel(), dialogue: dialogueModel() },
+    cache: voiceCacheBackend(),
+  });
+}
+
+interface Line {
+  agent: string;
+  text: string;
 }
 
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.ELEVENLABS_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json({ error: "ElevenLabs not configured" }, { status: 503 });
-  }
-
-  let text = "";
-  let agent: string | undefined;
+  let body: { text?: string; agent?: string; timestamps?: boolean; prev?: string; lines?: Line[] };
   try {
-    const body = (await req.json()) as { text?: string; agent?: string };
-    text = (body.text ?? "").trim();
-    agent = body.agent;
+    body = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
-  if (!text) {
-    return NextResponse.json({ error: "Missing text" }, { status: 400 });
+  try {
+    if (Array.isArray(body.lines)) return await dialogue(body.lines);
+    return await single(body);
+  } catch (err) {
+    return fail(err);
   }
+}
 
-  const voiceId = voiceFor(agent);
-  const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
-    method: "POST",
-    headers: {
-      "xi-api-key": apiKey,
-      "Content-Type": "application/json",
-      Accept: "audio/mpeg",
-    },
-    body: JSON.stringify({
-      text: text.slice(0, 1800),
-      model_id: process.env.ELEVENLABS_MODEL_ID ?? "eleven_multilingual_v2",
-      voice_settings: {
-        stability: Number(process.env.ELEVENLABS_STABILITY ?? 0.45),
-        similarity_boost: Number(process.env.ELEVENLABS_SIMILARITY_BOOST ?? 0.75),
-      },
-    }),
+// Multi-voice exchange in one ElevenLabs call — the crew actually converses.
+async function dialogue(lines: Line[]) {
+  const usable = lines.filter((l) => l && typeof l.agent === "string" && l.text?.trim());
+  if (!usable.length) return NextResponse.json({ error: "lines must be {agent, text} pairs" }, { status: 400 });
+
+  const model = dialogueModel();
+  const inputs = usable.map((l) => {
+    const tag = tagCapable(model) ? tagFor(l.agent) : "";
+    return { voiceId: voiceFor(l.agent), text: (tag ? `${tag} ` : "") + cleanForTts(l.text).clean };
   });
-
-  if (!res.ok) {
-    return NextResponse.json({ error: `ElevenLabs request failed (${res.status})` }, { status: res.status });
+  const settings = voiceSettings();
+  const key = voiceCacheKey({
+    kind: "dialogue",
+    voice: inputs.map((i) => i.voiceId).sort().join(","),
+    model,
+    text: inputs.map((i) => i.text).join("|"),
+    format: DIALOGUE_FORMAT,
+    align: false,
+    seed: voiceSeed(),
+    stability: settings.stability,
+    similarity: settings.similarity_boost,
+  });
+  const hit = await lookupVoice(key);
+  if (hit) {
+    return new Response(new Uint8Array(hit.bytes), {
+      headers: { ...streamHeaders(DIALOGUE_FORMAT), "X-Voice-Cache": `hit:${hit.source}` },
+    });
   }
-  const audio = await res.arrayBuffer();
-  return new Response(audio, {
-    headers: {
-      "Content-Type": "audio/mpeg",
-      "Cache-Control": "no-store",
-    },
+
+  const res = await dialogueStream({ inputs, model, outputFormat: DIALOGUE_FORMAT });
+  return new Response(tee(res.body!, (buf) => void storeVoice(key, buf, "audio/mpeg")), {
+    headers: { ...streamHeaders(DIALOGUE_FORMAT), "X-Voice-Cache": "miss" },
+  });
+}
+
+// Single-voice utterance. Default: raw PCM stream for Web Audio scheduling.
+// timestamps:true → with-timestamps NDJSON (audio_base64 + char alignment) for
+// karaoke sync.
+async function single(body: { text?: string; agent?: string; timestamps?: boolean; prev?: string }) {
+  const raw = body.text ?? "";
+  if (!raw.trim()) return NextResponse.json({ error: "Missing text" }, { status: 400 });
+
+  const model = chatModel();
+  const { clean } = cleanForTts(raw);
+  if (!clean) return NextResponse.json({ error: "Missing text" }, { status: 400 });
+  const tag = tagCapable(model) && !clean.startsWith("[") ? tagFor(body.agent) : "";
+  const text = tag ? `${tag} ${clean}` : clean;
+  const alignOff = tag ? tag.length + 1 : 0;
+
+  const voice = voiceFor(body.agent);
+  const align = Boolean(body.timestamps) && karaokeEnabled();
+  const format = outputFormat();
+  const settings = voiceSettings();
+  const key = voiceCacheKey({
+    kind: "tts",
+    voice,
+    model,
+    text,
+    format,
+    align,
+    seed: voiceSeed(),
+    stability: settings.stability,
+    similarity: settings.similarity_boost,
+  });
+  const hit = await lookupVoice(key);
+  const extra = {
+    "X-Voice-Cache": hit ? `hit:${hit.source}` : "miss",
+    ...(alignOff ? { "X-Voice-Align-Offset": String(alignOff) } : {}),
+  };
+  if (hit) {
+    return new Response(new Uint8Array(hit.bytes), {
+      headers: { ...streamHeaders(format), ...(align ? { "Content-Type": "application/x-ndjson" } : {}), ...extra },
+    });
+  }
+
+  const res = await speakStream({
+    text,
+    voiceId: voice,
+    model,
+    outputFormat: format,
+    align,
+    previousText: body.prev ? cleanForTts(body.prev).clean : undefined,
+  });
+  const contentType = align ? "application/x-ndjson" : undefined;
+  return new Response(tee(res.body!, (buf) => void storeVoice(key, buf, contentType ?? "audio/pcm")), {
+    headers: { ...streamHeaders(format), ...(contentType ? { "Content-Type": contentType } : {}), ...extra },
   });
 }

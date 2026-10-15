@@ -178,6 +178,13 @@ export interface AdherenceProfile {
 
 export type AgentId = "analyst" | "researcher" | "planner" | "evaluator" | "negotiator";
 
+/** One spoken line in a multi-voice handoff — `narrator` maps to the default
+ *  voice (Sarah); crew ids map to their own voices. */
+export interface VoiceLine {
+  agent: string;
+  text: string;
+}
+
 export type CrewEvent =
   | { type: "run_start"; provider: string; trip: Trip; baseline: WearableBaseline; calendar: CalendarEvent[] }
   | { type: "agent_start"; agent: AgentId; title: string }
@@ -199,6 +206,10 @@ export type CrewEvent =
       days: DayPlan[];
       /** How much of the required shift the locked days actually cover. */
       coverage: ShiftCoverage;
+      /** Multi-voice script for the spoken handoff (Iris verdict + narrator
+       *  summary). Absent on old persisted events — clients fall back to
+       *  reading `summary` in a single voice. */
+      lines?: VoiceLine[];
     }
   | { type: "error"; message: string; recoverable: boolean }
   | { type: "check_in"; checkIn: CheckIn }

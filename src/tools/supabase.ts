@@ -60,6 +60,11 @@ function clientOrNone(): SupabaseClient | null {
   return client;
 }
 
+/** Shared admin client for callers outside this module (voice cache storage). */
+export function supabaseAdmin(): SupabaseClient | null {
+  return clientOrNone();
+}
+
 export async function persistRun(run: unknown): Promise<boolean> {
   const c = clientOrNone();
   if (!c) return false;

@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { X } from "lucide-react";
 import { fmtMin } from "@/domain/circadian";
-import type { Citation, DayPlan, ShiftCoverage } from "@/domain/types";
+import { speakDialogue, speakOnce } from "@/lib/voice/engine";
+import type { Citation, DayPlan, ShiftCoverage, VoiceLine } from "@/domain/types";
 
 interface Props {
   summary: string;
@@ -12,59 +13,46 @@ interface Props {
   citations: Citation[];
   days: DayPlan[];
   ics: string;
+  /** Multi-voice handoff script — played as a dialogue when present. */
+  lines?: VoiceLine[];
   /** Omitted on briefings recorded before coverage was measured. */
   coverage?: ShiftCoverage;
   onClose: () => void;
   fallback?: boolean;
 }
 
-export function BriefingCard({ summary, score, citations, days, ics, coverage, onClose, fallback }: Props) {
+export function BriefingCard({ summary, score, citations, days, ics, lines, coverage, onClose, fallback }: Props) {
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [voiceState, setVoiceState] = useState<"idle" | "loading" | "playing" | "error">("idle");
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const playGen = useRef(0);
 
   useEffect(() => {
     fetch("/api/voice")
-      .then((r) => r.json())
+      .then((r) => (r.status === 204 || !r.ok ? null : r.json()))
       .then((d) => setVoiceEnabled(Boolean(d?.enabled)))
       .catch(() => {});
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
-    };
   }, []);
 
-  const listen = async () => {
+  const listen = () => {
     if (voiceState === "loading" || voiceState === "playing") return;
     setVoiceState("loading");
-    try {
-      const res = await fetch("/api/voice", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: summary }),
-      });
-      if (!res.ok) throw new Error("voice failed");
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      audioRef.current = audio;
-      audio.onended = () => {
-        URL.revokeObjectURL(url);
-        audioRef.current = null;
-        setVoiceState("idle");
-      };
-      audio.onerror = () => {
-        URL.revokeObjectURL(url);
-        audioRef.current = null;
-        setVoiceState("error");
-      };
-      await audio.play();
-      setVoiceState("playing");
-    } catch {
-      setVoiceState("error");
-    }
+    const my = ++playGen.current;
+    const cbs = {
+      onStart: () => {
+        if (playGen.current === my) setVoiceState("playing");
+      },
+      onEnd: () => {
+        if (playGen.current === my) setVoiceState("idle");
+      },
+    };
+    // force: an explicit button press speaks even if the run-time toggle is off.
+    if (lines?.length) speakDialogue(lines, cbs, true);
+    else speakOnce(summary, "handoff", cbs, true);
+    // No audio yet after the synthesis window → report the failure instead of
+    // hanging on "Generating voice…" forever.
+    window.setTimeout(() => {
+      if (playGen.current === my) setVoiceState((s) => (s === "loading" ? "error" : s));
+    }, 12000);
   };
 
   // One action, not an information dump — surface the single next ask.

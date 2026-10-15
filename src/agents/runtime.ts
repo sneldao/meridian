@@ -19,6 +19,7 @@ import { loadMemory, memoryBrief, recordRun } from "@/domain/memory";import type
   EvalResult,
 } from "@/domain/types";
 import { CREW, type CrewMember } from "./crew";
+import { handoffLines } from "./handoff";
 import { providerKind, resolveModel } from "./providers";
 import { runReplay } from "./replay";
 import { runMorningReplay } from "./morning-replay";
@@ -500,6 +501,13 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
     citations: state.citations,
     days: state.lockedDays,
     coverage,
+    lines: handoffLines({
+      locked: state.lockedDays.length,
+      total: trip.days.length,
+      score: meanScore,
+      coverage,
+      summary,
+    }),
   });
   logLine(`briefing issued — score ${meanScore}, coverage ${Math.round(coverage.ratio * 100)}%`);
 

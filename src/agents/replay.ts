@@ -3,6 +3,7 @@ import { ADHERENCE_PROFILE, DEMO_TRIP, GARMIN_BASELINE, calendarFor } from "@/do
 import type { AgentId, Citation, CalendarEvent, CrewEvent, DayPlan, EvalResult, Trip } from "@/domain/types";
 import { buildIcs, proposeMove } from "@/tools/calendar";
 import { fallbackCitations } from "@/tools/science";
+import { handoffLines } from "./handoff";
 import { replayPlanFor } from "./replay-plan";
 
 // The recorded shift: a full scripted run used for UI development and as
@@ -234,14 +235,22 @@ export async function* runReplay(trip: Trip = DEMO_TRIP): AsyncGenerator<CrewEve
   const shiftLine = coverage.complete
     ? `fully adapted on landing`
     : `${Math.round(coverage.ratio * 100)}% of the ${route} shift covered before you land — ${Math.round(coverage.residualMin / 6) / 10}h still owed at touchdown, and the crew keeps working after you land`;
+  const summary = `Night shift complete. ${locked.length} days locked, ${coverage.achievedMin} of ${coverage.requiredMin} minutes shifted (${shiftLine}). ${citations.length} papers cited. Calendar: ${movedCount} events rescheduled, every fixed commitment intact.`;
   yield {
     type: "briefing",
-    summary: `Night shift complete. ${locked.length} days locked, ${coverage.achievedMin} of ${coverage.requiredMin} minutes shifted (${shiftLine}). ${citations.length} papers cited. Calendar: ${movedCount} events rescheduled, every fixed commitment intact.`,
+    summary,
     ics,
     score: meanScore,
     citations,
     days: locked,
     coverage,
+    lines: handoffLines({
+      locked: locked.length,
+      total: trip.days.length,
+      score: meanScore,
+      coverage,
+      summary,
+    }),
   };
   await sleep(4 * BEAT);
   yield { type: "done" };

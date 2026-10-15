@@ -27,6 +27,8 @@ import { CalendarLens } from "@/components/lenses/CalendarLens";
 import { Ledger } from "@/components/lenses/Ledger";
 import { useRunState, calendarWithMoves, ledgerEvents, ghostGapDeg } from "@/state/run";
 import { meetingReadiness } from "@/domain/readiness";
+import { initVoice, setVoiceEnabled, speakDialogue, speakOnce, speakSentence, stopAll as stopVoiceAll } from "@/lib/voice/engine";
+import { takeChunks } from "@/lib/voice/split";
 
 interface TripData {
   trip: Trip;
@@ -34,36 +36,6 @@ interface TripData {
   calendar: CalendarEvent[];
   calendarSource?: "google" | "fixture";
   provider: string;
-}
-
-// Voice pump — module-level because it only touches refs; keeps the agent
-// utterances sequential instead of talking over each other.
-function pumpVoice(
-  queue: { agent: string; text: string }[],
-  audioSlot: { current: HTMLAudioElement | null },
-) {
-  if (audioSlot.current || !queue.length) return;
-  const job = queue.shift()!;
-  fetch("/api/voice", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(job),
-  })
-    .then(async (r) => {
-      if (!r.ok) return pumpVoice(queue, audioSlot);
-      const url = URL.createObjectURL(await r.blob());
-      const a = new Audio(url);
-      audioSlot.current = a;
-      const done = () => {
-        audioSlot.current = null;
-        URL.revokeObjectURL(url);
-        pumpVoice(queue, audioSlot);
-      };
-      a.onended = done;
-      a.onerror = done;
-      a.play().catch(done);
-    })
-    .catch(() => pumpVoice(queue, audioSlot));
 }
 
 /** Wall-clock time (HH:MM) in a city, from its DST-aware UTC offset. */
@@ -94,22 +66,16 @@ export default function Home() {
   const esRef = useRef<EventSource | null>(null);
   const [voiceOn, setVoiceOn] = useState(true);
   const voiceOnRef = useRef(true);
-  const utterRef = useRef<Record<string, string>>({});
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const voiceQueueRef = useRef<{ agent: string; text: string }[]>([]);
+  const [voiceAvail, setVoiceAvail] = useState(false);
+  // Per-agent utterance state: pending token buffer, chars already dispatched
+  // to TTS, total display chars, and the current utterance id (karaoke key).
+  const uttRef = useRef<Record<string, { uId: string; total: number; sent: number; pending: string; last: string }>>({});
+  const uSeqRef = useRef(0);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
-  const speak = useCallback((agent: string, text: string) => {
-    if (!text.trim() || !voiceOnRef.current) return;
-    voiceQueueRef.current.push({ agent, text: text.trim() });
-    pumpVoice(voiceQueueRef.current, audioRef);
-  }, []);
-
   const stopVoice = useCallback(() => {
-    voiceQueueRef.current = [];
-    utterRef.current = {};
-    audioRef.current?.pause();
-    audioRef.current = null;
+    uttRef.current = {};
+    stopVoiceAll();
   }, []);
 
   useEffect(() => {
@@ -130,6 +96,7 @@ export default function Home() {
   useEffect(() => {
     const t = setTimeout(() => {
       try {
+        initVoice().then(setVoiceAvail);
         setHasSavedPlan(Boolean(localStorage.getItem("meridian:lastPlan")));
         setShowOnboarding(!localStorage.getItem("meridian:onboarded"));
         fetch("/api/memory")
@@ -191,21 +158,61 @@ export default function Home() {
           break;
         case "agent_start":
           push({ kind: "agent", agent: e.agent, title: e.title });
+          uttRef.current[e.agent] = {
+            uId: `${e.agent}-${++uSeqRef.current}`,
+            total: 0,
+            sent: 0,
+            pending: "",
+            last: "",
+          };
           break;
-        case "agent_token":
-          utterRef.current[e.agent] = (utterRef.current[e.agent] ?? "") + e.text;
+        case "agent_token": {
+          const u = uttRef.current[e.agent];
+          const uStart = u ? u.total : undefined;
           setEntries((prev) => {
             const last = prev[prev.length - 1];
             if (last?.kind === "text" && last.agent === e.agent) {
               return [...prev.slice(0, -1), { ...last, text: last.text + e.text }];
             }
-            return [...prev, { kind: "text", agent: e.agent, text: e.text }];
+            return [...prev, { kind: "text", agent: e.agent, text: e.text, uId: u?.uId, uStart }];
           });
+          if (u) {
+            u.total += e.text.length;
+            u.pending += e.text;
+            const { chunks, rest } = takeChunks(u.pending);
+            const base = u.sent;
+            for (const c of chunks) {
+              speakSentence({ uId: u.uId, agent: e.agent, text: c.text, charBase: base + c.start, prev: u.last || undefined });
+              u.last = c.text;
+            }
+            u.sent += u.pending.length - rest.length;
+            u.pending = rest;
+          }
           break;
-        case "agent_end":
-          speak(e.agent, utterRef.current[e.agent] ?? "");
-          utterRef.current[e.agent] = "";
+        }
+        case "agent_end": {
+          const u = uttRef.current[e.agent];
+          if (u) {
+            const { chunks } = takeChunks(u.pending, { flush: true });
+            const base = u.sent;
+            chunks.forEach((c, i) => {
+              speakSentence({
+                uId: u.uId,
+                agent: e.agent,
+                text: c.text,
+                charBase: base + c.start,
+                prev: u.last || undefined,
+                utterTotal: i === chunks.length - 1 ? u.total : undefined,
+              });
+              u.last = c.text;
+            });
+            if (!chunks.length) {
+              speakSentence({ uId: u.uId, agent: e.agent, text: "", charBase: base, utterTotal: u.total });
+            }
+          }
+          delete uttRef.current[e.agent];
           break;
+        }
         case "tool_call":
           push({ kind: "tool", agent: e.agent, text: `→ ${e.tool} ${e.detail}` });
           break;
@@ -234,7 +241,8 @@ export default function Home() {
           });
           break;
         case "briefing":
-          speak("evaluator", e.summary);
+          if (e.lines?.length) speakDialogue(e.lines);
+          else speakOnce(e.summary, "evaluator");
           setHasSavedPlan(true);
           try {
             if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
@@ -246,7 +254,7 @@ export default function Home() {
           try {
             localStorage.setItem(
               "meridian:lastPlan",
-              JSON.stringify({ summary: e.summary, score: e.score, citations: e.citations, days: e.days, ics: e.ics }),
+              JSON.stringify({ summary: e.summary, score: e.score, citations: e.citations, days: e.days, ics: e.ics, lines: e.lines }),
             );
             const entry = {
               id: Date.now(),
@@ -279,7 +287,7 @@ export default function Home() {
           break;
       }
     },
-    [push, speak, stopVoice, data, run.errors.length],
+    [push, stopVoice, data, run.errors.length],
   );
 
   const cancelShift = useCallback(() => {
@@ -429,15 +437,19 @@ export default function Home() {
                   )}
                   <button
                     onClick={() => {
+                      if (!voiceAvail) return;
                       const next = !voiceOn;
                       voiceOnRef.current = next;
                       setVoiceOn(next);
+                      setVoiceEnabled(next);
                       if (!next) stopVoice();
                       setMenuOpen(false);
                     }}
-                    className="w-full rounded-lg px-3 py-1.5 text-left text-[12px] text-mist hover:bg-line hover:text-paper"
+                    disabled={!voiceAvail}
+                    title={voiceAvail ? undefined : "No ElevenLabs key on this deployment"}
+                    className="w-full rounded-lg px-3 py-1.5 text-left text-[12px] text-mist hover:bg-line hover:text-paper disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-mist"
                   >
-                    voice {voiceOn ? "on" : "off"}
+                    voice {voiceAvail ? (voiceOn ? "on" : "off") : "unavailable"}
                   </button>
                   {providerLabel && (
                     <div className="rounded-lg px-3 py-1.5 text-[12px] text-dim">
@@ -547,6 +559,7 @@ export default function Home() {
                 citations={run.briefing.citations}
                 days={run.briefing.days}
                 ics={run.briefing.ics}
+                lines={run.briefing.lines}
                 coverage={run.briefing.coverage}
                 fallback={providerFallback}
                 onClose={() => setBriefingDismissed(true)}

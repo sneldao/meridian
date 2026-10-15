@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import { CREW } from "@/agents/crew";
 import { AGENT_ICONS } from "@/lib/agent-icons";
+import { spokenChars, subscribeVoice } from "@/lib/voice/engine";
 import type { AgentId, Citation, EvalResult } from "@/domain/types";
 
 export type LogEntry =
   | { kind: "agent"; agent: AgentId; title: string }
-  | { kind: "text"; agent: AgentId; text: string }
+  | { kind: "text"; agent: AgentId; text: string; uId?: string; uStart?: number }
   | { kind: "tool"; agent: AgentId; text: string }
   | { kind: "citation"; citation: Citation }
   | { kind: "eval"; result: EvalResult }
@@ -17,6 +18,32 @@ export type LogEntry =
   | { kind: "system"; text: string };
 
 const agentColor = (id: AgentId) => CREW[id]?.color ?? "var(--color-mist)";
+
+// The tail of the feed reads in full: the agent's reasoning is the product,
+// not a tooltip. Everything above it stays clamped to two lines so the feed
+// still scans, and the typing cursor marks the entry that is still being
+// written. When voice is speaking this entry, the already-spoken prefix lights
+// up in the agent's colour — karaoke sync from ElevenLabs char alignment.
+function TextLine({ e, isTail, isLiveEdge }: { e: Extract<LogEntry, { kind: "text" }>; isTail: boolean; isLiveEdge?: boolean }) {
+  const spoken = useSyncExternalStore(
+    subscribeVoice,
+    () => spokenChars(e.uId),
+    () => 0,
+  );
+  const n = e.uId ? Math.max(0, Math.min(e.text.length, spoken - (e.uStart ?? 0))) : 0;
+  return (
+    <p
+      className={`mb-1 font-sans text-[13px] text-paper ${isTail ? "" : "line-clamp-2"}`}
+      title={isTail ? undefined : e.text}
+    >
+      {n > 0 && <span style={{ color: agentColor(e.agent) }}>{e.text.slice(0, n)}</span>}
+      {e.text.slice(n)}
+      {isLiveEdge && (
+        <span className="ml-0.5 inline-block h-3 w-1 animate-pulse bg-mist align-middle opacity-40" />
+      )}
+    </p>
+  );
+}
 
 export function CrewFeed({ entries, running }: { entries: LogEntry[]; running?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -67,24 +94,9 @@ export function CrewFeed({ entries, running }: { entries: LogEntry[]; running?: 
             );
           }
           case "text": {
-            // The tail of the feed reads in full: the agent's reasoning is the
-            // product, not a tooltip. Everything above it stays clamped to two
-            // lines so the feed still scans, and the typing cursor marks the
-            // entry that is still being written.
             const isLiveEdge = running && i === entries.length - 1;
             const isTail = i === entries.length - 1;
-            return (
-              <p
-                key={i}
-                className={`mb-1 font-sans text-[13px] text-paper ${isTail ? "" : "line-clamp-2"}`}
-                title={isTail ? undefined : e.text}
-              >
-                {e.text}
-                {isLiveEdge && (
-                  <span className="ml-0.5 inline-block h-3 w-1 animate-pulse bg-mist align-middle opacity-40" />
-                )}
-              </p>
-            );
+            return <TextLine key={i} e={e} isTail={isTail} isLiveEdge={isLiveEdge} />;
           }
           case "tool":
             return (

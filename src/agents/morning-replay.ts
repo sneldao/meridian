@@ -4,6 +4,7 @@ import { ADHERENCE_PROFILE, DEMO_TRIP, GARMIN_BASELINE, calendarFor } from "@/do
 import type { AdherenceProfile, AgentId, CalendarEvent, CheckIn, CrewEvent, DayPlan, EvalResult, Trip } from "@/domain/types";
 import { buildIcs } from "@/tools/calendar";
 import { fallbackCitations } from "@/tools/science";
+import { handoffLines } from "./handoff";
 import { replayPlanFor } from "./replay-plan";
 
 // The recorded morning shift: the adherence-replan beat without a live
@@ -132,14 +133,23 @@ export async function* runMorningReplay(opts: {
     ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 100) / 100
     : 0;
   const coverage = coverageOf(trip, locked);
+  const summary = `Morning replan complete. ${locked.length} of ${specs.length} remaining days re-locked after ${opts.checkIns.length} check-in(s). ${Math.round(coverage.ratio * 100)}% of the shift covered, ${Math.round(coverage.residualMin / 6) / 10}h still owed at touchdown.`;
   yield {
     type: "briefing",
-    summary: `Morning replan complete. ${locked.length} of ${specs.length} remaining days re-locked after ${opts.checkIns.length} check-in(s). ${Math.round(coverage.ratio * 100)}% of the shift covered, ${Math.round(coverage.residualMin / 6) / 10}h still owed at touchdown.`,
+    summary,
     ics: buildIcs(cal, trip),
     score: meanScore,
     citations,
     days: locked,
     coverage,
+    lines: handoffLines({
+      locked: locked.length,
+      total: specs.length,
+      score: meanScore,
+      coverage,
+      summary,
+      lead: "Morning replan wrapped.",
+    }),
   };
   await sleep(2 * BEAT);
   yield { type: "done" };
