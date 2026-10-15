@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { fmtMin } from "@/domain/circadian";
 import { summarizeCheckIn } from "@/domain/adherence";
 import type {
@@ -41,7 +41,14 @@ function clockAt(offsetMin: number, now = new Date()): string {
   return fmtMin(now.getUTCHours() * 60 + now.getUTCMinutes() + offsetMin);
 }
 
-
+const MEMORY_TOOL_NAMES = new Set([
+  "recallFindings",
+  "priorFailures",
+  "calendarConflicts",
+  "crewMemory",
+  "recall_findings",
+  "crew_memory",
+]);
 
 export default function Home() {
   const [activeScreen, setActiveScreen] = useState<"guide" | "setup">("guide");
@@ -413,6 +420,30 @@ export default function Home() {
     ? meetingReadiness(trip, currentEvents, [...run.locked.values()], baseline)
     : [];
   const activeCitations = run.citations;
+  // Latest graph-memory consult this run — hop path into nudge evidence rows.
+  let memoryPath: string | undefined;
+  for (let i = run.log.length - 1; i >= 0; i--) {
+    const e = run.log[i].event;
+    if (e.type === "tool_result" && MEMORY_TOOL_NAMES.has(e.tool)) {
+      const m = e.detail.match(/[\w:()]+ *-\[:[^\]]+\]-> *.+/);
+      memoryPath = (m ? m[0] : e.detail).slice(0, 140);
+      break;
+    }
+  }
+
+  // Depth dial via URL: ?depth=guided opens every evidence drawer;
+  // ?depth=operator goes straight to the crew surface. Deferred so the first
+  // paint isn't blocked reading location.
+  const [depth, setDepth] = useState<string | null>(null);
+  useEffect(() => {
+    const d = new URLSearchParams(window.location.search).get("depth");
+    if (d === "operator") {
+      window.location.replace("/crew");
+      return;
+    }
+    const t = setTimeout(() => setDepth(d), 0);
+    return () => clearTimeout(t);
+  }, []);
 
   return (
     <div className="root" ref={menuRef}>
@@ -592,6 +623,8 @@ export default function Home() {
             drafts={run.drafts}
             verdicts={run.verdicts}
             rejected={run.rejected}
+            memoryPath={memoryPath}
+            expandAllWhy={depth === "guided"}
             baseline={baseline}
             calendarEvents={currentEvents}
             moves={run.moves}

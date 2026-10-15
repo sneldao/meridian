@@ -65,13 +65,15 @@ delete the orphaned imports; re-home them under the depth-3 view.
 - [x] Operator view: resurrected verbatim at `/crew` — `/` links to it from
       the nav menu ("See the crew work →")
 - [x] Remove `DEFAULT_CITATIONS` fake-evidence fallback
-- [ ] Depth control component + `?depth=` param + localStorage — v1 ships the
-      dial implicitly (expanders = Guided, /crew = Operator); a global param
-      is still worth it for judge-facing URLs
-- [ ] Guided ribbon component (distilled beats, ~4 lines) — human-readable
-      eval/calendar beats distilled from the event stream
-- [ ] `memoryPath` provenance — needs `recallFindings` results mapped back to
-      days (tool_results aren't keyed by day yet)
+- [x] `?depth=` param — `guided` opens every evidence drawer, `operator`
+      redirects to `/crew` (shareable judge URLs). localStorage persistence
+      deferred — URL param + menu link covers the v1 dial
+- [x] Guided ribbon — `dayBeat` line under the day strip: "Crew: drafted 2× ·
+      scorer rejected 1× · locked at 0.91 · trip memory consulted", derived
+      from verdicts/drafts/locked only (never reconstructed)
+- [x] `memoryPath` provenance — `page.tsx` extracts the latest
+      recallFindings/priorFailures hop path from `run.log` tool_results,
+      flows into every nudge's evidence row
 - [ ] Update the video shot list — better arc now: calm face → why-expansion → full crew
 
 ## Why this shape

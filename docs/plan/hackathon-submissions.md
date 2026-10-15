@@ -180,20 +180,31 @@ Record a single ~3-min demo (PayPal's cap; safe everywhere) where every
 sponsor integration appears in one shot list. Record after Graph Hacks lands —
 the memory hop-path answer is the strongest beat.
 
-1. **Cold open** — landing at `/`: pick LHR→HND, run starts. (5s)
-2. **Crew feed** — Mara reads the baseline; Jun calls `searchScience` then
-   `searchWeb` (Tavily hit visible in the feed). (20s)
-3. **The gate** — Otto's draft rejected by the scorer, evaluator explains,
+Post-consolidation arc — the app now has three depths (`docs/plan/
+consolidation.md`): `/` consumer face, per-nudge evidence (Guided), `/crew`
+operator surface. The video walks the dial — product first, agent infra
+underneath, which is a stronger submission than dashboard-first.
+
+1. **Cold open** — landing at `/` (calm face): pick LHR→HND, crew run
+   starts. (5s)
+2. **The face** — day nudges appear; Guided ribbon: "Crew: drafted 2× ·
+   scorer rejected 1× · locked at 0.91". (10s)
+3. **Show your work** — tap a nudge's "Why & details": the evidence row —
+   gate score, rejection-and-retry, backing citation, memory hop path.
+   *This is the consolidation arc's signature shot.* (15s)
+4. **Crew feed** — flip to `/crew` (`?depth=operator` URL): Mara reads the
+   baseline; Jun calls `searchScience` then `searchWeb` (Tavily hit in the
+   feed). (20s)
+5. **The gate** — Otto's draft rejected by the scorer, evaluator explains,
    retry locks. "Agents propose, code disposes." (30s)
-4. **Memory** — `recall_findings` answer with hop path in the ledger, or the
-   same intervention skipped across two runs. (20s)
-5. **Taste** — Otto calls `destinationTaste`; a plan note grounds a light
+6. **Memory** — `recall_findings` answer with hop path in the ledger. (15s)
+7. **Taste** — Otto calls `destinationTaste`; a plan note grounds a light
    break in a real Tokyo venue category. (15s)
-6. **Handoff** — briefing card + `.ics` download + calendar moves. (15s)
-7. **The MCP surface** — terminal split: MCP Inspector / curl
-   `tools/call plan_shift` against the live Render URL. (15s)
-8. **Close** — "agents that fly ahead of you" + provider badge visible
-   (`nebius` in the run header for the NVIDIA cut). (5s)
+8. **Handoff** — briefing card + `.ics` download + calendar moves. (15s)
+9. **The MCP surface** — terminal split: `tools/call plan_shift` against
+   the live Render URL. (15s)
+10. **Close** — "agents that fly ahead of you" + provider badge visible
+    (`nebius` in the run header for the NVIDIA cut). (5s)
 
 Tailoring per submission is just the voiceover + the last 10s frame — the
 footage never changes.

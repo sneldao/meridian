@@ -25,11 +25,15 @@ interface NudgeFeedScreenProps {
   selectedDayLabel: string;
   onSelectDay: (label: string) => void;
   locked: Map<string, DayPlan>;
-  drafts: Map<string, { plan: DayPlan }>;
+  drafts: Map<string, { plan: DayPlan; attempt?: number }>;
   /** Per-day scorer verdicts — the "why" expander's evidence row. */
   verdicts: Map<string, EvalResult[]>;
   /** Days rejected at least once before locking. */
   rejected: Set<string>;
+  /** Latest graph-memory hop path the crew consulted — evidence row. */
+  memoryPath?: string;
+  /** Guided depth: open every "why" drawer without tapping. */
+  expandAllWhy?: boolean;
   baseline?: WearableBaseline;
   calendarEvents: CalendarEvent[];
   moves: CalendarMove[];
@@ -58,6 +62,8 @@ export function NudgeFeedScreen({
   drafts,
   verdicts,
   rejected,
+  memoryPath,
+  expandAllWhy,
   baseline,
   calendarEvents,
   moves,
@@ -158,12 +164,31 @@ export function NudgeFeedScreen({
       citations,
       verdicts: verdicts.get(activeDaySpec.label),
       dayRejected: rejected.has(activeDaySpec.label) || (verdicts.get(activeDaySpec.label) ?? []).some((v) => !v.feasible),
+      memoryPath,
     });
     return [...raw].sort(
       (a, b) =>
         CANONICAL_ORDER.indexOf(a.category) - CANONICAL_ORDER.indexOf(b.category),
     );
-  }, [trip, activeDaySpec, locked, drafts, baseline, calendarEvents, moves, citations, verdicts, rejected]);
+  }, [trip, activeDaySpec, locked, drafts, baseline, calendarEvents, moves, citations, verdicts, rejected, memoryPath]);
+
+  // Guided ribbon — the day's crew beats, distilled to one line. Only real
+  // events, never reconstructed.
+  const dayBeat = useMemo(() => {
+    if (!activeDaySpec) return null;
+    const vs = verdicts.get(activeDaySpec.label) ?? [];
+    if (!vs.length && !memoryPath) return null;
+    const parts: string[] = [];
+    const nAttempts = Math.max(vs.length, drafts.get(activeDaySpec.label)?.attempt ?? 0);
+    if (nAttempts) parts.push(`drafted ${nAttempts}×`);
+    const fails = vs.filter((v) => !v.feasible).length;
+    if (fails) parts.push(`scorer rejected ${fails}×`);
+    const latest = vs.at(-1);
+    if (locked.has(activeDaySpec.label) && latest)
+      parts.push(`locked at ${latest.score.toFixed(2)}`);
+    if (memoryPath) parts.push("trip memory consulted");
+    return parts.length ? `Crew: ${parts.join(" · ")}` : null;
+  }, [activeDaySpec, verdicts, drafts, locked, memoryPath]);
 
   const filteredNudges = useMemo(() => {
     if (categoryFilter === "all") return allDayNudges;
@@ -375,6 +400,22 @@ export function NudgeFeedScreen({
         })}
       </div>
 
+      {/* Guided ribbon — the day's crew beats in one line */}
+      {dayBeat && (
+        <div
+          className="rise"
+          style={{
+            marginTop: "8px",
+            fontSize: "11px",
+            fontWeight: 600,
+            color: "#7a6a5c",
+            letterSpacing: "0.02em",
+          }}
+        >
+          {dayBeat}
+        </div>
+      )}
+
       {/* Category Filter Chips */}
       <div className="row chips rise" style={{ animationDelay: ".35s" }}>
         {(
@@ -497,7 +538,7 @@ export function NudgeFeedScreen({
           const isGreen =
             nudge.category === "run" || nudge.category === "sleep";
           const isDark = nudge.category === "nutrition";
-          const isExpanded = expandedWhyId === nudge.id;
+          const isExpanded = expandAllWhy || expandedWhyId === nudge.id;
 
           let barWidth = "40%";
           if (nudge.category === "run") barWidth = "55%";
@@ -627,6 +668,9 @@ export function NudgeFeedScreen({
                           ? ` — flagged: ${nudge.evidence.evalVerdict.violations.join("; ")}`
                           : " — no violations"}
                         {nudge.citation ? ` · backed by ${nudge.citation.title}` : ""}
+                        {nudge.evidence.memoryPath
+                          ? ` · memory: ${nudge.evidence.memoryPath}`
+                          : ""}
                       </p>
                     ) : null}
                   </div>

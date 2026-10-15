@@ -187,8 +187,11 @@ export function buildDailyNudgesForDay(params: {
   verdicts?: EvalResult[];
   /** The day was rejected at least once before locking. */
   dayRejected?: boolean;
+  /** Latest graph-memory hop path the crew consulted this run — evidence that
+   *  cross-run memory shaped the plan. Only set when a recall tool really ran. */
+  memoryPath?: string;
 }): TravelerNudge[] {
-  const { trip, dayIndex, plan, baseline, calendarEvents, moves, citations, verdicts, dayRejected } = params;
+  const { trip, dayIndex, plan, baseline, calendarEvents, moves, citations, verdicts, dayRejected, memoryPath } = params;
   const spec = trip.days[dayIndex] ?? { dayIndex, label: `Day ${dayIndex + 1}`, date: "" };
   const east = trip.direction === "east";
   const isFlightDay = dayIndex === trip.departureDayIndex;
@@ -368,10 +371,13 @@ export function buildDailyNudgesForDay(params: {
   // Evidence chain: the day's actual scorer verdicts — shared by every nudge
   // from this day. Only attached when the crew really evaluated the day.
   const latest = verdicts?.at(-1);
-  const dayEvidence = latest
+  const dayEvidence = latest || memoryPath
     ? {
-        evalVerdict: { score: latest.score, violations: latest.violations.map((v) => v.message) },
+        ...(latest
+          ? { evalVerdict: { score: latest.score, violations: latest.violations.map((v) => v.message) } }
+          : {}),
         ...(dayRejected ? { draftRejected: true } : {}),
+        ...(memoryPath ? { memoryPath } : {}),
       }
     : undefined;
 
