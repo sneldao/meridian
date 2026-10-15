@@ -11,7 +11,11 @@ scorer really runs, the rejections are real verdicts against real plans, and
 the `.ics` is a genuine artifact. Two visible recoveries (`CALENDAR_CONFLICT`
 on D-2 and D-1) and five day locks.
 
-Pacing knob: `BEAT` in `src/agents/replay.ts` — ms between streamed events.
+Pacing knob: `REPLAY_BEAT_MS` env var (default `60`, read in `replay.ts` and
+`morning-replay.ts`) — ms between streamed events. Default is too fast to
+narrate (~7.5 s for a full night shift); set `REPLAY_BEAT_MS=300` in
+`.env.local` on the stage machine (~40 s, narratable). Keep the default for
+tests and fixture recording — see `docs/hackathon-plan.md` §11.
 
 ## The morning replan (replay)
 

@@ -9,6 +9,11 @@ moves unless an agent moved it. One run state, four lenses (World · Shift Board
 duty of care for staff who fly long-haul. The long-term vision lives in
 [design-vision.md](design-vision.md); this doc is what ships today.
 
+> **Reading this fresh?** §§1–9 are the original plan (judging criteria,
+> product spec, demo script — still accurate). §10 is integration history,
+> collapsed below — skip it. **§11 is current — start there** for what to
+> actually do right now.
+
 ---
 
 ## 1. Judging criteria → what we show
@@ -131,6 +136,9 @@ in one screen. Build it on replay so it's deterministic; show one tile live.
 
 ## 6. Team split — non-overlapping files
 
+<details>
+<summary><strong>Original A/B/C/D assignments — done, superseded by §11. Kept for history.</strong></summary>
+
 Work in separate branches or worktrees. **The working tree already has
 uncommitted changes from parallel work** (`circadian.ts`, the check-in route,
 morning-agent files); merge those first.
@@ -145,7 +153,7 @@ morning-agent files); merge those first.
 
 \* existing file
 
-**The contract dev A must publish first (in about 30 min):**
+**The contract dev A published first:**
 ```ts
 interface RunState {
   trip: Trip; phase: "idle" | "running" | "done";
@@ -157,6 +165,8 @@ interface RunState {
   lastEvent?: CrewEvent; log: CrewEvent[];
 }
 ```
+
+</details>
 
 ## 7. Timeline (London time)
 
@@ -186,15 +196,19 @@ model. They go on one "where this goes" slide.
 
 ---
 
-## 10. Integration review — updated 12:45 · what's left to the 14:15 freeze
+## 10. Integration review — history (12:20 → 12:45), superseded by §11
 
 **Status as of 12:45:** the page is integrated and verified live on replay —
 one full run switches World → Shift Board → Calendar → Shift Board by
 itself, the Ledger shows 83 events with no token fragments, and the Calendar
 lens shows the before/after moves plus the readiness badge
 (*"Client pitch D+1 14:00 — without Meridian your body thinks it's 06:00;
-with the plan, 12:20. Ready."*). Typecheck, lint and 40 tests pass.
-**Original 12:20 review preserved below the line.**
+with the plan, 12:20. Ready."*). Typecheck, lint and 40 tests pass. Every
+item below was closed out by the 13:03 post-freeze split (§11) — this
+section is log, not a task list.
+
+<details>
+<summary><strong>12:45 status + remaining-work snapshot (click to expand)</strong></summary>
 
 ### Status
 
@@ -353,43 +367,45 @@ CalendarLens day headers aren't offset by the 32 px hour gutter.
 
 </details>
 
-## Next: 3-developer polish split (post-freeze)
+</details>
 
-> Added 2026-10-15 — all green: `48 tests pass`, `typecheck clean`.
-> Dirty: `CalendarLens.tsx` (day-header `left-8` fix) + `Ledger.tsx`
-> (glyph/tint polish). Commit those first, ignore `artifacts/slides/`.
-> Split is by file ownership — no two devs touch the same file except
-> one 1-line mount (noted). `bun test && bun run typecheck` before every commit.
+## 11. Current instructions — post-freeze polish split (follow this)
+
+> Added 13:03, updated 13:10 by dev A. All green: `48 tests pass`,
+> `typecheck clean`, `lint clean`. Split is by file ownership — no two devs
+> touch the same file except one noted 1-line mount. `bun test && bun run
+> typecheck` before every commit. Stage your own files only.
 
 | Dev | Track | Owns (files) | Done when |
 |---|---|---|---|
 | **1 · Run integrity** | Trust + demo-risk | `src/components/SunTrack.tsx`, `src/components/CrewFeed.tsx`, `src/components/BriefingCard.tsx`, `src/agents/replay.ts`, `src/components/lenses/CalendarLens.tsx` | Dead hero gone, feed cursor fixed, handoff score explained, replay route-agnostic |
-| **2 · Look & onboarding** | Glanceability | `src/agents/crew.ts`, `src/app/page.tsx`, `src/app/review/page.tsx`, `src/app/globals.css` | No modal, no color collision, ≥12px, review reuses ShiftBoard |
+| **2 · Look & onboarding** | Glanceability | `src/agents/crew.ts`, `src/app/page.tsx`, `src/app/review/page.tsx`, `src/app/globals.css`, `src/components/lenses/ShiftBoard.tsx`, `src/components/lenses/WorldLens.tsx` | No modal, no color collision, ≥12px, review reuses ShiftBoard |
 | **3 · Proof & ship** | Verification + deploy | `src/components/MorningCheckin.tsx` (new), `src/app/team/page.tsx` (verify only), `docs/demo.md`, deployment config | Morning beat always visible, westward + team checked live, replay URL live, Anthropic rehearsed |
 
 **Dev 1 · Run integrity — trust the run**
-1. Commit `CalendarLens.tsx:57` (`inset-x-0` → `left-8`) + `Ledger.tsx` polish; add `artifacts/slides/` to `.gitignore` or stage deliberately.
-2. Delete `src/components/SunTrack.tsx` (legacy hero: `1000×430` letterbox, hardcoded `LHR/HND`, straight ticks vs curved sun, grey trail) — or keep explicitly as reduced-motion fallback per `design-vision.md §8`.
-3. `CrewFeed.tsx:73` — `animate-pulse` cursor renders on every `text` entry; show only on the last entry while `running`.
-4. `BriefingCard.tsx:143-145` — handoff score (`mean(locked)`, e.g. 0.90) vs last eval (0.89) needs a `mean of locked days` label + tooltip; judges will ask.
-5. `src/agents/replay.ts` — grep for `London/Tokyo` strings; template with `{origin}/{dest}/{shiftH}` so a `SFO→SIN` custom route doesn't narrate `LHR→HND`.
-6. Checks: `bun run replay:check` (evals print), full replay run World→Board→Calendar auto-switches, Ledger ~80 rows no token fragments.
+1. ✅ **Done** (`380e34b`) — `CalendarLens.tsx` day-header gutter fix + `Ledger.tsx` polish, committed.
+2. ✅ **Done** (in progress on disk, uncommitted) — `SunTrack.tsx` deleted.
+3. `CrewFeed.tsx:73` — `animate-pulse` cursor renders on every `text` entry; show only on the last entry while `running`. *(in progress — file is dirty)*
+4. `BriefingCard.tsx:143-145` — handoff score (`mean(locked)`, e.g. 0.90) vs last eval (0.89) needs a `mean of locked days` label + tooltip; judges will ask. *(in progress — file is dirty)*
+5. `src/agents/replay.ts` — grep for `London/Tokyo` strings; template with `{origin}/{dest}/{shiftH}` so a `SFO→SIN` custom route doesn't narrate `LHR→HND`. *(in progress — file is dirty)*
+6. Checks: `bun run replay:check` (evals print), full replay run World→Board→Calendar auto-switches, Ledger ~80 rows no token fragments. Commit when 1–5 are done — don't leave this dirty past 13:45.
 
 **Dev 2 · Look & onboarding — glanceability**
-1. `src/agents/crew.ts:29-54` — color collision: `Jun #b8e356 == PASS`, `Iris #ff7a7a == FAIL`. Reserve those for state; e.g. `Jun #c792ea`, keep `Mara #7adfff`, `Otto #ffc46b`, `Rex #9db8ff`. Vision §8 forbids the reuse.
+1. `src/agents/crew.ts:29-54` — color collision: `Jun #b8e356 == PASS`, `Iris #ff7a7a == FAIL`. Reserve those for state; e.g. `Jun #c792ea`, keep `Mara #7adfff`, `Otto #ffc46b`, `Rex #9db8ff`. Vision §8 forbids the reuse. **⚠️ Still open — confirmed live in crew.ts, not yet fixed.**
 2. `src/app/page.tsx:521-554` — onboarding modal covers hero on first load. Replace with inline hint + hook `It's 19:12 in your body. It's 03:12 in Tokyo` (vision §8). Keep existing auto-dismiss on `run_start`.
 3. Mount Dev 3's `<MorningCheckin/>` (one line — only shared edit with Dev 3).
 4. Typography: `CrewFeed` / `ShiftBoard` / `CalendarLens` are `9-11px uppercase mono`; bump body to `≥12px`, drop uppercase micro-labels (vision §8: display serif for crew voice, mono for readouts).
 5. `src/app/review/page.tsx` — stacked list → `5-row × 24h` swimlane reusing `ShiftBoard` read-only; sleep diagonal + citation footnote gutter (vision §8).
-6. Checks: cold load shows hero (no modal), header fits 1200px, no agent/state color clash.
+6. **Added scope (file ownership gap closed 13:10):** `ShiftBoard.tsx` (intervention-marker glow) and `WorldLens.tsx` (dawn/dusk warm bleed + "YOUR DAWN" label) are being polished right now — folded into this track since they're the same glanceability work, not anyone else's file.
+7. Checks: cold load shows hero (no modal), header fits 1200px, no agent/state color clash.
 
 **Dev 3 · Proof & ship — verification + deploy**
-1. New `src/components/MorningCheckin.tsx` — extract `startMorning()` (`page.tsx:304`) into an always-visible `Morning check-in · D-2 07:10` button (currently only after `done`). Dev 2 mounts it. Reducer already dissolves dropped rows; confirm ShiftBoard fade-out → re-draft visibly.
-2. Verify (no code unless broken): one full replay on **westward** route (`LHR→JFK` — readiness fix is test-pinned, never watched live); `/team` 12-crew stream in browser (tiles show ghost gap/attempts/rejections/readiness, at-risk sorts first after done).
-3. Stage machine: `REPLAY_BEAT_MS=300` in `.env.local` (~40 s, narratable). Keep `60` for tests/fixtures.
-4. Live risk: two Anthropic rehearsals + record sped-up backup. If shaky, demo on `replay` and say so.
-5. Deploy public URL on `AGENT_PROVIDER=replay` (config, not code) — see [commercial.md](commercial.md). Update `docs/demo.md` stage path if anything changed.
-6. Checks: `bun test`, `bun run smoke` (night + morning SSE), westward + team watched live.
+1. New `src/components/MorningCheckin.tsx` — extract `startMorning()` (`page.tsx:304`) into an always-visible `Morning check-in · D-2 07:10` button (currently only after `done`). Dev 2 mounts it. Reducer already dissolves dropped rows; confirm ShiftBoard fade-out → re-draft visibly. **Not started.**
+2. ✅ **Verified live by dev A, 13:00** — westward route (`LHR→JFK`): 5h west computed correctly, 5/5 days locked, 3 calendar moves, readiness badge correct (*"body thinks it's 19:00; with the plan, 14:00. Ready."*). `/team`: 12-crew concurrent stream ran twice live, no console errors, no `CITY_TABLE` crash. Check-in → replan dissolve: ran live, D-1/Flight/D+1 re-drafted and re-locked cleanly, no stale rows. **Don't re-verify — move straight to items 3–6.**
+3. Stage machine: `REPLAY_BEAT_MS=300` in `.env.local` (~40 s, narratable). Keep `60` for tests/fixtures. **Not started** — deliberately held off so it doesn't slow down everyone else's dev loop before freeze; do this at 14:15.
+4. Live risk: two Anthropic rehearsals + record sped-up backup. If shaky, demo on `replay` and say so. **Not started — highest remaining risk, nothing watched on the live provider yet.**
+5. Deploy public URL on `AGENT_PROVIDER=replay` (config, not code) — see [commercial.md](commercial.md). Update `docs/demo.md` stage path if anything changed. **Not started — needs a host/account decision first.**
+6. Checks: `bun test`, `bun run smoke` (night + morning SSE), westward + team watched live (✅ already done, see item 2).
 
 **Merge order:** 1 → 2 → 3 (integrity first, look second, proof last). Stage own files only (`git add <paths>`), never `git add -A`.
 
