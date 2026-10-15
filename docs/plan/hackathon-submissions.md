@@ -95,19 +95,21 @@ the repo About**, text description.
 ### Meridian angle — **code shipped** (2026-10-15), needs key
 
 - `src/tools/qloo.ts` shipped: `destinationTaste(city, lon, lat)` resolves the
-  destination via `/search` then pulls places via `/v2/insights`
-  (`filter.location` + destination entity signal). Otto gets a
-  `destinationTaste` tool grounding intervention notes in what the place
-  actually offers — never touches timing or the scorer. Also MCP
-  `destination_taste`.
+  destination via `/search` then pulls places via `/v2/insights` —
+  `filter.location.query` restricts to places inside the locality's shape,
+  `signal.interests.entities` carries the destination entity as the taste
+  signal (params verified against the entity-type guide + parameter
+  reference, 2026-10-15). Otto gets a `destinationTaste` tool grounding
+  intervention notes in what the place actually offers — never touches timing
+  or the scorer. Also MCP `destination_taste`.
 - **CRITICAL PATH — do now:** Qloo keys are provisioned manually, "a few
   business days". Submit the API key form TODAY
   (https://forms.gle/zz12orkLHTAneLGz6). Keys only work against
   `hackathon.api.qloo.com` (`X-Api-Key` header) — wired as `QLOO_API_KEY` +
   `QLOO_BASE_URL` in `.env.local`.
-- Once the key lands: verify `filter.location` param shape and response
-  fields against the entity-type parameter guide (wrote it blind), one
-  `plan_shift` run, submission text.
+- Once the key lands: smoke `destination_taste` for a real place list (params
+  verified; response fields still need a live check), one `plan_shift` run,
+  submission text.
 - **Action needed before submit:** add an OSI license file (repo currently
   private/unlicensed — confirm with team) and describe the Qloo delta in the
   submission text.

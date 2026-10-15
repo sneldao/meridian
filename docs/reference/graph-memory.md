@@ -16,10 +16,10 @@ BST Sunday, leaving ~4h buffer. Freeze deploys after submitting —
 | Piece | State |
 |---|---|
 | `src/domain/graph-memory.ts` | `loadGraphMemory` (2 fixed read queries), `recordFinding`, `graphMemoryBrief`; all no-op without `FALKORDB_URL` |
-| `scripts/seed-graph.ts` | Full seed (item B): London→Tokyo trip across 2 sessions — `Trip`, `Day`, `Intervention`, `CalendarEvent`, `Citation`, `CheckIn`, `Finding`, `AdherenceProfile`, `WearableBaseline` with edges; `SEED_TENANT=other` seeds a second traveller for the isolation demo; `--reset` wipes first. Written, not yet run against a live DB (`FALKORDB_URL` unset) |
-| `GET /api/graph/health` | Reports enabled + findings/failures; 503 when unreachable |
-| Runtime wiring | `runtime.ts` offers the analyst fixed tools (`recallFindings`, `priorFailures`, `calendarConflicts`) when `FALKORDB_URL` is set — no prompt prose; trace shows rows/ms/hop path via `tool_result` detail. Not yet exercised against a live DB |
-| Env | ⚠️ **FalkorDB Cloud free instance was provisioned + seeded (28/5 nodes) and verified live ~17:05–17:20, then stopped accepting TCP 55865 despite console+audit saying Healthy; reboot didn't help; deleted. Recreate in progress.** `.env.local` has `FALKORDB_URL` for the OLD (deleted) endpoint — replace with the new host:port. Not yet set on Render |
+| `scripts/seed-graph.ts` → `src/domain/graph-seed.ts` | Full seed: London→Tokyo trip across 2 sessions — all node types + edges; `SEED_TENANT=other` seeds the isolation demo's second traveller; `--reset` wipes. **Ran live against instance 1 (28 + 5 nodes verified)** |
+| `GET /api/graph/health` | Reports enabled + findings/failures/graph name; `?tenant=` aware; 503 when unreachable |
+| Runtime wiring | `runtime.ts` offers the analyst fixed tools (`recallFindings`, `priorFailures`, `calendarConflicts`) when the graph is configured — no prompt prose; trace shows rows/ms/hop path via `tool_result`. **Verified live on instance 1**; pending a live-model run |
+| Env | ⚠️ **FalkorDB Cloud free tier proved flaky**: instance 1 worked ~17:05–17:20 then port died despite "Healthy"; deleted. Instance 2 (`meridian-graph-2`, `node-f-0.instance-k8ly1ecmi…:50787` in `.env.local` + `MERIDIAN_SESSION=run-2`, `SEED_ADMIN_TOKEN` set) never accepted connections — retry before assuming dead. Render path: `pserv` in `render.yaml` + `FALKORDB_HOST`/`PORT`; seed via `POST /api/graph/seed` (`x-seed-token`) |
 | Tenant isolation | `?tenant=` on `/api/crew/run`, `/api/crew/checkin`, `/api/graph/health` → `meridian:{tenant}` graph; `MERIDIAN_SESSION` labels writes |
 
 ## Gap vs the frozen plan

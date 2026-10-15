@@ -103,7 +103,8 @@ in [providers.md](providers.md#supabase-persistence-optional).
 | `GET /api/trip` | Trip preview: schedule, baseline, calendar, provider |
 | `GET /api/team/run` | 12 parallel crews, one tagged SSE stream |
 | `GET /api/persistence/runs` | Supabase run history; `{"enabled":false}` without keys |
-| `GET /api/memory` · `GET /api/graph/health` | Learned cross-run memory; FalkorDB status (503 when unreachable) |
+| `GET /api/memory` · `GET /api/graph/health` | Learned cross-run memory; FalkorDB status (503 when unreachable); `?tenant=` selects the `meridian:{tenant}` graph |
+| `POST /api/graph/seed` | Seeds/wipes a tenant graph (`{"tenant":"demo"|"other","reset":true?}`) — needed because the Render pserv is internal-only; disabled unless `SEED_ADMIN_TOKEN` is set, then requires `x-seed-token` |
 | `GET /api/voice` · `POST /api/voice` | Voice-layer availability; TTS audio — see [providers.md](providers.md) |
 | `POST /api/mcp` | Self-hosted MCP server (Streamable HTTP, protocol 2025-11-25; stateless JSON-RPC over POST). Tools wrap the crew surface: `preview_trip`, `plan_shift`, `evaluate_plan`, `record_check_in`, `search_literature`, `crew_memory`, `recall_findings`, `latest_plan`, `search_web` (Tavily), `destination_taste` (Qloo) — implemented in `src/mcp/server.ts`. GET 405s (no server push); DELETE is a no-op. |
 
