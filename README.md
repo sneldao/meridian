@@ -58,6 +58,7 @@ Reference (kept in sync with the code):
 - [Providers](docs/reference/providers.md) — replay / anthropic / featherless, env vars, fallbacks
 - [Demo runbook](docs/reference/demo.md) — stage path, pacing, localStorage keys, troubleshooting
 - [Evals](docs/reference/evals.md) — the harness that tracks plan quality over time (`bun run eval`), not a hillclimb yet, the shape of one
+- [Graph memory](docs/reference/graph-memory.md) — FalkorDB state + Graph Hacks sprint to the 2026-10-18 deadline
 
 Plan & pitch (frozen at the 2026-10-15 hackathon — history, not current state):
 

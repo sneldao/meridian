@@ -1,4 +1,4 @@
-<!-- FROZEN — Graph Hacks participation plan. Historical record; see docs/reference/ for the current state. -->
+<!-- FROZEN — Graph Hacks participation plan. Historical record; see docs/reference/graph-memory.md for the current state and sprint plan. -->
 
 # Graph Hacks hackathon — Meridian participation plan
 

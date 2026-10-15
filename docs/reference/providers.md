@@ -81,6 +81,9 @@ Seed local data with `bun run seed:graph`. The agent never composes Cypher;
 fixed tools live in `src/domain/graph-memory.ts`. If the database is down or
 unset, Meridian falls back to `crew-memory.json` silently.
 
+Current state, gap vs the plan, and the sprint to the 2026-10-18 deadline:
+[graph-memory.md](graph-memory.md).
+
 ## Supabase persistence (optional)
 
 When `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are set, run history and
