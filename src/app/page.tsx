@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Sparkles, Volume2, VolumeX } from "lucide-react";
+import { Compass, SlidersHorizontal, Sparkles, Volume2, VolumeX } from "lucide-react";
 import { fmtMin } from "@/domain/circadian";
 import { summarizeCheckIn } from "@/domain/adherence";
 import type {
@@ -14,12 +14,13 @@ import type {
 import { Button, Card } from "@/components/ui";
 import { AnchoredPopover } from "@/components/AnchoredPopover";
 import { type LogEntry } from "@/components/CrewFeed";
-import { TripPassport } from "@/components/TripPassport";
-import { DailyJourney } from "@/components/DailyJourney";
+import { NudgeFeedScreen } from "@/components/NudgeFeedScreen";
+import { TripSetupScreen } from "@/components/TripSetupScreen";
 import { HandoffBanner } from "@/components/HandoffBanner";
 import { AgentDrawer } from "@/components/AgentDrawer";
 import { useRunState, calendarWithMoves, ledgerEvents, ghostGapDeg } from "@/state/run";
 import { meetingReadiness } from "@/domain/readiness";
+import { fallbackCitations } from "@/tools/science";
 import {
   initVoice,
   setVoiceEnabled,
@@ -44,16 +45,20 @@ function clockAt(offsetMin: number, now = new Date()): string {
   return fmtMin(now.getUTCHours() * 60 + now.getUTCMinutes() + offsetMin);
 }
 
+const DEFAULT_CITATIONS = fallbackCitations();
+
 export default function Home() {
+  const [activeScreen, setActiveScreen] = useState<"guide" | "setup">("guide");
   const [origin, setOrigin] = useState("LHR");
   const [dest, setDest] = useState("HND");
   const [departureDate, setDepartureDate] = useState("2026-10-18");
+  const [selectedFlightId, setSelectedFlightId] = useState<string>("midday-afternoon");
   const [checkInsParam, setCheckInsParam] = useState("");
   const [startDayParam, setStartDayParam] = useState(0);
   const tripQuery = `?origin=${origin}&dest=${dest}&date=${departureDate}`;
   const { run, dispatch, reset } = useRunState();
   const [data, setData] = useState<TripData | null>(null);
-  const [selectedDayLabel, setSelectedDayLabel] = useState<string>("D-2");
+  const [selectedDayLabel, setSelectedDayLabel] = useState<string>("D-3");
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [briefingDismissed, setBriefingDismissed] = useState(false);
   const [hasSavedPlan, setHasSavedPlan] = useState(false);
@@ -396,20 +401,59 @@ export default function Home() {
   const currentReadiness = trip
     ? meetingReadiness(trip, currentEvents, [...run.locked.values()], baseline)
     : [];
+  const activeCitations = run.citations.length > 0 ? run.citations : DEFAULT_CITATIONS;
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-ink text-paper">
-      {/* Top Consumer Navigation Bar */}
+      {/* Top Consumer Navigation Bar with Dedicated Screen Switcher */}
       <header className="sticky top-0 z-30 border-b border-line/80 bg-ink/85 backdrop-blur-md">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-baseline gap-2.5">
+            <button
+              type="button"
+              onClick={() => setActiveScreen("guide")}
+              className="flex items-baseline gap-2.5 text-left"
+            >
               <span className="text-base font-bold tracking-[0.28em] text-paper">MERIDIAN</span>
-              <span className="hidden text-xs text-mist sm:inline">
-                Circadian Travel, Sleep &amp; Time Companion
+              <span className="hidden text-xs text-mist md:inline">
+                Land at 100%
               </span>
-            </Link>
+            </button>
           </div>
+
+          {/* Dedicated Two-Screen Navigation Pill */}
+          <nav
+            aria-label="Primary screens"
+            className="inline-flex items-center rounded-full border border-line bg-ink-2 p-1"
+          >
+            <button
+              type="button"
+              onClick={() => setActiveScreen("guide")}
+              aria-current={activeScreen === "guide" ? "page" : undefined}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
+                activeScreen === "guide"
+                  ? "bg-paper text-ink shadow-sm"
+                  : "text-mist hover:text-paper"
+              }`}
+            >
+              <Compass size={13} />
+              <span>Daily Guide</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveScreen("setup")}
+              aria-current={activeScreen === "setup" ? "page" : undefined}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
+                activeScreen === "setup"
+                  ? "bg-paper text-ink shadow-sm"
+                  : "text-mist hover:text-paper"
+              }`}
+            >
+              <SlidersHorizontal size={13} />
+              <span>Trip Setup</span>
+            </button>
+          </nav>
 
           <div className="flex items-center gap-2">
             {/* Voice toggle when available */}
@@ -427,31 +471,8 @@ export default function Home() {
                 title={voiceOn ? "Mute voice briefing" : "Enable voice briefing"}
               >
                 {voiceOn ? <Volume2 size={13} className="text-sun-dest" /> : <VolumeX size={13} />}
-                <span className="hidden sm:inline">{voiceOn ? "Voice on" : "Muted"}</span>
+                <span className="hidden sm:inline">{voiceOn ? "Voice" : "Muted"}</span>
               </button>
-            )}
-
-            {/* Optional Behind-the-Scenes Agent Drawer Trigger (invisible by default unless clicked) */}
-            <button
-              type="button"
-              onClick={() => setAgentDrawerOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-line bg-ink-2 px-3 py-1.5 text-xs text-mist transition-colors hover:border-mist hover:text-paper"
-              title="Optional: peek behind the scenes at how the AI specialists build your plan"
-            >
-              <Sparkles size={12} className="text-sun-dest" />
-              <span className="hidden sm:inline">Behind the scenes</span>
-              {run.phase === "running" && (
-                <span className="h-1.5 w-1.5 rounded-full bg-progress animate-pulse" />
-              )}
-            </button>
-
-            {hasSavedPlan && (
-              <Link
-                href="/review"
-                className="hidden rounded-full border border-line bg-ink-2 px-3 py-1.5 text-xs font-medium text-paper transition-colors hover:border-mist md:inline-block"
-              >
-                Saved Guide →
-              </Link>
             )}
 
             <div className="relative" ref={menuRef}>
@@ -468,12 +489,32 @@ export default function Home() {
                 <AnchoredPopover anchorRef={menuRef}>
                   <Card className="w-52 p-2 shadow-xl">
                     <div className="space-y-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveScreen("guide");
+                          setMenuOpen(false);
+                        }}
+                        className="w-full rounded-lg px-3 py-1.5 text-left text-xs text-paper hover:bg-line"
+                      >
+                        Daily Guide (Nudges)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveScreen("setup");
+                          setMenuOpen(false);
+                        }}
+                        className="w-full rounded-lg px-3 py-1.5 text-left text-xs text-paper hover:bg-line"
+                      >
+                        Trip &amp; Flight Setup
+                      </button>
                       {hasSavedPlan && (
                         <Link
                           href="/review"
-                          className="block rounded-lg px-3 py-1.5 text-xs text-paper hover:bg-line"
+                          className="block rounded-lg px-3 py-1.5 text-xs text-mist hover:bg-line hover:text-paper"
                         >
-                          View saved guide →
+                          Printable guide →
                         </Link>
                       )}
                       <Link
@@ -494,9 +535,10 @@ export default function Home() {
                           setMenuOpen(false);
                           setAgentDrawerOpen(true);
                         }}
-                        className="w-full rounded-lg px-3 py-1.5 text-left text-xs text-mist hover:bg-line hover:text-paper"
+                        className="flex w-full items-center gap-1.5 rounded-lg px-3 py-1.5 text-left text-xs text-mist hover:bg-line hover:text-paper"
                       >
-                        Behind the scenes (AI crew)
+                        <Sparkles size={12} className="text-sun-dest" />
+                        Behind the scenes (AI)
                       </button>
                     </div>
                   </Card>
@@ -507,39 +549,10 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Main Responsive Two-Zone Consumer Workspace */}
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:py-8">
-        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[360px_minmax(0,1fr)] xl:grid-cols-[380px_minmax(0,1fr)]">
-          {/* Left Zone: Sticky Biological Boarding Pass & Connected Tools */}
-          <div className="min-w-0 lg:sticky lg:top-20">
-            <TripPassport
-              trip={trip}
-              origin={origin}
-              dest={dest}
-              departureDate={departureDate}
-              onChangeRoute={(next) => {
-                setOrigin(next.origin);
-                setDest(next.dest);
-                setDepartureDate(next.date);
-                reset();
-              }}
-              baseline={baseline}
-              calendar={rawCalendar}
-              calendarSource={data?.calendarSource}
-              readiness={currentReadiness}
-              hook={hook}
-              phase={run.phase}
-              lockedCount={run.locked.size}
-              totalDays={trip?.days.length ?? 5}
-              sessionStartedAt={run.sessionStartedAt}
-              onStart={startShift}
-              onCancel={cancelShift}
-              onCheckIn={(extra) => beginStream(extra)}
-            />
-          </div>
-
-          {/* Right Zone: Handoff Summary + Unified Day-by-Day Circadian Itinerary */}
-          <div className="flex min-w-0 flex-col gap-5">
+      {/* Main Focused Content Area */}
+      <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:py-8">
+        {activeScreen === "guide" ? (
+          <div className="mx-auto flex max-w-2xl flex-col gap-5">
             {run.briefing && !briefingDismissed && (
               <HandoffBanner
                 summary={run.briefing.summary}
@@ -555,28 +568,61 @@ export default function Home() {
               />
             )}
 
-            <DailyJourney
+            <NudgeFeedScreen
               trip={trip}
               phase={run.phase}
               selectedDayLabel={selectedDayLabel}
               onSelectDay={setSelectedDayLabel}
               locked={run.locked}
               drafts={run.drafts}
-              verdicts={run.verdicts}
-              rejected={run.rejected}
-              activeLabel={run.activeLabel}
-              activeAgent={run.activeAgent}
-              sunProgress={run.sunProgress}
-              ghostGap={ghostGapDeg(run)}
-              citations={run.citations}
+              baseline={baseline}
               calendarEvents={currentEvents}
               moves={run.moves}
-              readiness={currentReadiness}
+              citations={activeCitations}
               ics={run.briefing?.ics}
-              onStart={startShift}
+              selectedFlightId={selectedFlightId}
+              onOpenTripSetup={() => setActiveScreen("setup")}
+              onStartCrewSync={startShift}
             />
           </div>
-        </div>
+        ) : (
+          <TripSetupScreen
+            trip={trip}
+            origin={origin}
+            dest={dest}
+            departureDate={departureDate}
+            onChangeRoute={(next) => {
+              setOrigin(next.origin);
+              setDest(next.dest);
+              setDepartureDate(next.date);
+              reset();
+            }}
+            selectedFlightId={selectedFlightId}
+            onSelectFlightId={setSelectedFlightId}
+            baseline={baseline}
+            calendar={currentEvents}
+            calendarSource={data?.calendarSource}
+            readiness={currentReadiness}
+            hook={hook}
+            phase={run.phase}
+            lockedCount={run.locked.size}
+            totalDays={trip?.days.length ?? 5}
+            sessionStartedAt={run.sessionStartedAt}
+            locked={run.locked}
+            drafts={run.drafts}
+            verdicts={run.verdicts}
+            activeLabel={run.activeLabel}
+            activeAgent={run.activeAgent}
+            sunProgress={run.sunProgress}
+            ghostGap={ghostGapDeg(run)}
+            citations={activeCitations}
+            ics={run.briefing?.ics}
+            onStart={startShift}
+            onCancel={cancelShift}
+            onCheckIn={(extra) => beginStream(extra)}
+            onBackToGuide={() => setActiveScreen("guide")}
+          />
+        )}
       </main>
 
       {/* Optional Behind-the-Scenes Drawer (Default Closed / Invisible) */}
