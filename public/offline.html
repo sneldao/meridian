@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Meridian — offline</title>
+    <meta name="theme-color" content="#b8e356" />
+    <style>
+      body { margin:0; min-height:100vh; display:grid; place-items:center; background:#07090f; color:#e8eaf2; font-family:system-ui,sans-serif; }
+      .card { max-width:420px; padding:24px; border:1px solid #1e2637; border-radius:16px; background:#0c1018; }
+      h1 { letter-spacing:.3em; font-size:18px; }
+      p { color:#8b93a7; line-height:1.5; }
+      button { margin-top:12px; border:0; border-radius:8px; padding:10px 14px; background:#b8e356; color:#07090f; font-weight:700; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>MERIDIAN</h1>
+      <p>You’re offline. Your last handoff (if saved) still lives in this device’s storage — reconnect to run a new shift.</p>
+      <button onclick="location.reload()">Retry</button>
+    </div>
+  </body>
+</html>

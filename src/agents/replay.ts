@@ -221,7 +221,7 @@ export async function* runReplay(): AsyncGenerator<CrewEvent> {
   yield { type: "agent_end", agent: "negotiator" };
 
   // --- Briefing ---------------------------------------------------------------
-  const ics = buildIcs(cal);
+  const ics = buildIcs(cal, DEMO_TRIP);
   yield {
     type: "briefing",
     summary:

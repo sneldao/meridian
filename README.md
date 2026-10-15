@@ -55,3 +55,17 @@ bun run build
 
 Commits run `gitleaks` + typecheck + lint via `.githooks/` (enabled through
 `git config core.hooksPath .githooks` — already set in this clone).
+
+## Offline / PWA
+
+Meridian ships a minimal service worker (`public/sw.js`) that caches the app
+shell and serves `public/offline.html` when the network is gone. Saved handoffs
+live in `localStorage`, so a completed plan stays readable offline.
+
+## Tests
+
+```bash
+bun test                 # pure-function tests (scorer, adherence)
+bun run smoke            # SSE smoke against a running dev server
+bun run replay:check     # streams the replay transcript; prints eval verdicts
+```

@@ -1,14 +1,31 @@
 import { fmtMin } from "@/domain/circadian";
 import { CALENDAR } from "@/domain/fixtures";
 import type { CalendarEvent, CalendarMove, Trip } from "@/domain/types";
+import { fetchGoogleCalendar, googleCalendarEnabled } from "./calendar-google";
 
-// Fixture-backed calendar. In production this is Google Calendar; for the
-// demo the "real output" is the committed move set + a downloadable .ics.
+// Fixture-backed calendar by default; real Google Calendar via Composio when
+// COMPOSIO_API_KEY + COMPOSIO_USER_ID are set. The "real output" is the
+// committed move set — a downloadable .ics either way, patched real events
+// when the Google backend is live.
 
 const overlaps = (aS: number, aE: number, bS: number, bE: number) => aS < bE && bS < aE;
 
 export function getCalendar(): CalendarEvent[] {
   return CALENDAR.map((e) => ({ ...e }));
+}
+
+/** Calendar for a run: real Google events when configured, fixtures
+ * otherwise — and on any Google failure (auth, network, quota). */
+export async function fetchCalendar(trip: Trip): Promise<{ events: CalendarEvent[]; source: "google" | "fixture" }> {
+  if (googleCalendarEnabled()) {
+    try {
+      const events = await fetchGoogleCalendar(trip);
+      return { events, source: "google" };
+    } catch {
+      // fixture fallback — the show goes on
+    }
+  }
+  return { events: buildCalendar(trip), source: "fixture" };
 }
 
 export function proposeMove(
@@ -43,9 +60,9 @@ export function proposeMove(
   return { ok: true, move };
 }
 
-const icsDate = (dayIndex: number, min: number) => {
-  const base = new Date(Date.UTC(2026, 9, 15)); // fixtures start 2026-10-15
-  base.setUTCDate(base.getUTCDate() + dayIndex);
+const icsDate = (trip: Trip, dayIndex: number, min: number) => {
+  const date = trip.days[dayIndex]?.date ?? trip.days[0].date;
+  const base = new Date(`${date}T00:00:00Z`);
   base.setUTCMinutes(base.getUTCMinutes() + min);
   return base
     .toISOString()
@@ -53,7 +70,7 @@ const icsDate = (dayIndex: number, min: number) => {
     .replace(/\.\d{3}/, "");
 };
 
-export function buildIcs(events: CalendarEvent[]): string {
+export function buildIcs(events: CalendarEvent[], trip: Trip): string {
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
@@ -66,9 +83,9 @@ export function buildIcs(events: CalendarEvent[]): string {
     lines.push(
       "BEGIN:VEVENT",
       `UID:${e.id}@meridian`,
-      `DTSTAMP:${icsDate(0, 0)}`,
-      `DTSTART:${icsDate(day, start)}`,
-      `DTEND:${icsDate(day, end)}`,
+      `DTSTAMP:${icsDate(trip, 0, 0)}`,
+      `DTSTART:${icsDate(trip, day, start)}`,
+      `DTEND:${icsDate(trip, day, end)}`,
       `SUMMARY:${e.title}${e.movedTo ? " (rescheduled by Meridian)" : ""}`,
       "END:VEVENT",
     );

@@ -19,7 +19,8 @@ import type {
 import { CREW, type CrewMember } from "./crew";
 import { providerKind, resolveModel } from "./providers";
 import { runReplay } from "./replay";
-import { buildIcs, getCalendar, proposeMove } from "@/tools/calendar";
+import { buildIcs, fetchCalendar, proposeMove } from "@/tools/calendar";
+import { createPlanEvents, patchGoogleEvent } from "@/tools/calendar-google";
 import { searchScience } from "@/tools/science";
 import { getAdherenceProfile, getRecentNights, getWearableBaseline } from "@/tools/wearable";
 
@@ -43,6 +44,7 @@ interface ToolDef {
 export function runCrew(opts?: {
   trip?: Trip;
   calendar?: CalendarEvent[];
+  calendarSource?: "google" | "fixture";
   checkIns?: CheckIn[];
   startDayIndex?: number;
 }): AsyncGenerator<CrewEvent> {
@@ -60,10 +62,15 @@ export function runCrew(opts?: {
       if (providerKind() === "replay") {
         await drain(runReplay(), emit);
       } else {
+        const trip = opts?.trip ?? DEMO_TRIP;
+        const cal = opts?.calendar
+          ? { events: opts.calendar, source: opts.calendarSource ?? "fixture" }
+          : await fetchCalendar(trip);
         await orchestrate(
           emit,
-          opts?.trip ?? DEMO_TRIP,
-          opts?.calendar ?? getCalendar(),
+          trip,
+          cal.events,
+          cal.source,
           opts?.checkIns ?? [],
           opts?.startDayIndex ?? 0,
         );
@@ -110,7 +117,7 @@ interface RunState {
   briefingText: string;
 }
 
-async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[], checkIns: CheckIn[] = [], startDayIndex: number = 0) {
+async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[], calendarSource: "google" | "fixture" = "fixture", checkIns: CheckIn[] = [], startDayIndex: number = 0) {
   const adherence = checkIns.length ? foldCheckIns(ADHERENCE_PROFILE, checkIns) : ADHERENCE_PROFILE;
   const memory = await loadMemory();
   const state: RunState = {
@@ -344,16 +351,27 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
           }),
           execute: async ({ eventId, toDayIndex, toStartMin, reason }: { eventId: string; toDayIndex: number; toStartMin: number; reason: string }) => {
             const r = proposeMove(state.calendar, eventId, toDayIndex, toStartMin);
-            if (r.ok) {
-              r.move.reason = reason;
-              return r.move;
+            if (!r.ok) return { error: r.reason };
+            if (calendarSource === "google") {
+              const ev = state.calendar.find((e) => e.id === eventId)!;
+              try {
+                await patchGoogleEvent(ev, r.move, trip);
+              } catch (err) {
+                delete ev.movedTo; // real calendar kept the old time — roll back
+                return { error: `calendar write failed: ${err instanceof Error ? err.message : String(err)}` };
+              }
             }
-            return { error: r.reason };
+            r.move.reason = reason;
+            return r.move;
           },
         },
-        commitPlan: bare("Commit the rescheduled calendar", () => {
-          state.ics = buildIcs(state.calendar);
-          return { committed: state.calendar.filter((e) => e.movedTo).length };
+        commitPlan: bare("Commit the rescheduled calendar", async () => {
+          state.ics = buildIcs(state.calendar, trip);
+          let written = 0;
+          if (calendarSource === "google") {
+            written = await createPlanEvents(state.lockedDays, trip);
+          }
+          return { committed: state.calendar.filter((e) => e.movedTo).length, googleBlocksWritten: written };
         }),
       },
     },
@@ -361,7 +379,7 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
     state,
   );
 
-  if (!state.ics) state.ics = buildIcs(state.calendar);
+  if (!state.ics) state.ics = buildIcs(state.calendar, trip);
 
   // 5. Briefing — the morning handoff.
   const scores = state.evals.filter((e) => e.feasible).map((e) => e.score);
