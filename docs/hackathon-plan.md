@@ -186,26 +186,62 @@ model. They go on one "where this goes" slide.
 
 ---
 
-## 10. Integration review — 12:20 · instructions for the next 2 hours
+## 10. Integration review — updated 12:45 · what's left to the 14:15 freeze
 
-**Checks are green:** typecheck, lint and 30 tests pass; the console is clean.
-The lenses are built but **the demo page doesn't use most of them yet**,
-and three correctness bugs would be visible to judges. Work top to bottom;
-P0 must land before the **14:15 freeze**.
+**Status as of 12:45:** the page is integrated and verified live on replay —
+one full run switches World → Shift Board → Calendar → Shift Board by
+itself, the Ledger shows 83 events with no token fragments, and the Calendar
+lens shows the before/after moves plus the readiness badge
+(*"Client pitch D+1 14:00 — without Meridian your body thinks it's 06:00;
+with the plan, 12:20. Ready."*). Typecheck, lint and 40 tests pass.
+**Original 12:20 review preserved below the line.**
+
+### Status
+
+| Piece | On the demo page (`/`) | Verdict |
+|---|---|---|
+| Shared `RunState` (A) | ✅ wired | verified live |
+| Route picker, any airport, DST, wrap (A) | ✅ replaces selects + duplicate chip | SFO→HND computes 8h west |
+| `LensShell` + director (C) | ✅ | **fixed** — it self-disabled on the first beat; now verified switching through a full run |
+| `WorldLens` (C) | ✅ | **fixed** — real terminator is the ±90° day band, body dot on-screen, arc wraps the antimeridian |
+| `ShiftBoard` (B) | ✅ mounted | rule code truncated; check-in button live |
+| `CalendarLens` + readiness (D) | ✅ mounted | bug 4 fixed + pinned by tests; **day headers still misaligned with the 32px hour gutter** |
+| `Ledger` (D) | ✅ mounted | 83 events, no token fragments |
+| Team view `/team` (D) | n/a | real 12-crew stream committed; **needs one browser check** |
+| Check-in → replan beat (B) | ✅ button | **needs a visible-dissolve check** in browser |
+| Google Calendar via Composio, graph memory | ✅ falls back cleanly | keep |
+
+### Remaining work to the freeze
+
+- **D:** give the CalendarLens day-header row the same `ml-8` gutter offset as
+  the body (~5 min). Verify `/team` once in a browser.
+- **B:** run the "Morning check-in · D-2 07:10" button once and confirm the
+  dropped rows visibly dissolve and re-draft.
+- **Everyone:** one full replay run on a **westward** route (e.g. LHR→JFK) —
+  the readiness fix is test-pinned but hasn't been watched live.
+- **Stage machine:** set `REPLAY_BEAT_MS=300` in `.env.local` (~40 s run,
+  narratable) — it's env-driven, don't edit code at 14:55.
+- **14:15–14:45:** two live Anthropic rehearsals + record the sped-up backup.
+  Nothing has been watched on the live provider yet — this is the highest
+  remaining risk. If it's shaky, demo on `replay` and say so.
+
+---
+<details>
+<summary>Original 12:20 review (superseded)</summary>
 
 ### Status
 
 | Piece | Built | On the demo page (`/`) | Verdict |
 |---|---|---|---|
-| Shared `RunState` + `/dev` workbench (A) | ✅ | ❌ page keeps its own `useState`s | wire it (C) |
-| Route picker, any airport, DST, wrap (A) | ✅ | ❌ header still has the 6-city `<select>`s | wire it (C) |
-| `LensShell` + director (C) | ✅ | ✅ | **director skips beats** (bug 1) |
-| `WorldLens` (C) | ✅ | ✅ | **terminator and body dot are wrong** (bugs 2, 3) |
-| `ShiftBoard` (B) | ✅ works on `/dev` | ❌ "Shift Board" tab shows the old `SunTrack` | wire it (C) |
-| `CalendarLens` + readiness (D) | ✅ | ❌ tab shows an inline list | wire it (C); **readiness is wrong westward** (bug 4) |
-| `Ledger` (D) | ✅ | ❌ tab shows `CrewFeed` (duplicate of the right panel) | wire it (C) |
-| Team view `/team` (D) | ✅ | n/a | bugs 4 and 5; make it really run (P1) |
-| Check-in → replan beat | ✅ backend | ❌ only reachable by URL params | add a button (B) |
+| Shared `RunState` + `/dev` workbench (A) | ✅ | ~~❌~~ ✅ | wired (C) |
+| Route picker, any airport, DST, wrap (A) | ✅ | ~~❌~~ ✅ | wired (C) |
+| `LensShell` + director (C) | ✅ | ✅ | ~~director skips beats~~ fixed |
+| `WorldLens` (C) | ✅ | ✅ | ~~terminator and body dot wrong~~ fixed |
+| `ShiftBoard` (B) | ✅ | ~~❌~~ ✅ | mounted |
+| `CalendarLens` + readiness (D) | ✅ | ~~❌~~ ✅ | mounted; bug 4 fixed |
+| `Ledger` (D) | ✅ | ~~❌~~ ✅ | mounted |
+| Team view `/team` (D) | ✅ | n/a | one-stream crews committed |
+| Check-in → replan beat | ✅ backend | ~~❌~~ ✅ | button added (B) |
 | Google Calendar via Composio, graph memory | ✅ | ✅ falls back cleanly | keep |
 
 ### The bugs (found by running the app)
@@ -310,6 +346,8 @@ CalendarLens day headers aren't offset by the 32 px hour gutter.
 **A — standing by for review and merges.** Shipped since the last update:
 `run.focus` / `focusSeq`, `calendarWithMoves`, `ledgerEvents`, and the
 `ev-pitch` destination meeting in the fixture.
+
+</details>
 
 **Everyone**
 - **Stage your own files only** (`git add <paths>`, never `git add -A`). One
