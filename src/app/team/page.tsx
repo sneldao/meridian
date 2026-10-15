@@ -21,7 +21,7 @@ export default function TeamPage() {
   const [streaming, setStreaming] = useState(true);
   const esRef = useRef<EventSource | null>(null);
 
-  const start = useCallback((): void => {
+  const open = useCallback((): EventSource => {
     const es = new EventSource("/api/team/run");
     esRef.current = es;
     es.onmessage = (m) => {
@@ -43,12 +43,20 @@ export default function TeamPage() {
       setStreaming(false);
       es.close();
     };
+    return es;
   }, []);
 
   useEffect(() => {
-    start();
-    return () => esRef.current?.close();
-  }, [start]);
+    const es = open();
+    return () => es.close();
+  }, [open]);
+
+  const restart = useCallback(() => {
+    esRef.current?.close();
+    setRuns(new Map());
+    setStreaming(true);
+    open();
+  }, [open]);
 
   const done = TEAM_TRAVELLERS.filter((t) => runs.get(t.id)?.phase === "done").length;
   const atRisk = TEAM_TRAVELLERS.filter((t) => {
@@ -79,7 +87,7 @@ export default function TeamPage() {
             <span className="font-bold text-[#ff7a7a]">{atRisk}</span> board meetings at risk
           </div>
           <button
-            onClick={start}
+            onClick={restart}
             disabled={streaming}
             className="mt-2 rounded-lg border border-[#1e2637] bg-[#0c1018] px-3 py-1.5 text-[11px] text-[#b8e356] hover:border-[#b8e35666] disabled:text-[#4a5470]"
           >
@@ -123,7 +131,9 @@ export default function TeamPage() {
                 <div className="h-full bg-[#b8e356] transition-[width] duration-500" style={{ width: `${pct}%` }} />
               </div>
               <div className="mt-1 flex justify-between text-[10px] text-[#8b93a7]">
-                <span>{r.locked.size}/{trip.days.length} days locked</span>
+                <span>
+                  {r.locked.size}/{trip.days.length} days locked
+                </span>
                 <span>
                   {r.attempts} attempts · {r.rejections} rejected
                 </span>
