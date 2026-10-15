@@ -5,6 +5,7 @@ import { z } from "zod";
 import { evaluatePlan, fmtMin, passes, sunProgress } from "@/domain/circadian";
 import { ADHERENCE_PROFILE, DEMO_TRIP, GARMIN_BASELINE } from "@/domain/fixtures";
 import { foldCheckIns } from "@/domain/adherence";
+import { loadMemory, memoryBrief, recordRun } from "@/domain/memory";
 import type {
   CalendarEvent,
   CalendarMove,
@@ -111,6 +112,7 @@ interface RunState {
 
 async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[], checkIns: CheckIn[] = [], startDayIndex: number = 0) {
   const adherence = checkIns.length ? foldCheckIns(ADHERENCE_PROFILE, checkIns) : ADHERENCE_PROFILE;
+  const memory = await loadMemory();
   const state: RunState = {
     calendar: calendarInput.map((e) => ({ ...e })),
     citations: [],
@@ -145,7 +147,7 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
     CREW.analyst,
     {
       prompt:
-        "Baseline + adherence profile are on your tools. Give the planner the constraints: chronotype, habitual window, and the compliance floor.",
+        `Baseline + adherence profile are on your tools. Give the planner the constraints: chronotype, habitual window, and the compliance floor. Cross-run memory: ${memoryBrief(memory)}`,
       tools: {
         getWearableBaseline: bare("Read the wearer's wearable baseline", () => getWearableBaseline()),
         getRecentNights: bare("Read recent sleep nights", () => getRecentNights()),
@@ -380,6 +382,12 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
   });
   logLine(`briefing issued — score ${meanScore}`);
 
+  await recordRun({
+    at: Date.now(),
+    tripLabel: `${trip.origin.code}→${trip.destination.code}`,
+    lockedDays: state.lockedDays.length,
+    meanScore,
+  });
   await persistArtifacts(state, trip);
   emit({ type: "done" });
 }

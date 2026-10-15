@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { parseCheckInText } from "@/domain/adherence";
-import type { CheckInRequest } from "@/domain/types";
+import { recordCheckIn } from "@/domain/memory";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +11,7 @@ export async function POST(req: NextRequest) {
   } catch {
     body = {};
   }
-  const checkIn = parseCheckInText(body as CheckInRequest);
+  const checkIn = parseCheckInText(body as { text?: string; dayIndex?: number });
+  await recordCheckIn(checkIn);
   return NextResponse.json({ checkIn });
 }
