@@ -198,8 +198,8 @@ export function applyEvent(s: RunState, event: CrewEvent, t = s.elapsedMs): RunS
       return { ...base, moves: [...s.moves, event.move] };
 
     case "briefing": {
-      const { type: _t, ...briefing } = event;
-      return { ...base, briefing };
+      const { summary, ics, score, citations, days } = event;
+      return { ...base, briefing: { summary, ics, score, citations, days } };
     }
 
     case "error":

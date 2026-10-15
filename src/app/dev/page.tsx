@@ -4,7 +4,9 @@
 // every lens side by side. Build and screen-record lenses here with no
 // pipeline running. Not linked from the app.
 
+import { useState } from "react";
 import { FixtureScrubber } from "@/components/dev/FixtureScrubber";
+import { RoutePicker } from "@/components/RoutePicker";
 import { ShiftBoard } from "@/components/lenses/ShiftBoard";
 import { WorldLens } from "@/components/lenses/WorldLens";
 import { useFixturePlayback } from "@/state/playback";
@@ -14,9 +16,14 @@ export default function DevLenses() {
   const pb = useFixturePlayback({ autoplay: false });
   const { run } = pb;
   const days = run.trip?.days ?? [];
+  const [route, setRoute] = useState({ origin: "LHR", dest: "HND", date: "2026-10-18" });
 
   return (
     <main className="flex min-h-screen flex-col gap-3 p-4">
+      <div className="flex items-center gap-3">
+        <RoutePicker {...route} onChange={setRoute} />
+        <span className="font-mono2 text-[12px] text-mist">route picker preview — the fixture below is always {pb.fixture.route}</span>
+      </div>
       <FixtureScrubber pb={pb} />
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-2">
         <section className="min-h-[360px] overflow-hidden rounded-2xl border border-line">

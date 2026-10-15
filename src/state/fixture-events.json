@@ -1,10 +1,10 @@
 {
  "route": "LHR-HND",
  "date": "2026-10-18",
- "recordedAt": "2026-10-15T10:56:42.726Z",
+ "recordedAt": "2026-10-15T11:08:44.825Z",
  "events": [
   {
-   "t": 481,
+   "t": 446,
    "event": {
     "type": "run_start",
     "provider": "replay",
@@ -12,18 +12,24 @@
      "origin": {
       "code": "LHR",
       "name": "London",
-      "utcOffsetMin": 0,
-      "lon": -0.1276,
-      "lat": 51.5
+      "airport": "London Heathrow Airport",
+      "country": "GB",
+      "tz": "Europe/London",
+      "utcOffsetMin": 60,
+      "lat": 51.471,
+      "lon": -0.46
      },
      "destination": {
       "code": "HND",
       "name": "Tokyo",
+      "airport": "Tokyo Haneda International Airport",
+      "country": "JP",
+      "tz": "Asia/Tokyo",
       "utcOffsetMin": 540,
-      "lon": 139.69,
-      "lat": 35.7
+      "lat": 35.55,
+      "lon": 139.787
      },
-     "requiredShiftMin": -540,
+     "requiredShiftMin": -480,
      "departureDayIndex": 3,
      "direction": "east",
      "days": [
@@ -129,7 +135,7 @@
      },
      {
       "id": "ev-flight",
-      "title": "BA005 LHR → HND",
+      "title": "Flight LHR → HND",
       "dayIndex": 3,
       "startMin": 680,
       "endMin": 710,
@@ -204,7 +210,7 @@
    }
   },
   {
-   "t": 482,
+   "t": 447,
    "event": {
     "type": "agent_start",
     "agent": "analyst",
@@ -212,7 +218,7 @@
    }
   },
   {
-   "t": 482,
+   "t": 447,
    "event": {
     "type": "tool_call",
     "agent": "analyst",
@@ -221,7 +227,7 @@
    }
   },
   {
-   "t": 482,
+   "t": 447,
    "event": {
     "type": "tool_result",
     "agent": "analyst",
@@ -230,7 +236,7 @@
    }
   },
   {
-   "t": 482,
+   "t": 447,
    "event": {
     "type": "tool_call",
     "agent": "analyst",
@@ -239,7 +245,7 @@
    }
   },
   {
-   "t": 482,
+   "t": 447,
    "event": {
     "type": "tool_result",
     "agent": "analyst",
@@ -248,7 +254,7 @@
    }
   },
   {
-   "t": 482,
+   "t": 447,
    "event": {
     "type": "agent_token",
     "agent": "analyst",
@@ -256,7 +262,7 @@
    }
   },
   {
-   "t": 508,
+   "t": 470,
    "event": {
     "type": "agent_token",
     "agent": "analyst",
@@ -264,7 +270,7 @@
    }
   },
   {
-   "t": 541,
+   "t": 501,
    "event": {
     "type": "agent_token",
     "agent": "analyst",
@@ -272,7 +278,7 @@
    }
   },
   {
-   "t": 575,
+   "t": 534,
    "event": {
     "type": "agent_token",
     "agent": "analyst",
@@ -280,7 +286,7 @@
    }
   },
   {
-   "t": 605,
+   "t": 566,
    "event": {
     "type": "agent_token",
     "agent": "analyst",
@@ -288,7 +294,7 @@
    }
   },
   {
-   "t": 637,
+   "t": 596,
    "event": {
     "type": "agent_token",
     "agent": "analyst",
@@ -296,7 +302,7 @@
    }
   },
   {
-   "t": 670,
+   "t": 627,
    "event": {
     "type": "agent_token",
     "agent": "analyst",
@@ -304,7 +310,7 @@
    }
   },
   {
-   "t": 700,
+   "t": 660,
    "event": {
     "type": "agent_token",
     "agent": "analyst",
@@ -312,7 +318,7 @@
    }
   },
   {
-   "t": 733,
+   "t": 691,
    "event": {
     "type": "agent_token",
     "agent": "analyst",
@@ -320,14 +326,14 @@
    }
   },
   {
-   "t": 765,
+   "t": 723,
    "event": {
     "type": "agent_end",
     "agent": "analyst"
    }
   },
   {
-   "t": 765,
+   "t": 723,
    "event": {
     "type": "agent_start",
     "agent": "researcher",
@@ -335,7 +341,7 @@
    }
   },
   {
-   "t": 765,
+   "t": 723,
    "event": {
     "type": "tool_call",
     "agent": "researcher",
@@ -344,7 +350,7 @@
    }
   },
   {
-   "t": 765,
+   "t": 723,
    "event": {
     "type": "tool_result",
     "agent": "researcher",
@@ -353,7 +359,7 @@
    }
   },
   {
-   "t": 765,
+   "t": 723,
    "event": {
     "type": "citation",
     "agent": "researcher",
@@ -369,7 +375,7 @@
    }
   },
   {
-   "t": 1008,
+   "t": 969,
    "event": {
     "type": "citation",
     "agent": "researcher",
@@ -385,7 +391,7 @@
    }
   },
   {
-   "t": 1249,
+   "t": 1211,
    "event": {
     "type": "citation",
     "agent": "researcher",
@@ -401,7 +407,7 @@
    }
   },
   {
-   "t": 1492,
+   "t": 1453,
    "event": {
     "type": "tool_call",
     "agent": "researcher",
@@ -410,7 +416,7 @@
    }
   },
   {
-   "t": 1492,
+   "t": 1453,
    "event": {
     "type": "tool_result",
     "agent": "researcher",
@@ -419,7 +425,7 @@
    }
   },
   {
-   "t": 1492,
+   "t": 1453,
    "event": {
     "type": "citation",
     "agent": "researcher",
@@ -435,7 +441,7 @@
    }
   },
   {
-   "t": 1492,
+   "t": 1453,
    "event": {
     "type": "agent_token",
     "agent": "researcher",
@@ -443,7 +449,7 @@
    }
   },
   {
-   "t": 1525,
+   "t": 1484,
    "event": {
     "type": "agent_token",
     "agent": "researcher",
@@ -451,7 +457,7 @@
    }
   },
   {
-   "t": 1558,
+   "t": 1516,
    "event": {
     "type": "agent_token",
     "agent": "researcher",
@@ -459,7 +465,7 @@
    }
   },
   {
-   "t": 1591,
+   "t": 1547,
    "event": {
     "type": "agent_token",
     "agent": "researcher",
@@ -467,7 +473,7 @@
    }
   },
   {
-   "t": 1623,
+   "t": 1579,
    "event": {
     "type": "agent_token",
     "agent": "researcher",
@@ -475,7 +481,7 @@
    }
   },
   {
-   "t": 1654,
+   "t": 1612,
    "event": {
     "type": "agent_token",
     "agent": "researcher",
@@ -483,7 +489,7 @@
    }
   },
   {
-   "t": 1685,
+   "t": 1642,
    "event": {
     "type": "agent_token",
     "agent": "researcher",
@@ -491,7 +497,7 @@
    }
   },
   {
-   "t": 1716,
+   "t": 1674,
    "event": {
     "type": "agent_token",
     "agent": "researcher",
@@ -499,14 +505,14 @@
    }
   },
   {
-   "t": 1747,
+   "t": 1709,
    "event": {
     "type": "agent_end",
     "agent": "researcher"
    }
   },
   {
-   "t": 1747,
+   "t": 1709,
    "event": {
     "type": "agent_start",
     "agent": "planner",
@@ -514,7 +520,7 @@
    }
   },
   {
-   "t": 1747,
+   "t": 1709,
    "event": {
     "type": "agent_token",
     "agent": "planner",
@@ -522,7 +528,7 @@
    }
   },
   {
-   "t": 1777,
+   "t": 1741,
    "event": {
     "type": "agent_token",
     "agent": "planner",
@@ -530,7 +536,7 @@
    }
   },
   {
-   "t": 1811,
+   "t": 1774,
    "event": {
     "type": "tool_call",
     "agent": "planner",
@@ -539,7 +545,7 @@
    }
   },
   {
-   "t": 1811,
+   "t": 1775,
    "event": {
     "type": "plan_candidate",
     "day": {
@@ -581,7 +587,7 @@
    }
   },
   {
-   "t": 1811,
+   "t": 1775,
    "event": {
     "type": "eval_result",
     "result": {
@@ -596,7 +602,7 @@
    }
   },
   {
-   "t": 1811,
+   "t": 1775,
    "event": {
     "type": "agent_start",
     "agent": "evaluator",
@@ -604,7 +610,7 @@
    }
   },
   {
-   "t": 1811,
+   "t": 1775,
    "event": {
     "type": "agent_token",
     "agent": "evaluator",
@@ -612,7 +618,7 @@
    }
   },
   {
-   "t": 1843,
+   "t": 1806,
    "event": {
     "type": "agent_token",
     "agent": "evaluator",
@@ -620,7 +626,7 @@
    }
   },
   {
-   "t": 1875,
+   "t": 1839,
    "event": {
     "type": "agent_token",
     "agent": "evaluator",
@@ -628,21 +634,21 @@
    }
   },
   {
-   "t": 1907,
+   "t": 1873,
    "event": {
     "type": "agent_end",
     "agent": "evaluator"
    }
   },
   {
-   "t": 1907,
+   "t": 1873,
    "event": {
     "type": "agent_end",
     "agent": "planner"
    }
   },
   {
-   "t": 1907,
+   "t": 1873,
    "event": {
     "type": "day_locked",
     "day": {
@@ -681,11 +687,11 @@
       }
      ]
     },
-    "sunProgress": 0.1111111111111111
+    "sunProgress": 0.125
    }
   },
   {
-   "t": 2389,
+   "t": 2357,
    "event": {
     "type": "agent_start",
     "agent": "planner",
@@ -693,7 +699,7 @@
    }
   },
   {
-   "t": 2389,
+   "t": 2357,
    "event": {
     "type": "agent_token",
     "agent": "planner",
@@ -701,7 +707,7 @@
    }
   },
   {
-   "t": 2422,
+   "t": 2390,
    "event": {
     "type": "agent_token",
     "agent": "planner",
@@ -709,7 +715,7 @@
    }
   },
   {
-   "t": 2453,
+   "t": 2419,
    "event": {
     "type": "agent_token",
     "agent": "planner",
@@ -717,7 +723,7 @@
    }
   },
   {
-   "t": 2485,
+   "t": 2453,
    "event": {
     "type": "tool_call",
     "agent": "planner",
@@ -726,7 +732,7 @@
    }
   },
   {
-   "t": 2486,
+   "t": 2453,
    "event": {
     "type": "plan_candidate",
     "day": {
@@ -753,7 +759,7 @@
    }
   },
   {
-   "t": 2486,
+   "t": 2453,
    "event": {
     "type": "eval_result",
     "result": {
@@ -774,7 +780,7 @@
    }
   },
   {
-   "t": 2486,
+   "t": 2453,
    "event": {
     "type": "agent_start",
     "agent": "evaluator",
@@ -782,7 +788,7 @@
    }
   },
   {
-   "t": 2486,
+   "t": 2453,
    "event": {
     "type": "agent_token",
     "agent": "evaluator",
@@ -790,7 +796,7 @@
    }
   },
   {
-   "t": 2517,
+   "t": 2485,
    "event": {
     "type": "agent_token",
     "agent": "evaluator",
@@ -798,7 +804,7 @@
    }
   },
   {
-   "t": 2547,
+   "t": 2517,
    "event": {
     "type": "agent_token",
     "agent": "evaluator",
@@ -806,7 +812,7 @@
    }
   },
   {
-   "t": 2580,
+   "t": 2549,
    "event": {
     "type": "agent_token",
     "agent": "evaluator",
@@ -814,7 +820,7 @@
    }
   },
   {
-   "t": 2613,
+   "t": 2581,
    "event": {
     "type": "agent_token",
     "agent": "evaluator",
@@ -822,21 +828,21 @@
    }
   },
   {
-   "t": 2645,
+   "t": 2614,
    "event": {
     "type": "agent_end",
     "agent": "evaluator"
    }
   },
   {
-   "t": 2645,
+   "t": 2614,
    "event": {
     "type": "agent_end",
     "agent": "planner"
    }
   },
   {
-   "t": 3006,
+   "t": 2976,
    "event": {
     "type": "agent_start",
     "agent": "planner",
@@ -844,7 +850,7 @@
    }
   },
   {
-   "t": 3006,
+   "t": 2976,
    "event": {
     "type": "agent_token",
     "agent": "planner",
@@ -852,7 +858,7 @@
    }
   },
   {
-   "t": 3037,
+   "t": 3008,
    "event": {
     "type": "agent_token",
     "agent": "planner",
@@ -860,7 +866,7 @@
    }
   },
   {
-   "t": 3070,
+   "t": 3040,
    "event": {
     "type": "tool_call",
     "agent": "planner",
@@ -869,7 +875,7 @@
    }
   },
   {
-   "t": 3070,
+   "t": 3040,
    "event": {
     "type": "plan_candidate",
     "day": {
@@ -910,7 +916,7 @@
    }
   },
   {
-   "t": 3070,
+   "t": 3040,
    "event": {
     "type": "eval_result",
     "result": {
@@ -925,7 +931,7 @@
    }
   },
   {
-   "t": 3070,
+   "t": 3040,
    "event": {
     "type": "agent_start",
     "agent": "evaluator",
@@ -933,7 +939,7 @@
    }
   },
   {
-   "t": 3070,
+   "t": 3040,
    "event": {
     "type": "agent_token",
     "agent": "evaluator",
@@ -941,7 +947,7 @@
    }
   },
   {
-   "t": 3101,
+   "t": 3073,
    "event": {
     "type": "agent_token",
     "agent": "evaluator",
@@ -949,7 +955,7 @@
    }
   },
   {
-   "t": 3131,
+   "t": 3105,
    "event": {
     "type": "agent_token",
     "agent": "evaluator",
@@ -957,21 +963,21 @@
    }
   },
   {
-   "t": 3165,
+   "t": 3139,
    "event": {
     "type": "agent_end",
     "agent": "evaluator"
    }
   },
   {
-   "t": 3165,
+   "t": 3139,
    "event": {
     "type": "agent_end",
     "agent": "planner"
    }
   },
   {
-   "t": 3165,
+   "t": 3139,
    "event": {
     "type": "day_locked",
     "day": {
@@ -1009,11 +1015,11 @@
       }
      ]
     },
-    "sunProgress": 0.25
+    "sunProgress": 0.28125
    }
   },
   {
-   "t": 3647,
+   "t": 3624,
    "event": {
     "type": "agent_start",
     "agent": "planner",
@@ -1021,7 +1027,7 @@
    }
   },
   {
-   "t": 3647,
+   "t": 3624,
    "event": {
     "type": "agent_token",
     "agent": "planner",
@@ -1029,7 +1035,7 @@
    }
   },
   {
-   "t": 3680,
+   "t": 3655,
    "event": {
     "type": "agent_token",
     "agent": "planner",
@@ -1037,7 +1043,7 @@
    }
   },
   {
-   "t": 3710,
+   "t": 3687,
    "event": {
     "type": "agent_token",
     "agent": "planner",
@@ -1045,7 +1051,7 @@
    }
   },
   {
-   "t": 3742,
+   "t": 3721,
    "event": {
     "type": "tool_call",
     "agent": "planner",
@@ -1054,7 +1060,7 @@
    }
   },
   {
-   "t": 3742,
+   "t": 3721,
    "event": {
     "type": "plan_candidate",
     "day": {
@@ -1081,7 +1087,7 @@
    }
   },
   {
-   "t": 3742,
+   "t": 3721,
    "event": {
     "type": "eval_result",
     "result": {
@@ -1102,7 +1108,7 @@
    }
   },
   {
-   "t": 3742,
+   "t": 3721,
    "event": {
     "type": "agent_start",
     "agent": "evaluator",
@@ -1110,7 +1116,7 @@
    }
   },
   {
-   "t": 3742,
+   "t": 3721,
    "event": {
     "type": "agent_token",
     "agent": "evaluator",
@@ -1118,7 +1124,7 @@
    }
   },
   {
-   "t": 3772,
+   "t": 3754,
    "event": {
     "type": "agent_token",
     "agent": "evaluator",
@@ -1126,7 +1132,7 @@
    }
   },
   {
-   "t": 3804,
+   "t": 3787,
    "event": {
     "type": "agent_token",
     "agent": "evaluator",
@@ -1134,7 +1140,7 @@
    }
   },
   {
-   "t": 3837,
+   "t": 3822,
    "event": {
     "type": "agent_token",
     "agent": "evaluator",
@@ -1142,21 +1148,21 @@
    }
   },
   {
-   "t": 3868,
+   "t": 3855,
    "event": {
     "type": "agent_end",
     "agent": "evaluator"
    }
   },
   {
-   "t": 3868,
+   "t": 3855,
    "event": {
     "type": "agent_end",
     "agent": "planner"
    }
   },
   {
-   "t": 4231,
+   "t": 4217,
    "event": {
     "type": "agent_start",
     "agent": "planner",
@@ -1164,7 +1170,7 @@
    }
   },
   {
-   "t": 4231,
+   "t": 4217,
    "event": {
     "type": "agent_token",
     "agent": "planner",
@@ -1172,7 +1178,7 @@
    }
   },
   {
-   "t": 4262,
+   "t": 4248,
    "event": {
     "type": "agent_token",
     "agent": "planner",
@@ -1180,7 +1186,7 @@
    }
   },
   {
-   "t": 4296,
+   "t": 4281,
    "event": {
     "type": "tool_call",
     "agent": "planner",
@@ -1189,7 +1195,7 @@
    }
   },
   {
-   "t": 4296,
+   "t": 4281,
    "event": {
     "type": "plan_candidate",
     "day": {
@@ -1234,7 +1240,7 @@
    }
   },
   {
-   "t": 4296,
+   "t": 4281,
    "event": {
     "type": "eval_result",
     "result": {
@@ -1249,7 +1255,7 @@
    }
   },
   {
-   "t": 4296,
+   "t": 4281,
    "event": {
     "type": "agent_start",
     "agent": "evaluator",
@@ -1257,7 +1263,7 @@
    }
   },
   {
-   "t": 4296,
+   "t": 4281,
    "event": {
     "type": "agent_token",
     "agent": "evaluator",
@@ -1265,7 +1271,7 @@
    }
   },
   {
-   "t": 4329,
+   "t": 4314,
    "event": {
     "type": "agent_token",
     "agent": "evaluator",
@@ -1273,7 +1279,7 @@
    }
   },
   {
-   "t": 4362,
+   "t": 4347,
    "event": {
     "type": "agent_token",
     "agent": "evaluator",
@@ -1281,21 +1287,21 @@
    }
   },
   {
-   "t": 4393,
+   "t": 4380,
    "event": {
     "type": "agent_end",
     "agent": "evaluator"
    }
   },
   {
-   "t": 4393,
+   "t": 4380,
    "event": {
     "type": "agent_end",
     "agent": "planner"
    }
   },
   {
-   "t": 4393,
+   "t": 4380,
    "event": {
     "type": "day_locked",
     "day": {
@@ -1337,11 +1343,11 @@
       }
      ]
     },
-    "sunProgress": 0.37037037037037035
+    "sunProgress": 0.4166666666666667
    }
   },
   {
-   "t": 4875,
+   "t": 4862,
    "event": {
     "type": "agent_start",
     "agent": "planner",
@@ -1349,7 +1355,7 @@
    }
   },
   {
-   "t": 4875,
+   "t": 4862,
    "event": {
     "type": "agent_token",
     "agent": "planner",
@@ -1357,7 +1363,7 @@
    }
   },
   {
-   "t": 4907,
+   "t": 4895,
    "event": {
     "type": "agent_token",
     "agent": "planner",
@@ -1365,7 +1371,7 @@
    }
   },
   {
-   "t": 4940,
+   "t": 4927,
    "event": {
     "type": "tool_call",
     "agent": "planner",
@@ -1374,7 +1380,7 @@
    }
   },
   {
-   "t": 4940,
+   "t": 4927,
    "event": {
     "type": "plan_candidate",
     "day": {
@@ -1414,7 +1420,7 @@
    }
   },
   {
-   "t": 4940,
+   "t": 4927,
    "event": {
     "type": "eval_result",
     "result": {
@@ -1427,7 +1433,7 @@
    }
   },
   {
-   "t": 4940,
+   "t": 4927,
    "event": {
     "type": "agent_start",
     "agent": "evaluator",
@@ -1435,7 +1441,7 @@
    }
   },
   {
-   "t": 4940,
+   "t": 4927,
    "event": {
     "type": "agent_token",
     "agent": "evaluator",
@@ -1443,7 +1449,7 @@
    }
   },
   {
-   "t": 4971,
+   "t": 4958,
    "event": {
     "type": "agent_token",
     "agent": "evaluator",
@@ -1451,21 +1457,21 @@
    }
   },
   {
-   "t": 5004,
+   "t": 4991,
    "event": {
     "type": "agent_end",
     "agent": "evaluator"
    }
   },
   {
-   "t": 5004,
+   "t": 4991,
    "event": {
     "type": "agent_end",
     "agent": "planner"
    }
   },
   {
-   "t": 5004,
+   "t": 4991,
    "event": {
     "type": "day_locked",
     "day": {
@@ -1502,11 +1508,11 @@
       }
      ]
     },
-    "sunProgress": 0.5370370370370371
+    "sunProgress": 0.6041666666666666
    }
   },
   {
-   "t": 5486,
+   "t": 5473,
    "event": {
     "type": "agent_start",
     "agent": "planner",
@@ -1514,7 +1520,7 @@
    }
   },
   {
-   "t": 5486,
+   "t": 5473,
    "event": {
     "type": "agent_token",
     "agent": "planner",
@@ -1522,7 +1528,7 @@
    }
   },
   {
-   "t": 5518,
+   "t": 5505,
    "event": {
     "type": "agent_token",
     "agent": "planner",
@@ -1530,7 +1536,7 @@
    }
   },
   {
-   "t": 5550,
+   "t": 5537,
    "event": {
     "type": "tool_call",
     "agent": "planner",
@@ -1539,7 +1545,7 @@
    }
   },
   {
-   "t": 5550,
+   "t": 5537,
    "event": {
     "type": "plan_candidate",
     "day": {
@@ -1579,7 +1585,7 @@
    }
   },
   {
-   "t": 5550,
+   "t": 5538,
    "event": {
     "type": "eval_result",
     "result": {
@@ -1594,7 +1600,7 @@
    }
   },
   {
-   "t": 5550,
+   "t": 5538,
    "event": {
     "type": "agent_start",
     "agent": "evaluator",
@@ -1602,7 +1608,7 @@
    }
   },
   {
-   "t": 5550,
+   "t": 5538,
    "event": {
     "type": "agent_token",
     "agent": "evaluator",
@@ -1610,7 +1616,7 @@
    }
   },
   {
-   "t": 5583,
+   "t": 5570,
    "event": {
     "type": "agent_token",
     "agent": "evaluator",
@@ -1618,7 +1624,7 @@
    }
   },
   {
-   "t": 5615,
+   "t": 5601,
    "event": {
     "type": "agent_token",
     "agent": "evaluator",
@@ -1626,21 +1632,21 @@
    }
   },
   {
-   "t": 5649,
+   "t": 5634,
    "event": {
     "type": "agent_end",
     "agent": "evaluator"
    }
   },
   {
-   "t": 5649,
+   "t": 5634,
    "event": {
     "type": "agent_end",
     "agent": "planner"
    }
   },
   {
-   "t": 5649,
+   "t": 5634,
    "event": {
     "type": "day_locked",
     "day": {
@@ -1677,11 +1683,11 @@
       }
      ]
     },
-    "sunProgress": 0.7037037037037037
+    "sunProgress": 0.7916666666666666
    }
   },
   {
-   "t": 6129,
+   "t": 6117,
    "event": {
     "type": "agent_start",
     "agent": "negotiator",
@@ -1689,7 +1695,7 @@
    }
   },
   {
-   "t": 6129,
+   "t": 6118,
    "event": {
     "type": "agent_token",
     "agent": "negotiator",
@@ -1697,7 +1703,7 @@
    }
   },
   {
-   "t": 6161,
+   "t": 6149,
    "event": {
     "type": "agent_token",
     "agent": "negotiator",
@@ -1705,7 +1711,7 @@
    }
   },
   {
-   "t": 6192,
+   "t": 6179,
    "event": {
     "type": "agent_token",
     "agent": "negotiator",
@@ -1713,7 +1719,7 @@
    }
   },
   {
-   "t": 6224,
+   "t": 6212,
    "event": {
     "type": "tool_call",
     "agent": "negotiator",
@@ -1722,7 +1728,7 @@
    }
   },
   {
-   "t": 6224,
+   "t": 6212,
    "event": {
     "type": "calendar_move",
     "move": {
@@ -1743,7 +1749,7 @@
    }
   },
   {
-   "t": 6529,
+   "t": 6514,
    "event": {
     "type": "tool_call",
     "agent": "negotiator",
@@ -1752,7 +1758,7 @@
    }
   },
   {
-   "t": 6529,
+   "t": 6514,
    "event": {
     "type": "calendar_move",
     "move": {
@@ -1773,7 +1779,7 @@
    }
   },
   {
-   "t": 6830,
+   "t": 6815,
    "event": {
     "type": "tool_call",
     "agent": "negotiator",
@@ -1782,7 +1788,7 @@
    }
   },
   {
-   "t": 6830,
+   "t": 6815,
    "event": {
     "type": "calendar_move",
     "move": {
@@ -1798,12 +1804,12 @@
       "startMin": 900,
       "endMin": 990
      },
-     "reason": "Packing earlier keeps the wind-down intact before a 21:20 bedtime."
+     "reason": "Packing earlier keeps the wind-down intact before a 21:45 bedtime."
     }
    }
   },
   {
-   "t": 7133,
+   "t": 7119,
    "event": {
     "type": "tool_call",
     "agent": "negotiator",
@@ -1812,7 +1818,7 @@
    }
   },
   {
-   "t": 7133,
+   "t": 7119,
    "event": {
     "type": "tool_result",
     "agent": "negotiator",
@@ -1821,7 +1827,7 @@
    }
   },
   {
-   "t": 7133,
+   "t": 7119,
    "event": {
     "type": "agent_token",
     "agent": "negotiator",
@@ -1829,7 +1835,7 @@
    }
   },
   {
-   "t": 7165,
+   "t": 7151,
    "event": {
     "type": "agent_token",
     "agent": "negotiator",
@@ -1837,7 +1843,7 @@
    }
   },
   {
-   "t": 7196,
+   "t": 7184,
    "event": {
     "type": "agent_token",
     "agent": "negotiator",
@@ -1845,7 +1851,7 @@
    }
   },
   {
-   "t": 7228,
+   "t": 7216,
    "event": {
     "type": "agent_token",
     "agent": "negotiator",
@@ -1853,18 +1859,18 @@
    }
   },
   {
-   "t": 7259,
+   "t": 7250,
    "event": {
     "type": "agent_end",
     "agent": "negotiator"
    }
   },
   {
-   "t": 7260,
+   "t": 7250,
    "event": {
     "type": "briefing",
-    "summary": "Night shift complete. 5 days locked, 380 minutes of the 540-minute shift covered before you land — the crew keeps working after touchdown. 4 papers cited. Calendar: 3 events rescheduled, every fixed commitment intact.",
-    "ics": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Meridian//Shift Plan//EN\r\nBEGIN:VEVENT\r\nUID:ev-board@meridian\r\nDTSTAMP:20261015T000000Z\r\nDTSTART:20261015T090000Z\r\nDTEND:20261015T103000Z\r\nSUMMARY:Board meeting\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:ev-breakfast@meridian\r\nDTSTAMP:20261015T000000Z\r\nDTSTART:20261016T073000Z\r\nDTEND:20261016T083000Z\r\nSUMMARY:Team breakfast\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:ev-dinner@meridian\r\nDTSTAMP:20261015T000000Z\r\nDTSTART:20261017T193000Z\r\nDTEND:20261017T213000Z\r\nSUMMARY:Dinner with Sarah\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:ev-flight@meridian\r\nDTSTAMP:20261015T000000Z\r\nDTSTART:20261018T112000Z\r\nDTEND:20261018T115000Z\r\nSUMMARY:BA005 LHR → HND\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:ev-standup-0@meridian\r\nDTSTAMP:20261015T000000Z\r\nDTSTART:20261015T093000Z\r\nDTEND:20261015T100000Z\r\nSUMMARY:Team standup\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:ev-standup-1@meridian\r\nDTSTAMP:20261015T000000Z\r\nDTSTART:20261016T093000Z\r\nDTEND:20261016T100000Z\r\nSUMMARY:Team standup\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:ev-standup-2@meridian\r\nDTSTAMP:20261015T000000Z\r\nDTSTART:20261017T093000Z\r\nDTEND:20261017T100000Z\r\nSUMMARY:Team standup\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:ev-gym-0@meridian\r\nDTSTAMP:20261015T000000Z\r\nDTSTART:20261015T180000Z\r\nDTEND:20261015T190000Z\r\nSUMMARY:Gym\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:ev-gym-1@meridian\r\nDTSTAMP:20261015T000000Z\r\nDTSTART:20261016T123000Z\r\nDTEND:20261016T133000Z\r\nSUMMARY:Gym (rescheduled by Meridian)\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:ev-deep-0@meridian\r\nDTSTAMP:20261015T000000Z\r\nDTSTART:20261015T140000Z\r\nDTEND:20261015T160000Z\r\nSUMMARY:Deep work\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:ev-deep-1@meridian\r\nDTSTAMP:20261015T000000Z\r\nDTSTART:20261016T103000Z\r\nDTEND:20261016T123000Z\r\nSUMMARY:Deep work (rescheduled by Meridian)\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:ev-pack@meridian\r\nDTSTAMP:20261015T000000Z\r\nDTSTART:20261017T150000Z\r\nDTEND:20261017T163000Z\r\nSUMMARY:Pack + drop bags (rescheduled by Meridian)\r\nEND:VEVENT\r\nEND:VCALENDAR",
+    "summary": "Night shift complete. 5 days locked, 380 minutes of the 480-minute London → Tokyo shift covered before you land — the crew keeps working after touchdown. 4 papers cited. Calendar: 3 events rescheduled, every fixed commitment intact.",
+    "ics": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Meridian//Shift Plan//EN\r\nBEGIN:VEVENT\r\nUID:ev-board@meridian\r\nDTSTAMP:20261015T000000Z\r\nDTSTART:20261015T090000Z\r\nDTEND:20261015T103000Z\r\nSUMMARY:Board meeting\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:ev-breakfast@meridian\r\nDTSTAMP:20261015T000000Z\r\nDTSTART:20261016T073000Z\r\nDTEND:20261016T083000Z\r\nSUMMARY:Team breakfast\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:ev-dinner@meridian\r\nDTSTAMP:20261015T000000Z\r\nDTSTART:20261017T193000Z\r\nDTEND:20261017T213000Z\r\nSUMMARY:Dinner with Sarah\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:ev-flight@meridian\r\nDTSTAMP:20261015T000000Z\r\nDTSTART:20261018T112000Z\r\nDTEND:20261018T115000Z\r\nSUMMARY:Flight LHR → HND\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:ev-standup-0@meridian\r\nDTSTAMP:20261015T000000Z\r\nDTSTART:20261015T093000Z\r\nDTEND:20261015T100000Z\r\nSUMMARY:Team standup\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:ev-standup-1@meridian\r\nDTSTAMP:20261015T000000Z\r\nDTSTART:20261016T093000Z\r\nDTEND:20261016T100000Z\r\nSUMMARY:Team standup\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:ev-standup-2@meridian\r\nDTSTAMP:20261015T000000Z\r\nDTSTART:20261017T093000Z\r\nDTEND:20261017T100000Z\r\nSUMMARY:Team standup\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:ev-gym-0@meridian\r\nDTSTAMP:20261015T000000Z\r\nDTSTART:20261015T180000Z\r\nDTEND:20261015T190000Z\r\nSUMMARY:Gym\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:ev-gym-1@meridian\r\nDTSTAMP:20261015T000000Z\r\nDTSTART:20261016T123000Z\r\nDTEND:20261016T133000Z\r\nSUMMARY:Gym (rescheduled by Meridian)\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:ev-deep-0@meridian\r\nDTSTAMP:20261015T000000Z\r\nDTSTART:20261015T140000Z\r\nDTEND:20261015T160000Z\r\nSUMMARY:Deep work\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:ev-deep-1@meridian\r\nDTSTAMP:20261015T000000Z\r\nDTSTART:20261016T103000Z\r\nDTEND:20261016T123000Z\r\nSUMMARY:Deep work (rescheduled by Meridian)\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:ev-pack@meridian\r\nDTSTAMP:20261015T000000Z\r\nDTSTART:20261017T150000Z\r\nDTEND:20261017T163000Z\r\nSUMMARY:Pack + drop bags (rescheduled by Meridian)\r\nEND:VEVENT\r\nEND:VCALENDAR",
     "score": 0.9,
     "citations": [
      {
@@ -2087,7 +2093,7 @@
    }
   },
   {
-   "t": 7504,
+   "t": 7492,
    "event": {
     "type": "done"
    }
