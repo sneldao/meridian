@@ -4,6 +4,7 @@ import type {
   CalendarMove,
   Citation,
   DayPlan,
+  EvalResult,
   Trip,
   WearableBaseline,
 } from "./types";
@@ -181,8 +182,13 @@ export function buildDailyNudgesForDay(params: {
   calendarEvents: CalendarEvent[];
   moves: CalendarMove[];
   citations: Citation[];
+  /** The day's scorer verdicts (latest = gate result) — powers the "why"
+   *  expander's evidence row. Absent pre-run and in fixtures. */
+  verdicts?: EvalResult[];
+  /** The day was rejected at least once before locking. */
+  dayRejected?: boolean;
 }): TravelerNudge[] {
-  const { trip, dayIndex, plan, baseline, calendarEvents, moves, citations } = params;
+  const { trip, dayIndex, plan, baseline, calendarEvents, moves, citations, verdicts, dayRejected } = params;
   const spec = trip.days[dayIndex] ?? { dayIndex, label: `Day ${dayIndex + 1}`, date: "" };
   const east = trip.direction === "east";
   const isFlightDay = dayIndex === trip.departureDayIndex;
@@ -359,5 +365,22 @@ export function buildDailyNudgesForDay(params: {
     citation: citations[1],
   });
 
-  return nudges.sort((a, b) => a.startMin - b.startMin);
+  // Evidence chain: the day's actual scorer verdicts — shared by every nudge
+  // from this day. Only attached when the crew really evaluated the day.
+  const latest = verdicts?.at(-1);
+  const dayEvidence = latest
+    ? {
+        evalVerdict: { score: latest.score, violations: latest.violations.map((v) => v.message) },
+        ...(dayRejected ? { draftRejected: true } : {}),
+      }
+    : undefined;
+
+  return nudges
+    .map((n) => ({
+      ...n,
+      ...(dayEvidence
+        ? { evidence: { ...dayEvidence, ...(n.citation ? { citationId: n.citation.id } : {}) } }
+        : {}),
+    }))
+    .sort((a, b) => a.startMin - b.startMin);
 }

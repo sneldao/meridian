@@ -530,6 +530,9 @@ export default function Home() {
             <Link href="/outcome" className="m" onClick={() => setMenuOpen(false)}>
               Log sleep outcome
             </Link>
+            <Link href="/crew" className="m" onClick={() => setMenuOpen(false)}>
+              See the crew work →
+            </Link>
             <div
               role="menuitem"
               tabIndex={0}
@@ -587,6 +590,8 @@ export default function Home() {
             onSelectDay={setSelectedDayLabel}
             locked={run.locked}
             drafts={run.drafts}
+            verdicts={run.verdicts}
+            rejected={run.rejected}
             baseline={baseline}
             calendarEvents={currentEvents}
             moves={run.moves}

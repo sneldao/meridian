@@ -575,6 +575,8 @@ export default function Home() {
               onSelectDay={setSelectedDayLabel}
               locked={run.locked}
               drafts={run.drafts}
+              verdicts={run.verdicts}
+              rejected={run.rejected}
               baseline={baseline}
               calendarEvents={currentEvents}
               moves={run.moves}

@@ -12,6 +12,7 @@ import type {
   CalendarMove,
   Citation,
   DayPlan,
+  EvalResult,
   Trip,
   WearableBaseline,
 } from "@/domain/types";
@@ -25,6 +26,10 @@ interface NudgeFeedScreenProps {
   onSelectDay: (label: string) => void;
   locked: Map<string, DayPlan>;
   drafts: Map<string, { plan: DayPlan }>;
+  /** Per-day scorer verdicts — the "why" expander's evidence row. */
+  verdicts: Map<string, EvalResult[]>;
+  /** Days rejected at least once before locking. */
+  rejected: Set<string>;
   baseline?: WearableBaseline;
   calendarEvents: CalendarEvent[];
   moves: CalendarMove[];
@@ -51,6 +56,8 @@ export function NudgeFeedScreen({
   onSelectDay,
   locked,
   drafts,
+  verdicts,
+  rejected,
   baseline,
   calendarEvents,
   moves,
@@ -149,12 +156,14 @@ export function NudgeFeedScreen({
       calendarEvents,
       moves,
       citations,
+      verdicts: verdicts.get(activeDaySpec.label),
+      dayRejected: rejected.has(activeDaySpec.label) || (verdicts.get(activeDaySpec.label) ?? []).some((v) => !v.feasible),
     });
     return [...raw].sort(
       (a, b) =>
         CANONICAL_ORDER.indexOf(a.category) - CANONICAL_ORDER.indexOf(b.category),
     );
-  }, [trip, activeDaySpec, locked, drafts, baseline, calendarEvents, moves, citations]);
+  }, [trip, activeDaySpec, locked, drafts, baseline, calendarEvents, moves, citations, verdicts, rejected]);
 
   const filteredNudges = useMemo(() => {
     if (categoryFilter === "all") return allDayNudges;
@@ -606,6 +615,20 @@ export function NudgeFeedScreen({
                     <b>Why this helps</b>
                     <p>{nudge.actionSummary}</p>
                     <p>{nudge.whyItHelps}</p>
+                    {nudge.evidence ? (
+                      <p style={{ marginTop: "6px", fontSize: "11px", color: "#7a6a5c" }}>
+                        <b>From the crew:</b>{" "}
+                        {nudge.evidence.draftRejected
+                          ? "scorer rejected an earlier draft, then "
+                          : ""}
+                        scored {nudge.evidence.evalVerdict?.score.toFixed(2)} by the
+                        circadian gate
+                        {nudge.evidence.evalVerdict?.violations.length
+                          ? ` — flagged: ${nudge.evidence.evalVerdict.violations.join("; ")}`
+                          : " — no violations"}
+                        {nudge.citation ? ` · backed by ${nudge.citation.title}` : ""}
+                      </p>
+                    ) : null}
                   </div>
                 )}
 
