@@ -80,7 +80,7 @@ Event → consequence mapping (no backend change; all of these already exist in
 | `agent_start` / `agent_end` | The agent's marker lights up at its station |
 | `tool_call` / `tool_result` | A pulse travels from the agent to the object it touches, with the tool name shown |
 | `citation` | An evidence card drops into Jun's tray |
-| `plan_candidate` | See-through draft blocks on that day's row |
+| `plan_candidate` | See-through draft blocks on that day's row — a redraft puts the row back under the scan line, not back on its stale rejection |
 | `eval_result` FAIL | Scan line sweeps, the offending block flashes with its rule code and bounces back, "attempt n/2" |
 | `eval_result` PASS | Draft turns solid |
 | `day_locked` | The row snaps in, the staircase grows, the ghost terminator moves east |
@@ -418,3 +418,23 @@ CalendarLens day headers aren't offset by the 32 px hour gutter.
   hook runs gitleaks, typecheck and lint.
 - Rehearse on `AGENT_PROVIDER=replay` until 14:15, then switch to the live
   Anthropic run.
+
+---
+
+**Update 14:45 — the "can't miss it" pass (`1641205`, `9ecc368`, pushed).**
+World got its working signal: the ghost dash marches while the crew runs and
+the active day's endpoint pulses (pre-flight days pulse home, post-flight the
+destination; `dayIndexForLabel` keys off `trip.departureDayIndex`, not a
+hardcoded 3). Three gaps closed on the loop:
+
+- **Retries re-scan.** `plan_candidate` clears the day's `rejected` flag, and
+  the board's `scanning` = "drafts ahead of verdicts" — Iris's sweep plays on
+  attempt 2+ instead of the row sitting red on a stale verdict.
+- **The mission clock breathes.** It anchors to the last event stamp and drifts
+  on wall time between events — `LIVE` stays live through a long model silence.
+- **The dissolve is visible.** `replan` fades the dropped plans' sleep bars and
+  asks (~700 ms) before the row re-drafts — previously an instant snap to
+  queued.
+
+`110 tests pass`, typecheck + lint clean. **Not yet watched in a browser** —
+one eyes-on check of the dissolve and the endpoint pulse before stage.

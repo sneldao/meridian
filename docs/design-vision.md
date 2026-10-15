@@ -216,5 +216,8 @@ the agent/state colour collisions (semantic tokens `pass` / `fail` /
 `progress` / `ghost` / `sleep` / `dim` now carry state; the crew holds teal,
 violet, pink, cyan-for-Iris and indigo; paper is the one action colour), and
 raw hex (zero `[#…]` utilities remain; style/data literals reference
-`var(--color-*)`; only the map's own paint stays literal by design). Still
-open: the handoff card covering the hero and the header crowding.
+`var(--color-*)`; only the map's own paint stays literal by design). The lens's
+one quiet gap closed the same day: the ghost dash marches and the active day's
+endpoint pulses while the crew works — the map says "working" without needing
+to be read. Still open: the handoff card covering the hero and the header
+crowding.

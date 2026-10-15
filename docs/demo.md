@@ -9,7 +9,9 @@ AGENT_PROVIDER=replay bun run dev    # verified end-to-end, zero tokens, works o
 Click **start the night shift**. ~45 s of scripted-but-honest transcript: the
 scorer really runs, the rejections are real verdicts against real plans, and
 the `.ics` is a genuine artifact. Two visible recoveries (`CALENDAR_CONFLICT`
-on D-2 and D-1) and five day locks.
+on D-2 and D-1) — each one bounces red, goes back under Iris's scan line on the
+retry, then snaps locked — and five day locks. The mission clock ticks on wall
+time even while the model is quiet.
 
 Pacing knob: `REPLAY_BEAT_MS` env var (default `60`, read in `replay.ts` and
 `morning-replay.ts`) — ms between streamed events. Default is too fast to
@@ -26,8 +28,9 @@ check-in (base64 JSON array of `CheckIn`):
 http://localhost:3000/?startDay=2&checkins=<base64 of [{"id":"c1","dayIndex":1,"kind":"light_exposure","startMin":300,"status":"skipped","text":"skipped the 5am light","at":0}]>
 ```
 
-The feed shows `wearer reported: …` then `replan — …`. D-1, Flight and D+1
-are re-locked; D-3 and D-2 are dropped.
+The feed shows `wearer reported: …` then `replan — …`. On the board, the
+dropped days' plans visibly dissolve (the old sleep bars fade out) and re-draft;
+D-1, Flight and D+1 are re-locked; D-3 and D-2 carry over as lived.
 
 ## The live path
 
