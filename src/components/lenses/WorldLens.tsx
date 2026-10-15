@@ -1,6 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import type { Trip } from "@/domain/types";
+import { utcOffsetMinOn } from "@/domain/timezones";
+import airports from "@/data/airports.json";
 
 interface Props {
   trip: Trip | null;
@@ -28,9 +31,26 @@ function terminatorX(lon: number) {
   return lonX(lon);
 }
 
+// The world is drawn as its airports — the landmasses emerge from where
+// people actually fly. ~1,150 dots, computed once.
+const AIRPORT_DOTS = (airports as { lat: number; lon: number }[]).map((a) => xy(a.lon, a.lat));
+
+const hhmm = (min: number) =>
+  `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
+
 export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0 }: Props) {
-  const now = new Date();
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(t);
+  }, []);
   const utcHour = now.getUTCHours() + now.getUTCMinutes() / 60;
+  const todayISO = now.toISOString().slice(0, 10);
+  const localAt = (c?: { tz?: string }) => {
+    if (!c?.tz) return "";
+    const utc = now.getUTCHours() * 60 + now.getUTCMinutes();
+    return hhmm(((utc + utcOffsetMinOn(c.tz, todayISO)) % 1440 + 1440) % 1440);
+  };
   const sunLon = 15 * (12 - utcHour);
   const origin = trip ? xy(trip.origin.lon, trip.origin.lat) : { x: W * 0.3, y: H * 0.4 };
   const dest = trip ? xy(trip.destination.lon, trip.destination.lat) : { x: W * 0.8, y: H * 0.4 };
@@ -64,13 +84,13 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
           </linearGradient>
         </defs>
         <rect width={W} height={H} fill="url(#world-night)" />
-        {/* grid */}
-        {[0.25, 0.5, 0.75].map((t) => (
-          <line key={t} x1={0} y1={H * t} x2={W} y2={H * t} stroke="#1e2637" strokeWidth="1" strokeDasharray="2 6" />
+        {/* the world, drawn as its airports */}
+        {AIRPORT_DOTS.map((d, i) => (
+          <circle key={i} cx={d.x} cy={d.y} r={1.2} fill="#e8eaf2" opacity="0.16" />
         ))}
-        {[0.25, 0.5, 0.75].map((t) => (
-          <line key={`v-${t}`} x1={W * t} y1={0} x2={W * t} y2={H} stroke="#1e2637" strokeWidth="1" strokeDasharray="2 6" />
-        ))}
+        {/* sun — parked at the sub-solar point */}
+        <circle cx={lonX(sunLon)} cy={H * 0.5} r={14} fill="#ffc46b" opacity="0.18" />
+        <circle cx={lonX(sunLon)} cy={H * 0.5} r={5} fill="#ffc46b" opacity="0.9" />
         {/* day is within +/-90 degrees of the sub-solar longitude (night outside) */}
         {(() => {
           const dawnX = terminatorX(sunLon - 90);
@@ -107,9 +127,13 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
         {/* flight arc */}
         {trip && (
           <>
-            <path d={path} fill="none" stroke="#ffc46b" strokeWidth="2" strokeDasharray="6 6" opacity="0.9" />
+            <path d={path} fill="none" stroke="#ffc46b" strokeWidth="2" strokeDasharray="8 6" opacity="0.9">
+              <animate attributeName="stroke-dashoffset" values="0;-28" dur="1.4s" repeatCount="indefinite" />
+            </path>
             {wrapShift !== 0 && (
-              <path d={path} transform={`translate(${wrapShift} 0)`} fill="none" stroke="#ffc46b" strokeWidth="2" strokeDasharray="6 6" opacity="0.9" />
+              <path d={path} transform={`translate(${wrapShift} 0)`} fill="none" stroke="#ffc46b" strokeWidth="2" strokeDasharray="8 6" opacity="0.9">
+                <animate attributeName="stroke-dashoffset" values="0;-28" dur="1.4s" repeatCount="indefinite" />
+              </path>
             )}
           </>
         )}
@@ -118,26 +142,32 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
           <>
             <circle cx={origin.x} cy={origin.y} r={6} fill="#9db8ff" />
             <text x={origin.x} y={origin.y + 20} textAnchor="middle" fill="#9db8ff" fontSize="12" fontWeight="600">
-              {trip.origin.code}
+              {trip.origin.code}{localAt(trip.origin) && ` · ${localAt(trip.origin)}`}
             </text>
             <circle cx={dest.x} cy={dest.y} r={8} fill="#ffc46b" />
             <text x={dest.x} y={dest.y + 22} textAnchor="middle" fill="#ffc46b" fontSize="12" fontWeight="600">
-              {trip.destination.code}
+              {trip.destination.code}{localAt(trip.destination) && ` · ${localAt(trip.destination)}`}
             </text>
           </>
         )}
 
-        {/* body position along the arc */}
-        {trip && (
-          <circle
-            cx={wrapX(progressWeight(progress, origin.x, destPlot.x, mid.x))}
-            cy={progressWeight(progress, origin.y, destPlot.y, mid.y)}
-            r={7}
-            fill="#ffd98a"
-            stroke="#fff3d6"
-            strokeWidth="1.5"
-          />
-        )}
+        {/* body position along the arc — you, mid-flight */}
+        {trip && (() => {
+          const bx = wrapX(progressWeight(progress, origin.x, destPlot.x, mid.x));
+          const by = progressWeight(progress, origin.y, destPlot.y, mid.y);
+          return (
+            <>
+              <circle cx={bx} cy={by} r={9} fill="none" stroke="#ffd98a" strokeWidth="1" opacity="0.6">
+                <animate attributeName="r" values="9;17;9" dur="2.2s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.6;0.05;0.6" dur="2.2s" repeatCount="indefinite" />
+              </circle>
+              <circle cx={bx} cy={by} r={7} fill="#ffd98a" stroke="#fff3d6" strokeWidth="1.5" />
+              <text x={bx} y={by - 16} textAnchor="middle" fill="#fff3d6" fontSize="11" fontWeight="700" letterSpacing="2">
+                YOU
+              </text>
+            </>
+          );
+        })()}
 
         {/* stars */}
         {[[120, 40], [280, 90], [470, 30], [700, 70], [860, 45]].map(([x, y], i) => (

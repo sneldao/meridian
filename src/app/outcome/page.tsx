@@ -55,7 +55,7 @@ export default function OutcomePage() {
   return (
     <main className="mx-auto max-w-2xl px-6 py-8">
       <header className="mb-6">
-        <Link href="/" className="text-[10px] tracking-widest text-[#8b93a7] uppercase hover:text-[#e8eaf2]">← deck</Link>
+        <Link href="/" className="text-[12px] text-[#8b93a7] hover:text-[#e8eaf2]">← deck</Link>
         <h1 className="mt-2 text-lg font-bold tracking-[0.3em] text-[#e8eaf2]">POST-TRIP CHECK-IN</h1>
       </header>
 
@@ -63,17 +63,17 @@ export default function OutcomePage() {
         Close the loop. These answers feed next run&apos;s adherence model.
       </p>
 
-      <label className="mt-6 block text-[11px] text-[#8b93a7]">
+      <label className="mt-6 block text-[12px] text-[#8b93a7]">
         How much of the plan did you follow? ({adherence}/5)
         <input type="range" min={0} max={5} value={adherence} onChange={(e) => setAdherence(Number(e.target.value))} className="mt-2 w-full" />
       </label>
 
-      <label className="mt-6 block text-[11px] text-[#8b93a7]">
+      <label className="mt-6 block text-[12px] text-[#8b93a7]">
         Jet lag severity on arrival day ({jetlag}/10)
         <input type="range" min={0} max={10} value={jetlag} onChange={(e) => setJetlag(Number(e.target.value))} className="mt-2 w-full" />
       </label>
 
-      <label className="mt-6 block text-[11px] text-[#8b93a7]">
+      <label className="mt-6 block text-[12px] text-[#8b93a7]">
         Notes
         <textarea
           value={notes}
@@ -87,19 +87,19 @@ export default function OutcomePage() {
         <button onClick={save} className="rounded-lg bg-[#b8e356] px-4 py-2 text-xs font-bold text-[#07090f]">
           Save check-in
         </button>
-        {saved && <span className="text-[11px] text-[#b8e356]">saved</span>}
+        {saved && <span className="text-[12px] text-[#b8e356]">saved</span>}
       </div>
 
       {memory?.learned && (
         <section className="mt-8 rounded-xl border border-[#1e2637] bg-[#0c1018] p-4">
-          <h2 className="text-[10px] font-bold tracking-[0.2em] text-[#ffc46b] uppercase">What Meridian has learned</h2>
+          <h2 className="text-[12px] font-bold text-[#ffc46b]">What Meridian has learned</h2>
           {memory.learned.skippedKinds?.length ? (
-            <div className="mt-2 text-[11px] text-[#8b93a7]">
+            <div className="mt-2 text-[12px] text-[#8b93a7]">
               Historically difficult: {memory.learned.skippedKinds.join(", ")}
             </div>
           ) : null}
           {memory.learned.earliestDoneMin !== undefined ? (
-            <div className="mt-1 text-[11px] text-[#8b93a7]">
+            <div className="mt-1 text-[12px] text-[#8b93a7]">
               Earliest ask ever completed: {String(Math.floor(memory.learned.earliestDoneMin / 60)).padStart(2, "0")}:
               {String(memory.learned.earliestDoneMin % 60).padStart(2, "0")}
             </div>
@@ -107,12 +107,12 @@ export default function OutcomePage() {
           {memory.learned.notes?.length ? (
             <ul className="mt-2 space-y-1">
               {memory.learned.notes.slice(-5).map((n: string, i: number) => (
-                <li key={i} className="text-[11px] text-[#8b93a7]">“{n}”</li>
+                <li key={i} className="text-[12px] text-[#8b93a7]">“{n}”</li>
               ))}
             </ul>
           ) : null}
           {memory.runs?.length ? (
-            <div className="mt-2 text-[11px] text-[#8b93a7]">{memory.runs.length} prior shift(s) on file.</div>
+            <div className="mt-2 text-[12px] text-[#8b93a7]">{memory.runs.length} prior shift(s) on file.</div>
           ) : null}
         </section>
       )}

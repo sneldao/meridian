@@ -78,11 +78,11 @@ export default function TeamPage() {
     <main className="mx-auto max-w-6xl px-6 py-8 font-mono2 text-[#e8eaf2]">
       <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <Link href="/" className="text-[10px] tracking-widest text-[#8b93a7] uppercase hover:text-[#e8eaf2]">
+          <Link href="/" className="text-[12px] text-[#8b93a7] hover:text-[#e8eaf2]">
             ← run a shift
           </Link>
           <h1 className="mt-2 text-lg font-bold tracking-[0.3em]">TEAM · 12 CREWS</h1>
-          <p className="mt-1 text-[11px] text-[#8b93a7]">
+          <p className="mt-1 text-[12px] text-[#8b93a7]">
             {streaming
               ? runs.size === 0
                 ? "Connecting the twelve crews…"
@@ -90,7 +90,7 @@ export default function TeamPage() {
               : "Run finished. At-risk crews are listed first."}
           </p>
         </div>
-        <div className="text-right text-[11px] text-[#8b93a7]">
+        <div className="text-right text-[12px] text-[#8b93a7]">
           <div>
             <span className="font-bold text-[#b8e356]">{done}</span> of {TEAM_TRAVELLERS.length} crews done ·{" "}
             <span className="font-bold text-[#ff7a7a]">{atRisk}</span> board meetings at risk
@@ -98,11 +98,11 @@ export default function TeamPage() {
           <button
             onClick={restart}
             disabled={streaming}
-            className="mt-2 rounded-lg border border-[#1e2637] bg-[#0c1018] px-3 py-1.5 text-[11px] text-[#b8e356] hover:border-[#b8e35666] disabled:text-[#4a5470]"
+            className="mt-2 rounded-lg border border-[#1e2637] bg-[#0c1018] px-3 py-1.5 text-[12px] text-[#b8e356] hover:border-[#b8e35666] disabled:text-[#4a5470]"
           >
             {streaming ? "running…" : "run the team again"}
           </button>
-          <div className="mt-1 text-[10px] text-[#4a5470]">
+          <div className="mt-1 text-[12px] text-[#4a5470]">
             ~£25/traveller/mo →{" "}
             <span className="font-bold text-[#8b93a7]">
               £{TEAM_TRAVELLERS.length * 25}/mo for this team
@@ -132,18 +132,18 @@ export default function TeamPage() {
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <div className="text-[12px] font-bold">{t.name}</div>
-                  <div className="mt-0.5 text-[10px] text-[#8b93a7]">
+                  <div className="mt-0.5 text-[12px] text-[#8b93a7]">
                     {trip.origin.code} <span className="text-[#ffc46b]">→</span> {trip.destination.code} ·{" "}
                     {trip.destination.name}
                   </div>
                 </div>
-                <span className={`rounded px-1.5 py-0.5 text-[9px] font-bold ${badge.cls}`}>{badge.text}</span>
+                <span className={`rounded px-1.5 py-0.5 text-[12px] font-bold ${badge.cls}`}>{badge.text}</span>
               </div>
 
               <div className="mt-3 h-1.5 w-full overflow-hidden rounded bg-[#1e2637]">
                 <div className="h-full bg-[#b8e356] transition-[width] duration-500" style={{ width: `${pct}%` }} />
               </div>
-              <div className="mt-1 flex justify-between text-[10px] text-[#8b93a7]">
+              <div className="mt-1 flex justify-between text-[12px] text-[#8b93a7]">
                 <span>
                   {r.locked.size}/{trip.days.length} days locked
                 </span>
@@ -156,7 +156,7 @@ export default function TeamPage() {
                 <div
                   key={x.eventId}
                   title={x.text}
-                  className={`mt-2 flex items-center gap-1.5 text-[10px] ${x.status === "risk" ? "text-[#ff7a7a]" : "text-[#8b93a7]"}`}
+                  className={`mt-2 flex items-center gap-1.5 text-[12px] ${x.status === "risk" ? "text-[#ff7a7a]" : "text-[#8b93a7]"}`}
                 >
                   <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${x.status === "risk" ? "bg-[#ff7a7a]" : "bg-[#b8e356]"}`} />
                   <span className="min-w-0 flex-1 truncate">{x.title}</span>

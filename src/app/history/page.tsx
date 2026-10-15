@@ -54,10 +54,10 @@ export default function HistoryPage() {
     <main className="mx-auto max-w-3xl px-6 py-8">
       <header className="mb-6 flex items-center justify-between">
         <div>
-          <Link href="/" className="text-[10px] tracking-widest text-[#8b93a7] uppercase hover:text-[#e8eaf2]">← deck</Link>
+          <Link href="/" className="text-[12px] text-[#8b93a7] hover:text-[#e8eaf2]">← deck</Link>
           <h1 className="mt-2 text-lg font-bold tracking-[0.3em] text-[#e8eaf2]">TRIP HISTORY</h1>
         </div>
-        <button onClick={clear} className="text-[10px] text-[#8b93a7] hover:text-[#ff7a7a]">clear</button>
+        <button onClick={clear} className="text-[12px] text-[#8b93a7] hover:text-[#ff7a7a]">clear</button>
         <button
           onClick={() => {
             ["meridian:lastPlan","meridian:lastTrip","meridian:history","meridian:outcomes","meridian:checkins"].forEach((k) => {
@@ -65,7 +65,7 @@ export default function HistoryPage() {
             });
             setItems([]);
           }}
-          className="ml-3 text-[10px] text-[#8b93a7] hover:text-[#ff7a7a]"
+          className="ml-3 text-[12px] text-[#8b93a7] hover:text-[#ff7a7a]"
         >
           reset all
         </button>
@@ -83,16 +83,16 @@ export default function HistoryPage() {
                 {it.trip ? `${it.trip.origin.code} → ${it.trip.destination.code} · ${Math.abs(it.trip.requiredShiftMin / 60)}h ${it.trip.direction}` : "Demo trip"}
               </div>
               <div className="flex items-center gap-2">
-                {it.provider && <span className="font-mono2 text-[10px] text-[#8b93a7]">{it.provider}</span>}
-                {it.fallback && <span className="rounded bg-[#ff7a7a22] px-1.5 py-0.5 text-[10px] text-[#ff7a7a]">fallback</span>}
+                {it.provider && <span className="font-mono2 text-[12px] text-[#8b93a7]">{it.provider}</span>}
+                {it.fallback && <span className="rounded bg-[#ff7a7a22] px-1.5 py-0.5 text-[12px] text-[#ff7a7a]">fallback</span>}
                 <div className="font-mono2 text-[12px] text-[#b8e356]">{it.score.toFixed(2)}</div>
               </div>
             </div>
-            <div className="mt-1 text-[10px] text-[#4a5470]">{new Date(it.savedAt).toLocaleString()}</div>
-            <div className="mt-2 text-[11px] text-[#8b93a7]">{it.summary}</div>
+            <div className="mt-1 text-[12px] text-[#4a5470]">{new Date(it.savedAt).toLocaleString()}</div>
+            <div className="mt-2 text-[12px] text-[#8b93a7]">{it.summary}</div>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {it.days.map((d, i) => (
-                <span key={i} className="rounded border border-[#1e2637] bg-[#131826] px-2 py-0.5 font-mono2 text-[10px] text-[#8b93a7]">
+                <span key={i} className="rounded border border-[#1e2637] bg-[#131826] px-2 py-0.5 font-mono2 text-[12px] text-[#8b93a7]">
                   {d.label} {d.shiftMin}m
                 </span>
               ))}

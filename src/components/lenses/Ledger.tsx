@@ -76,9 +76,9 @@ export function Ledger({ events }: LedgerProps) {
   const locks = count("day_locked");
 
   return (
-    <div className="flex h-full w-full flex-col gap-3 p-4 font-mono2 text-[11px] text-[#e8eaf2]">
+    <div className="flex h-full w-full flex-col gap-3 p-4 font-mono2 text-[12px] text-[#e8eaf2]">
       <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
-        <span className="text-[10px] tracking-widest text-[#8b93a7] uppercase">ledger</span>
+        <span className="text-[12px] text-[#8b93a7]">ledger</span>
         <Stat label="events" value={events.length} />
         <Stat label="tool calls" value={toolCalls} />
         <Stat label="attempts" value={attempts} />
@@ -91,11 +91,11 @@ export function Ledger({ events }: LedgerProps) {
           const d = describe(e);
           const Icon = d.agent ? AGENT_ICONS[d.agent] : null;
           return (
-            <li key={i} className="grid grid-cols-[32px_96px_1fr] gap-2 border-b border-[#1e263722] py-0.5">
+            <li key={i} className="grid grid-cols-[40px_104px_1fr] gap-2 border-b border-[#1e263722] py-0.5">
               <span className="text-[#4a5470]">{String(i + 1).padStart(3, "0")}</span>
               <span className="flex items-center gap-1.5 truncate font-bold" style={{ color: d.tone }}>
                 {d.agent && Icon && (
-                  <Icon size={10} className="shrink-0" style={{ color: CREW[d.agent].color }} />
+                  <Icon size={12} className="shrink-0" style={{ color: CREW[d.agent].color }} />
                 )}
                 {d.who}
               </span>
@@ -112,7 +112,7 @@ export function Ledger({ events }: LedgerProps) {
 
 function Stat({ label, value, tone }: { label: string; value: number; tone?: string }) {
   return (
-    <span className="text-[10px] tracking-widest text-[#8b93a7] uppercase">
+    <span className="text-[12px] text-[#8b93a7]">
       {label} <span className="ml-1 text-[12px] font-bold" style={{ color: tone ?? "#e8eaf2" }}>{value}</span>
     </span>
   );

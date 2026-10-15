@@ -140,7 +140,7 @@ function AirportField({
               <span className="min-w-0 flex-1 truncate text-[12px] text-paper normal-case">
                 {a.name} <span className="text-mist">· {a.country}</span>
               </span>
-              <span className="text-[11px] text-mist">{fmtUtcOffset(utcOffsetMinOn(a.tz, date))}</span>
+              <span className="text-[12px] text-mist">{fmtUtcOffset(utcOffsetMinOn(a.tz, date))}</span>
             </li>
           ))}
         </ul>

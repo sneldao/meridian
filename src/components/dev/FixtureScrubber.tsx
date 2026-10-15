@@ -35,7 +35,7 @@ export function FixtureScrubber({ pb }: { pb: FixturePlayback }) {
       <button className={btn} onClick={() => pb.seekTo("eval_result", 1)}>2nd verdict</button>
       <button className={btn} onClick={() => pb.seekTo("calendar_move")}>1st move</button>
       <button className={btn} onClick={() => pb.seekTo("briefing")}>briefing</button>
-      <span className="ml-auto text-[11px]">
+      <span className="ml-auto text-[12px]">
         {pb.run.log.length}/{pb.fixture.events.length} events · {pb.run.locked.size} locked · {pb.run.rejections} rejected
       </span>
     </div>
