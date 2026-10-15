@@ -54,8 +54,8 @@ export function CalendarLens({ days, events, readiness, ics }: CalendarLensProps
       </div>
 
       <div className="relative min-h-0 flex-1">
-        {/* day headers */}
-        <div className="absolute inset-x-0 top-0 flex h-5">
+        {/* day headers — same left offset as the hour gutter below (ml-8) */}
+        <div className="absolute top-0 right-0 left-8 flex h-5">
           {days.map((d) => (
             <span
               key={d.dayIndex}
