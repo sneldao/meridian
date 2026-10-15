@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { CrewEvent } from "@/domain/types";
 import { meetingReadiness } from "@/domain/readiness";
+import { fmtMin } from "@/domain/circadian";
 import { TEAM_TRAVELLERS, teamTrip } from "@/domain/team";
 import { calendarWithMoves, initialRunState, reduceRun, type RunState } from "@/state/run";
 
@@ -152,12 +153,19 @@ export default function TeamPage() {
               </div>
 
               {readiness.map((x) => (
-                <p
+                <div
                   key={x.eventId}
-                  className={`mt-2 text-[10px] leading-relaxed ${x.status === "risk" ? "text-[#ff7a7a]" : "text-[#8b93a7]"}`}
+                  title={x.text}
+                  className={`mt-2 flex items-center gap-1.5 text-[10px] ${x.status === "risk" ? "text-[#ff7a7a]" : "text-[#8b93a7]"}`}
                 >
-                  {x.text}
-                </p>
+                  <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${x.status === "risk" ? "bg-[#ff7a7a]" : "bg-[#b8e356]"}`} />
+                  <span className="min-w-0 flex-1 truncate">{x.title}</span>
+                  <span className="shrink-0 font-mono2 font-bold">
+                    {x.bodyWithoutPlanMin !== x.bodyMin
+                      ? `${fmtMin(x.bodyWithoutPlanMin)} → ${fmtMin(x.bodyMin)}`
+                      : fmtMin(x.bodyMin)}
+                  </span>
+                </div>
               ))}
             </article>
           );

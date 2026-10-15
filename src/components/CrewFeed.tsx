@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { CREW } from "@/agents/crew";
+import { AGENT_ICONS } from "@/lib/agent-icons";
 import type { AgentId, Citation, EvalResult } from "@/domain/types";
 
 export type LogEntry =
@@ -39,29 +40,35 @@ export function CrewFeed({ entries }: { entries: LogEntry[] }) {
             Start the night shift and you&apos;ll see each agent think, research and check its work here, in order.
           </p>
           <div className="mt-1 flex flex-wrap justify-center gap-x-3 gap-y-1 text-[10px] text-[#4a5470]">
-            <span>Mara · analyst</span>
-            <span>Jun · research</span>
-            <span>Otto · planner</span>
-            <span>Iris · eval</span>
-            <span>Rex · negotiator</span>
+            {(Object.keys(CREW) as AgentId[]).map((id) => {
+              const Icon = AGENT_ICONS[id];
+              return (
+                <span key={id} className="inline-flex items-center gap-1">
+                  <Icon size={11} style={{ color: agentColor(id) }} />
+                  {CREW[id].name}
+                </span>
+              );
+            })}
           </div>
         </div>
       )}
       {entries.map((e, i) => {
         switch (e.kind) {
-          case "agent":
+          case "agent": {
+            const Icon = AGENT_ICONS[e.agent];
             return (
               <div key={i} className="mt-4 mb-1 flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full" style={{ background: agentColor(e.agent) }} />
+                <Icon size={12} style={{ color: agentColor(e.agent) }} />
                 <span className="text-[11px] font-semibold tracking-wider" style={{ color: agentColor(e.agent) }}>
                   {e.title}
                 </span>
                 <span className="h-px flex-1 bg-[#1e2637]" />
               </div>
             );
+          }
           case "text":
             return (
-              <p key={i} className="mb-1 text-[#e8eaf2]">
+              <p key={i} className="mb-1 line-clamp-2 text-[#e8eaf2]" title={e.text}>
                 {e.text}
                 <span className="ml-0.5 inline-block h-3 w-1 animate-pulse bg-[#8b93a7] align-middle opacity-40" />
               </p>

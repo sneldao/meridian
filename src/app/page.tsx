@@ -5,11 +5,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { fmtMin } from "@/domain/circadian";
 import { summarizeCheckIn } from "@/domain/adherence";
 import type {
+  AgentId,
   CalendarEvent,
   CrewEvent,
   Trip,
   WearableBaseline,
 } from "@/domain/types";
+import { CREW } from "@/agents/crew";
+import { AGENT_ICONS } from "@/lib/agent-icons";
 import { BriefingCard } from "@/components/BriefingCard";
 import { LensShell, type LensId } from "@/components/lenses/LensShell";
 import { WorldLens } from "@/components/lenses/WorldLens";
@@ -155,6 +158,9 @@ export default function Home() {
           stopVoice();
           setEntries([{ kind: "system", text: "shift started — crew assembling" }]);
           setBriefingDismissed(false);
+          // Never let the welcome modal cover a running shift (fresh browser on stage).
+          setShowOnboarding(false);
+          try { localStorage.setItem("meridian:onboarded", "1"); } catch { /* ignore */ }
           try {
             localStorage.setItem("meridian:lastTrip", JSON.stringify(e.trip));
           } catch {
@@ -517,17 +523,20 @@ export default function Home() {
               <div className="max-w-md rounded-2xl border border-[#1e2637] bg-[#0c1018] p-6 shadow-xl">
                 <h2 className="text-sm font-bold tracking-[0.3em] text-[#e8eaf2]">WELCOME TO MERIDIAN</h2>
                 <p className="mt-3 text-[12px] leading-relaxed text-[#8b93a7]">
-                  Meridian flies a crew of agents ahead of you. They read your wearable baseline, pull real circadian
-                  literature, draft a day-by-day shift plan, score it against physiology and your calendar, then hand
-                  you a calendar file.
+                  A crew of agents flies ahead of your body clock — reads your wearable, pulls the science, and
+                  rewrites your calendar around the shift.
                 </p>
-                <ul className="mt-3 space-y-1 text-[11px] text-[#8b93a7]">
-                  <li>· <span className="text-[#e8eaf2]">Mara</span> analyst · wearable + adherence</li>
-                  <li>· <span className="text-[#e8eaf2]">Jun</span> research · papers with DOIs</li>
-                  <li>· <span className="text-[#e8eaf2]">Otto</span> planner · one day at a time</li>
-                  <li>· <span className="text-[#e8eaf2]">Iris</span> eval · explains the scorer</li>
-                  <li>· <span className="text-[#e8eaf2]">Rex</span> negotiator · reschedules events</li>
-                </ul>
+                <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1.5 text-[11px] text-[#8b93a7]">
+                  {(Object.keys(CREW) as AgentId[]).map((id) => {
+                    const Icon = AGENT_ICONS[id];
+                    return (
+                      <span key={id} className="inline-flex items-center gap-1" title={CREW[id].title}>
+                        <Icon size={12} style={{ color: CREW[id].color }} />
+                        <span className="text-[#e8eaf2]">{CREW[id].name}</span>
+                      </span>
+                    );
+                  })}
+                </div>
                 <p className="mt-3 text-[11px] text-[#ff7a7a]">Agents propose; the deterministic scorer disposes.</p>
                 <div className="mt-4 flex justify-end">
                   <button

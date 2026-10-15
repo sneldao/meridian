@@ -141,14 +141,31 @@ export function CalendarLens({ days, events, readiness, ics }: CalendarLensProps
         </div>
       </div>
 
-      {/* readiness lines for the buyer */}
+      {/* readiness — the ROI row: body-clock time before → after the plan */}
       {readiness.length > 0 && (
-        <ul className="space-y-1 border-t border-[#1e2637] pt-2 text-[10px] text-[#8b93a7]">
-          {readiness.map((r) => (
-            <li key={r.eventId} className={r.status === "risk" ? "text-[#ff7a7a]" : "text-[#b8e356]"}>
-              {r.text}
-            </li>
-          ))}
+        <ul className="space-y-1 border-t border-[#1e2637] pt-2 text-[10px]">
+          {readiness.map((r) => {
+            const risk = r.status === "risk";
+            const improved = r.bodyWithoutPlanMin !== r.bodyMin;
+            return (
+              <li key={r.eventId} className="flex items-center gap-2" title={r.text}>
+                <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${risk ? "bg-[#ff7a7a]" : "bg-[#b8e356]"}`} />
+                <span className="min-w-0 flex-1 truncate text-[#8b93a7]">
+                  {r.title} <span className="text-[#4a5470]">· body clock</span>
+                </span>
+                <span className={`shrink-0 font-mono2 font-bold ${risk ? "text-[#ff7a7a]" : "text-[#b8e356]"}`}>
+                  {improved ? `${fmtMin(r.bodyWithoutPlanMin)} → ${fmtMin(r.bodyMin)}` : fmtMin(r.bodyMin)}
+                </span>
+                <span
+                  className={`shrink-0 rounded px-1 text-[9px] font-bold ${
+                    risk ? "bg-[#ff7a7a22] text-[#ff7a7a]" : "bg-[#b8e35622] text-[#b8e356]"
+                  }`}
+                >
+                  {risk ? "AT RISK" : "READY"}
+                </span>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>
