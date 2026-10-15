@@ -1,20 +1,24 @@
 import { fmtMin } from "./circadian";
-import type { CalendarEvent, DayPlan, Trip } from "./types";
+import { GARMIN_BASELINE } from "./fixtures";
+import type { CalendarEvent, DayPlan, Trip, WearableBaseline } from "./types";
 
-// Meeting readiness — the on-screen return. For each destination meeting the
-// body clock is local time minus the shift still outstanding. A meeting that
-// lands in the body's low point (02:00–06:00 body time) is flagged at risk,
-// and the suggested local time puts the body near mid-afternoon instead.
-// Deterministic: the same plan and calendar always give the same badges.
+// Meeting readiness — the on-screen return. Body time is where the body clock
+// is when the meeting starts. East, the body is behind local time, so the lag
+// subtracts. West, the body is ahead, so the lag adds. A meeting is at risk
+// when the body is inside the wearer's habitual sleep window (bed to wake,
+// padded by 45 minutes each side). Suggestions are the earliest business-hours
+// slot where the body is awake, or "move to D+2" if no slot works.
+// Deterministic: the same plan, calendar and baseline give the same badges.
 
 const DAY_MIN = 1440;
-export const LOW_POINT_START_MIN = 2 * 60;
-export const LOW_POINT_END_MIN = 6 * 60;
-export const TARGET_BODY_MIN = 14 * 60;
+export const SLEEP_PAD_MIN = 45;
+export const BUSINESS_START_MIN = 10 * 60;
+export const BUSINESS_END_MIN = 17 * 60;
+export const SLOT_MIN = 30;
 
 const wrap = (min: number) => ((min % DAY_MIN) + DAY_MIN) % DAY_MIN;
 
-/** Minutes the body clock still lags destination time after the locked days.
+/** Minutes the body clock still differs from destination time after the locked days.
  * Never negative: once the shift is covered the body is on destination time. */
 export function remainingLagMin(trip: Trip, locked: DayPlan[]): number {
   const required = Math.abs(trip.requiredShiftMin);
@@ -23,9 +27,43 @@ export function remainingLagMin(trip: Trip, locked: DayPlan[]): number {
   return Math.max(0, required - covered);
 }
 
-/** Body clock time, given local destination time and the outstanding lag. */
-export function bodyClockMin(localMin: number, lagMin: number): number {
-  return wrap(localMin - lagMin);
+/** Body clock time for a local destination time. East: body is behind, subtract.
+ * West: body is ahead, add. */
+export function bodyClockMin(localMin: number, lagMin: number, direction: Trip["direction"]): number {
+  return wrap(direction === "east" ? localMin - lagMin : localMin + lagMin);
+}
+
+export interface SleepWindow {
+  start: number;
+  end: number;
+}
+
+/** The wearer's habitual sleep window, padded on both sides. */
+export function sleepWindow(baseline: WearableBaseline = GARMIN_BASELINE): SleepWindow {
+  return {
+    start: wrap(baseline.avgBedtimeMin - SLEEP_PAD_MIN),
+    end: wrap(baseline.avgWakeMin + SLEEP_PAD_MIN),
+  };
+}
+
+/** Whether a body-clock time falls inside the window. The window may wrap midnight. */
+export function isAsleep(bodyMin: number, window: SleepWindow): boolean {
+  const m = wrap(bodyMin);
+  return window.start <= window.end
+    ? m >= window.start && m <= window.end
+    : m >= window.start || m <= window.end;
+}
+
+/** Earliest business-hours slot (local destination time) where the body is awake. */
+export function suggestBusinessSlot(
+  trip: Trip,
+  lagMin: number,
+  window: SleepWindow,
+): number | null {
+  for (let m = BUSINESS_START_MIN; m < BUSINESS_END_MIN; m += SLOT_MIN) {
+    if (!isAsleep(bodyClockMin(m, lagMin, trip.direction), window)) return m;
+  }
+  return null;
 }
 
 export interface MeetingReadiness {
@@ -33,11 +71,16 @@ export interface MeetingReadiness {
   title: string;
   dayIndex: number;
   localMin: number;
+  /** Body clock at the meeting start, with the locked plan applied. */
   bodyMin: number;
+  /** Body clock at the meeting start with no plan at all. */
+  bodyWithoutPlanMin: number;
   status: "ready" | "risk";
-  /** Local start that puts the body near TARGET_BODY_MIN. Set only when at risk. */
+  /** Business-hours slot on the same day that clears the sleep window. */
   suggestedLocalMin?: number;
-  /** One line a buyer can read, e.g. "Board meeting D+1 09:00 — your body thinks it's 02:00. Rex suggests 14:00." */
+  /** Set when no business-hours slot clears the sleep window. */
+  moveToNextDay?: boolean;
+  /** One line a buyer can read. */
   text: string;
 }
 
@@ -46,38 +89,56 @@ export function meetingReadiness(
   trip: Trip,
   events: CalendarEvent[],
   locked: DayPlan[],
+  baseline: WearableBaseline = GARMIN_BASELINE,
 ): MeetingReadiness[] {
   const lag = remainingLagMin(trip, locked);
+  const fullLag = remainingLagMin(trip, []);
+  const window = sleepWindow(baseline);
+  const hasPlan = locked.length > 0;
+
   return events
     .filter((e) => (e.movedTo?.dayIndex ?? e.dayIndex) > trip.departureDayIndex)
     .map((e) => {
       const dayIndex = e.movedTo?.dayIndex ?? e.dayIndex;
       const localMin = e.movedTo?.startMin ?? e.startMin;
-      const bodyMin = bodyClockMin(localMin, lag);
-      const atRisk = bodyMin >= LOW_POINT_START_MIN && bodyMin < LOW_POINT_END_MIN;
+      const bodyMin = bodyClockMin(localMin, lag, trip.direction);
+      const bodyWithoutPlanMin = bodyClockMin(localMin, fullLag, trip.direction);
+      const atRisk = isAsleep(bodyMin, window);
       const label = trip.days[dayIndex]?.label ?? `day ${dayIndex}`;
       const head = `${e.title} ${label} ${fmtMin(localMin)}`;
-      if (!atRisk) {
-        return {
-          eventId: e.id,
-          title: e.title,
-          dayIndex,
-          localMin,
-          bodyMin,
-          status: "ready" as const,
-          text: `${head} — your body thinks it's ${fmtMin(bodyMin)}. Ready.`,
-        };
-      }
-      const suggestedLocalMin = wrap(TARGET_BODY_MIN + lag);
-      return {
+
+      const base = {
         eventId: e.id,
         title: e.title,
         dayIndex,
         localMin,
         bodyMin,
+        bodyWithoutPlanMin,
+      };
+
+      const beforeAfter =
+        hasPlan && bodyWithoutPlanMin !== bodyMin
+          ? `without Meridian your body thinks it's ${fmtMin(bodyWithoutPlanMin)}; with the plan, ${fmtMin(bodyMin)}`
+          : `your body thinks it's ${fmtMin(bodyMin)}`;
+
+      if (!atRisk) {
+        return { ...base, status: "ready" as const, text: `${head} — ${beforeAfter}. Ready.` };
+      }
+
+      const slot = suggestBusinessSlot(trip, lag, window);
+      if (slot === null) {
+        return {
+          ...base,
+          status: "risk" as const,
+          moveToNextDay: true,
+          text: `${head} — ${beforeAfter}. No business-hours slot clears sleep; move to D+2.`,
+        };
+      }
+      return {
+        ...base,
         status: "risk" as const,
-        suggestedLocalMin,
-        text: `${head} — your body thinks it's ${fmtMin(bodyMin)}. Rex suggests ${fmtMin(suggestedLocalMin)}.`,
+        suggestedLocalMin: slot,
+        text: `${head} — ${beforeAfter}. Rex suggests ${fmtMin(slot)}.`,
       };
     });
 }

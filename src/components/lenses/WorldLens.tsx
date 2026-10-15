@@ -9,6 +9,7 @@ interface Props {
   activeLabel?: string;
   citationCount: number;
   running: boolean;
+  ghostGap?: number;
 }
 
 const W = 1000;
@@ -18,25 +19,31 @@ function xy(lon: number, lat: number) {
   return { x: ((lon + 180) / 360) * W, y: ((90 - lat) / 180) * H };
 }
 
-function terminatorX(lon: number) {
-  return ((lon + 180) / 360) * W;
+function lonX(lon: number) {
+  const wrapped = ((lon + 180) % 360 + 360) % 360;
+  return (wrapped / 360) * W;
 }
 
-export function WorldLens({ trip, progress, citationCount, running }: Props) {
+function terminatorX(lon: number) {
+  return lonX(lon);
+}
+
+export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0 }: Props) {
   const now = new Date();
   const utcHour = now.getUTCHours() + now.getUTCMinutes() / 60;
   const sunLon = 15 * (12 - utcHour);
   const origin = trip ? xy(trip.origin.lon, trip.origin.lat) : { x: W * 0.3, y: H * 0.4 };
   const dest = trip ? xy(trip.destination.lon, trip.destination.lat) : { x: W * 0.8, y: H * 0.4 };
-  const ghostLon = trip
-    ? trip.origin.lon + progress * (trip.destination.lon - trip.origin.lon)
-    : -10;
-  const mid = { x: (origin.x + dest.x) / 2, y: Math.min(origin.y, dest.y) - 90 };
-  const path = `M ${origin.x} ${origin.y} Q ${mid.x} ${mid.y} ${dest.x} ${dest.y}`;
+  // Draw the flight arc the short way when it crosses the antimeridian.
+  const lonDelta = trip ? ((trip.destination.lon - trip.origin.lon + 540) % 360) - 180 : 0;
+  const destPlot = trip ? { x: origin.x + (lonDelta / 360) * W, y: dest.y } : dest;
+  const ghostLon = trip ? sunLon - 90 - ghostGap : -10;
+  const mid = { x: (origin.x + destPlot.x) / 2, y: Math.min(origin.y, dest.y, destPlot.y) - 90 };
+  const path = `M ${origin.x} ${origin.y} Q ${mid.x} ${mid.y} ${destPlot.x} ${destPlot.y}`;
 
   return (
     <div className="relative h-full w-full bg-[#050812]">
-      <svg viewBox={`0 0 ${W} ${H}`} className="h-full w-full">
+      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" className="h-full w-full">
         <defs>
           <linearGradient id="world-night" x1="0" y1="0" x2="1" y2="0">
             <stop offset="0%" stopColor="#050812" />
@@ -51,11 +58,21 @@ export function WorldLens({ trip, progress, citationCount, running }: Props) {
         {[0.25, 0.5, 0.75].map((t) => (
           <line key={`v-${t}`} x1={W * t} y1={0} x2={W * t} y2={H} stroke="#1e2637" strokeWidth="1" strokeDasharray="2 6" />
         ))}
-        {/* night overlay on the side opposite the sun */}
-        <rect x={0} y={0} width={terminatorX(sunLon)} height={H} fill="#000" opacity="0.45" />
-        {/* ghost body-clock terminator */}
+        {/* day is within +/-90 degrees of the sub-solar longitude (night outside) */}
+        {(() => {
+          const dawnX = terminatorX(sunLon - 90);
+          const duskX = terminatorX(sunLon + 90);
+          const nightRects = dawnX < duskX
+            ? [{ x: 0, w: dawnX }, { x: duskX, w: W - duskX }]
+            : [{ x: duskX, w: dawnX - duskX }];
+          return nightRects.map((r, i) => (
+            <rect key={i} x={r.x} y={0} width={r.w} height={H} fill="#000" opacity="0.45" />
+          ));
+        })()}
+        {/* ghost body-clock terminator, closing to zero as days lock */}
         <rect x={0} y={0} width={terminatorX(ghostLon)} height={H} fill="#ffd98a" opacity="0.08" />
-        <line x1={terminatorX(sunLon)} y1={0} x2={terminatorX(sunLon)} y2={H} stroke="#9db8ff" strokeWidth="2" />
+        <line x1={terminatorX(sunLon - 90)} y1={0} x2={terminatorX(sunLon - 90)} y2={H} stroke="#9db8ff" strokeWidth="2" />
+        <line x1={terminatorX(sunLon + 90)} y1={0} x2={terminatorX(sunLon + 90)} y2={H} stroke="#9db8ff" strokeWidth="2" />
         <line x1={terminatorX(ghostLon)} y1={0} x2={terminatorX(ghostLon)} y2={H} stroke="#ffd98a" strokeWidth="2" strokeDasharray="6 4" />
 
         {/* flight arc */}
@@ -79,8 +96,8 @@ export function WorldLens({ trip, progress, citationCount, running }: Props) {
         {/* body position along the arc */}
         {trip && (
           <circle
-            cx={origin.x + progressWeight(progress, origin.x, dest.x, mid.x)}
-            cy={origin.y + progressWeight(progress, origin.y, dest.y, mid.y)}
+            cx={progressWeight(progress, origin.x, destPlot.x, mid.x)}
+            cy={progressWeight(progress, origin.y, destPlot.y, mid.y)}
             r={7}
             fill="#ffd98a"
             stroke="#fff3d6"

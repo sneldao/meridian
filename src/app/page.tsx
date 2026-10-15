@@ -4,12 +4,9 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fmtMin } from "@/domain/circadian";
 import { summarizeCheckIn } from "@/domain/adherence";
-import { CITY_TABLE } from "@/domain/fixtures";
 import type {
   CalendarEvent,
-  Citation,
   CrewEvent,
-  DayPlan,
   Trip,
   WearableBaseline,
 } from "@/domain/types";
@@ -18,8 +15,12 @@ import { LensShell, type LensId } from "@/components/lenses/LensShell";
 import { WorldLens } from "@/components/lenses/WorldLens";
 import { CrewFeed, type LogEntry } from "@/components/CrewFeed";
 import { DayStrip } from "@/components/DayStrip";
-import { SunTrack } from "@/components/SunTrack";
-import { INTERVENTION_ICONS } from "@/lib/intervention-icons";
+import { RoutePicker } from "@/components/RoutePicker";
+import { ShiftBoard } from "@/components/lenses/ShiftBoard";
+import { CalendarLens } from "@/components/lenses/CalendarLens";
+import { Ledger } from "@/components/lenses/Ledger";
+import { useRunState, calendarWithMoves, ledgerEvents, ghostGapDeg } from "@/state/run";
+import { meetingReadiness } from "@/domain/readiness";
 
 interface TripData {
   trip: Trip;
@@ -27,16 +28,6 @@ interface TripData {
   calendar: CalendarEvent[];
   provider: string;
 }
-
-interface Briefing {
-  summary: string;
-  score: number;
-  citations: Citation[];
-  days: DayPlan[];
-  ics: string;
-}
-
-type Phase = "idle" | "running" | "done";
 
 // Voice pump — module-level because it only touches refs; keeps the agent
 // utterances sequential instead of talking over each other.
@@ -75,33 +66,26 @@ export default function Home() {
   const [checkInsParam, setCheckInsParam] = useState("");
   const [startDayParam, setStartDayParam] = useState(0);
   const tripQuery = `?origin=${origin}&dest=${dest}&date=${departureDate}`;
+  const { run, dispatch, reset } = useRunState();
   const [data, setData] = useState<TripData | null>(null);
-  const [lens, setLens] = useState<LensId>("world");
+  const [selectedLens, setSelectedLens] = useState<LensId>("world");
   const [autoDirector, setAutoDirector] = useState(true);
-  const [elapsedMs, setElapsedMs] = useState(0);
-  const [toolCalls, setToolCalls] = useState(0);
-  const [lastEvent, setLastEvent] = useState<CrewEvent | null>(null);
-  const [runStartedAt, setRunStartedAt] = useState<number | null>(null);
-  const [phase, setPhase] = useState<Phase>("idle");
+  const lens = autoDirector ? ((run.focus ?? selectedLens) as LensId) : selectedLens;
   const [entries, setEntries] = useState<LogEntry[]>([]);
-  const [sunProgress, setSunProgress] = useState(0);
-  const [lockedDays, setLockedDays] = useState<Map<string, DayPlan>>(new Map());
-  const [activeDay, setActiveDay] = useState<string>();
-  const activeDayRef = useRef<string | undefined>(undefined);
-  const [rejected, setRejected] = useState<Set<string>>(new Set());
-  const [citationCount, setCitationCount] = useState(0);
-  const [briefing, setBriefing] = useState<Briefing | null>(null);
   const [briefingDismissed, setBriefingDismissed] = useState(false);
   const [hasSavedPlan, setHasSavedPlan] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [runCount, setRunCount] = useState(0);
-  const [providerFallback, setProviderFallback] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const trip = (run.trip ?? data?.trip ?? null) as Trip | null;
+
   const esRef = useRef<EventSource | null>(null);
   const [voiceOn, setVoiceOn] = useState(true);
   const voiceOnRef = useRef(true);
   const utterRef = useRef<Record<string, string>>({});
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const voiceQueueRef = useRef<{ agent: string; text: string }[]>([]);
+  const menuRef = useRef<HTMLDivElement | null>(null);
 
   const speak = useCallback((agent: string, text: string) => {
     if (!text.trim() || !voiceOnRef.current) return;
@@ -151,26 +135,25 @@ export default function Home() {
     };
   }, []);
 
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
+    };
+    window.addEventListener("mousedown", handler);
+    return () => window.removeEventListener("mousedown", handler);
+  }, []);
+
   const push = useCallback((e: LogEntry) => {
     setEntries((prev) => [...prev, e]);
   }, []);
 
-  const handleEvent = useCallback(
+  const handleSideEffects = useCallback(
     (e: CrewEvent) => {
-      setLastEvent(e);
       switch (e.type) {
         case "run_start":
           stopVoice();
           setEntries([{ kind: "system", text: "shift started — crew assembling" }]);
-          setSunProgress(0);
-          setLockedDays(new Map());
-          setRejected(new Set());
-          setCitationCount(0);
-          setBriefing(null);
-          setProviderFallback(false);
-          setElapsedMs(0);
-          setToolCalls(0);
-          setRunStartedAt(Date.now());
+          setBriefingDismissed(false);
           try {
             localStorage.setItem("meridian:lastTrip", JSON.stringify(e.trip));
           } catch {
@@ -201,7 +184,6 @@ export default function Home() {
           utterRef.current[e.agent] = "";
           break;
         case "tool_call":
-          setToolCalls((c) => c + 1);
           push({ kind: "tool", agent: e.agent, text: `→ ${e.tool} ${e.detail}` });
           break;
         case "tool_result":
@@ -209,28 +191,17 @@ export default function Home() {
           break;
         case "citation":
           push({ kind: "citation", citation: e.citation });
-          setCitationCount((c) => c + 1);
           break;
         case "plan_candidate":
-          setActiveDay(e.day.label);
-          activeDayRef.current = e.day.label;
+          // Grid state is owned by run state; live progress follows the day_label.
           break;
         case "eval_result":
           push({ kind: "eval", result: e.result });
-          if (!e.result.feasible && activeDayRef.current) {
-            setRejected((s) => new Set(s).add(activeDayRef.current!));
+          if (!e.result.feasible) {
+            // rhetorical no-op so the right-hand feed still tells the story.
           }
           break;
         case "day_locked":
-          setLockedDays((m) => new Map(m).set(e.day.label, e.day));
-          setSunProgress(e.sunProgress);
-          setActiveDay(undefined);
-          activeDayRef.current = undefined;
-          setRejected((s) => {
-            const n = new Set(s);
-            n.delete(e.day.label);
-            return n;
-          });
           push({ kind: "locked", label: e.day.label });
           break;
         case "calendar_move":
@@ -241,8 +212,6 @@ export default function Home() {
           break;
         case "briefing":
           speak("evaluator", e.summary);
-          setBriefing({ summary: e.summary, score: e.score, citations: e.citations, days: e.days, ics: e.ics });
-          setBriefingDismissed(false);
           setHasSavedPlan(true);
           try {
             if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
@@ -266,7 +235,7 @@ export default function Home() {
               summary: e.summary,
               days: e.days,
               provider: data?.provider,
-              fallback: providerFallback,
+              fallback: run.errors.length > 0,
             };
             const prev = (() => {
               try { return JSON.parse(localStorage.getItem("meridian:history") || "[]"); } catch { return []; }
@@ -279,46 +248,48 @@ export default function Home() {
           push({ kind: "system", text: "morning handoff ready" });
           break;
         case "error":
-          setProviderFallback(true);
           push({ kind: "error", text: e.message });
           break;
         case "done":
-          setPhase("done");
+          setEntries((prev) => [...prev, { kind: "system", text: "shift complete" }]);
           esRef.current?.close();
           break;
       }
     },
-    [push, speak, stopVoice, data, providerFallback],
+    [push, speak, stopVoice, data, run.errors.length],
   );
 
   const cancelShift = useCallback(() => {
     esRef.current?.close();
     stopVoice();
-    setPhase("done");
     push({ kind: "system", text: "shift cancelled by operator" });
-  }, [push, stopVoice]);
+    reset();
+  }, [push, stopVoice, reset]);
 
   const startShift = useCallback(() => {
-    if (phase === "running") return;
+    if (run.phase === "running") return;
     if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "default") {
       Notification.requestPermission().catch(() => {});
     }
     esRef.current?.close();
-    setPhase("running");
+    reset();
     setEntries([]);
-    setBriefing(null);
+    setBriefingDismissed(false);
     const params = new URLSearchParams(tripQuery.replace(/^\?/, ""));
     if (checkInsParam) params.set("checkins", checkInsParam);
     if (startDayParam) params.set("startDay", String(startDayParam));
     const es = new EventSource("/api/crew/run?" + params.toString());
     esRef.current = es;
-    es.onmessage = (m) => handleEvent(JSON.parse(m.data) as CrewEvent);
+    es.onmessage = (m) => {
+      const evt = JSON.parse(m.data) as CrewEvent;
+      dispatch(evt);
+      handleSideEffects(evt);
+    };
     es.onerror = () => {
       push({ kind: "error", text: "stream interrupted" });
-      setPhase("done");
       es.close();
     };
-  }, [handleEvent, phase, push, tripQuery, checkInsParam, startDayParam]);
+  }, [dispatch, handleSideEffects, push, reset, run.phase, tripQuery, checkInsParam, startDayParam]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -326,30 +297,30 @@ export default function Home() {
       if (tag === "INPUT" || tag === "TEXTAREA") return;
       if (e.code === "Space") {
         e.preventDefault();
-        if (phase !== "running") startShift();
-      } else if (e.code === "Escape" && phase === "running") {
+        if (run.phase !== "running") startShift();
+      } else if (e.code === "Escape" && run.phase === "running") {
         cancelShift();
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [phase, startShift, cancelShift]);
+  }, [run.phase, startShift, cancelShift]);
 
-  useEffect(() => {
-    if (phase !== "running" || !runStartedAt) return;
-    const id = window.setInterval(() => {
-      setElapsedMs(Date.now() - runStartedAt);
-    }, 250);
-    return () => window.clearInterval(id);
-  }, [phase, runStartedAt]);
+  const chooseLens = useCallback((id: LensId) => {
+    setSelectedLens(id);
+    setAutoDirector(false);
+  }, []);
 
-  const trip = data?.trip;
+  // Director is derived below; no synchronous state update in an effect.
+
+  const providerFallback = run.errors.length > 0;
+  const journey = data?.provider;
+  const providerLabel = journey ?? run.provider ?? process.env.NEXT_PUBLIC_AGENT_PROVIDER;
 
   return (
     <main className="flex min-h-screen flex-col p-4 lg:h-screen">
-      {/* header */}
-      <header className="mb-4 flex items-center justify-between">
-        <div>
+      <header className="mb-4 flex items-center gap-3 overflow-x-auto">
+        <div className="shrink-0">
           <div className="flex items-baseline gap-3">
             <h1 className="text-lg font-bold tracking-[0.3em] text-[#e8eaf2]">MERIDIAN</h1>
             <span className="text-[10px] tracking-widest text-[#8b93a7] uppercase">
@@ -357,171 +328,169 @@ export default function Home() {
             </span>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          {trip && (
-            <div className="rounded-lg border border-[#1e2637] bg-[#0c1018] px-3 py-1.5 font-mono2 text-[11px] text-[#8b93a7]">
-              {trip.origin.code} <span className="text-[#ffc46b]">→</span> {trip.destination.code} · {Math.abs(trip.requiredShiftMin / 60)}h {trip.direction}
-            </div>
-          )}
-          <div className="flex items-center gap-2 rounded-lg border border-[#1e2637] bg-[#0c1018] px-2 py-1.5 font-mono2 text-[11px]">
-            <select value={origin} onChange={(e) => setOrigin(e.target.value)} className="bg-transparent text-[#e8eaf2]">
-              {Object.keys(CITY_TABLE).map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-            <span className="text-[#ffc46b]">→</span>
-            <select value={dest} onChange={(e) => setDest(e.target.value)} className="bg-transparent text-[#e8eaf2]">
-              {Object.keys(CITY_TABLE).map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-            <input
-              type="date"
-              value={departureDate}
-              onChange={(e) => setDepartureDate(e.target.value)}
-              className="bg-transparent text-[#8b93a7]"
-            />
+
+        {trip && (
+          <div className="shrink-0 rounded-lg border border-[#1e2637] bg-[#0c1018] px-3 py-1.5 font-mono2 text-[11px] text-[#8b93a7]">
+            {trip.origin.code} <span className="text-[#ffc46b]">→</span> {trip.destination.code} · {Math.abs(trip.requiredShiftMin / 60)}h {trip.direction}
           </div>
-          {hasSavedPlan && (
-            <Link
-              href="/review"
-              className="rounded-lg border border-[#1e2637] bg-[#0c1018] px-3 py-1.5 font-mono2 text-[11px] text-[#b8e356] transition-colors hover:border-[#b8e35644]"
-            >
-              view saved handoff →
-            </Link>
-          )}
-          <Link
-            href="/history"
+        )}
+
+        <div className="shrink-0">
+          <RoutePicker origin={origin} dest={dest} date={departureDate} onChange={(next) => {
+              setOrigin(next.origin);
+              setDest(next.dest);
+              setDepartureDate(next.date);
+            }} disabled={run.phase === "running"} />
+        </div>
+
+        <button
+          onClick={startShift}
+          disabled={run.phase === "running"}
+          className={`shrink-0 rounded-lg px-5 py-2 text-xs font-bold transition-colors ${
+            run.phase === "running"
+              ? "cursor-not-allowed bg-[#1e2637] text-[#4a5470]"
+              : "bg-[#b8e356] text-[#07090f] hover:bg-[#cff27e]"
+          }`}
+        >
+          {run.phase === "running" ? "shift in progress…" : run.phase === "done" ? "run it again" : "start the night shift"}
+        </button>
+        {run.phase === "running" && (
+          <button
+            onClick={cancelShift}
+            className="shrink-0 rounded-lg border border-[#ff7a7a44] bg-[#ff7a7a11] px-3 py-2 text-xs font-bold text-[#ff7a7a] transition-colors hover:bg-[#ff7a7a22]"
+          >
+            cancel
+          </button>
+        )}
+
+        <div className="relative ml-auto shrink-0" ref={menuRef}>
+          <button
+            onClick={() => setMenuOpen((v) => !v)}
             className="rounded-lg border border-[#1e2637] bg-[#0c1018] px-3 py-1.5 font-mono2 text-[11px] text-[#8b93a7] transition-colors hover:border-[#8b93a7]"
           >
-            history
-          </Link>
-          {runCount > 0 && (
-            <Link href="/history" className="rounded-lg border border-[#1e2637] bg-[#0c1018] px-3 py-1.5 font-mono2 text-[11px] text-[#8b93a7] transition-colors hover:border-[#8b93a7]">
-              {runCount} runs
-            </Link>
-          )}
-          {data && (
-            <div className="rounded-lg border border-[#1e2637] bg-[#0c1018] px-3 py-1.5 font-mono2 text-[11px] text-[#4a5470]">
-              {data.provider}{providerFallback ? " · fallback" : ""}
+            menu
+          </button>
+          {menuOpen && (
+            <div className="absolute right-0 top-full z-50 mt-2 w-52 rounded-xl border border-[#1e2637] bg-[#0c1018] p-2 shadow-xl">
+              <div className="space-y-1">
+                {hasSavedPlan && (
+                  <Link href="/review" className="block rounded-lg px-3 py-1.5 text-[11px] text-[#b8e356] hover:bg-[#1e2637]">
+                    view saved handoff →
+                  </Link>
+                )}
+                <Link href="/history" className="block rounded-lg px-3 py-1.5 text-[11px] text-[#8b93a7] hover:bg-[#1e2637]">
+                  history
+                </Link>
+                {runCount > 0 && (
+                  <Link href="/history" className="block rounded-lg px-3 py-1.5 text-[11px] text-[#8b93a7] hover:bg-[#1e2637]">
+                    {runCount} runs
+                  </Link>
+                )}
+                <button
+                  onClick={() => {
+                    const next = !voiceOn;
+                    voiceOnRef.current = next;
+                    setVoiceOn(next);
+                    if (!next) stopVoice();
+                    setMenuOpen(false);
+                  }}
+                  className="w-full rounded-lg px-3 py-1.5 text-left text-[11px] text-[#7adfff] hover:bg-[#1e2637]"
+                >
+                  voice {voiceOn ? "on" : "off"}
+                </button>
+                {providerLabel && (
+                  <div className="rounded-lg px-3 py-1.5 text-[10px] text-[#4a5470]">
+                    {providerLabel}{providerFallback ? " · fallback" : ""}
+                  </div>
+                )}
+              </div>
             </div>
-          )}
-          <button
-            onClick={() => {
-              const next = !voiceOn;
-              voiceOnRef.current = next;
-              setVoiceOn(next);
-              if (!next) stopVoice();
-            }}
-            className={`rounded-lg border px-3 py-1.5 font-mono2 text-[11px] transition-colors ${
-              voiceOn
-                ? "border-[#7adfff44] bg-[#0c1018] text-[#7adfff] hover:border-[#7adfff]"
-                : "border-[#1e2637] bg-[#0c1018] text-[#4a5470] hover:border-[#8b93a7]"
-            }`}
-          >
-            voice {voiceOn ? "on" : "off"}
-          </button>
-          <button
-            onClick={startShift}
-            disabled={phase === "running"}
-            className={`rounded-lg px-5 py-2 text-xs font-bold transition-colors ${
-              phase === "running"
-                ? "cursor-not-allowed bg-[#1e2637] text-[#4a5470]"
-                : "bg-[#b8e356] text-[#07090f] hover:bg-[#cff27e]"
-            }`}
-          >
-            {phase === "running" ? "shift in progress…" : phase === "done" ? "run it again" : "start the night shift"}
-          </button>
-          {phase === "running" && (
-            <button
-              onClick={cancelShift}
-              className="rounded-lg border border-[#ff7a7a44] bg-[#ff7a7a11] px-3 py-2 text-xs font-bold text-[#ff7a7a] transition-colors hover:bg-[#ff7a7a22]"
-            >
-              cancel
-            </button>
           )}
         </div>
       </header>
 
-      {/* main grid */}
       {providerFallback && (
         <div className="mb-3 rounded-lg border border-[#ff7a7a44] bg-[#ff7a7a11] px-4 py-2 text-[12px] text-[#ff7a7a]">
           Crew fell back mid-run — review the plan before acting.
         </div>
       )}
+
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[1.6fr_1fr]">
         <div className="relative flex min-h-0 flex-col gap-3">
           <LensShell
             lens={lens}
-            onChange={setLens}
+            onChange={chooseLens}
             auto={autoDirector}
             onToggleAuto={() => setAutoDirector((v) => !v)}
-            running={phase === "running"}
-            elapsedMs={elapsedMs}
-            toolCalls={toolCalls}
-            lockedDays={lockedDays.size}
-            lastEvent={lastEvent}
+            running={run.phase === "running"}
+            elapsedMs={run.elapsedMs}
+            toolCalls={run.toolCalls}
+            lockedDays={run.locked.size}
+            focus={run.focus}
+            focusSeq={run.focusSeq}
           >
-            {lens === "world" && trip && (
+            {lens === "world" && (
               <WorldLens
                 trip={trip}
-                progress={sunProgress}
-                lockedLabels={new Set(lockedDays.keys())}
-                activeLabel={activeDay}
-                citationCount={citationCount}
-                running={phase === "running"}
+                progress={run.sunProgress}
+                lockedLabels={new Set(run.locked.keys())}
+                activeLabel={run.activeLabel}
+                citationCount={run.citations.length}
+                running={run.phase === "running"}
+                ghostGap={ghostGapDeg(run)}
               />
             )}
-            {lens === "board" && trip && (
+            {lens === "board" && (
               <div className="relative h-full w-full">
-                <SunTrack
-                  progress={sunProgress}
-                  days={trip.days}
-                  lockedLabels={new Set(lockedDays.keys())}
-                  activeLabel={activeDay}
-                  citationCount={citationCount}
-                  running={phase === "running"}
-                />
-                {briefing && !briefingDismissed && (
-                  <BriefingCard
-                    summary={briefing.summary}
-                    score={briefing.score}
-                    citations={briefing.citations}
-                    days={briefing.days}
-                    ics={briefing.ics}
-                    fallback={providerFallback}
-                    onClose={() => setBriefingDismissed(true)}
+                {trip && (
+                  <ShiftBoard
+                    days={trip.days}
+                    drafts={run.drafts}
+                    verdicts={run.verdicts}
+                    locked={run.locked}
+                    activeLabel={run.activeLabel}
+                    activeAgent={run.activeAgent}
                   />
                 )}
               </div>
             )}
             {lens === "calendar" && (
-              <div className="h-full overflow-y-auto p-4 font-mono2 text-[12px] text-[#e8eaf2]">
-                <div className="mb-3 text-[10px] tracking-widest text-[#8b93a7] uppercase">calendar moves</div>
-                {entries.filter((x) => x.kind === "move").length === 0 ? (
-                  <div className="text-[#4a5470]">no moves yet</div>
-                ) : (
-                  entries
-                    .filter((x) => x.kind === "move")
-                    .map((e, i) => <div key={i} className="mb-2 rounded-md border border-[#1e2637] bg-[#131826] px-3 py-2">{(e as { text: string }).text}</div>)
+              <div className="h-full w-full">
+                {trip && (
+                  <CalendarLens
+                    days={trip.days}
+                    events={calendarWithMoves(run)}
+                    readiness={meetingReadiness(trip, calendarWithMoves(run), [...run.locked.values()])}
+                    ics={run.briefing?.ics}
+                  />
                 )}
-                {lockedDays.size > 0 && (
-                  <div className="mt-4 text-[10px] tracking-widest text-[#8b93a7] uppercase">locked interventions</div>
-                )}
-                {[...lockedDays.values()].map((day) => (
-                  <div key={day.label} className="mt-2 rounded-md border border-[#1e2637] bg-[#131826] px-3 py-2">
-                    <div className="text-[#b8e356]">{day.label} · bed {fmtMin(day.targetBedtimeMin)} · wake {fmtMin(day.targetWakeMin)}</div>
-                    <div className="mt-1 flex gap-1">{day.interventions.map((iv, j) => {
-                      const info = INTERVENTION_ICONS[iv.kind];
-                      const Icon = info?.icon;
-                      return Icon ? <Icon key={j} size={12} color={info.tint} /> : null;
-                    })}</div>
-                  </div>
-                ))}
               </div>
             )}
-            {lens === "ledger" && <CrewFeed entries={entries} />}
+            {lens === "ledger" && (
+              <div className="h-full w-full">
+                <Ledger events={ledgerEvents(run)} />
+              </div>
+            )}
           </LensShell>
-          {phase === "idle" && (
+
+          {run.briefing && !briefingDismissed && (
+            <div className="pointer-events-auto absolute bottom-14 left-3 right-3 z-20 max-h-[45%] overflow-y-auto rounded-xl">
+              <BriefingCard
+                summary={run.briefing.summary}
+                score={run.briefing.score}
+                citations={run.briefing.citations}
+                days={run.briefing.days}
+                ics={run.briefing.ics}
+                fallback={providerFallback}
+                onClose={() => setBriefingDismissed(true)}
+              />
+            </div>
+          )}
+
+          {run.phase === "idle" && (
             <div className="absolute inset-0 z-10 flex items-center justify-center">
               <div className="text-center">
-                <div className="text-sm text-[#8b93a7]">Your body clock is still in London.</div>
+                <div className="text-sm text-[#8b93a7]">Your body clock is still in {trip?.origin.name ?? "London"}.</div>
                 <div className="mt-1 text-xs text-[#4a5470]">The crew is waiting for the order.</div>
               </div>
             </div>
@@ -558,12 +527,7 @@ export default function Home() {
             </div>
           )}
           {trip && (
-            <DayStrip
-              days={trip.days}
-              locked={lockedDays}
-              activeLabel={activeDay}
-              rejectedLabels={rejected}
-            />
+            <DayStrip days={trip.days} locked={run.locked} activeLabel={run.activeLabel} rejectedLabels={run.rejected} />
           )}
         </div>
 

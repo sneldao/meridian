@@ -35,7 +35,8 @@ interface Props {
   onChange: (lens: LensId) => void;
   auto: boolean;
   onToggleAuto: () => void;
-  lastEvent?: CrewEvent | null;
+  focus?: string | null;
+  focusSeq?: number;
   running: boolean;
   elapsedMs: number;
   toolCalls: number;
@@ -48,7 +49,8 @@ export function LensShell({
   onChange,
   auto,
   onToggleAuto,
-  lastEvent,
+  focus,
+  focusSeq,
   running,
   elapsedMs,
   toolCalls,
@@ -56,10 +58,9 @@ export function LensShell({
   children,
 }: Props) {
   useEffect(() => {
-    if (!auto) return;
-    const next = directorLens(lastEvent);
-    if (next) onChange(next);
-  }, [lastEvent, auto, onChange]);
+    if (!auto || !focus) return;
+    onChange(focus as LensId);
+  }, [focus, focusSeq, auto, onChange]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
