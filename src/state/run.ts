@@ -71,7 +71,7 @@ export interface RunState {
    */
   lived: Set<string>;
   /** The previous run's locks, kept across run_start for the morning carry-over. */
-  priorLocked?: { route: string; days: Map<string, DayPlan> };
+  priorLocked?: { route: string; days: Map<string, DayPlan>; moves: CalendarMove[] };
 
   moves: CalendarMove[];
   citations: Citation[];
@@ -177,9 +177,10 @@ function applyEventInner(s: RunState, event: CrewEvent, t: number): RunState {
       // Keep the previous run's locks (merged over any older carry-over) so a
       // morning replan on the same route can mark the lived days.
       const route = routeKey(event.trip);
-      const prior = s.trip && routeKey(s.trip) === route
-        ? new Map([...(s.priorLocked?.route === route ? s.priorLocked.days : []), ...s.locked])
-        : undefined;
+      const prior = new Map([
+        ...(s.priorLocked?.route === route ? s.priorLocked.days : []),
+        ...(s.trip && routeKey(s.trip) === route ? s.locked : []),
+      ]);
       return {
         ...initialRunState(),
         phase: "running",
@@ -187,7 +188,13 @@ function applyEventInner(s: RunState, event: CrewEvent, t: number): RunState {
         trip: event.trip,
         baseline: event.baseline,
         calendar: event.calendar,
-        priorLocked: prior?.size ? { route, days: prior } : undefined,
+        priorLocked: prior.size
+          ? {
+              route,
+              days: prior,
+              moves: s.moves.length && s.trip && routeKey(s.trip) === route ? s.moves : (s.priorLocked?.moves ?? []),
+            }
+          : undefined,
         lastEvent: event,
         elapsedMs: 0,
         log: [{ t: 0, event }],
@@ -288,6 +295,8 @@ function applyEventInner(s: RunState, event: CrewEvent, t: number): RunState {
         lived: new Set([...lived].filter((l) => locked.has(l))),
         rejected: new Set([...s.rejected].filter((l) => lived.has(l))),
         replans: [...s.replans, { droppedDays: event.droppedDays, reason: event.reason }],
+        // The night shift's calendar moves still hold unless this run makes new ones.
+        moves: s.moves.length ? s.moves : (s.priorLocked?.moves ?? []),
         sunProgress: s.trip ? sunProgress(s.trip, [...locked.values()]) : s.sunProgress,
         briefing: undefined,
       };
@@ -321,8 +330,18 @@ export function asLived(plan: DayPlan, checkIns: CheckIn[]): DayPlan {
 
 export function reduceRun(s: RunState, a: RunAction): RunState {
   switch (a.kind) {
-    case "reset":
-      return initialRunState();
+    case "reset": {
+      // Clear the screen but remember this run's locks for a morning replan
+      // on the same route (run_start checks the route before using them).
+      const carry = s.trip && s.locked.size
+        ? {
+            route: routeKey(s.trip),
+            days: new Map([...(s.priorLocked?.days ?? []), ...s.locked]),
+            moves: s.moves.length ? s.moves : (s.priorLocked?.moves ?? []),
+          }
+        : s.priorLocked;
+      return { ...initialRunState(), priorLocked: carry };
+    }
     case "event":
       return applyEvent(s, a.event, a.t);
     case "batch":

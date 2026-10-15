@@ -105,6 +105,22 @@ describe("run state reducer", () => {
     expect(morning.briefing).toBeUndefined();
   });
 
+  test("carry-over survives the page's reset() before the morning stream", () => {
+    const night = replay();
+    const cleared = reduceRun(night, { kind: "reset" });
+    expect(cleared.locked.size).toBe(0);
+    const morning = reduceRun(cleared, {
+      kind: "batch",
+      items: [
+        { t: 0, event: events[0].event },
+        { t: 1, event: { type: "replan", droppedDays: [0, 1], reason: "morning shift" } },
+      ],
+    });
+    expect(morning.lived.size).toBe(2);
+    // Rex's night-shift moves still hold in the morning calendar.
+    expect(morning.moves).toEqual(night.moves);
+  });
+
   test("a run on a different route carries nothing over", () => {
     const night = replay();
     const other = { ...(events[0].event as Extract<CrewEvent, { type: "run_start" }>) };
