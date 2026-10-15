@@ -7,8 +7,10 @@ calendar.
 
 Built at Accel AI Innovate London, Oct 2026.
 
-**Agents propose, code disposes.** Every plan is gated by a deterministic
-circadian scorer — the crew debates, the math decides.
+**Agents propose, code disposes.** A deterministic placement solver drafts the
+times, the crew debates intent, and a scorer backed by a phase-response model
+decides — a plan's declared shift is checked against what its zeitgeber timing
+can actually deliver.
 
 ## Quickstart
 
@@ -28,7 +30,7 @@ run history server-side (project `vpeakvspljdoxbwfsdvw`, see
 |---|---|
 | Mara · ANALYST | Reads the wearable baseline + adherence profile |
 | Jun · RESEARCH | Pulls real papers (ScienceMadeReadable → Firecrawl) with DOIs |
-| Otto · PLANNER | Drafts each day's shift plan, one at a time |
+| Otto · PLANNER | Drafts each day's shift plan from a solver-placed skeleton, one at a time |
 | Iris · EVAL | Fresh-context evaluator — explains the scorer's verdict |
 | Rex · NEGOTIATOR | Reschedules movable calendar events, commits the .ics |
 

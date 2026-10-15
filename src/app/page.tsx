@@ -538,6 +538,7 @@ export default function Home() {
                 citations={run.briefing.citations}
                 days={run.briefing.days}
                 ics={run.briefing.ics}
+                coverage={run.briefing.coverage}
                 fallback={providerFallback}
                 onClose={() => setBriefingDismissed(true)}
               />

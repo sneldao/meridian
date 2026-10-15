@@ -1,4 +1,4 @@
-import { evaluatePlan, fmtMin, passes, sunProgress } from "@/domain/circadian";
+import { coverageOf, evaluatePlan, fmtMin, passes, sunProgress } from "@/domain/circadian";
 import { foldCheckIns, summarizeCheckIn } from "@/domain/adherence";
 import { ADHERENCE_PROFILE, DEMO_TRIP, GARMIN_BASELINE, calendarFor } from "@/domain/fixtures";
 import type { AdherenceProfile, AgentId, CalendarEvent, CheckIn, CrewEvent, DayPlan, EvalResult, Trip } from "@/domain/types";
@@ -94,6 +94,7 @@ export async function* runMorningReplay(opts: {
       days: [...locked, candidate],
       calendar: cal,
       adherence,
+      baseline: GARMIN_BASELINE,
     });
     evals.push(result);
     yield { type: "eval_result", result, attempt: 1 };
@@ -130,13 +131,15 @@ export async function* runMorningReplay(opts: {
   const meanScore = scores.length
     ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 100) / 100
     : 0;
+  const coverage = coverageOf(trip, locked);
   yield {
     type: "briefing",
-    summary: `Morning replan complete. ${locked.length} of ${specs.length} remaining days re-locked after ${opts.checkIns.length} check-in(s).`,
+    summary: `Morning replan complete. ${locked.length} of ${specs.length} remaining days re-locked after ${opts.checkIns.length} check-in(s). ${Math.round(coverage.ratio * 100)}% of the shift covered, ${Math.round(coverage.residualMin / 6) / 10}h still owed at touchdown.`,
     ics: buildIcs(cal, trip),
     score: meanScore,
     citations,
     days: locked,
+    coverage,
   };
   await sleep(2 * BEAT);
   yield { type: "done" };

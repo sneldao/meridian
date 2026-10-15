@@ -18,6 +18,7 @@ import type {
   CrewEvent,
   DayPlan,
   EvalResult,
+  ShiftCoverage,
   Trip,
   WearableBaseline,
 } from "@/domain/types";
@@ -33,6 +34,10 @@ export interface Briefing {
   score: number;
   citations: Citation[];
   days: DayPlan[];
+  /** How much of the required shift the locked days cover. `undefined` on
+   *  briefings recorded before coverage was measured, so old fixtures and
+   *  persisted events still load. */
+  coverage?: ShiftCoverage;
 }
 
 export interface StampedEvent {
@@ -267,8 +272,8 @@ function applyEventInner(s: RunState, event: CrewEvent, t: number): RunState {
       return { ...base, moves: [...s.moves, event.move] };
 
     case "briefing": {
-      const { summary, ics, score, citations, days } = event;
-      return { ...base, briefing: { summary, ics, score, citations, days } };
+      const { summary, ics, score, citations, days, coverage } = event;
+      return { ...base, briefing: { summary, ics, score, citations, days, coverage } };
     }
 
     case "error":

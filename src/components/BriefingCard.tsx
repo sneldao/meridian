@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { X } from "lucide-react";
 import { fmtMin } from "@/domain/circadian";
-import type { Citation, DayPlan } from "@/domain/types";
+import type { Citation, DayPlan, ShiftCoverage } from "@/domain/types";
 
 interface Props {
   summary: string;
@@ -12,11 +12,13 @@ interface Props {
   citations: Citation[];
   days: DayPlan[];
   ics: string;
+  /** Omitted on briefings recorded before coverage was measured. */
+  coverage?: ShiftCoverage;
   onClose: () => void;
   fallback?: boolean;
 }
 
-export function BriefingCard({ summary, score, citations, days, ics, onClose, fallback }: Props) {
+export function BriefingCard({ summary, score, citations, days, ics, coverage, onClose, fallback }: Props) {
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [voiceState, setVoiceState] = useState<"idle" | "loading" | "playing" | "error">("idle");
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -102,6 +104,28 @@ export function BriefingCard({ summary, score, citations, days, ics, onClose, fa
             </div>
           )}
           <p className="mt-1.5 text-sm leading-relaxed text-paper">{summary}</p>
+
+          {coverage && (
+            // Score says the plan is well-formed; coverage says how much of the
+            // shift it actually buys. A perfect score on a partial shift is the
+            // number a sceptical reader would push on, so show it unprompted.
+            <div className="mt-2 flex flex-wrap items-baseline gap-x-2.5 gap-y-1 text-[12px] text-mist">
+              <span
+                className={`font-bold ${coverage.complete ? "text-pass" : "text-sun-dest"}`}
+                title="Share of the required phase shift the locked days actually cover."
+              >
+                {Math.round(coverage.ratio * 100)}% of the shift covered
+              </span>
+              <span>
+                {coverage.achievedMin}/{coverage.requiredMin} min
+              </span>
+              {!coverage.complete && (
+                <span>
+                  · {Math.round(coverage.residualMin / 6) / 10}h still owed at touchdown, covered after you land
+                </span>
+              )}
+            </div>
+          )}
 
           {firstMove && (
             <div className="mt-2 inline-flex items-center gap-2 rounded-md border border-pass/27 bg-pass/6 px-2.5 py-1 text-[12px] text-pass">

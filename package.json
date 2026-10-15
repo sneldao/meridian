@@ -10,6 +10,7 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "replay:check": "bun scripts/replay-check.ts",
+    "verify:commit": "AGENT_PROVIDER=replay REPLAY_BEAT_MS=1 bun scripts/verify-commit.ts",
     "eval": "bun scripts/eval.ts",
     "test": "bun test",
     "smoke": "bun scripts/smoke.ts",

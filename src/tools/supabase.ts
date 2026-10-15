@@ -31,6 +31,11 @@ export interface EvalPayload {
   daysLocked: number;
   daysTotal: number;
   meanScore: number | null;
+  /** Fraction of the required phase shift the locked days cover, 0..1.
+   *  Optional so rows written before coverage was measured still load. */
+  coverageRatio?: number | null;
+  /** Minutes of the shift still owed when the wearer lands. */
+  residualMin?: number | null;
   attempts: number;
   toolCalls: number;
   violations: Record<string, number>;

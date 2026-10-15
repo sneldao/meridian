@@ -159,7 +159,7 @@ function plannedDays(trip: Trip, calendar: CalendarEvent[], citations: Citation[
     let chosen: DayPlan | null = null;
     for (let s = target; s >= 5 && !chosen; s -= 5) {
       const day = draftDay(trip, i, sign * s, cumulative + sign * s, calendar, citations);
-      if (passes(evaluatePlan({ trip, days: [...locked, day], calendar, adherence }))) chosen = day;
+      if (passes(evaluatePlan({ trip, days: [...locked, day], calendar, adherence, baseline: GARMIN_BASELINE }))) chosen = day;
     }
     // Hold the clock (shift 0) if nothing passes — never emit an unscored plan.
     chosen ??= draftDay(trip, i, 0, cumulative, calendar, citations);

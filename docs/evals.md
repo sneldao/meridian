@@ -61,7 +61,9 @@ average lock rate, average score, a run-by-run trend glyph (`●` = 5/5 locked,
 run on record. That last column is the actual roadmap: if `CALENDAR_CONFLICT`
 dominates, the planner needs better calendar-awareness in its prompt; if
 `SLEEP_TOO_SHORT` dominates, the scorer's floor is colliding with how
-aggressively Otto shifts. Today there's one data point per scenario — the
+aggressively Otto shifts; if `SHIFT_OVERSTATED` dominates, the planner is
+declaring more shift than the timing can deliver — prompt it to trust the
+solverDraft's number. Today there's one data point per scenario — the
 value compounds the more this runs, especially on the live provider where
 attempts genuinely vary.
 

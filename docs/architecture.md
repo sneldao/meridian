@@ -21,9 +21,16 @@ other.
    first-class `citation` event pinned to later interventions.
 3. **Planner (Otto) × Evaluator (Iris)** — the core loop, one `DaySpec` at a
    time, `MAX_ATTEMPTS_PER_DAY = 2`:
+   - Before Otto drafts, the **placement solver** (`src/domain/solver.ts`)
+     searches shift magnitude × intervention placement against the same gate
+     and hands the result over as `solverDraft` — a skeleton that already
+     passes. Otto owns intent (how much to claim, notes, citations); the
+     solver owns feasible times. `null` means no template placement exists.
    - Otto submits exactly one `DayPlan` via `submitDayPlan`.
    - The **deterministic scorer** (`src/domain/circadian.ts`) evaluates it —
-    code, not judgment.
+    code, not judgment. It also re-derives the plausible shift from zeitgeber
+    timing (`modelShiftMin`) and rejects a plan whose declared shift outruns
+    what the schedule can deliver (`SHIFT_OVERSTATED`).
    - Iris sees only the plan + scorer verdict (fresh context, no debate
      history) and explains it in two lines.
    - Pass → `day_locked`, sun advances. Fail → violations feed back as the next
@@ -83,7 +90,8 @@ in [providers.md](providers.md#supabase-persistence-optional).
 ## Layout
 
 ```
-src/domain/      types, circadian scorer, adherence, fixtures
+src/domain/      types, circadian scorer + phase-response model, placement
+                 solver, adherence, readiness, fixtures
 src/tools/       science (SMR → Firecrawl → static), calendar (ICS), wearable
 src/agents/      providers, crew prompts, runtime, night replay, morning replay
 src/components/  SunTrack, CrewFeed, DayStrip, BriefingCard

@@ -39,6 +39,8 @@ async function runScenario(name: string, trip: ReturnType<typeof buildTrip>): Pr
   let attempts = 0;
   let daysLocked = 0;
   let meanScore: number | null = null;
+  let coverageRatio: number | null = null;
+  let residualMin: number | null = null;
   const violations: Record<string, number> = {};
 
   const stream = runCrew({ trip, calendar: calendarFor(trip), calendarSource: "fixture" }) as AsyncGenerator<CrewEvent>;
@@ -53,7 +55,11 @@ async function runScenario(name: string, trip: ReturnType<typeof buildTrip>): Pr
     if (e.type === "day_locked") daysLocked++;
     // briefing fires once at the end — score is the mean of every feasible
     // attempt this run (runtime.ts), our one source of truth for quality.
-    if (e.type === "briefing") meanScore = e.days.length ? e.score : null;
+    if (e.type === "briefing") {
+      meanScore = e.days.length ? e.score : null;
+      coverageRatio = e.days.length ? e.coverage.ratio : null;
+      residualMin = e.coverage.residualMin;
+    }
   }
 
   return {
@@ -64,6 +70,11 @@ async function runScenario(name: string, trip: ReturnType<typeof buildTrip>): Pr
     daysLocked,
     daysTotal: 5,
     meanScore,
+    // Adequacy, tracked separately from feasibility: a run can lock every day
+    // and still leave the wearer hours out of sync on landing. Lock rate alone
+    // cannot see that, so coverage is a first-class column.
+    coverageRatio,
+    residualMin,
     attempts,
     toolCalls,
     violations,
@@ -98,8 +109,9 @@ function printRow(r: EvalPayload) {
   const vio = Object.entries(r.violations)
     .map(([k, n]) => `${k}×${n}`)
     .join(", ") || "none";
+  const cov = r.coverageRatio !== null && r.coverageRatio !== undefined ? `${Math.round(r.coverageRatio * 100)}%` : "—";
   console.log(
-    `  ${lockRate.padEnd(5)} score ${score.padEnd(5)} attempts ${String(r.attempts).padEnd(2)} tools ${String(r.toolCalls).padEnd(3)} ${r.provider}${r.fallback ? "(fallback)" : ""}  violations: ${vio}`,
+    `  ${lockRate.padEnd(5)} score ${score.padEnd(5)} shift ${cov.padEnd(5)} attempts ${String(r.attempts).padEnd(2)} tools ${String(r.toolCalls).padEnd(3)} ${r.provider}${r.fallback ? "(fallback)" : ""}  violations: ${vio}`,
   );
 }
 
@@ -116,6 +128,10 @@ async function report() {
     const lockRate = runs.reduce((s, r) => s + r.daysLocked / r.daysTotal, 0) / runs.length;
     const scored = runs.filter((r) => r.meanScore !== null);
     const meanScore = scored.length ? scored.reduce((s, r) => s + (r.meanScore ?? 0), 0) / scored.length : null;
+    const covered = runs.filter((r) => typeof r.coverageRatio === "number");
+    const meanCoverage = covered.length
+      ? covered.reduce((s, r) => s + (r.coverageRatio ?? 0), 0) / covered.length
+      : null;
     const allViolations: Record<string, number> = {};
     for (const r of runs) for (const [k, n] of Object.entries(r.violations)) allViolations[k] = (allViolations[k] ?? 0) + n;
     const topViolations = Object.entries(allViolations)
@@ -126,7 +142,7 @@ async function report() {
     const trend = runs.map((r) => (r.daysLocked === r.daysTotal ? "●" : r.daysLocked >= r.daysTotal - 1 ? "◐" : "○")).join("");
 
     console.log(`${scenario}`);
-    console.log(`  ${runs.length} runs · avg lock rate ${(lockRate * 100).toFixed(0)}% · avg score ${meanScore?.toFixed(2) ?? "—"}`);
+    console.log(`  ${runs.length} runs · avg lock rate ${(lockRate * 100).toFixed(0)}% · avg score ${meanScore?.toFixed(2) ?? "—"} · avg shift covered ${meanCoverage !== null ? `${Math.round(meanCoverage * 100)}%` : "—"}`);
     console.log(`  trend (oldest→newest): ${trend}`);
     console.log(`  top violations: ${topViolations}\n`);
   }

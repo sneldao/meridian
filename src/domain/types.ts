@@ -93,9 +93,34 @@ export interface EvalViolation {
     | "ADHERENCE_RISK"
     | "MISSING_LIGHT_ANCHOR"
     | "DOSE_PRESCRIPTION"
-    | "UNSAFE_CLAIM";
+    | "UNSAFE_CLAIM"
+    | "UNKNOWN_CITATION"
+    | "SHIFT_OVERSTATED";
   message: string;
   dayIndex?: number;
+}
+
+/** How much of the trip's required phase shift the locked days actually cover.
+ *  Computed by the scorer on every attempt: the per-day gates can all pass on a
+ *  plan that leaves the traveller an hour out of sync on landing, and nothing
+ *  else in the pipeline notices. */
+export interface ShiftCoverage {
+  /** Absolute minutes the body clock must move. */
+  requiredMin: number;
+  /** Absolute minutes covered by the days locked so far. */
+  achievedMin: number;
+  /** Minutes still owed when the wearer lands. 0 means fully adapted. */
+  residualMin: number;
+  /** achievedMin / requiredMin, 1 when the shift is complete. */
+  ratio: number;
+  /** Days in the trip — the denominator for "what's still achievable". */
+  daysTotal: number;
+  /** Days planned so far. */
+  daysPlanned: number;
+  /** True when the locked days cannot reach requiredMin at the per-day ceiling.
+   *  Physiological ceilings and a fixed day budget mean most eastward trips
+   *  finish partially adapted; the crew keeps working past touchdown. */
+  complete: boolean;
 }
 
 export interface EvalResult {
@@ -104,6 +129,7 @@ export interface EvalResult {
   score: number;
   violations: EvalViolation[];
   notes: string[];
+  coverage: ShiftCoverage;
 }
 
 export interface CalendarEvent {
@@ -171,6 +197,8 @@ export type CrewEvent =
       score: number;
       citations: Citation[];
       days: DayPlan[];
+      /** How much of the required shift the locked days actually cover. */
+      coverage: ShiftCoverage;
     }
   | { type: "error"; message: string; recoverable: boolean }
   | { type: "check_in"; checkIn: CheckIn }

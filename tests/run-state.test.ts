@@ -16,6 +16,41 @@ describe("run state reducer", () => {
     expect(run.briefing?.ics).toContain("BEGIN:VCALENDAR");
   });
 
+  test("the briefing carries coverage through to the handoff card", () => {
+    const briefing = events.find((e) => e.event.type === "briefing");
+    expect(briefing).toBeDefined();
+    const run = reduceRun(initialRunState(), {
+      kind: "batch",
+      items: [
+        ...events.slice(0, events.indexOf(briefing!)),
+        {
+          ...briefing!,
+          event: {
+            ...(briefing!.event as { type: "briefing" }),
+            coverage: {
+              requiredMin: 480,
+              achievedMin: 380,
+              residualMin: 100,
+              ratio: 380 / 480,
+              daysTotal: 5,
+              daysPlanned: 5,
+              complete: false,
+            },
+          },
+        } as StampedEvent,
+      ],
+    });
+    expect(run.briefing?.coverage?.residualMin).toBe(100);
+    expect(run.briefing?.coverage?.complete).toBe(false);
+  });
+
+  test("a briefing recorded before coverage existed still loads", () => {
+    const legacy = { ...events[events.length - 1], event: { type: "briefing", summary: "legacy", ics: "", score: 0.9, citations: [], days: [] } } as unknown as StampedEvent;
+    const s = reduceRun(initialRunState(), { kind: "batch", items: [legacy] });
+    expect(s.briefing?.summary).toBe("legacy");
+    expect(s.briefing?.coverage).toBeUndefined();
+  });
+
   test("counters match the event log", () => {
     const run = replay();
     const count = (t: CrewEvent["type"]) => events.filter((e) => e.event.type === t).length;

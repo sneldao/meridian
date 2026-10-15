@@ -1,0 +1,151 @@
+import { describe, expect, test } from "bun:test";
+import { modelShiftMin, evaluatePlan, passes } from "../src/domain/circadian";
+import { solveDay } from "../src/domain/solver";
+import type { DayPlan } from "../src/domain/types";
+import { ADHERENCE_PROFILE, CALENDAR, DEMO_TRIP, GARMIN_BASELINE, buildTrip } from "../src/domain/fixtures";
+
+const trip = DEMO_TRIP; // LHR → HND, east, 480min advance
+
+const day = (over: Partial<DayPlan> = {}): DayPlan => ({
+  dayIndex: 0,
+  label: "D-3",
+  shiftMin: -60,
+  targetBedtimeMin: 23 * 60,
+  targetWakeMin: 7 * 60,
+  interventions: [],
+  ...over,
+});
+
+describe("modelShiftMin", () => {
+  test("morning light in the post-CBTmin window supports an advance", () => {
+    const d = day({
+      interventions: [{ kind: "light_exposure", startMin: 7 * 60, endMin: 8 * 60, note: "anchor" }],
+    });
+    // CBTmin ≈ 05:00, light midpoint 07:30 → +150min → advance.
+    expect(modelShiftMin(d)).toBeLessThan(0);
+  });
+
+  test("evening light counts toward delay, not advance", () => {
+    const d = day({
+      interventions: [{ kind: "light_exposure", startMin: 21 * 60, endMin: 22 * 60, note: "evening" }],
+    });
+    // Midpoint 21:30 vs CBTmin 05:00 → ~7.5h before → delay support.
+    expect(modelShiftMin(d)).toBeGreaterThan(0);
+  });
+
+  test("avoiding light in the delay zone supports the advance", () => {
+    const d = day({
+      interventions: [{ kind: "avoid_light", startMin: 21 * 60, endMin: 22 * 60, note: "screens down" }],
+    });
+    expect(modelShiftMin(d)).toBeLessThan(0);
+  });
+
+  test("moving the sleep window earlier earns support", () => {
+    const d = day({ targetBedtimeMin: 22 * 60, targetWakeMin: 6 * 60 });
+    const modeled = modelShiftMin(d, { bedtimeMin: 23 * 60, wakeMin: 7 * 60 });
+    expect(modeled).toBeLessThan(0);
+    expect(Math.abs(modeled)).toBeLessThanOrEqual(45); // capped
+  });
+});
+
+describe("SHIFT_OVERSTATED gate", () => {
+  test("a claim with no zeitgeber support fails", () => {
+    const r = evaluatePlan({
+      trip,
+      days: [day({ shiftMin: -90 })],
+      calendar: CALENDAR,
+      adherence: ADHERENCE_PROFILE,
+    });
+    expect(r.feasible).toBe(false);
+    expect(r.violations.some((v) => v.code === "SHIFT_OVERSTATED")).toBe(true);
+  });
+
+  test("a claim opposed by the light timing fails", () => {
+    const r = evaluatePlan({
+      trip,
+      days: [
+        day({
+          shiftMin: -90,
+          interventions: [{ kind: "light_exposure", startMin: 21 * 60, endMin: 23 * 60, note: "evening light" }],
+        }),
+      ],
+      calendar: CALENDAR,
+      adherence: ADHERENCE_PROFILE,
+    });
+    expect(r.feasible).toBe(false);
+    expect(r.violations.some((v) => v.code === "SHIFT_OVERSTATED")).toBe(true);
+  });
+
+  test("a modest claim backed by timed light passes, with a model note", () => {
+    // −90 with 60min of wake light and no sleep reference: support 60, gap 30
+    // — inside tolerance, so it passes but the thin margin is noted.
+    const r = evaluatePlan({
+      trip,
+      days: [
+        day({
+          shiftMin: -90,
+          interventions: [{ kind: "light_exposure", startMin: 7 * 60, endMin: 8 * 60, note: "morning light" }],
+        }),
+      ],
+      calendar: CALENDAR,
+      adherence: ADHERENCE_PROFILE,
+    });
+    expect(r.feasible).toBe(true);
+    expect(passes(r)).toBe(true);
+    expect(r.notes.join(" ")).toContain("model supports");
+  });
+});
+
+describe("solveDay", () => {
+  test("produces a feasible day for the demo route", () => {
+    const solved = solveDay({
+      trip,
+      spec: trip.days[0],
+      lockedDays: [],
+      calendar: CALENDAR,
+      adherence: ADHERENCE_PROFILE,
+      baseline: GARMIN_BASELINE,
+    });
+    expect(solved).not.toBeNull();
+    expect(passes(solved!.result)).toBe(true);
+    expect(solved!.plan.shiftMin).toBeLessThan(0); // eastward = advance
+    // The whole point: the solver's output is already scorer-clean.
+    const check = evaluatePlan({
+      trip,
+      days: [solved!.plan],
+      calendar: CALENDAR,
+      adherence: ADHERENCE_PROFILE,
+      baseline: GARMIN_BASELINE,
+    });
+    expect(check.feasible).toBe(true);
+  });
+
+  test("solves a westward day as a delay", () => {
+    const west = buildTrip("LHR", "JFK", "2026-10-18");
+    const solved = solveDay({
+      trip: west,
+      spec: west.days[0],
+      lockedDays: [],
+      calendar: [],
+      adherence: ADHERENCE_PROFILE,
+      baseline: GARMIN_BASELINE,
+    });
+    expect(solved).not.toBeNull();
+    expect(solved!.plan.shiftMin).toBeGreaterThan(0);
+    expect(passes(solved!.result)).toBe(true);
+  });
+
+  test("stays within what the trip still owes", () => {
+    const small = buildTrip("LHR", "CDG", "2026-10-18"); // 1h east
+    const solved = solveDay({
+      trip: small,
+      spec: small.days[0],
+      lockedDays: [],
+      calendar: [],
+      adherence: ADHERENCE_PROFILE,
+      baseline: GARMIN_BASELINE,
+    });
+    expect(solved).not.toBeNull();
+    expect(Math.abs(solved!.plan.shiftMin)).toBeLessThanOrEqual(Math.abs(small.requiredShiftMin));
+  });
+});

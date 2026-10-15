@@ -1,4 +1,4 @@
-import { evaluatePlan, fmtMin, passes, sunProgress } from "@/domain/circadian";
+import { coverageOf, evaluatePlan, fmtMin, passes, sunProgress } from "@/domain/circadian";
 import { ADHERENCE_PROFILE, DEMO_TRIP, GARMIN_BASELINE, calendarFor } from "@/domain/fixtures";
 import type { AgentId, Citation, CalendarEvent, CrewEvent, DayPlan, EvalResult, Trip } from "@/domain/types";
 import { buildIcs, proposeMove } from "@/tools/calendar";
@@ -169,6 +169,7 @@ export async function* runReplay(trip: Trip = DEMO_TRIP): AsyncGenerator<CrewEve
         days: [...locked, candidate],
         calendar: cal,
         adherence: ADHERENCE_PROFILE,
+        baseline: GARMIN_BASELINE,
       });
       evals.push(result);
       yield { type: "eval_result", result, attempt };
@@ -227,16 +228,20 @@ export async function* runReplay(trip: Trip = DEMO_TRIP): AsyncGenerator<CrewEve
   // Same aggregation as the live orchestrator: mean of the passing verdicts.
   const scores = evals.filter((e) => e.feasible).map((e) => e.score);
   const meanScore = scores.length ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 100) / 100 : 0;
-  const shifted = locked.reduce((a, d) => a + Math.abs(d.shiftMin), 0);
-  const required = Math.abs(trip.requiredShiftMin);
+  const coverage = coverageOf(trip, locked);
   const movedCount = cal.filter((e) => e.movedTo).length;
+  const route = `${trip.origin.name} → ${trip.destination.name}`;
+  const shiftLine = coverage.complete
+    ? `fully adapted on landing`
+    : `${Math.round(coverage.ratio * 100)}% of the ${route} shift covered before you land — ${Math.round(coverage.residualMin / 6) / 10}h still owed at touchdown, and the crew keeps working after you land`;
   yield {
     type: "briefing",
-    summary: `Night shift complete. ${locked.length} days locked, ${shifted} minutes of the ${required}-minute ${trip.origin.name} → ${trip.destination.name} shift covered${shifted < required ? " before you land — the crew keeps working after touchdown" : ""}. ${citations.length} papers cited. Calendar: ${movedCount} events rescheduled, every fixed commitment intact.`,
+    summary: `Night shift complete. ${locked.length} days locked, ${coverage.achievedMin} of ${coverage.requiredMin} minutes shifted (${shiftLine}). ${citations.length} papers cited. Calendar: ${movedCount} events rescheduled, every fixed commitment intact.`,
     ics,
     score: meanScore,
     citations,
     days: locked,
+    coverage,
   };
   await sleep(4 * BEAT);
   yield { type: "done" };
