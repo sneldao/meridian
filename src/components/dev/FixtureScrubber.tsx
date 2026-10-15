@@ -24,7 +24,7 @@ export function FixtureScrubber({ pb }: { pb: FixturePlayback }) {
         step={10}
         value={pb.cursor}
         onChange={(e) => pb.seek(Number(e.target.value))}
-        className="min-w-48 flex-1 accent-lime"
+        className="min-w-48 flex-1 accent-progress"
       />
       <span className="w-24 text-right text-paper">
         {(pb.cursor / 1000).toFixed(1)}s / {(pb.duration / 1000).toFixed(1)}s

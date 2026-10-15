@@ -75,14 +75,14 @@ export default function TeamPage() {
     : [...TEAM_TRAVELLERS].sort((a, b) => Number(riskOf(b)) - Number(riskOf(a)));
 
   return (
-    <main className="mx-auto max-w-6xl px-6 py-8 font-mono2 text-[#e8eaf2]">
+    <main className="mx-auto max-w-6xl px-6 py-8 font-mono2 text-paper">
       <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <Link href="/" className="text-[12px] text-[#8b93a7] hover:text-[#e8eaf2]">
+          <Link href="/" className="text-[12px] text-mist hover:text-paper">
             ← run a shift
           </Link>
           <h1 className="mt-2 text-lg font-bold tracking-[0.3em]">TEAM · 12 CREWS</h1>
-          <p className="mt-1 text-[12px] text-[#8b93a7]">
+          <p className="mt-1 text-[12px] text-mist">
             {streaming
               ? runs.size === 0
                 ? "Connecting the twelve crews…"
@@ -90,24 +90,24 @@ export default function TeamPage() {
               : "Run finished. At-risk crews are listed first."}
           </p>
         </div>
-        <div className="text-right text-[12px] text-[#8b93a7]">
+        <div className="text-right text-[12px] text-mist">
           <div>
-            <span className="font-bold text-[#b8e356]">{done}</span> of {TEAM_TRAVELLERS.length} crews done ·{" "}
-            <span className="font-bold text-[#ff7a7a]">{atRisk}</span> board meetings at risk
+            <span className="font-bold text-pass">{done}</span> of {TEAM_TRAVELLERS.length} crews done ·{" "}
+            <span className="font-bold text-fail">{atRisk}</span> board meetings at risk
           </div>
           <button
             onClick={restart}
             disabled={streaming}
-            className="mt-2 rounded-lg border border-[#1e2637] bg-[#0c1018] px-3 py-1.5 text-[12px] text-[#b8e356] hover:border-[#b8e35666] disabled:text-[#4a5470]"
+            className="mt-2 rounded-lg border border-line bg-ink-2 px-3 py-1.5 text-[12px] text-paper hover:border-mist disabled:text-dim"
           >
             {streaming ? "running…" : "run the team again"}
           </button>
-          <div className="mt-1 text-[12px] text-[#4a5470]">
+          <div className="mt-1 text-[12px] text-dim">
             ~£25/traveller/mo →{" "}
-            <span className="font-bold text-[#8b93a7]">
+            <span className="font-bold text-mist">
               £{TEAM_TRAVELLERS.length * 25}/mo for this team
             </span>{" "}
-            <span className="text-[#3a4358]">(hypothesis)</span>
+            <span className="text-dim">(hypothesis)</span>
           </div>
         </div>
       </header>
@@ -120,30 +120,30 @@ export default function TeamPage() {
           const risk = readiness.find((x) => x.status === "risk");
           const badge =
             r.phase === "idle"
-              ? { text: "WAITING", cls: "bg-[#1e2637] text-[#8b93a7]" }
+              ? { text: "WAITING", cls: "bg-line text-mist" }
               : risk
-                ? { text: "AT RISK", cls: "bg-[#ff7a7a22] text-[#ff7a7a]" }
+                ? { text: "AT RISK", cls: "bg-fail/13 text-fail" }
                 : readiness.length
-                  ? { text: "READY", cls: "bg-[#b8e35622] text-[#b8e356]" }
-                  : { text: r.phase === "done" ? "DONE" : "PLANNING", cls: "bg-[#1e2637] text-[#8b93a7]" };
+                  ? { text: "READY", cls: "bg-pass/13 text-pass" }
+                  : { text: r.phase === "done" ? "DONE" : "PLANNING", cls: "bg-line text-mist" };
           const pct = Math.round(r.sunProgress * 100);
           return (
-            <article key={t.id} className="rounded-xl border border-[#1e2637] bg-[#0c1018] p-4">
+            <article key={t.id} className="rounded-xl border border-line bg-ink-2 p-4">
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <div className="text-[12px] font-bold">{t.name}</div>
-                  <div className="mt-0.5 text-[12px] text-[#8b93a7]">
-                    {trip.origin.code} <span className="text-[#ffc46b]">→</span> {trip.destination.code} ·{" "}
+                  <div className="mt-0.5 text-[12px] text-mist">
+                    {trip.origin.code} <span className="text-sun-dest">→</span> {trip.destination.code} ·{" "}
                     {trip.destination.name}
                   </div>
                 </div>
                 <span className={`rounded px-1.5 py-0.5 text-[12px] font-bold ${badge.cls}`}>{badge.text}</span>
               </div>
 
-              <div className="mt-3 h-1.5 w-full overflow-hidden rounded bg-[#1e2637]">
-                <div className="h-full bg-[#b8e356] transition-[width] duration-500" style={{ width: `${pct}%` }} />
+              <div className="mt-3 h-1.5 w-full overflow-hidden rounded bg-line">
+                <div className="h-full bg-pass transition-[width] duration-500" style={{ width: `${pct}%` }} />
               </div>
-              <div className="mt-1 flex justify-between text-[12px] text-[#8b93a7]">
+              <div className="mt-1 flex justify-between text-[12px] text-mist">
                 <span>
                   {r.locked.size}/{trip.days.length} days locked
                 </span>
@@ -156,9 +156,9 @@ export default function TeamPage() {
                 <div
                   key={x.eventId}
                   title={x.text}
-                  className={`mt-2 flex items-center gap-1.5 text-[12px] ${x.status === "risk" ? "text-[#ff7a7a]" : "text-[#8b93a7]"}`}
+                  className={`mt-2 flex items-center gap-1.5 text-[12px] ${x.status === "risk" ? "text-fail" : "text-mist"}`}
                 >
-                  <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${x.status === "risk" ? "bg-[#ff7a7a]" : "bg-[#b8e356]"}`} />
+                  <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${x.status === "risk" ? "bg-fail" : "bg-pass"}`} />
                   <span className="min-w-0 flex-1 truncate">{x.title}</span>
                   <span className="shrink-0 font-mono2 font-bold">
                     {x.bodyWithoutPlanMin !== x.bodyMin

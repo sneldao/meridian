@@ -11,11 +11,22 @@
   --color-line: #1e2637;
   --color-mist: #8b93a7;
   --color-paper: #e8eaf2;
+  /* One colour, one meaning.
+     Pass and fail are *state*: design-vision.md §8 reserves them, so they are
+     never reused for a button, an agent or the sun. Paper is the action
+     colour — the one thing to press is white. Amber belongs to the destination
+     and its sun; home blue to the origin; progress cyan to work in flight. */
+  --color-pass: #b8e356;
+  --color-fail: #ff7a7a;
+  --color-progress: #7adfff;
   --color-sun-home: #9db8ff;
   --color-sun-dest: #ffc46b;
-  --color-lime: #b8e356;
-  --color-rose: #ff7a7a;
-  --color-cyan: #7adfff;
+  /* Two more named things, kept out of the state colours: the ghost
+     terminator is the body clock's own day/night line; sleep lavender is the
+     target sleep window on the board. */
+  --color-ghost: #ffd98a;
+  --color-sleep: #b8a8ff;
+  --color-dim: #4a5470;
 }
 
 html,

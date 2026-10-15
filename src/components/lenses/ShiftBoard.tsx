@@ -75,11 +75,11 @@ const STATE_TEXT: Record<RowState, string> = {
 };
 
 const STATE_COLOR: Record<RowState, string> = {
-  queued: "#4a5470",
-  draft: "#8b93a7",
-  scanning: "#7adfff",
-  rejected: "#ff7a7a",
-  locked: "#b8e356",
+  queued: "var(--color-dim)",
+  draft: "var(--color-mist)",
+  scanning: "var(--color-progress)",
+  rejected: "var(--color-fail)",
+  locked: "var(--color-pass)",
 };
 
 export function ShiftBoard({ days, drafts, verdicts, locked, activeLabel, activeAgent, readOnly }: ShiftBoardProps) {
@@ -95,9 +95,9 @@ export function ShiftBoard({ days, drafts, verdicts, locked, activeLabel, active
   const agent = activeAgent ? CREW[activeAgent] : undefined;
 
   return (
-    <div className="flex h-full w-full flex-col gap-3 p-4 font-mono2 text-[12px] text-[#e8eaf2]">
+    <div className="flex h-full w-full flex-col gap-3 p-4 font-mono2 text-[12px] text-paper">
       <div className="flex items-center justify-between">
-        <span className="text-[12px] text-[#8b93a7]">
+        <span className="text-[12px] text-mist">
           shift board · body clock, destination time
         </span>
         {agent && (
@@ -120,14 +120,14 @@ export function ShiftBoard({ days, drafts, verdicts, locked, activeLabel, active
           {HOURS.map((h) => (
             <span
               key={h}
-              className="absolute -translate-x-1/2 text-[12px] text-[#8b93a7]"
+              className="absolute -translate-x-1/2 text-[12px] text-mist"
               style={{ left: `${(h / 24) * 100}%` }}
             >
               {String(h % 24).padStart(2, "0")}
             </span>
           ))}
         </div>
-        <span className="text-right text-[12px] text-[#4a5470]">staircase</span>
+        <span className="text-right text-[12px] text-dim">staircase</span>
       </div>
 
       {days.map((d) => {
@@ -164,14 +164,14 @@ export function ShiftBoard({ days, drafts, verdicts, locked, activeLabel, active
               transition={state === "locked" ? { type: "spring", stiffness: 380, damping: 18 } : { duration: 0.45 }}
               className={`relative h-10 overflow-hidden rounded-md border ${
                 state === "locked"
-                  ? "border-[#b8e35666] bg-[#131826]"
+                  ? "border-pass/40 bg-ink-3"
                   : state === "rejected"
-                    ? "border-[#ff7a7a77] bg-[#1a1220]"
+                    ? "border-fail/47 bg-fail/8"
                     : state === "scanning"
-                      ? "border-[#7adfff55] bg-[#0f1624]"
+                      ? "border-progress/33 bg-progress/8"
                       : state === "draft"
-                        ? "border-dashed border-[#2a3550] bg-[#0c1018]"
-                        : "border-[#1e2637] bg-[#0c1018]"
+                        ? "border-dashed border-dim/50 bg-ink-2"
+                        : "border-line bg-ink-2"
               }`}
               title={state === "rejected" && last?.violations[0] ? last.violations[0].message : undefined}
             >
@@ -179,7 +179,7 @@ export function ShiftBoard({ days, drafts, verdicts, locked, activeLabel, active
               {HOURS.slice(1, -1).map((h) => (
                 <span
                   key={h}
-                  className="absolute top-0 bottom-0 w-px bg-[#1e2637]"
+                  className="absolute top-0 bottom-0 w-px bg-line"
                   style={{ left: `${(h / 24) * 100}%` }}
                 />
               ))}
@@ -195,9 +195,13 @@ export function ShiftBoard({ days, drafts, verdicts, locked, activeLabel, active
                       left: `${seg.left}%`,
                       width: `${seg.width}%`,
                       background:
-                        state === "rejected" ? "#ff7a7a55" : state === "locked" ? "#b8a8ffaa" : "#b8a8ff55",
+                        state === "rejected"
+                          ? "color-mix(in srgb, var(--color-fail) 33%, transparent)"
+                          : state === "locked"
+                            ? "color-mix(in srgb, var(--color-sleep) 67%, transparent)"
+                            : "color-mix(in srgb, var(--color-sleep) 33%, transparent)",
                       borderStyle: ghost ? "dashed" : "solid",
-                      borderColor: state === "rejected" ? "#ff7a7a" : "#b8a8ff",
+                      borderColor: state === "rejected" ? "var(--color-fail)" : "var(--color-sleep)",
                       borderWidth: 1,
                     }}
                     initial={false}
@@ -224,7 +228,7 @@ export function ShiftBoard({ days, drafts, verdicts, locked, activeLabel, active
               {/* Iris's scan line */}
               {state === "scanning" && (
                 <motion.span
-                  className="absolute top-0 bottom-0 w-0.5 bg-[#7adfff] shadow-[0_0_8px_#7adfff]"
+                  className="absolute top-0 bottom-0 w-0.5 bg-progress shadow-[0_0_8px_var(--color-progress)]"
                   initial={{ left: "0%" }}
                   animate={{ left: "100%" }}
                   transition={{ repeat: Infinity, duration: 1.2, ease: "linear" }}
@@ -236,20 +240,20 @@ export function ShiftBoard({ days, drafts, verdicts, locked, activeLabel, active
             <div className="flex flex-col items-end">
               {state === "locked" ? (
                 <>
-                  <span className="text-[12px] font-bold text-[#b8e356]">
+                  <span className="text-[12px] font-bold text-pass">
                     {cumulative.get(d.label)}m
                   </span>
-                  <span className="text-[12px] text-[#4a5470]">{plan?.shiftMin}m today</span>
+                  <span className="text-[12px] text-dim">{plan?.shiftMin}m today</span>
                 </>
               ) : state === "rejected" && last?.violations[0] ? (
                 <span
-                  className="max-w-[84px] truncate text-right text-[12px] font-bold text-[#ff7a7a]"
+                  className="max-w-[84px] truncate text-right text-[12px] font-bold text-fail"
                   title={last.violations[0].message}
                 >
                   {last.violations[0].code}
                 </span>
               ) : (
-                <span className="text-[12px] text-[#4a5470]">
+                <span className="text-[12px] text-dim">
                   {plan ? `${plan.shiftMin}m` : ""}
                 </span>
               )}
@@ -258,7 +262,7 @@ export function ShiftBoard({ days, drafts, verdicts, locked, activeLabel, active
         );
       })}
 
-      <div className="mt-auto flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-[#4a5470]">
+      <div className="mt-auto flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-dim">
         <span>bar = sleep</span>
         <span>◆ = ask</span>
         {!readOnly && <span>dashed = draft</span>}

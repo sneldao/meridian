@@ -16,7 +16,7 @@ export type LogEntry =
   | { kind: "error"; text: string }
   | { kind: "system"; text: string };
 
-const agentColor = (id: AgentId) => CREW[id]?.color ?? "#8b93a7";
+const agentColor = (id: AgentId) => CREW[id]?.color ?? "var(--color-mist)";
 
 export function CrewFeed({ entries, running }: { entries: LogEntry[]; running?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -35,11 +35,11 @@ export function CrewFeed({ entries, running }: { entries: LogEntry[]; running?: 
     >
       {entries.length === 0 && (
         <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
-          <div className="text-[12px] text-[#e8eaf2]">The crew is on standby.</div>
-          <p className="max-w-xs text-[12px] leading-relaxed text-[#8b93a7]">
+          <div className="text-[12px] text-paper">The crew is on standby.</div>
+          <p className="max-w-xs text-[12px] leading-relaxed text-mist">
             Start the night shift and you&apos;ll see each agent think, research and check its work here, in order.
           </p>
-          <div className="mt-1 flex flex-wrap justify-center gap-x-3 gap-y-1 text-[12px] text-[#4a5470]">
+          <div className="mt-1 flex flex-wrap justify-center gap-x-3 gap-y-1 text-[12px] text-dim">
             {(Object.keys(CREW) as AgentId[]).map((id) => {
               const Icon = AGENT_ICONS[id];
               return (
@@ -62,34 +62,41 @@ export function CrewFeed({ entries, running }: { entries: LogEntry[]; running?: 
                 <span className="text-[12px] font-semibold" style={{ color: agentColor(e.agent) }}>
                   {e.title}
                 </span>
-                <span className="h-px flex-1 bg-[#1e2637]" />
+                <span className="h-px flex-1 bg-line" />
               </div>
             );
           }
           case "text": {
-            // Typing cursor marks the live edge only — the latest text entry
-            // while the run is streaming. Finished paragraphs stay still.
+            // The tail of the feed reads in full: the agent's reasoning is the
+            // product, not a tooltip. Everything above it stays clamped to two
+            // lines so the feed still scans, and the typing cursor marks the
+            // entry that is still being written.
             const isLiveEdge = running && i === entries.length - 1;
+            const isTail = i === entries.length - 1;
             return (
-              <p key={i} className="mb-1 line-clamp-2 font-sans text-[13px] text-[#e8eaf2]" title={e.text}>
+              <p
+                key={i}
+                className={`mb-1 font-sans text-[13px] text-paper ${isTail ? "" : "line-clamp-2"}`}
+                title={isTail ? undefined : e.text}
+              >
                 {e.text}
                 {isLiveEdge && (
-                  <span className="ml-0.5 inline-block h-3 w-1 animate-pulse bg-[#8b93a7] align-middle opacity-40" />
+                  <span className="ml-0.5 inline-block h-3 w-1 animate-pulse bg-mist align-middle opacity-40" />
                 )}
               </p>
             );
           }
           case "tool":
             return (
-              <div key={i} className="pl-4 text-[#8b93a7]">
-                <span className="text-[#4a5470]">├─</span> {e.text}
+              <div key={i} className="pl-4 text-mist">
+                <span className="text-dim">├─</span> {e.text}
               </div>
             );
           case "citation":
             return (
-              <div key={i} className="my-1 ml-4 rounded-md border border-[#1e2637] bg-[#0c1018] px-2.5 py-1.5">
-                <div className="text-[#b8e356] text-[12px] leading-snug">{e.citation.title}</div>
-                <div className="text-[12px] text-[#8b93a7]">
+              <div key={i} className="my-1 ml-4 rounded-md border border-line bg-ink-2 px-2.5 py-1.5">
+                <div className="text-[12px] leading-snug text-paper">{e.citation.title}</div>
+                <div className="text-[12px] text-mist">
                   {e.citation.venue}
                   {e.citation.year ? ` · ${e.citation.year}` : ""}
                   {e.citation.doi ? ` · doi:${e.citation.doi}` : ""}
@@ -103,8 +110,8 @@ export function CrewFeed({ entries, running }: { entries: LogEntry[]; running?: 
                 key={i}
                 className={`my-1.5 ml-4 rounded-md border px-2.5 py-1.5 ${
                   e.result.feasible
-                    ? "border-[#b8e35633] bg-[#b8e35611] text-[#b8e356]"
-                    : "border-[#ff7a7a44] bg-[#ff7a7a11] text-[#ff7a7a]"
+                    ? "border-pass/20 bg-pass/7 text-pass"
+                    : "border-fail/27 bg-fail/7 text-fail"
                 }`}
               >
                 <div className="text-[12px] font-semibold">
@@ -120,25 +127,25 @@ export function CrewFeed({ entries, running }: { entries: LogEntry[]; running?: 
             );
           case "locked":
             return (
-              <div key={i} className="my-1.5 rounded-md bg-[#b8e35622] px-2.5 py-1 text-center text-[12px] font-bold text-[#b8e356]">
+              <div key={i} className="my-1.5 rounded-md bg-pass/13 px-2.5 py-1 text-center text-[12px] font-bold text-pass">
                 {e.label} LOCKED · sun advances
               </div>
             );
           case "move":
             return (
-              <div key={i} className="pl-4 text-[#9db8ff]">
-                <span className="text-[#4a5470]">↳</span> {e.text}
+              <div key={i} className="pl-4 text-sun-home">
+                <span className="text-dim">↳</span> {e.text}
               </div>
             );
           case "error":
             return (
-              <div key={i} className="my-1.5 rounded-md border border-[#ff7a7a44] bg-[#ff7a7a11] px-2.5 py-1.5 text-[12px] text-[#ff7a7a]">
+              <div key={i} className="my-1.5 rounded-md border border-fail/27 bg-fail/7 px-2.5 py-1.5 text-[12px] text-fail">
                 {e.text}
               </div>
             );
           case "system":
             return (
-              <div key={i} className="py-0.5 text-center text-[12px] text-[#4a5470]">
+              <div key={i} className="py-0.5 text-center text-[12px] text-dim">
                 {e.text}
               </div>
             );

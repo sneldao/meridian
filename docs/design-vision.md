@@ -57,6 +57,54 @@ This is the image Meridian is recognised by. Everything below hangs off it.
 Camera choreography: pull back to Orbit → focus the Instrument for planning →
 dive into the Window Seat for dawn.
 
+### 3a. World-rendering primitives (adopted 2026-10-15)
+
+Techniques that make a 2D SVG world feel like a live instrument rather than a
+picture of one. These now govern `WorldLens` and any future world surface.
+
+- **Real coastline geometry, no raster.** `d3-geo` + `topojson-client` +
+  `world-atlas` (110m, ~100 kB) draw true country polygons in any projection.
+  Airport dots remain as a city-lights texture *on* the land — never as a
+  substitute for it — and they resolve with zoom: one dot per ~3° cell until
+  a group covers more than ~9 screen px, then it separates into its airports
+  (`src/domain/city-lights.ts`). A dot field that smears brighter when you
+  zoom is decoration; one that reveals structure is an instrument.
+- **Map paint vs. app colour.** The ocean ramp, coastal shelf and night fill
+  are the map's own art — they stay literal. Every colour another surface
+  shares (the two suns, the ghost, pass/fail/progress, paper, line) is a
+  token, referenced as `var(--color-*)` even inside SVG attributes.
+- **The terminator is a circle, not two lines.** The real day/night line is
+  `geoCircle` centred on the subsolar antipode at radius 90°; it curves with
+  solar declination and produces polar day/night for free. A second circle at
+  ~96° drawn underneath reads as the warm twilight band. The ghost terminator
+  is the same circle computed for a body-clock-shifted subsolar longitude —
+  one primitive draws both. Solar position comes from `src/domain/sun.ts`
+  (NOAA/Spencer: declination ~±0.01°, equation of time included) — the lens
+  never re-derives it.
+- **Depth is a layer stack, not a colour.** gradient ocean → blurred coastal
+  halo → land → dashed graticule → twilight ring → soft-edged night → ghost
+  line → flight arc → markers. Each layer is cheap; the sum is the atmosphere.
+- **Gestures are the product.** Drag-pan, wheel and double-tap zoom (1–8×),
+  clamped so margins never show, with a `moved` guard so drags never fire
+  clicks. Markers and labels render at `1/zoom^0.78` so they stay readable at
+  any scale. `touch-action: none` on the canvas; overlay chips stop
+  propagation instead of covering the world.
+- **An orthographic globe needs no WebGL.** `geoOrthographic` +
+  `clipAngle(90)` in SVG already gives a draggable, slowly turning Earth with
+  great-circle arcs via `geoInterpolate`. R3F is only justified once we need
+  bloom, textures and real camera moves — Tier 1's Orbit can ship as SVG.
+- **Ambient motion obeys one loop.** Any continuous animation runs on a single
+  `requestAnimationFrame` that pauses on `visibilitychange` and honours
+  `prefers-reduced-motion`; SMIL `<animate>` is acceptable for tiny loops but
+  must be gated the same way. Cap ambient objects (~10) — the map is the
+  stage, not a screensaver.
+- **Overlays float; chrome doesn't box.** Status reads as frosted pills on the
+  world (`backdrop-blur`, translucent ink), never bordered panels parked
+  inside the viewport.
+- **Every layer is honest.** If something on the map is illustrative rather
+  than real, the surface says so — same rule as "verified fallback"
+  citations.
+
 ---
 
 ## 4. The crew in the world
@@ -139,7 +187,7 @@ Motion + GSAP for interface and camera animation.
 | Tier | Scope | Effort |
 |---|---|---|
 | **0 — Fix the scaffold** | See §11. Ships regardless of the tiers below. | 1–2 days |
-| **1 — Spike** | Globe with real terminator + ghost terminator driven by the existing `sunProgress`; overlay interface; Window Seat ending as a 2D sky shader. | ~3–4 days |
+| **1 — Spike** | Globe with real terminator + ghost terminator driven by the existing `sunProgress`; overlay interface; Window Seat ending as a 2D sky shader. The world lens already runs on `d3-geo` — the Orbit globe can start as `geoOrthographic` SVG and only move to R3F when bloom/textures land. | ~3–4 days |
 | **2 — World** | Crew embodiments, evidence constellation, Iris's gate drama, Rex's calendar physics, generative sound, light-signature poster. | ~1–2 weeks |
 | **3 — Simulation** | Oscillator model in the browser; draggable Instrument with live predicted body clock; validation against `evaluatePlan`. | Larger |
 
@@ -157,3 +205,16 @@ Motion + GSAP for interface and camera animation.
 - The crew panel is empty before the first run; the onboarding modal covers the hero on first load.
 - `page.tsx` uses raw hex values while other pages use theme tokens.
 - Console: missing `favicon.ico` (404), a script-tag render error, `themeColor` should move to the `viewport` export.
+
+**Update 2026-10-15 (world lens rebuild).** `WorldLens` was rewritten on the
+§3a primitives: real country polygons, the terminator as a true declination
+circle, the ghost as the same circle shifted by `ghostGap` (signed — a
+westbound body clock sits ahead of the real dawn), pan/zoom gestures, and
+frosted-pill overlays. Resolved above: the SVG letterboxing (now full-bleed
+slice with intentional pan/zoom), the decorative-star violation (removed),
+the agent/state colour collisions (semantic tokens `pass` / `fail` /
+`progress` / `ghost` / `sleep` / `dim` now carry state; the crew holds teal,
+violet, pink, cyan-for-Iris and indigo; paper is the one action colour), and
+raw hex (zero `[#…]` utilities remain; style/data literals reference
+`var(--color-*)`; only the map's own paint stays literal by design). Still
+open: the handoff card covering the hero and the header crowding.

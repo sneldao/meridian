@@ -45,13 +45,13 @@ export function CalendarLens({ days, events, readiness, ics }: CalendarLensProps
   };
 
   return (
-    <div className="flex h-full w-full flex-col gap-3 p-4 font-mono2 text-[12px] text-[#e8eaf2]">
+    <div className="flex h-full w-full flex-col gap-3 p-4 font-mono2 text-[12px] text-paper">
       <div className="flex items-center justify-between">
-        <span className="text-[12px] text-[#8b93a7]">your week · before and after</span>
+        <span className="text-[12px] text-mist">your week · before and after</span>
         {ics && (
           <button
             onClick={download}
-            className="rounded-lg border border-[#b8e35666] bg-[#b8e35611] px-3 py-1 text-[12px] font-bold text-[#b8e356] hover:bg-[#b8e35622]"
+            className="rounded-lg border border-paper/40 bg-paper/7 px-3 py-1 text-[12px] font-bold text-paper hover:bg-paper/13"
           >
             download .ics
           </button>
@@ -64,7 +64,7 @@ export function CalendarLens({ days, events, readiness, ics }: CalendarLensProps
           {days.map((d) => (
             <span
               key={d.dayIndex}
-              className="text-center text-[12px] font-bold text-[#8b93a7]"
+              className="text-center text-[12px] font-bold text-mist"
               style={{ width: `${col}%` }}
             >
               {d.label}
@@ -77,7 +77,7 @@ export function CalendarLens({ days, events, readiness, ics }: CalendarLensProps
           {[6, 9, 12, 15, 18, 21].map((h) => (
             <span
               key={h}
-              className="absolute -left-7 -translate-y-1/2 text-[12px] text-[#4a5470]"
+              className="absolute -left-7 -translate-y-1/2 text-[12px] text-dim"
               style={{ top: top(h * 60) }}
             >
               {String(h).padStart(2, "0")}
@@ -88,7 +88,7 @@ export function CalendarLens({ days, events, readiness, ics }: CalendarLensProps
           {days.map((d) => (
             <div
               key={d.dayIndex}
-              className="absolute top-0 bottom-0 border-l border-[#1e2637]"
+              className="absolute top-0 bottom-0 border-l border-line"
               style={{ left: `${(d.dayIndex / days.length) * 100}%`, width: `${col}%` }}
             />
           ))}
@@ -101,19 +101,23 @@ export function CalendarLens({ days, events, readiness, ics }: CalendarLensProps
             const newLeft = `${(newDay / days.length) * 100}%`;
             const widthPct = `${col - 1}%`;
             const style = { width: widthPct, height: height(e.startMin, e.endMin) };
-            const tone = e.movable ? "#9db8ff" : "#8b93a7";
+            const tone = e.movable ? "var(--color-sun-home)" : "var(--color-mist)";
 
             return (
               <div key={e.id}>
                 {moved && (
                   <div
-                    className="absolute rounded-md border border-dashed border-[#4a5470] opacity-40"
+                    className="absolute rounded-md border border-dashed border-dim opacity-40"
                     style={{ ...style, left: origLeft, top: top(e.startMin) }}
                   />
                 )}
                 <motion.div
                   className="absolute overflow-hidden rounded-md border px-1.5 py-0 text-[12px] leading-none"
-                  style={{ ...style, borderColor: `${tone}88`, background: `${tone}22` }}
+                  style={{
+                    ...style,
+                    borderColor: `color-mix(in srgb, ${tone} 53%, transparent)`,
+                    background: `color-mix(in srgb, ${tone} 13%, transparent)`,
+                  }}
                   title={`${e.title} ${fmtMin(e.startMin)}–${fmtMin(e.endMin)}${badge ? ` · ${badge.text}` : ""}`}
                   initial={false}
                   animate={{
@@ -125,15 +129,15 @@ export function CalendarLens({ days, events, readiness, ics }: CalendarLensProps
                   <div className="font-bold" style={{ color: tone }}>
                     {e.title}
                   </div>
-                  <div className="text-[#8b93a7]">
+                  <div className="text-mist">
                     {fmtMin(moved?.startMin ?? e.startMin)}–{fmtMin(moved?.endMin ?? e.endMin)}
                   </div>
                   {badge && (
                     <div
                       className={`mt-0.5 inline-block rounded px-1 text-[12px] font-bold ${
                         badge.status === "risk"
-                          ? "bg-[#ff7a7a22] text-[#ff7a7a]"
-                          : "bg-[#b8e35622] text-[#b8e356]"
+                          ? "bg-fail/13 text-fail"
+                          : "bg-pass/13 text-pass"
                       }`}
                       title={badge.text}
                     >
@@ -149,22 +153,22 @@ export function CalendarLens({ days, events, readiness, ics }: CalendarLensProps
 
       {/* readiness — the ROI row: body-clock time before → after the plan */}
       {readiness.length > 0 && (
-        <ul className="space-y-1 border-t border-[#1e2637] pt-2 text-[12px]">
+        <ul className="space-y-1 border-t border-line pt-2 text-[12px]">
           {readiness.map((r) => {
             const risk = r.status === "risk";
             const improved = r.bodyWithoutPlanMin !== r.bodyMin;
             return (
               <li key={r.eventId} className="flex items-center gap-2" title={r.text}>
-                <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${risk ? "bg-[#ff7a7a]" : "bg-[#b8e356]"}`} />
-                <span className="min-w-0 flex-1 truncate text-[#8b93a7]">
-                  {r.title} <span className="text-[#4a5470]">· body clock</span>
+                <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${risk ? "bg-fail" : "bg-pass"}`} />
+                <span className="min-w-0 flex-1 truncate text-mist">
+                  {r.title} <span className="text-dim">· body clock</span>
                 </span>
-                <span className={`shrink-0 font-mono2 font-bold ${risk ? "text-[#ff7a7a]" : "text-[#b8e356]"}`}>
+                <span className={`shrink-0 font-mono2 font-bold ${risk ? "text-fail" : "text-pass"}`}>
                   {improved ? `${fmtMin(r.bodyWithoutPlanMin)} → ${fmtMin(r.bodyMin)}` : fmtMin(r.bodyMin)}
                 </span>
                 <span
                   className={`shrink-0 rounded px-1 text-[12px] font-bold ${
-                    risk ? "bg-[#ff7a7a22] text-[#ff7a7a]" : "bg-[#b8e35622] text-[#b8e356]"
+                    risk ? "bg-fail/13 text-fail" : "bg-pass/13 text-pass"
                   }`}
                 >
                   {risk ? "AT RISK" : "READY"}

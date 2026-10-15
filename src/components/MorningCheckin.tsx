@@ -39,8 +39,8 @@ export function MorningCheckin({ phase, onCheckIn }: Props) {
       title="The wearer skipped the 5am light — replan D-2 onward under the updated adherence profile"
       className={`shrink-0 rounded-lg border px-3 py-2 text-xs font-bold transition-colors ${
         phase === "running"
-          ? "cursor-not-allowed border-[#1e2637] text-[#4a5470]"
-          : "border-[#ffc46b44] bg-[#ffc46b11] text-[#ffc46b] hover:bg-[#ffc46b22]"
+          ? "cursor-not-allowed border-line text-dim"
+          : "border-paper bg-paper text-ink hover:bg-white"
       }`}
     >
       Morning check-in · D-2 07:10

@@ -119,7 +119,7 @@ export default function ReviewPage() {
       <main className="mx-auto max-w-2xl px-6 py-10 text-center">
         <h1 className="text-lg font-bold tracking-[0.3em] text-paper">MERIDIAN</h1>
         <p className="mt-4 text-[13px] text-mist">No saved handoff yet. Run a night shift first.</p>
-        <Link href="/" className="mt-6 inline-block rounded-lg bg-lime px-5 py-2 text-[13px] font-bold text-ink">Back to deck</Link>
+        <Link href="/" className="mt-6 inline-block rounded-lg bg-paper px-5 py-2 text-[13px] font-bold text-ink">Back to deck</Link>
       </main>
     );
   }
@@ -144,7 +144,7 @@ export default function ReviewPage() {
           )}
         </div>
         <div className="text-right">
-          <div className="font-mono2 text-3xl font-bold text-lime">{plan.score.toFixed(2)}</div>
+          <div className="font-mono2 text-3xl font-bold text-pass">{plan.score.toFixed(2)}</div>
           <div className="text-[12px] text-mist">plan score</div>
         </div>
       </header>
@@ -152,16 +152,16 @@ export default function ReviewPage() {
       <p className="font-voice max-w-3xl text-[17px] leading-relaxed text-paper">{plan.summary}</p>
 
       <div className="mt-5 flex flex-wrap gap-2">
-        <button onClick={downloadIcs} className="rounded-lg bg-sun-dest px-4 py-2 text-[13px] font-bold text-ink transition-colors hover:bg-[#ffd98a]">Add to calendar (.ics)</button>
+        <button onClick={downloadIcs} className="rounded-lg bg-paper px-4 py-2 text-[13px] font-bold text-ink transition-colors hover:bg-white">Add to calendar (.ics)</button>
         <button onClick={downloadMarkdown} className="rounded-lg border border-line bg-ink-2 px-4 py-2 text-[13px] font-bold text-paper transition-colors hover:border-mist">Export markdown</button>
-        <button onClick={clearPlan} className="rounded-lg px-4 py-2 text-[13px] text-mist transition-colors hover:text-rose">Clear saved plan</button>
+        <button onClick={clearPlan} className="rounded-lg px-4 py-2 text-[13px] text-mist transition-colors hover:text-fail">Clear saved plan</button>
         <Link href="/outcome" className="rounded-lg border border-line bg-ink-2 px-4 py-2 text-[13px] text-mist transition-colors hover:text-paper">Log outcome</Link>
         <ReplanLink trip={trip} />
       </div>
 
       <section className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_260px]">
         <div className="min-w-0">
-          <h2 className="text-[12px] font-bold text-mist">The week, hour by hour</h2>
+          <h2 className="text-sm font-bold text-mist">The week, hour by hour</h2>
           <p className="mt-1 text-[12px] leading-relaxed text-mist">
             Body-clock time across 24 hours. The sleep bar steps earlier day by day — that diagonal is the shift.
           </p>
@@ -187,14 +187,14 @@ export default function ReviewPage() {
                     const Icon = IconInfo?.icon;
                     return (
                       <li key={j} className="flex gap-3">
-                        <span className="mt-0.5 shrink-0" style={{ color: IconInfo?.tint ?? "#8b93a7" }}>
+                        <span className="mt-0.5 shrink-0" style={{ color: IconInfo?.tint ?? "var(--color-mist)" }}>
                           {Icon ? <Icon size={14} strokeWidth={2.2} /> : null}
                         </span>
                         <div className="min-w-0 flex-1">
                           <div className="text-[13px] text-paper">
                             <span className="font-semibold">{iv.kind.replace(/_/g, " ")}</span>
                             <span className="ml-2 font-mono2 text-mist">{fmtMin(iv.startMin)}{iv.endMin ? `–${fmtMin(iv.endMin)}` : ""}</span>
-                            {ref && <sup className="ml-1 font-mono2 text-[12px] text-lime">{ref}</sup>}
+                            {ref && <sup className="ml-1 font-mono2 text-[12px] text-mist">{ref}</sup>}
                           </div>
                           <div className="text-[12px] leading-relaxed text-mist">{iv.note}</div>
                         </div>
@@ -208,20 +208,20 @@ export default function ReviewPage() {
         </div>
 
         <aside className="lg:sticky lg:top-6 lg:self-start">
-          <h2 className="text-[12px] font-bold text-sun-dest">Evidence</h2>
+          <h2 className="text-sm font-bold text-sun-dest">Evidence</h2>
           {plan.citations.length === 0 ? (
             <p className="mt-2 text-[12px] text-mist">No citations were required for this plan.</p>
           ) : (
             <ol className="mt-2 space-y-2">
               {plan.citations.map((c, i) => (
                 <li key={c.id} className="flex gap-2 text-[12px] leading-relaxed text-mist">
-                  <span className="font-mono2 text-lime">{i + 1}</span>
+                  <span className="font-mono2 text-paper">{i + 1}</span>
                   <span className="min-w-0">
                     <a
                       href={c.doi ? `https://doi.org/${c.doi}` : c.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-paper hover:text-lime hover:underline"
+                      className="text-paper hover:underline"
                     >
                       {c.title}
                     </a>

@@ -54,7 +54,7 @@ export function LensShell({
 
   return (
     <div className="flex h-full min-h-[360px] flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#1e2637] bg-[#0c1018] p-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-ink-2 p-2">
         <div className="flex flex-wrap gap-1">
           {LENSES.map((l) => (
             <button
@@ -62,16 +62,16 @@ export function LensShell({
               onClick={() => onChange(l.id)}
               className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-colors ${
                 lens === l.id
-                  ? "bg-[#b8e356] text-[#07090f]"
-                  : "border border-[#1e2637] text-[#8b93a7] hover:border-[#8b93a7]"
+                  ? "bg-paper text-ink"
+                  : "border border-line text-mist hover:border-mist"
               }`}
             >
               {l.key} · {l.label}
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-3 font-mono2 text-[12px] text-[#8b93a7]">
-          <span className={running ? "text-[#b8e356]" : ""}>
+        <div className="flex items-center gap-3 font-mono2 text-[12px] text-mist">
+          <span className={running ? "text-progress" : ""}>
             {running ? "LIVE" : "IDLE"} · {String(mins).padStart(2, "0")}:{String(secs).padStart(2, "0")}
           </span>
           <span>tools {toolCalls}</span>
@@ -79,14 +79,14 @@ export function LensShell({
           <button
             onClick={onToggleAuto}
             className={`rounded-lg px-2 py-1 text-[12px] font-bold transition-colors ${
-              auto ? "bg-[#1e2637] text-[#e8eaf2]" : "border border-[#1e2637] text-[#4a5470]"
+              auto ? "bg-line text-paper" : "border border-line text-dim"
             }`}
           >
             {auto ? "director on" : "director off"}
           </button>
         </div>
       </div>
-      <div className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-[#1e2637] bg-[#0c1018]">
+      <div className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-line bg-ink-2">
         {children}
       </div>
     </div>

@@ -271,7 +271,7 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
             cx={p[0]}
             cy={p[1]}
             r={memberR}
-            fill="#e8eaf2"
+            fill="var(--color-paper)"
             opacity={0.32}
           />
         ));
@@ -283,7 +283,7 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
           cx={c.xy[0]}
           cy={c.xy[1]}
           r={0.9 + Math.min(1.6, 0.34 * extra)}
-          fill="#e8eaf2"
+          fill="var(--color-paper)"
           opacity={0.13 + Math.min(0.24, 0.055 * extra)}
         />
       );
@@ -291,7 +291,7 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
   }, [dotClusters, pxPerDeg, view.scale]);
 
   return (
-    <div className="relative h-full w-full overflow-hidden bg-[#050812] select-none">
+    <div className="relative h-full w-full overflow-hidden bg-ink select-none">
       <svg
         ref={svgRef}
         viewBox={`0 0 ${W} ${H}`}
@@ -306,6 +306,12 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
         onDoubleClick={onDoubleClick}
       >
         <defs>
+          {/* The ocean/land ramp, the coastal shelf and the night fill are the
+              map's own paint: one gradient each, no other surface in the app
+              uses them, so they stay literal instead of becoming tokens the
+              design system would have to keep meaning something. Every colour
+              the app *shares* — the two suns, the ghost, pass/fail, paper,
+              line — is a token above. */}
           <radialGradient id="ocean" cx="46%" cy="42%" r="80%">
             <stop offset="0%" stopColor="#0d1526" />
             <stop offset="60%" stopColor="#080d1a" />
@@ -354,7 +360,7 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
           <path
             d={graticulePath ?? undefined}
             fill="none"
-            stroke="#1e2637"
+            stroke="var(--color-line)"
             strokeWidth={0.5}
             strokeDasharray="3 5"
             opacity={0.7}
@@ -376,7 +382,7 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
           {dotLayer}
 
           {/* twilight band on the day side, then the soft-edged night */}
-          {twilightPath && <path d={twilightPath} fill="#ffc46b" opacity={0.09} />}
+          {twilightPath && <path d={twilightPath} fill="var(--color-sun-dest)" opacity={0.09} />}
           {nightPath && (
             <path d={nightPath} fill="#02040a" opacity={0.62} filter="url(#night-soft)" />
           )}
@@ -384,7 +390,7 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
             <path
               d={terminatorPath}
               fill="none"
-              stroke="#9db8ff"
+              stroke="var(--color-sun-home)"
               strokeWidth={1}
               opacity={0.35}
             />
@@ -395,7 +401,7 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
             <path
               d={ghostPath}
               fill="none"
-              stroke="#ffd98a"
+              stroke="var(--color-ghost)"
               strokeWidth={1.6}
               strokeDasharray="7 5"
               opacity={0.85}
@@ -407,7 +413,7 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
             <path
               d={flight.d}
               fill="none"
-              stroke="#ffc46b"
+              stroke="var(--color-sun-dest)"
               strokeWidth={2 / Math.pow(view.scale, 0.4)}
               strokeDasharray="8 6"
               strokeLinecap="round"
@@ -422,11 +428,11 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
           {/* origin / destination / you — inverse-scaled so zoom never eats them */}
           {trip && originXY && (
             <g transform={`translate(${originXY[0]} ${originXY[1]}) scale(${invScale})`}>
-              <circle r={5} fill="#9db8ff" stroke="#e8eaf2" strokeWidth={1.4} />
+              <circle r={5} fill="var(--color-sun-home)" stroke="var(--color-paper)" strokeWidth={1.4} />
               <text
                 y={18}
                 textAnchor="middle"
-                fill="#9db8ff"
+                fill="var(--color-sun-home)"
                 fontSize={12}
                 fontWeight={600}
               >
@@ -437,11 +443,11 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
           )}
           {trip && destXY && (
             <g transform={`translate(${destXY[0]} ${destXY[1]}) scale(${invScale})`}>
-              <circle r={6.5} fill="#ffc46b" stroke="#fff3d6" strokeWidth={1.4} />
+              <circle r={6.5} fill="var(--color-sun-dest)" stroke="#fff3d6" strokeWidth={1.4} />
               <text
                 y={21}
                 textAnchor="middle"
-                fill="#ffc46b"
+                fill="var(--color-sun-dest)"
                 fontSize={12}
                 fontWeight={600}
               >
@@ -453,12 +459,12 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
           {trip && youXY && (
             <g transform={`translate(${youXY[0]} ${youXY[1]}) scale(${invScale})`}>
               {!reduce && (
-                <circle r={9} fill="none" stroke="#ffd98a" strokeWidth={1} opacity={0.6}>
+                <circle r={9} fill="none" stroke="var(--color-ghost)" strokeWidth={1} opacity={0.6}>
                   <animate attributeName="r" values="9;17;9" dur="2.2s" repeatCount="indefinite" />
                   <animate attributeName="opacity" values="0.6;0.05;0.6" dur="2.2s" repeatCount="indefinite" />
                 </circle>
               )}
-              <circle r={6.5} fill="#ffd98a" stroke="#fff3d6" strokeWidth={1.5} />
+              <circle r={6.5} fill="var(--color-ghost)" stroke="#fff3d6" strokeWidth={1.5} />
               <text
                 y={-15}
                 textAnchor="middle"
@@ -473,11 +479,11 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
           )}
           {trip && ghostGap > 0 && ghostDawnXY && (
             <g transform={`translate(${ghostDawnXY[0]} ${ghostDawnXY[1]}) scale(${invScale})`}>
-              <circle r={3} fill="#ffd98a" />
+              <circle r={3} fill="var(--color-ghost)" />
               <text
                 y={26}
                 textAnchor="middle"
-                fill="#ffd98a"
+                fill="var(--color-ghost)"
                 fontSize={12}
                 fontWeight={700}
                 letterSpacing={2}
@@ -492,8 +498,8 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
             const sxy = projection([sun.lon, sun.lat]);
             return sxy ? (
               <g transform={`translate(${sxy[0]} ${sxy[1]}) scale(${invScale})`}>
-                <circle r={13} fill="#ffc46b" opacity={0.18} />
-                <circle r={4.5} fill="#ffc46b" opacity={0.95} />
+                <circle r={13} fill="var(--color-sun-dest)" opacity={0.18} />
+                <circle r={4.5} fill="var(--color-sun-dest)" opacity={0.95} />
               </g>
             ) : null;
           })()}

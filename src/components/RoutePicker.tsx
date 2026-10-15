@@ -117,7 +117,7 @@ function AirportField({
         placeholder={open ? "city or code" : value}
         aria-label={`${label} airport`}
         title={current ? `${current.airport} · ${current.tz}` : undefined}
-        className="w-14 bg-transparent text-paper uppercase placeholder:normal-case placeholder:text-[#4a5470] focus:w-36 focus:outline-none"
+        className="w-14 bg-transparent text-paper uppercase placeholder:normal-case placeholder:text-dim focus:w-36 focus:outline-none"
       />
       {open && results.length > 0 && (
         <ul

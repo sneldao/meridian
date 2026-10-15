@@ -1,0 +1,21 @@
+services:
+  # Public demo surface: the free tier. Scripted replay transcript, zero tokens,
+  # no secrets, works on a judge's phone. Stage machine (anthropic, live
+  # calendar writes) stays local — see docs/commercial.md.
+  - type: web
+    name: meridian-replay
+    runtime: node
+    plan: free
+    region: frankfurt
+    autoDeploy: true
+    # Render injects PORT; `next start` honours it automatically.
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    healthCheckPath: /
+    envVars:
+      - key: AGENT_PROVIDER
+        value: replay
+      - key: NEXT_PUBLIC_AGENT_PROVIDER
+        value: replay
+      - key: NODE_VERSION
+        value: 22.12.0

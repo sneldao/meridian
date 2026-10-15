@@ -23,24 +23,24 @@ export function DayStrip({ days, locked, activeLabel, rejectedLabels }: Props) {
             key={d.dayIndex}
             className={`rounded-lg border px-3 py-2 transition-colors ${
               plan
-                ? "border-[#b8e35644] bg-[#131826]"
+                ? "border-pass/27 bg-ink-3"
                 : active
-                  ? "border-[#ffc46b66] bg-[#131826]"
+                  ? "border-progress/33 bg-ink-3"
                   : rejected
-                    ? "border-[#ff7a7a55] bg-[#131826]"
-                    : "border-[#1e2637] bg-[#0c1018]"
+                    ? "border-fail/33 bg-ink-3"
+                    : "border-line bg-ink-2"
             }`}
           >
             <div className="flex items-baseline justify-between">
-              <span className={`text-[12px] font-bold ${plan ? "text-[#b8e356]" : active ? "text-[#ffc46b]" : "text-[#8b93a7]"}`}>
+              <span className={`text-[12px] font-bold ${plan ? "text-pass" : active ? "text-progress" : "text-mist"}`}>
                 {d.label}
               </span>
               {plan && (
-                <span className="font-mono2 text-[12px] text-[#8b93a7]">{plan.shiftMin}m</span>
+                <span className="font-mono2 text-[12px] text-mist">{plan.shiftMin}m</span>
               )}
             </div>
             {plan ? (
-              <div className="mt-1 font-mono2 text-[12px] text-[#e8eaf2]">
+              <div className="mt-1 font-mono2 text-[12px] text-paper">
                 <div>bed {fmtMin(plan.targetBedtimeMin)}</div>
                 <div>wake {fmtMin(plan.targetWakeMin)}</div>
                 <div className="mt-1 flex gap-1">
@@ -51,7 +51,7 @@ export function DayStrip({ days, locked, activeLabel, rejectedLabels }: Props) {
                 </div>
               </div>
             ) : (
-              <div className="mt-1 font-mono2 text-[12px] text-[#4a5470]">
+              <div className="mt-1 font-mono2 text-[12px] text-dim">
                 {active ? "planning…" : rejected ? "replanning…" : "queued"}
               </div>
             )}

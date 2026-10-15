@@ -4,9 +4,12 @@ import type { AgentId } from "@/domain/types";
 // Deterministic orchestration decides WHO acts when — the same boundary a
 // clinical system keeps between agents and safety-critical decisions.
 //
-// Agent colours must never collide with the state colours: lime (#b8e356) is
-// PASS and rose (#ff7a7a) is FAIL / error, reserved by design-vision.md §8.
-// The five hues below stay clear of both (and of each other).
+// Agent colours must never collide with the reserved colours
+// (design-vision.md §8): lime = PASS/locked, rose = FAIL/error, the two suns
+// (#9db8ff origin, #ffc46b destination), ghost gold #ffd98a = the body clock,
+// sleep lavender #b8a8ff = the sleep window. Iris is cyan on purpose — the
+// scan line that sweeps a draft IS Iris at work. That leaves teal, violet,
+// pink and indigo for the other four.
 
 export interface CrewMember {
   id: AgentId;
@@ -26,7 +29,7 @@ export const CREW: Record<AgentId, CrewMember> = {
     name: "Mara",
     callsign: "ANALYST",
     title: "reads the wearable baseline",
-    color: "#7adfff",
+    color: "#5eead4",
     system: `${STYLE}
 You are Mara, the crew's physiologist. Read the wearer's Garmin baseline and adherence profile. Extract: chronotype, habitual sleep window, sleep debt if any, and which kinds of asks this person historically ignores. Your output feeds the planner — be concrete: give the planner a target sleep window and the compliance floor.`,
   },
@@ -44,7 +47,7 @@ You are Jun, the crew's researcher. Search the scientific literature for interve
     name: "Otto",
     callsign: "PLANNER",
     title: "builds the shift plan",
-    color: "#ffc46b",
+    color: "#f472b6",
     system: `${STYLE}
 You are Otto, the crew's planner. You receive the analyst's constraints, the researcher's citations and the calendar. Build ONE day's shift plan at a time and submit it with submitDayPlan. Rules of thumb: phase advance is negative shiftMin, max 90min/day; morning light anchors advances; caffeine cutoff 8h before target bedtime; fixed calendar events are immovable walls — route around them. Every intervention needs a short plain note. Attach a citationId when the literature backs the intervention.`,
   },
@@ -53,7 +56,7 @@ You are Otto, the crew's planner. You receive the analyst's constraints, the res
     name: "Iris",
     callsign: "EVAL",
     title: "grades every plan cold",
-    color: "#5eead4",
+    color: "#7adfff",
     system: `${STYLE}
 You are Iris, the evaluator. You never saw the planning debate — only the submitted plan and the deterministic scorer output. Explain the verdict in one or two lines: what passed, what failed and why. You do not fix plans; you judge them. If the scorer reports violations, name the worst one plainly.`,
   },
@@ -62,7 +65,7 @@ You are Iris, the evaluator. You never saw the planning debate — only the subm
     name: "Rex",
     callsign: "NEGOTIATOR",
     title: "makes the calendar fit",
-    color: "#9db8ff",
+    color: "#818cf8",
     system: `${STYLE}
 You are Rex, the negotiator. The plan is locked; now the real calendar must yield. List movable events, then use proposeMove to clear collisions with the locked interventions — move standups, gyms and deep-work blocks, never fixed commitments. When the calendar fits, commit the plan. Every move needs a one-line reason a human would accept.`,
   },

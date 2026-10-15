@@ -84,31 +84,29 @@ export function BriefingCard({ summary, score, citations, days, ics, onClose, fa
       initial={{ opacity: 0, y: 30, scale: 0.97 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ type: "spring", stiffness: 90, damping: 16 }}
-      className="absolute inset-x-8 bottom-8 z-10 rounded-2xl border border-[#ffc46b44] bg-[#0c1018f2] p-5 shadow-[0_0_80px_rgba(255,196,107,0.12)] backdrop-blur"
+      className="absolute inset-x-8 bottom-8 z-10 rounded-2xl border border-sun-dest/27 bg-ink-2/95 p-5 shadow-[0_0_80px_rgba(255,196,107,0.12)] backdrop-blur"
     >
       <button
         onClick={onClose}
-        className="absolute top-3 right-3 rounded-md p-1 text-[#4a5470] transition-colors hover:bg-[#1e2637] hover:text-[#e8eaf2]"
+        className="absolute top-3 right-3 rounded-md p-1 text-dim transition-colors hover:bg-line hover:text-paper"
         aria-label="Dismiss handoff"
       >
         <X size={14} />
       </button>
       <div className="flex items-start justify-between gap-6">
         <div className="min-w-0 flex-1">
-          <div className="text-[12px] font-bold tracking-[0.2em] text-[#ffc46b] uppercase">
-            Morning handoff
-          </div>
+          <div className="text-sm font-bold text-sun-dest">Morning handoff</div>
           {fallback && (
-            <div className="mt-2 rounded-md border border-[#ff7a7a44] bg-[#ff7a7a11] px-2.5 py-1.5 text-[12px] text-[#ff7a7a]">
+            <div className="mt-2 rounded-md border border-fail/27 bg-fail/7 px-2.5 py-1.5 text-[12px] text-fail">
               Fell back to the recorded shift mid-run — review before acting.
             </div>
           )}
-          <p className="mt-1.5 text-sm leading-relaxed text-[#e8eaf2]">{summary}</p>
+          <p className="mt-1.5 text-sm leading-relaxed text-paper">{summary}</p>
 
           {firstMove && (
-            <div className="mt-2 inline-flex items-center gap-2 rounded-md border border-[#b8e35644] bg-[#b8e3560f] px-2.5 py-1 text-[12px] text-[#b8e356]">
+            <div className="mt-2 inline-flex items-center gap-2 rounded-md border border-pass/27 bg-pass/6 px-2.5 py-1 text-[12px] text-pass">
               <span className="font-bold tracking-wider uppercase">first move</span>
-              <span className="text-[#e8eaf2]">
+              <span className="text-paper">
                 {firstMove.day.label} · {fmtMin(firstMove.iv.startMin)} — {firstMove.iv.note}
               </span>
             </div>
@@ -116,7 +114,7 @@ export function BriefingCard({ summary, score, citations, days, ics, onClose, fa
 
           <div className="mt-3 flex flex-wrap gap-1.5">
             {days.map((d) => (
-              <span key={d.dayIndex} className="rounded border border-[#1e2637] bg-[#131826] px-2 py-0.5 font-mono2 text-[12px] text-[#8b93a7]">
+              <span key={d.dayIndex} className="rounded border border-line bg-ink-3 px-2 py-0.5 font-mono2 text-[12px] text-mist">
                 {d.label} {d.shiftMin}m · bed {fmtMin(d.targetBedtimeMin)}
               </span>
             ))}
@@ -124,13 +122,13 @@ export function BriefingCard({ summary, score, citations, days, ics, onClose, fa
 
           <div className="mt-3 space-y-0.5">
             {citations.slice(0, 4).map((c) => (
-              <div key={c.id} className="truncate text-[12px] text-[#8b93a7]">
-                <span className="text-[#b8e356]">▪</span>{" "}
+              <div key={c.id} className="truncate text-[12px] text-mist">
+                <span className="text-pass">▪</span>{" "}
                 <a
                   href={c.doi ? `https://doi.org/${c.doi}` : c.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-[#8b93a7] hover:text-[#b8e356] hover:underline"
+                  className="text-mist hover:text-pass hover:underline"
                 >
                   {c.title}
                 </a>
@@ -141,16 +139,16 @@ export function BriefingCard({ summary, score, citations, days, ics, onClose, fa
         </div>
 
         <div className="shrink-0 text-right">
-          <div className="font-mono2 text-3xl font-bold text-[#b8e356]">{score.toFixed(2)}</div>
+          <div className="font-mono2 text-3xl font-bold text-pass">{score.toFixed(2)}</div>
           <div
-            className="text-[12px] tracking-widest text-[#8b93a7] uppercase"
+            className="text-[12px] text-mist"
             title="Mean of the passing eval verdicts across locked days — not the last day's score."
           >
             plan score · mean of {days.length} locked day{days.length === 1 ? "" : "s"}
           </div>
           <button
             onClick={downloadIcs}
-            className="mt-4 rounded-lg bg-[#ffc46b] px-4 py-2 text-xs font-bold text-[#07090f] transition-colors hover:bg-[#ffd98a]"
+            className="mt-4 rounded-lg bg-paper px-4 py-2 text-xs font-bold text-ink transition-colors hover:bg-white"
           >
             Add to calendar (.ics)
           </button>
@@ -158,7 +156,7 @@ export function BriefingCard({ summary, score, citations, days, ics, onClose, fa
             <button
               onClick={listen}
               disabled={voiceState === "loading" || voiceState === "playing"}
-              className="mt-2 rounded-lg border border-[#7adfff44] bg-[#7adfff11] px-4 py-2 text-xs font-bold text-[#7adfff] transition-colors hover:bg-[#7adfff22] disabled:opacity-50"
+              className="mt-2 rounded-lg border border-paper/30 bg-paper/5 px-4 py-2 text-xs font-bold text-paper transition-colors hover:bg-paper/10 disabled:opacity-50"
             >
               {voiceState === "loading" ? "Generating voice…" : voiceState === "playing" ? "Playing…" : voiceState === "error" ? "Voice failed" : "Listen (ElevenLabs)"}
             </button>
