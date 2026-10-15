@@ -1,10 +1,31 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useReducedMotion } from "framer-motion";
+import {
+  geoCircle,
+  geoGraticule10,
+  geoInterpolate,
+  geoNaturalEarth1,
+  geoPath,
+} from "d3-geo";
+import { feature } from "topojson-client";
+import worldTopo from "world-atlas/countries-110m.json";
+import { Minus, Plus } from "lucide-react";
+import type { FeatureCollection, LineString, MultiPolygon, Polygon } from "geojson";
+import type { Topology } from "topojson-specification";
 import type { Trip } from "@/domain/types";
+import { subsolarPoint, wrapLon } from "@/domain/sun";
 import { utcOffsetMinOn } from "@/domain/timezones";
-import airports from "@/data/airports.json";
-import coastPaths from "@/data/coast-paths.json";
+import { AIRPORTS } from "@/domain/airports";
+import { clusterAirports, shouldSplit } from "@/domain/city-lights";
+
+// World rendering follows the primitives in docs/design-vision.md §3a:
+// real coastline polygons, the terminator as a geoCircle on the subsolar
+// antipode, the ghost as the same circle shifted by the body-clock gap,
+// depth as a layer stack, and clamped pan/zoom with inverse-scaled markers.
+// The airport dots are grouped by cell (see @/domain/city-lights) so the world
+// view reads as city lights and a metro separates into its airports on zoom.
 
 interface Props {
   trip: Trip | null;
@@ -18,178 +39,510 @@ interface Props {
 
 const W = 1000;
 const H = 520;
+const MIN_ZOOM = 1;
+const MAX_ZOOM = 8;
 
-function xy(lon: number, lat: number) {
-  return { x: ((lon + 180) / 360) * W, y: ((90 - lat) / 180) * H };
-}
-
-function lonX(lon: number) {
-  const wrapped = ((lon + 180) % 360 + 360) % 360;
-  return (wrapped / 360) * W;
-}
-
-function terminatorX(lon: number) {
-  return lonX(lon);
-}
-
-// The world is drawn as its airports — the landmasses emerge from where
-// people actually fly. ~1,150 dots, computed once.
-const AIRPORT_DOTS = (airports as { lat: number; lon: number }[]).map((a) => xy(a.lon, a.lat));
+const worldGeo = feature(
+  worldTopo as unknown as Topology,
+  (worldTopo as unknown as Topology).objects.countries,
+) as FeatureCollection<Polygon | MultiPolygon, { name: string }>;
 
 const hhmm = (min: number) =>
   `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
 
 export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0 }: Props) {
+  const reduce = useReducedMotion();
   const [now, setNow] = useState(() => new Date());
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [view, setView] = useState({ scale: 1, x: 0, y: 0 });
+  const gesture = useRef({
+    dragging: false,
+    moved: false,
+    startX: 0,
+    startY: 0,
+    origX: 0,
+    origY: 0,
+  });
+
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 30_000);
     return () => clearInterval(t);
   }, []);
-  const utcHour = now.getUTCHours() + now.getUTCMinutes() / 60;
+
+  // The base projection is fitted once; zoom/pan live in a wrapper transform
+  // so d3 keeps doing what it's good at (sphere math) while the <g> handles
+  // viewport math.
+  const projection = useMemo(() => {
+    const p = geoNaturalEarth1().fitExtent(
+      [
+        [6, 6],
+        [W - 6, H - 6],
+      ],
+      { type: "Sphere" },
+    );
+    return p.scale(p.scale() * 1.04); // slight overscan so edges bleed under slice crop
+  }, []);
+  const gen = useMemo(() => geoPath(projection), [projection]);
+
   const todayISO = now.toISOString().slice(0, 10);
   const localAt = (c?: { tz?: string }) => {
     if (!c?.tz) return "";
     const utc = now.getUTCHours() * 60 + now.getUTCMinutes();
     return hhmm(((utc + utcOffsetMinOn(c.tz, todayISO)) % 1440 + 1440) % 1440);
   };
-  const sunLon = 15 * (12 - utcHour);
-  const origin = trip ? xy(trip.origin.lon, trip.origin.lat) : { x: W * 0.3, y: H * 0.4 };
-  const dest = trip ? xy(trip.destination.lon, trip.destination.lat) : { x: W * 0.8, y: H * 0.4 };
-  // Draw the flight arc the short way when it crosses the antimeridian.
-  const lonDelta = trip ? ((trip.destination.lon - trip.origin.lon + 540) % 360) - 180 : 0;
-  const destPlot = trip ? { x: origin.x + (lonDelta / 360) * W, y: dest.y } : dest;
-  const ghostLon = trip ? sunLon - 90 - ghostGap : -10;
-  const mid = { x: (origin.x + destPlot.x) / 2, y: Math.min(origin.y, dest.y, destPlot.y) - 90 };
-  const path = `M ${origin.x} ${origin.y} Q ${mid.x} ${mid.y} ${destPlot.x} ${destPlot.y}`;
-  // When the arc wraps at ±180° its destination end sits off-screen; draw the
-  // continuation shifted by one map width so it re-enters the opposite edge.
-  const wrapShift = destPlot.x < 0 ? W : destPlot.x > W ? -W : 0;
-  const wrapX = (v: number) => ((v % W) + W) % W;
+
+  const sun = subsolarPoint(now);
+  const antipode: [number, number] = [wrapLon(sun.lon + 180), -sun.lat];
+
+  // Day/night: a 90° circle around the subsolar antipode. The 96° circle
+  // underneath shows through as the twilight band on the day side.
+  const nightPath = gen(geoCircle().center(antipode).radius(90).precision(1)());
+  const twilightPath = gen(geoCircle().center(antipode).radius(96).precision(1)());
+  const terminatorPath = gen(geoCircle().center(antipode).radius(90).precision(0.5)());
+
+  // Ghost: the body's own terminator — same circle, sun longitude shifted by
+  // the signed gap the plan still has to close. Eastward trips (negative
+  // requiredShiftMin) leave the body's dawn behind (west of) the real one;
+  // westbound trips put it ahead, so the sign matters.
+  const signedGap = -ghostGap * Math.sign(trip?.requiredShiftMin ?? -1);
+  const ghostPath = ghostGap
+    ? gen(
+        geoCircle()
+          .center([wrapLon(sun.lon - signedGap + 180), -sun.lat])
+          .radius(90)
+          .precision(1)(),
+      )
+    : null;
+  const ghostDawnXY = projection([wrapLon(sun.lon - 90 - signedGap), 0]);
+
+  const graticulePath = gen(geoGraticule10());
+  const countryPaths = useMemo(
+    () => worldGeo.features.map((f) => gen(f)).filter((d): d is string => Boolean(d)),
+    [gen],
+  );
+  const allLandPath = countryPaths.join(" ");
+
+  // Projected once: every cluster's centre, plus every member so a split costs
+  // no projection work. The lens's own pixels-per-degree follows from the fit.
+  const dotClusters = useMemo(
+    () =>
+      clusterAirports(AIRPORTS)
+        .map((c) => {
+          const xy = projection([c.lon, c.lat]);
+          if (!xy) return null;
+          return {
+            radiusDeg: c.radiusDeg,
+            members: c.members,
+            xy,
+            membersXY: c.members
+              .map((m) => projection([m.lon, m.lat]))
+              .filter((p): p is [number, number] => Boolean(p)),
+          };
+        })
+        .filter((c): c is NonNullable<typeof c> => Boolean(c)),
+    [projection],
+  );
+  const pxPerDeg = (projection.scale() * Math.PI) / 180;
+
+  // Great-circle flight arc — geoInterpolate takes the short way across the
+  // antimeridian, and geoPath cuts it at the map edge, so no wrap hack.
+  const flight = useMemo(() => {
+    if (!trip) return null;
+    const interp = geoInterpolate(
+      [trip.origin.lon, trip.origin.lat],
+      [trip.destination.lon, trip.destination.lat],
+    );
+    const line: LineString = {
+      type: "LineString",
+      coordinates: Array.from({ length: 65 }, (_, i) => interp(i / 64)),
+    };
+    return { d: gen(line), interp };
+  }, [trip, gen]);
+
+  const originXY = trip ? projection([trip.origin.lon, trip.origin.lat]) : null;
+  const destXY = trip ? projection([trip.destination.lon, trip.destination.lat]) : null;
+  const youXY = trip && flight ? projection(flight.interp(progress)) : null;
+
+  // --- gestures -------------------------------------------------------------
+
+  const clampView = (x: number, y: number, scale: number) => {
+    const s = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, scale));
+    const maxX = 40 * s + ((s - 1) * W) / 2;
+    const maxY = 24 * s + ((s - 1) * H) / 2;
+    return {
+      scale: s,
+      x: Math.max(-maxX, Math.min(maxX, x)),
+      y: Math.max(-maxY, Math.min(maxY, y)),
+    };
+  };
+
+  /** Client px → SVG viewBox units, accounting for preserveAspectRatio slice. */
+  const clientToSvg = (clientX: number, clientY: number) => {
+    const el = svgRef.current;
+    if (!el) return { sx: W / 2, sy: H / 2 };
+    const rect = el.getBoundingClientRect();
+    const sliceScale = Math.max(rect.width / W, rect.height / H) || 1;
+    const offsetX = (rect.width - W * sliceScale) / 2;
+    const offsetY = (rect.height - H * sliceScale) / 2;
+    return {
+      sx: (clientX - rect.left - offsetX) / sliceScale,
+      sy: (clientY - rect.top - offsetY) / sliceScale,
+    };
+  };
+
+  const zoomAround = (next: number, sx = W / 2, sy = H / 2) =>
+    setView((prev) => {
+      const scale = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, next));
+      const ratio = scale / prev.scale;
+      return clampView(
+        sx - W / 2 - ratio * (sx - W / 2 - prev.x),
+        sy - H / 2 - ratio * (sy - H / 2 - prev.y),
+        scale,
+      );
+    });
+
+  const resetView = () => setView({ scale: 1, x: 0, y: 0 });
+
+  // Non-passive wheel listener — React's onWheel can't preventDefault.
+  useEffect(() => {
+    const el = svgRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const { sx, sy } = clientToSvg(e.clientX, e.clientY);
+      zoomAround(view.scale * (e.deltaY < 0 ? 1.18 : 0.85), sx, sy);
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  });
+
+  const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
+    gesture.current.dragging = true;
+    gesture.current.moved = false;
+    gesture.current.startX = e.clientX;
+    gesture.current.startY = e.clientY;
+    gesture.current.origX = view.x;
+    gesture.current.origY = view.y;
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const onPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
+    if (!gesture.current.dragging) return;
+    const dx = e.clientX - gesture.current.startX;
+    const dy = e.clientY - gesture.current.startY;
+    if (Math.hypot(dx, dy) > 4) gesture.current.moved = true;
+    const el = svgRef.current;
+    const k = el ? Math.max(el.getBoundingClientRect().width / W, el.getBoundingClientRect().height / H) : 1;
+    setView((prev) =>
+      clampView(
+        gesture.current.origX + dx / k,
+        gesture.current.origY + dy / k,
+        prev.scale,
+      ),
+    );
+  };
+
+  const endGesture = () => {
+    gesture.current.dragging = false;
+  };
+
+  const onDoubleClick = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (gesture.current.moved) return;
+    if (view.scale >= 4) return resetView();
+    const { sx, sy } = clientToSvg(e.clientX, e.clientY);
+    zoomAround(view.scale * 2, sx, sy);
+  };
+
+  // Inverse scale: markers and labels stay readable from 1× to 8×.
+  const invScale = 1 / Math.pow(Math.max(1, view.scale), 0.78);
+  const zoomed = view.scale > 1.02 || Math.hypot(view.x, view.y) > 4;
+
+  // The dot layer depends on zoom alone: panning moves the group's transform
+  // and leaves all ~700–1,150 circles untouched, so a drag no longer rebuilds
+  // them on every pointermove.
+  const dotLayer = useMemo(() => {
+    const ppd = pxPerDeg * view.scale;
+    const memberR = 1.3 / view.scale; // a constant few px on screen at any zoom
+    return dotClusters.map((c, i) => {
+      if (shouldSplit(c.radiusDeg, ppd)) {
+        return c.membersXY.map((p, j) => (
+          <circle
+            key={`${i}-${j}`}
+            cx={p[0]}
+            cy={p[1]}
+            r={memberR}
+            fill="#e8eaf2"
+            opacity={0.32}
+          />
+        ));
+      }
+      const extra = c.members.length - 1;
+      return (
+        <circle
+          key={i}
+          cx={c.xy[0]}
+          cy={c.xy[1]}
+          r={0.9 + Math.min(1.6, 0.34 * extra)}
+          fill="#e8eaf2"
+          opacity={0.13 + Math.min(0.24, 0.055 * extra)}
+        />
+      );
+    });
+  }, [dotClusters, pxPerDeg, view.scale]);
 
   return (
-    <div className="relative h-full w-full bg-[#050812]">
-      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" className="h-full w-full">
+    <div className="relative h-full w-full overflow-hidden bg-[#050812] select-none">
+      <svg
+        ref={svgRef}
+        viewBox={`0 0 ${W} ${H}`}
+        preserveAspectRatio="xMidYMid slice"
+        className="block h-full w-full cursor-grab touch-none active:cursor-grabbing"
+        style={{ touchAction: "none" }}
+        aria-label="World map with the real day/night terminator, your body-clock terminator, and the flight arc"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endGesture}
+        onPointerCancel={endGesture}
+        onDoubleClick={onDoubleClick}
+      >
         <defs>
-          <linearGradient id="world-night" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#050812" />
-            <stop offset="100%" stopColor="#151a2a" />
-          </linearGradient>
-          {/* warm bleed at the terminator edges — dawn/dusk, not flat cut */}
-          <linearGradient id="dawn-glow" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#ffc46b" stopOpacity="0" />
-            <stop offset="100%" stopColor="#ffc46b" stopOpacity="0.14" />
-          </linearGradient>
-          <linearGradient id="dusk-glow" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#ffc46b" stopOpacity="0.14" />
-            <stop offset="100%" stopColor="#ffc46b" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        <rect width={W} height={H} fill="url(#world-night)" />
-        {/* continents — bundled 110m coastlines, equirectangular */}
-        {(coastPaths as string[]).map((d, i) => (
-          <path key={i} d={d} fill="#121a2c" stroke="#263252" strokeWidth="0.8" />
-        ))}
-        {/* the world, drawn as its airports */}
-        {AIRPORT_DOTS.map((d, i) => (
-          <circle key={i} cx={d.x} cy={d.y} r={1.2} fill="#e8eaf2" opacity="0.16" />
-        ))}
-        {/* sun — parked at the sub-solar point */}
-        <circle cx={lonX(sunLon)} cy={H * 0.5} r={14} fill="#ffc46b" opacity="0.18" />
-        <circle cx={lonX(sunLon)} cy={H * 0.5} r={5} fill="#ffc46b" opacity="0.9" />
-        {/* day is within +/-90 degrees of the sub-solar longitude (night outside) */}
-        {(() => {
-          const dawnX = terminatorX(sunLon - 90);
-          const duskX = terminatorX(sunLon + 90);
-          const nightRects = dawnX < duskX
-            ? [{ x: 0, w: dawnX }, { x: duskX, w: W - duskX }]
-            : [{ x: duskX, w: dawnX - duskX }];
-          return nightRects.map((r, i) => (
-            <rect key={i} x={r.x} y={0} width={r.w} height={H} fill="#000" opacity="0.45" />
-          ));
-        })()}
-        {/* warm bleed just inside the day band at dawn and dusk */}
-        <rect x={terminatorX(sunLon - 90)} y={0} width={56} height={H} fill="url(#dawn-glow)" />
-        <rect x={terminatorX(sunLon + 90) - 56} y={0} width={56} height={H} fill="url(#dusk-glow)" />
-        {/* ghost body-clock terminator, closing to zero as days lock */}
-        <rect x={0} y={0} width={terminatorX(ghostLon)} height={H} fill="#ffd98a" opacity="0.08" />
-        <line x1={terminatorX(sunLon - 90)} y1={0} x2={terminatorX(sunLon - 90)} y2={H} stroke="#9db8ff" strokeWidth="2" />
-        <line x1={terminatorX(sunLon + 90)} y1={0} x2={terminatorX(sunLon + 90)} y2={H} stroke="#9db8ff" strokeWidth="2" />
-        <line x1={terminatorX(ghostLon)} y1={0} x2={terminatorX(ghostLon)} y2={H} stroke="#ffd98a" strokeWidth="2" strokeDasharray="6 4" />
-        {trip && (
-          <text
-            x={Math.min(Math.max(terminatorX(ghostLon), 44), W - 44)}
-            y={H - 12}
-            textAnchor="middle"
-            fill="#ffd98a"
-            fontSize="12"
-            fontWeight="700"
-            letterSpacing="2"
+          <radialGradient id="ocean" cx="46%" cy="42%" r="80%">
+            <stop offset="0%" stopColor="#0d1526" />
+            <stop offset="60%" stopColor="#080d1a" />
+            <stop offset="100%" stopColor="#050812" />
+          </radialGradient>
+          {/* Land carries the same light as the sea: one gradient across the
+              whole map (userSpaceOnUse, or every country would get its own
+              private diagonal and the continents would read as patchwork). */}
+          <linearGradient
+            id="land"
+            gradientUnits="userSpaceOnUse"
+            x1={0}
+            y1={0}
+            x2={W}
+            y2={H}
           >
-            YOUR DAWN
-          </text>
-        )}
+            <stop offset="0%" stopColor="#1c2642" />
+            <stop offset="55%" stopColor="#141d33" />
+            <stop offset="100%" stopColor="#0e1526" />
+          </linearGradient>
+          <filter id="coastal-halo" x="-15%" y="-15%" width="130%" height="130%">
+            <feGaussianBlur stdDeviation="7" />
+          </filter>
+          <filter id="night-soft" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="5" />
+          </filter>
+        </defs>
 
-        {/* flight arc */}
-        {trip && (
-          <>
-            <path d={path} fill="none" stroke="#ffc46b" strokeWidth="2" strokeDasharray="8 6" opacity="0.9">
-              <animate attributeName="stroke-dashoffset" values="0;-28" dur="1.4s" repeatCount="indefinite" />
-            </path>
-            {wrapShift !== 0 && (
-              <path d={path} transform={`translate(${wrapShift} 0)`} fill="none" stroke="#ffc46b" strokeWidth="2" strokeDasharray="8 6" opacity="0.9">
+        <rect width={W} height={H} fill="url(#ocean)" />
+
+        <g
+          transform={`translate(${W / 2 + view.x} ${H / 2 + view.y}) scale(${view.scale}) translate(${-W / 2} ${-H / 2})`}
+        >
+          {/* coastal shelf halo — land glows faintly where it meets water */}
+          <path
+            d={allLandPath}
+            fill="none"
+            stroke="#3d5a8f"
+            strokeWidth={10}
+            strokeLinejoin="round"
+            filter="url(#coastal-halo)"
+            opacity={0.5}
+          />
+
+          {/* graticule */}
+          <path
+            d={graticulePath ?? undefined}
+            fill="none"
+            stroke="#1e2637"
+            strokeWidth={0.5}
+            strokeDasharray="3 5"
+            opacity={0.7}
+          />
+
+          {/* the world */}
+          {countryPaths.map((d, i) => (
+            <path
+              key={i}
+              d={d}
+              fill="url(#land)"
+              stroke="#27324e"
+              strokeWidth={0.5}
+            />
+          ))}
+
+          {/* airport constellation — city lights: denser cities burn brighter,
+              and a group separates into its airports once it has spread */}
+          {dotLayer}
+
+          {/* twilight band on the day side, then the soft-edged night */}
+          {twilightPath && <path d={twilightPath} fill="#ffc46b" opacity={0.09} />}
+          {nightPath && (
+            <path d={nightPath} fill="#02040a" opacity={0.62} filter="url(#night-soft)" />
+          )}
+          {terminatorPath && (
+            <path
+              d={terminatorPath}
+              fill="none"
+              stroke="#9db8ff"
+              strokeWidth={1}
+              opacity={0.35}
+            />
+          )}
+
+          {/* the ghost terminator — where your body thinks the sun is */}
+          {ghostPath && (
+            <path
+              d={ghostPath}
+              fill="none"
+              stroke="#ffd98a"
+              strokeWidth={1.6}
+              strokeDasharray="7 5"
+              opacity={0.85}
+            />
+          )}
+
+          {/* flight arc — true great circle */}
+          {flight?.d && (
+            <path
+              d={flight.d}
+              fill="none"
+              stroke="#ffc46b"
+              strokeWidth={2 / Math.pow(view.scale, 0.4)}
+              strokeDasharray="8 6"
+              strokeLinecap="round"
+              opacity={0.95}
+            >
+              {!reduce && (
                 <animate attributeName="stroke-dashoffset" values="0;-28" dur="1.4s" repeatCount="indefinite" />
-              </path>
-            )}
-          </>
-        )}
-        {/* origin + destination */}
-        {trip && (
-          <>
-            <circle cx={origin.x} cy={origin.y} r={6} fill="#9db8ff" />
-            <text x={origin.x} y={origin.y + 20} textAnchor="middle" fill="#9db8ff" fontSize="12" fontWeight="600">
-              {trip.origin.code}{localAt(trip.origin) && ` · ${localAt(trip.origin)}`}
-            </text>
-            <circle cx={dest.x} cy={dest.y} r={8} fill="#ffc46b" />
-            <text x={dest.x} y={dest.y + 22} textAnchor="middle" fill="#ffc46b" fontSize="12" fontWeight="600">
-              {trip.destination.code}{localAt(trip.destination) && ` · ${localAt(trip.destination)}`}
-            </text>
-          </>
-        )}
+              )}
+            </path>
+          )}
 
-        {/* body position along the arc — you, mid-flight */}
-        {trip && (() => {
-          const bx = wrapX(progressWeight(progress, origin.x, destPlot.x, mid.x));
-          const by = progressWeight(progress, origin.y, destPlot.y, mid.y);
-          return (
-            <>
-              <circle cx={bx} cy={by} r={9} fill="none" stroke="#ffd98a" strokeWidth="1" opacity="0.6">
-                <animate attributeName="r" values="9;17;9" dur="2.2s" repeatCount="indefinite" />
-                <animate attributeName="opacity" values="0.6;0.05;0.6" dur="2.2s" repeatCount="indefinite" />
-              </circle>
-              <circle cx={bx} cy={by} r={7} fill="#ffd98a" stroke="#fff3d6" strokeWidth="1.5" />
-              <text x={bx} y={by - 16} textAnchor="middle" fill="#fff3d6" fontSize="11" fontWeight="700" letterSpacing="2">
+          {/* origin / destination / you — inverse-scaled so zoom never eats them */}
+          {trip && originXY && (
+            <g transform={`translate(${originXY[0]} ${originXY[1]}) scale(${invScale})`}>
+              <circle r={5} fill="#9db8ff" stroke="#e8eaf2" strokeWidth={1.4} />
+              <text
+                y={18}
+                textAnchor="middle"
+                fill="#9db8ff"
+                fontSize={12}
+                fontWeight={600}
+              >
+                {trip.origin.code}
+                {localAt(trip.origin) && ` · ${localAt(trip.origin)}`}
+              </text>
+            </g>
+          )}
+          {trip && destXY && (
+            <g transform={`translate(${destXY[0]} ${destXY[1]}) scale(${invScale})`}>
+              <circle r={6.5} fill="#ffc46b" stroke="#fff3d6" strokeWidth={1.4} />
+              <text
+                y={21}
+                textAnchor="middle"
+                fill="#ffc46b"
+                fontSize={12}
+                fontWeight={600}
+              >
+                {trip.destination.code}
+                {localAt(trip.destination) && ` · ${localAt(trip.destination)}`}
+              </text>
+            </g>
+          )}
+          {trip && youXY && (
+            <g transform={`translate(${youXY[0]} ${youXY[1]}) scale(${invScale})`}>
+              {!reduce && (
+                <circle r={9} fill="none" stroke="#ffd98a" strokeWidth={1} opacity={0.6}>
+                  <animate attributeName="r" values="9;17;9" dur="2.2s" repeatCount="indefinite" />
+                  <animate attributeName="opacity" values="0.6;0.05;0.6" dur="2.2s" repeatCount="indefinite" />
+                </circle>
+              )}
+              <circle r={6.5} fill="#ffd98a" stroke="#fff3d6" strokeWidth={1.5} />
+              <text
+                y={-15}
+                textAnchor="middle"
+                fill="#fff3d6"
+                fontSize={12}
+                fontWeight={700}
+                letterSpacing={2}
+              >
                 YOU
               </text>
-            </>
-          );
-        })()}
+            </g>
+          )}
+          {trip && ghostGap > 0 && ghostDawnXY && (
+            <g transform={`translate(${ghostDawnXY[0]} ${ghostDawnXY[1]}) scale(${invScale})`}>
+              <circle r={3} fill="#ffd98a" />
+              <text
+                y={26}
+                textAnchor="middle"
+                fill="#ffd98a"
+                fontSize={12}
+                fontWeight={700}
+                letterSpacing={2}
+              >
+                YOUR DAWN
+              </text>
+            </g>
+          )}
 
-        {/* stars */}
-        {[[120, 40], [280, 90], [470, 30], [700, 70], [860, 45]].map(([x, y], i) => (
-          <circle key={i} cx={x} cy={y} r={i % 2 === 0 ? 1.4 : 0.9} fill="#e8eaf2" opacity="0.35" />
-        ))}
+          {/* the sun, parked at the true subsolar point */}
+          {(() => {
+            const sxy = projection([sun.lon, sun.lat]);
+            return sxy ? (
+              <g transform={`translate(${sxy[0]} ${sxy[1]}) scale(${invScale})`}>
+                <circle r={13} fill="#ffc46b" opacity={0.18} />
+                <circle r={4.5} fill="#ffc46b" opacity={0.95} />
+              </g>
+            ) : null;
+          })()}
+        </g>
       </svg>
-      <div className="absolute left-4 top-4 rounded-lg border border-[#1e2637] bg-[#0c1018cc] px-3 py-2 text-[12px] text-[#8b93a7] backdrop-blur">
-        <div className="text-[#9db8ff]">real terminator · UTC {String(now.getUTCHours()).padStart(2, "0")}:{String(now.getUTCMinutes()).padStart(2, "0")}</div>
-        <div className="text-[#ffd98a]">ghost terminator · body clock</div>
-        {running && <div className="mt-1 text-[#b8e356]">mission live · {citationCount} evidence stars</div>}
+
+      {/* frosted status pill — floats on the world, no box inside a box */}
+      <div className="pointer-events-none absolute left-4 top-4 rounded-full border border-white/10 bg-ink-2/80 px-3.5 py-1.5 font-mono2 text-[12px] backdrop-blur-md">
+        <span className="text-sun-home">
+          real terminator · UTC {String(now.getUTCHours()).padStart(2, "0")}:
+          {String(now.getUTCMinutes()).padStart(2, "0")}
+        </span>
+        {ghostGap > 0 && (
+          <span className="ml-3 text-ghost">
+            ghost · body clock {Math.round(ghostGap)}° {trip?.direction === "west" ? "ahead" : "behind"}
+          </span>
+        )}
+        {running && <span className="ml-3 text-progress">live · {citationCount} evidence stars</span>}
+      </div>
+
+      {/* zoom controls */}
+      <div className="absolute right-4 top-4 flex items-center gap-1 rounded-full border border-white/10 bg-ink-2/80 p-1 backdrop-blur-md">
+        <button
+          type="button"
+          aria-label="Zoom in"
+          onClick={() => zoomAround(view.scale * 1.45)}
+          className="flex h-7 w-7 items-center justify-center rounded-full text-mist transition-colors hover:bg-white/10 hover:text-paper"
+        >
+          <Plus size={13} strokeWidth={2.5} />
+        </button>
+        <button
+          type="button"
+          aria-label="Zoom out"
+          onClick={() => (view.scale / 1.45 <= 1.05 ? resetView() : zoomAround(view.scale / 1.45))}
+          className="flex h-7 w-7 items-center justify-center rounded-full text-mist transition-colors hover:bg-white/10 hover:text-paper"
+        >
+          <Minus size={13} strokeWidth={2.5} />
+        </button>
+        {zoomed && (
+          <button
+            type="button"
+            aria-label="Reset map view"
+            onClick={resetView}
+            className="rounded-full bg-paper px-2 py-0.5 font-mono2 text-[12px] font-bold text-ink"
+          >
+            1x
+          </button>
+        )}
       </div>
     </div>
   );
-}
-
-function progressWeight(t: number, start: number, end: number, control: number) {
-  // quadratic bezier position at parameter t
-  const u = 1 - t;
-  return u * u * start + 2 * u * t * control + t * t * end;
 }
