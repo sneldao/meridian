@@ -56,7 +56,7 @@ export default function OutcomePage() {
   return (
     <main className="mx-auto max-w-2xl px-6 py-8">
       <header className="mb-6">
-        <Link href="/" className="text-[12px] text-mist hover:text-paper">← deck</Link>
+        <Link href="/" className="text-xs text-mist hover:text-paper">← deck</Link>
         <h1 className="mt-2 text-lg font-bold tracking-[0.3em] text-paper">POST-TRIP CHECK-IN</h1>
       </header>
 
@@ -64,17 +64,17 @@ export default function OutcomePage() {
         Close the loop. These answers feed next run&apos;s adherence model.
       </p>
 
-      <label className="mt-6 block text-[12px] text-mist">
+      <label className="mt-6 block text-xs text-mist">
         How much of the plan did you follow? ({adherence}/5)
         <input type="range" min={0} max={5} value={adherence} onChange={(e) => setAdherence(Number(e.target.value))} className="mt-2 w-full" />
       </label>
 
-      <label className="mt-6 block text-[12px] text-mist">
+      <label className="mt-6 block text-xs text-mist">
         Jet lag severity on arrival day ({jetlag}/10)
         <input type="range" min={0} max={10} value={jetlag} onChange={(e) => setJetlag(Number(e.target.value))} className="mt-2 w-full" />
       </label>
 
-      <label className="mt-6 block text-[12px] text-mist">
+      <label className="mt-6 block text-xs text-mist">
         Notes
         <textarea
           value={notes}
@@ -88,19 +88,19 @@ export default function OutcomePage() {
         <button onClick={save} className="rounded-lg bg-paper px-4 py-2 text-xs font-bold text-ink hover:bg-white">
           Save check-in
         </button>
-        {saved && <span className="text-[12px] text-pass">saved</span>}
+        {saved && <span className="text-xs text-pass">saved</span>}
       </div>
 
       {memory?.learned && (
         <Card className="mt-8 p-4">
           <h2 className="text-sm font-bold text-paper">What Meridian has learned</h2>
           {memory.learned.skippedKinds?.length ? (
-            <div className="mt-2 text-[12px] text-mist">
+            <div className="mt-2 text-xs text-mist">
               Historically difficult: {memory.learned.skippedKinds.join(", ")}
             </div>
           ) : null}
           {memory.learned.earliestDoneMin !== undefined ? (
-            <div className="mt-1 text-[12px] text-mist">
+            <div className="mt-1 text-xs text-mist">
               Earliest ask ever completed: {String(Math.floor(memory.learned.earliestDoneMin / 60)).padStart(2, "0")}:
               {String(memory.learned.earliestDoneMin % 60).padStart(2, "0")}
             </div>
@@ -108,12 +108,12 @@ export default function OutcomePage() {
           {memory.learned.notes?.length ? (
             <ul className="mt-2 space-y-1">
               {memory.learned.notes.slice(-5).map((n: string, i: number) => (
-                <li key={i} className="text-[12px] text-mist">“{n}”</li>
+                <li key={i} className="text-xs text-mist">“{n}”</li>
               ))}
             </ul>
           ) : null}
           {memory.runs?.length ? (
-            <div className="mt-2 text-[12px] text-mist">{memory.runs.length} prior shift(s) on file.</div>
+            <div className="mt-2 text-xs text-mist">{memory.runs.length} prior shift(s) on file.</div>
           ) : null}
         </Card>
       )}

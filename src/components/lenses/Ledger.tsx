@@ -76,9 +76,9 @@ export function Ledger({ events }: LedgerProps) {
   const locks = count("day_locked");
 
   return (
-    <div className="flex h-full w-full flex-col gap-3 p-4 font-mono2 text-[12px] text-paper">
+    <div className="flex h-full w-full flex-col gap-3 p-4 font-mono2 text-xs text-paper">
       <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
-        <span className="text-[12px] text-mist">ledger</span>
+        <span className="text-xs text-mist">ledger</span>
         <Stat label="events" value={events.length} />
         <Stat label="tool calls" value={toolCalls} />
         <Stat label="attempts" value={attempts} />
@@ -91,7 +91,7 @@ export function Ledger({ events }: LedgerProps) {
           const d = describe(e);
           const Icon = d.agent ? AGENT_ICONS[d.agent] : null;
           return (
-            <li key={i} className="grid grid-cols-[40px_104px_1fr] gap-2 border-b border-line/13 py-0.5">
+            <li key={i} className="grid grid-cols-[40px_104px_1fr] gap-2 border-b border-line/10 py-0.5">
               <span className="text-dim">{String(i + 1).padStart(3, "0")}</span>
               <span className="flex items-center gap-1.5 truncate font-bold" style={{ color: d.tone }}>
                 {d.agent && Icon && (
@@ -112,8 +112,8 @@ export function Ledger({ events }: LedgerProps) {
 
 function Stat({ label, value, tone }: { label: string; value: number; tone?: string }) {
   return (
-    <span className="text-[12px] text-mist">
-      {label} <span className="ml-1 text-[12px] font-bold" style={{ color: tone ?? "var(--color-paper)" }}>{value}</span>
+    <span className="text-xs text-mist">
+      {label} <span className="ml-1 text-xs font-bold" style={{ color: tone ?? "var(--color-paper)" }}>{value}</span>
     </span>
   );
 }

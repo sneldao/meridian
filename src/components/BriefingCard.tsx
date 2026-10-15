@@ -6,6 +6,7 @@ import { X } from "lucide-react";
 import { fmtMin } from "@/domain/circadian";
 import { speakDialogue, speakOnce } from "@/lib/voice/engine";
 import type { Citation, DayPlan, ShiftCoverage, VoiceLine } from "@/domain/types";
+import { springEnter } from "@/lib/motion";
 
 interface Props {
   summary: string;
@@ -74,8 +75,8 @@ export function BriefingCard({ summary, score, citations, days, ics, lines, cove
     <motion.div
       initial={reduce ? false : { opacity: 0, y: 30, scale: 0.97 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 90, damping: 16 }}
-      className="absolute inset-x-8 bottom-8 z-10 rounded-2xl border border-sun-dest/27 bg-ink-2/95 p-5 shadow-[0_0_80px_rgba(255,196,107,0.12)] backdrop-blur"
+      transition={reduce ? { duration: 0 } : springEnter}
+      className="absolute inset-x-8 bottom-8 z-10 rounded-2xl border border-sun-dest/20 bg-ink-2/95 p-5 shadow-[0_0_80px_rgba(255,196,107,0.12)] backdrop-blur"
     >
       <button
         onClick={onClose}
@@ -88,7 +89,7 @@ export function BriefingCard({ summary, score, citations, days, ics, lines, cove
         <div className="min-w-0 flex-1">
           <div className="text-sm font-bold text-sun-dest">Morning handoff</div>
           {fallback && (
-            <div className="mt-2 rounded-md border border-fail/27 bg-fail/7 px-2.5 py-1.5 text-[12px] text-fail">
+            <div className="mt-2 rounded-md border border-fail/20 bg-fail/5 px-2.5 py-1.5 text-xs text-fail">
               Fell back to the recorded shift mid-run — review before acting.
             </div>
           )}
@@ -98,7 +99,7 @@ export function BriefingCard({ summary, score, citations, days, ics, lines, cove
             // Score says the plan is well-formed; coverage says how much of the
             // shift it actually buys. A perfect score on a partial shift is the
             // number a sceptical reader would push on, so show it unprompted.
-            <div className="mt-2 flex flex-wrap items-baseline gap-x-2.5 gap-y-1 text-[12px] text-mist">
+            <div className="mt-2 flex flex-wrap items-baseline gap-x-2.5 gap-y-1 text-xs text-mist">
               <span
                 className={`font-bold ${coverage.complete ? "text-pass" : "text-sun-dest"}`}
                 title="Share of the required phase shift the locked days actually cover."
@@ -117,7 +118,7 @@ export function BriefingCard({ summary, score, citations, days, ics, lines, cove
           )}
 
           {firstMove && (
-            <div className="mt-2 inline-flex items-center gap-2 rounded-md border border-pass/27 bg-pass/6 px-2.5 py-1 text-[12px] text-pass">
+            <div className="mt-2 inline-flex items-center gap-2 rounded-md border border-pass/20 bg-pass/5 px-2.5 py-1 text-xs text-pass">
               <span className="font-bold tracking-wider uppercase">first move</span>
               <span className="text-paper">
                 {firstMove.day.label} · {fmtMin(firstMove.iv.startMin)} — {firstMove.iv.note}
@@ -127,7 +128,7 @@ export function BriefingCard({ summary, score, citations, days, ics, lines, cove
 
           <div className="mt-3 flex flex-wrap gap-1.5">
             {days.map((d) => (
-              <span key={d.dayIndex} className="rounded border border-line bg-ink-3 px-2 py-0.5 font-mono2 text-[12px] text-mist">
+              <span key={d.dayIndex} className="rounded border border-line bg-ink-3 px-2 py-0.5 font-mono2 text-xs text-mist">
                 {d.label} {d.shiftMin}m · bed {fmtMin(d.targetBedtimeMin)}
               </span>
             ))}
@@ -135,7 +136,7 @@ export function BriefingCard({ summary, score, citations, days, ics, lines, cove
 
           <div className="mt-3 space-y-0.5">
             {citations.slice(0, 4).map((c) => (
-              <div key={c.id} className="truncate text-[12px] text-mist">
+              <div key={c.id} className="truncate text-xs text-mist">
                 <span className="text-pass">▪</span>{" "}
                 <a
                   href={c.doi ? `https://doi.org/${c.doi}` : c.url}
@@ -154,7 +155,7 @@ export function BriefingCard({ summary, score, citations, days, ics, lines, cove
         <div className="shrink-0 text-right">
           <div className="font-mono2 text-3xl font-bold text-pass">{score.toFixed(2)}</div>
           <div
-            className="text-[12px] text-mist"
+            className="text-xs text-mist"
             title="Mean of the passing eval verdicts across locked days — not the last day's score."
           >
             plan score · mean of {days.length} locked day{days.length === 1 ? "" : "s"}

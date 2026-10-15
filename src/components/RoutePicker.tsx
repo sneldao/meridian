@@ -138,10 +138,10 @@ function AirportField({
               className={`flex cursor-pointer items-baseline gap-2 px-3 py-2 ${i === hi ? "bg-ink-3" : ""}`}
             >
               <span className="w-9 font-semibold text-paper">{a.code}</span>
-              <span className="min-w-0 flex-1 truncate text-[12px] text-paper normal-case">
+              <span className="min-w-0 flex-1 truncate text-xs text-paper normal-case">
                 {a.name} <span className="text-mist">· {a.country}</span>
               </span>
-              <span className="text-[12px] text-mist">{fmtUtcOffset(utcOffsetMinOn(a.tz, date))}</span>
+              <span className="text-xs text-mist">{fmtUtcOffset(utcOffsetMinOn(a.tz, date))}</span>
             </li>
           ))}
         </ul>

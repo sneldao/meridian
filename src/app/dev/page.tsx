@@ -23,7 +23,7 @@ export default function DevLenses() {
     <main className="flex min-h-screen flex-col gap-3 p-4">
       <div className="flex items-center gap-3">
         <RoutePicker {...route} onChange={setRoute} />
-        <span className="font-mono2 text-[12px] text-mist">route picker preview — the fixture below is always {pb.fixture.route}</span>
+        <span className="font-mono2 text-xs text-mist">route picker preview — the fixture below is always {pb.fixture.route}</span>
       </div>
       <FixtureScrubber pb={pb} />
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-2">
@@ -48,7 +48,7 @@ export default function DevLenses() {
           />
         </section>
       </div>
-      <section className="grid grid-cols-1 gap-3 font-mono2 text-[12px] text-mist lg:grid-cols-3">
+      <section className="grid grid-cols-1 gap-3 font-mono2 text-xs text-mist lg:grid-cols-3">
         <Card className="p-3">
           <div className="text-paper">state</div>
           <div>phase {run.phase} · agent {run.activeAgent ?? "—"} · day {run.activeLabel ?? "—"}</div>

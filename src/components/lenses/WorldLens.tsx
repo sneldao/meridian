@@ -736,7 +736,7 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
       </AnimatePresence>
 
       {/* frosted status pill — floats on the world, no box inside a box */}
-      <div className="pointer-events-none absolute left-4 top-4 rounded-full border border-white/10 bg-ink-2/80 px-3.5 py-1.5 font-mono2 text-[12px] backdrop-blur-md">
+      <div className="pointer-events-none absolute left-4 top-4 rounded-full border border-white/10 bg-ink-2/80 px-3.5 py-1.5 font-mono2 text-xs backdrop-blur-md">
         <span className="text-sun-home">
           real terminator · UTC {String(now.getUTCHours()).padStart(2, "0")}:
           {String(now.getUTCMinutes()).padStart(2, "0")}
@@ -802,7 +802,7 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
                 type="button"
                 aria-label="Reset map view"
                 onClick={() => { buzz(4); resetView(); }}
-                className="rounded-full bg-paper px-2 py-0.5 font-mono2 text-[12px] font-bold text-ink"
+                className="rounded-full bg-paper px-2 py-0.5 font-mono2 text-xs font-bold text-ink"
               >
                 1x
               </button>

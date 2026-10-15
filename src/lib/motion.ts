@@ -12,6 +12,15 @@ export const transitionBase: Transition = {
   ease: easeSmoothOut,
 };
 
+/** The day-lock spring — the product's core moment, snappy and final. */
+export const springLock: Transition = { type: "spring", stiffness: 380, damping: 18 };
+
+/** Calendar event moves — deliberate, weighty. */
+export const springCalendar: Transition = { type: "spring", stiffness: 160, damping: 22 };
+
+/** Panel/card entrances — soft landing. */
+export const springEnter: Transition = { type: "spring", stiffness: 90, damping: 16 };
+
 export const feedItemVariants: Variants = {
   hidden: { opacity: 0, x: -8, scale: 0.99 },
   visible: { opacity: 1, x: 0, scale: 1 },

@@ -91,16 +91,16 @@ export function MorningCheckin({ phase, lockedCount, totalDays, sessionStartedAt
             <p className="font-voice text-base leading-snug text-paper">
               Your crew is on it.
             </p>
-            <p className="mt-1 text-[12px] text-mist">
+            <p className="mt-1 text-xs text-mist">
               {lockedCount} of {totalDays} nights planned
               {since ? ` · on the job ${since}` : ""}
             </p>
-            <p className="mt-2.5 text-[12px] leading-relaxed text-mist">
+            <p className="mt-2.5 text-xs leading-relaxed text-mist">
               Tell them how last night actually went, and they&apos;ll replan
               the rest around it.
             </p>
 
-            <label className="mt-3 block text-[11px] tracking-wide text-dim">
+            <label className="mt-3 block text-2xs tracking-wide text-dim">
               WHAT HAPPENED
             </label>
             <input
@@ -108,10 +108,10 @@ export function MorningCheckin({ phase, lockedCount, totalDays, sessionStartedAt
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder={DEFAULT_NOTE}
-              className="mt-1 w-full rounded-lg border border-line bg-ink px-2.5 py-1.5 text-[12px] text-paper placeholder:text-dim focus:border-mist"
+              className="mt-1 w-full rounded-lg border border-line bg-ink px-2.5 py-1.5 text-xs text-paper placeholder:text-dim focus:border-mist"
             />
 
-            <label className="mt-2.5 block text-[11px] tracking-wide text-dim">
+            <label className="mt-2.5 block text-2xs tracking-wide text-dim">
               NEXT CHECK-IN
             </label>
             <input
@@ -119,7 +119,7 @@ export function MorningCheckin({ phase, lockedCount, totalDays, sessionStartedAt
               value={time}
               onChange={(e) => setTime(e.target.value)}
               title="When the crew should expect to hear from you"
-              className="mt-1 w-full rounded-lg border border-line bg-ink px-2.5 py-1.5 text-[12px] text-paper focus:border-mist"
+              className="mt-1 w-full rounded-lg border border-line bg-ink px-2.5 py-1.5 text-xs text-paper focus:border-mist"
             />
 
             <button

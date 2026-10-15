@@ -6,6 +6,7 @@ import { CREW } from "@/agents/crew";
 import { fmtMin, passes } from "@/domain/circadian";
 import type { AgentId, DayPlan, DaySpec, EvalResult } from "@/domain/types";
 import { INTERVENTION_ICONS } from "@/lib/intervention-icons";
+import { springLock } from "@/lib/motion";
 
 // The hero lens. Reads the run state the event stream builds (see the
 // hackathon plan, section 6) and draws each day as a row on a 24-hour clock.
@@ -128,13 +129,13 @@ export function ShiftBoard({ days, drafts, verdicts, locked, activeLabel, active
   const agent = activeAgent ? CREW[activeAgent] : undefined;
 
   return (
-    <div className="flex h-full w-full flex-col gap-3 p-4 font-mono2 text-[12px] text-paper">
+    <div className="flex h-full w-full flex-col gap-3 p-4 font-mono2 text-xs text-paper">
       <div className="flex items-center justify-between">
-        <span className="text-[12px] text-mist">
+        <span className="text-xs text-mist">
           shift board · body clock, destination time
         </span>
         {agent && (
-          <span className="flex items-center gap-2 text-[12px]" style={{ color: agent.color }}>
+          <span className="flex items-center gap-2 text-xs" style={{ color: agent.color }}>
             <motion.span
               className="inline-block h-2 w-2 rounded-full"
               style={{ background: agent.color }}
@@ -153,14 +154,14 @@ export function ShiftBoard({ days, drafts, verdicts, locked, activeLabel, active
           {HOURS.map((h) => (
             <span
               key={h}
-              className="absolute -translate-x-1/2 text-[12px] text-mist"
+              className="absolute -translate-x-1/2 text-xs text-mist"
               style={{ left: `${(h / 24) * 100}%` }}
             >
               {String(h % 24).padStart(2, "0")}
             </span>
           ))}
         </div>
-        <span className="text-right text-[12px] text-dim">staircase</span>
+        <span className="text-right text-xs text-dim">staircase</span>
       </div>
 
       {days.map((d) => {
@@ -176,10 +177,10 @@ export function ShiftBoard({ days, drafts, verdicts, locked, activeLabel, active
         return (
           <div key={d.dayIndex} className="grid grid-cols-[96px_1fr_84px] items-center gap-3">
             <div className="flex flex-col">
-              <span className="text-[12px] font-bold" style={{ color: STATE_COLOR[state] }}>
+              <span className="text-xs font-bold" style={{ color: STATE_COLOR[state] }}>
                 {d.label}
               </span>
-              <span className="text-[12px]" style={{ color: STATE_COLOR[state] }}>
+              <span className="text-xs" style={{ color: STATE_COLOR[state] }}>
                 {STATE_TEXT[state]}
               </span>
             </div>
@@ -201,7 +202,7 @@ export function ShiftBoard({ days, drafts, verdicts, locked, activeLabel, active
                 reduce
                   ? { duration: 0 }
                   : state === "locked"
-                    ? { type: "spring", stiffness: 380, damping: 18 }
+                    ? springLock
                     : { duration: 0.45 }
               }
               className={`relative h-10 overflow-hidden rounded-md border ${
@@ -325,20 +326,20 @@ export function ShiftBoard({ days, drafts, verdicts, locked, activeLabel, active
             <div className="flex flex-col items-end">
               {state === "locked" ? (
                 <>
-                  <span className="text-[12px] font-bold text-pass">
+                  <span className="text-xs font-bold text-pass">
                     {cumulative.get(d.label)}m
                   </span>
-                  <span className="text-[12px] text-dim">{plan?.shiftMin}m today</span>
+                  <span className="text-xs text-dim">{plan?.shiftMin}m today</span>
                 </>
               ) : state === "rejected" && last?.violations[0] ? (
                 <span
-                  className="max-w-[84px] truncate text-right text-[12px] font-bold text-fail"
+                  className="max-w-[84px] truncate text-right text-xs font-bold text-fail"
                   title={last.violations[0].message}
                 >
                   {last.violations[0].code}
                 </span>
               ) : (
-                <span className="text-[12px] text-dim">
+                <span className="text-xs text-dim">
                   {plan ? `${plan.shiftMin}m` : ""}
                 </span>
               )}
@@ -347,7 +348,7 @@ export function ShiftBoard({ days, drafts, verdicts, locked, activeLabel, active
         );
       })}
 
-      <div className="mt-auto flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-dim">
+      <div className="mt-auto flex flex-wrap gap-x-4 gap-y-1 text-xs text-dim">
         <span>bar = sleep</span>
         <span>◆ = ask</span>
         {!readOnly && <span>dashed = draft</span>}

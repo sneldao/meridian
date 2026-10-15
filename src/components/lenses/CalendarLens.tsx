@@ -2,6 +2,7 @@
 
 import { motion, useReducedMotion } from "framer-motion";
 import { fmtMin } from "@/domain/circadian";
+import { springCalendar } from "@/lib/motion";
 import type { MeetingReadiness } from "@/domain/readiness";
 import type { CalendarEvent, DaySpec } from "@/domain/types";
 
@@ -46,13 +47,13 @@ export function CalendarLens({ days, events, readiness, ics }: CalendarLensProps
   };
 
   return (
-    <div className="flex h-full w-full flex-col gap-3 p-4 font-mono2 text-[12px] text-paper">
+    <div className="flex h-full w-full flex-col gap-3 p-4 font-mono2 text-xs text-paper">
       <div className="flex items-center justify-between">
-        <span className="text-[12px] text-mist">your week · before and after</span>
+        <span className="text-xs text-mist">your week · before and after</span>
         {ics && (
           <button
             onClick={download}
-            className="rounded-lg border border-paper/40 bg-paper/7 px-3 py-1 text-[12px] font-bold text-paper hover:bg-paper/13"
+            className="rounded-lg border border-paper/40 bg-paper/5 px-3 py-1 text-xs font-bold text-paper hover:bg-paper/10"
           >
             download .ics
           </button>
@@ -65,7 +66,7 @@ export function CalendarLens({ days, events, readiness, ics }: CalendarLensProps
           {days.map((d) => (
             <span
               key={d.dayIndex}
-              className="text-center text-[12px] font-bold text-mist"
+              className="text-center text-xs font-bold text-mist"
               style={{ width: `${col}%` }}
             >
               {d.label}
@@ -78,7 +79,7 @@ export function CalendarLens({ days, events, readiness, ics }: CalendarLensProps
           {[6, 9, 12, 15, 18, 21].map((h) => (
             <span
               key={h}
-              className="absolute -left-7 -translate-y-1/2 text-[12px] text-dim"
+              className="absolute -left-7 -translate-y-1/2 text-xs text-dim"
               style={{ top: top(h * 60) }}
             >
               {String(h).padStart(2, "0")}
@@ -113,7 +114,7 @@ export function CalendarLens({ days, events, readiness, ics }: CalendarLensProps
                   />
                 )}
                 <motion.div
-                  className="absolute overflow-hidden rounded-md border px-1.5 py-0 text-[12px] leading-none"
+                  className="absolute overflow-hidden rounded-md border px-1.5 py-0 text-xs leading-none"
                   style={{
                     ...style,
                     borderColor: `color-mix(in srgb, ${tone} 53%, transparent)`,
@@ -125,7 +126,7 @@ export function CalendarLens({ days, events, readiness, ics }: CalendarLensProps
                     left: moved ? newLeft : origLeft,
                     top: top(moved?.startMin ?? e.startMin),
                   }}
-                  transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 160, damping: 22 }}
+                  transition={reduce ? { duration: 0 } : springCalendar}
                 >
                   <div className="font-bold" style={{ color: tone }}>
                     {e.title}
@@ -135,10 +136,10 @@ export function CalendarLens({ days, events, readiness, ics }: CalendarLensProps
                   </div>
                   {badge && (
                     <div
-                      className={`mt-0.5 inline-block rounded px-1 text-[12px] font-bold ${
+                      className={`mt-0.5 inline-block rounded px-1 text-xs font-bold ${
                         badge.status === "risk"
-                          ? "bg-fail/13 text-fail"
-                          : "bg-pass/13 text-pass"
+                          ? "bg-fail/10 text-fail"
+                          : "bg-pass/10 text-pass"
                       }`}
                       title={badge.text}
                     >
@@ -154,7 +155,7 @@ export function CalendarLens({ days, events, readiness, ics }: CalendarLensProps
 
       {/* readiness — the ROI row: body-clock time before → after the plan */}
       {readiness.length > 0 && (
-        <ul className="space-y-1 border-t border-line pt-2 text-[12px]">
+        <ul className="space-y-1 border-t border-line pt-2 text-xs">
           {readiness.map((r) => {
             const risk = r.status === "risk";
             const improved = r.bodyWithoutPlanMin !== r.bodyMin;
@@ -168,8 +169,8 @@ export function CalendarLens({ days, events, readiness, ics }: CalendarLensProps
                   {improved ? `${fmtMin(r.bodyWithoutPlanMin)} → ${fmtMin(r.bodyMin)}` : fmtMin(r.bodyMin)}
                 </span>
                 <span
-                  className={`shrink-0 rounded px-1 text-[12px] font-bold ${
-                    risk ? "bg-fail/13 text-fail" : "bg-pass/13 text-pass"
+                  className={`shrink-0 rounded px-1 text-xs font-bold ${
+                    risk ? "bg-fail/10 text-fail" : "bg-pass/10 text-pass"
                   }`}
                 >
                   {risk ? "AT RISK" : "READY"}

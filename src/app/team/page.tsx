@@ -79,11 +79,11 @@ export default function TeamPage() {
     <main className="mx-auto max-w-6xl px-6 py-8 font-mono2 text-paper">
       <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <Link href="/" className="text-[12px] text-mist hover:text-paper">
+          <Link href="/" className="text-xs text-mist hover:text-paper">
             ← run a shift
           </Link>
           <h1 className="mt-2 text-lg font-bold tracking-[0.3em]">TEAM · 12 CREWS</h1>
-          <p className="mt-1 text-[12px] text-mist">
+          <p className="mt-1 text-xs text-mist">
             {streaming
               ? runs.size === 0
                 ? "Connecting the twelve crews…"
@@ -91,7 +91,7 @@ export default function TeamPage() {
               : "Run finished. At-risk crews are listed first."}
           </p>
         </div>
-        <div className="text-right text-[12px] text-mist">
+        <div className="text-right text-xs text-mist">
           <div>
             <span className="font-bold text-pass">{done}</span> of {TEAM_TRAVELLERS.length} crews done ·{" "}
             <span className="font-bold text-fail">{atRisk}</span> board meetings at risk
@@ -99,11 +99,11 @@ export default function TeamPage() {
           <button
             onClick={restart}
             disabled={streaming}
-            className="mt-2 rounded-lg border border-line bg-ink-2 px-3 py-1.5 text-[12px] text-paper hover:border-mist disabled:text-dim"
+            className="mt-2 rounded-lg border border-line bg-ink-2 px-3 py-1.5 text-xs text-paper hover:border-mist disabled:text-dim"
           >
             {streaming ? "running…" : "run the team again"}
           </button>
-          <div className="mt-1 text-[12px] text-dim">
+          <div className="mt-1 text-xs text-dim">
             ~£25/traveller/mo →{" "}
             <span className="font-bold text-mist">
               £{TEAM_TRAVELLERS.length * 25}/mo for this team
@@ -123,28 +123,28 @@ export default function TeamPage() {
             r.phase === "idle"
               ? { text: "WAITING", cls: "bg-line text-mist" }
               : risk
-                ? { text: "AT RISK", cls: "bg-fail/13 text-fail" }
+                ? { text: "AT RISK", cls: "bg-fail/10 text-fail" }
                 : readiness.length
-                  ? { text: "READY", cls: "bg-pass/13 text-pass" }
+                  ? { text: "READY", cls: "bg-pass/10 text-pass" }
                   : { text: r.phase === "done" ? "DONE" : "PLANNING", cls: "bg-line text-mist" };
           const pct = Math.round(r.sunProgress * 100);
           return (
             <Card key={t.id} className="p-4">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <div className="text-[12px] font-bold">{t.name}</div>
-                  <div className="mt-0.5 text-[12px] text-mist">
+                  <div className="text-xs font-bold">{t.name}</div>
+                  <div className="mt-0.5 text-xs text-mist">
                     {trip.origin.code} <span className="text-sun-dest">→</span> {trip.destination.code} ·{" "}
                     {trip.destination.name}
                   </div>
                 </div>
-                <span className={`rounded px-1.5 py-0.5 text-[12px] font-bold ${badge.cls}`}>{badge.text}</span>
+                <span className={`rounded px-1.5 py-0.5 text-xs font-bold ${badge.cls}`}>{badge.text}</span>
               </div>
 
               <div className="mt-3 h-1.5 w-full overflow-hidden rounded bg-line">
                 <div className="h-full bg-pass transition-[width] duration-500" style={{ width: `${pct}%` }} />
               </div>
-              <div className="mt-1 flex justify-between text-[12px] text-mist">
+              <div className="mt-1 flex justify-between text-xs text-mist">
                 <span>
                   {r.locked.size}/{trip.days.length} days locked
                 </span>
@@ -157,7 +157,7 @@ export default function TeamPage() {
                 <div
                   key={x.eventId}
                   title={x.text}
-                  className={`mt-2 flex items-center gap-1.5 text-[12px] ${x.status === "risk" ? "text-fail" : "text-mist"}`}
+                  className={`mt-2 flex items-center gap-1.5 text-xs ${x.status === "risk" ? "text-fail" : "text-mist"}`}
                 >
                   <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${x.status === "risk" ? "bg-fail" : "bg-pass"}`} />
                   <span className="min-w-0 flex-1 truncate">{x.title}</span>

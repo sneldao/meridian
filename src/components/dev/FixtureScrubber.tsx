@@ -5,7 +5,7 @@ import type { FixturePlayback } from "@/state/playback";
 // Dev-only transport bar for a recorded run: play/pause, speed, scrub, and
 // jump-to-beat buttons for the moments the demo hinges on.
 export function FixtureScrubber({ pb }: { pb: FixturePlayback }) {
-  const btn = "rounded-md border border-line bg-ink-2 px-2.5 py-1 text-[12px] text-paper hover:border-mist";
+  const btn = "rounded-md border border-line bg-ink-2 px-2.5 py-1 text-xs text-paper hover:border-mist";
   return (
     <div className="flex flex-wrap items-center gap-2 bg-ink-2/90 px-3 py-2 font-mono2 text-xs text-mist backdrop-blur">
       <button className={btn} onClick={pb.toggle}>{pb.playing ? "pause" : "play"}</button>
@@ -35,7 +35,7 @@ export function FixtureScrubber({ pb }: { pb: FixturePlayback }) {
       <button className={btn} onClick={() => pb.seekTo("eval_result", 1)}>2nd verdict</button>
       <button className={btn} onClick={() => pb.seekTo("calendar_move")}>1st move</button>
       <button className={btn} onClick={() => pb.seekTo("briefing")}>briefing</button>
-      <span className="ml-auto text-[12px]">
+      <span className="ml-auto text-xs">
         {pb.run.log.length}/{pb.fixture.events.length} events · {pb.run.locked.size} locked · {pb.run.rejections} rejected
       </span>
     </div>

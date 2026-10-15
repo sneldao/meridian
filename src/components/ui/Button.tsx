@@ -32,7 +32,7 @@ export function Button({
             ? "bg-paper text-ink"
             : variant === "primary" && "bg-paper text-ink hover:bg-white",
         !disabled && !active && variant === "ghost" && "border border-line text-mist hover:border-mist hover:text-paper",
-        !disabled && !active && variant === "danger" && "border border-fail/27 bg-fail/7 text-fail hover:bg-fail/13",
+        !disabled && !active && variant === "danger" && "border border-fail/20 bg-fail/5 text-fail hover:bg-fail/10",
         !disabled && !active && variant === "secondary" && "bg-line text-paper hover:bg-ink-3",
         className,
       )}

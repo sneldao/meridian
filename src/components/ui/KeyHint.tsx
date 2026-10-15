@@ -9,7 +9,7 @@ export function KeyHint({ children, className }: KeyHintProps) {
   return (
     <kbd
       className={cn(
-        "inline-flex min-w-[1.25rem] items-center justify-center rounded border border-line bg-ink px-1 py-0.5 font-mono2 text-[11px] leading-none text-mist",
+        "inline-flex min-w-[1.25rem] items-center justify-center rounded border border-line bg-ink px-1 py-0.5 font-mono2 text-2xs leading-none text-mist",
         className,
       )}
     >

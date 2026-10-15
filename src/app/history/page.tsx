@@ -55,10 +55,10 @@ export default function HistoryPage() {
     <main className="mx-auto max-w-3xl px-6 py-8">
       <header className="mb-6 flex items-center justify-between">
         <div>
-          <Link href="/" className="text-[12px] text-mist hover:text-paper">← deck</Link>
+          <Link href="/" className="text-xs text-mist hover:text-paper">← deck</Link>
           <h1 className="mt-2 text-lg font-bold tracking-[0.3em] text-paper">TRIP HISTORY</h1>
         </div>
-        <button onClick={clear} className="text-[12px] text-mist hover:text-fail">clear</button>
+        <button onClick={clear} className="text-xs text-mist hover:text-fail">clear</button>
         <button
           onClick={() => {
             ["meridian:lastPlan","meridian:lastTrip","meridian:history","meridian:outcomes","meridian:checkins"].forEach((k) => {
@@ -66,7 +66,7 @@ export default function HistoryPage() {
             });
             setItems([]);
           }}
-          className="ml-3 text-[12px] text-mist hover:text-fail"
+          className="ml-3 text-xs text-mist hover:text-fail"
         >
           reset all
         </button>
@@ -80,20 +80,20 @@ export default function HistoryPage() {
         {items.map((it) => (
           <li key={it.id}><Card className="p-4">
             <div className="flex items-baseline justify-between">
-              <div className="font-mono2 text-[12px] text-paper">
+              <div className="font-mono2 text-xs text-paper">
                 {it.trip ? `${it.trip.origin.code} → ${it.trip.destination.code} · ${Math.abs(it.trip.requiredShiftMin / 60)}h ${it.trip.direction}` : "Demo trip"}
               </div>
               <div className="flex items-center gap-2">
-                {it.provider && <span className="font-mono2 text-[12px] text-mist">{it.provider}</span>}
-                {it.fallback && <span className="rounded bg-fail/13 px-1.5 py-0.5 text-[12px] text-fail">fallback</span>}
-                <div className="font-mono2 text-[12px] text-pass">{it.score.toFixed(2)}</div>
+                {it.provider && <span className="font-mono2 text-xs text-mist">{it.provider}</span>}
+                {it.fallback && <span className="rounded bg-fail/10 px-1.5 py-0.5 text-xs text-fail">fallback</span>}
+                <div className="font-mono2 text-xs text-pass">{it.score.toFixed(2)}</div>
               </div>
             </div>
-            <div className="mt-1 text-[12px] text-dim">{new Date(it.savedAt).toLocaleString()}</div>
-            <div className="mt-2 text-[12px] text-mist">{it.summary}</div>
+            <div className="mt-1 text-xs text-dim">{new Date(it.savedAt).toLocaleString()}</div>
+            <div className="mt-2 text-xs text-mist">{it.summary}</div>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {it.days.map((d, i) => (
-                <span key={i} className="rounded border border-line bg-ink-3 px-2 py-0.5 font-mono2 text-[12px] text-mist">
+                <span key={i} className="rounded border border-line bg-ink-3 px-2 py-0.5 font-mono2 text-xs text-mist">
                   {d.label} {d.shiftMin}m
                 </span>
               ))}
