@@ -41,7 +41,8 @@ per day and may need tuning.
 - `/` — the run: sun-track scene + crew feed + eval verdict cards
 - `/review` — the artifact: plan, citations, `.ics` download (persists via
   localStorage, survives refresh)
-- `/history` — past runs (`meridian:history`, capped at 20)
+- `/history` — past runs (`meridian:history` localStorage capped at 20, plus
+  Supabase `meridian_events` when `SUPABASE_URL` is configured)
 - `/outcome` — post-trip self-report; the hook for the adherence story
 
 ## localStorage keys

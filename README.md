@@ -18,6 +18,10 @@ cp .env.example .env.local    # AGENT_PROVIDER=replay works with zero keys
 bun run dev                   # http://localhost:3000
 ```
 
+Optional: `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` in `.env.local` persist
+run history server-side (project `vpeakvspljdoxbwfsdvw`, see
+[providers.md](docs/providers.md#supabase-persistence-optional)).
+
 ## The crew
 
 | Agent | Job |

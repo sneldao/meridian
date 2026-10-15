@@ -72,6 +72,14 @@ drops the earlier days. In replay mode the morning beat runs
 `runMorningReplay` (`src/agents/morning-replay.ts`), which re-scores the
 scripted days under the folded profile with the same deterministic gate.
 
+## Persistence
+
+Optional Supabase layer (`src/tools/supabase.ts`): when `SUPABASE_URL` +
+`SUPABASE_SERVICE_ROLE_KEY` are set, runs and check-ins are appended to
+`public.meridian_events` and `/api/persistence/runs` serves cross-run history.
+Without them everything falls back to `localStorage`. Project + schema details
+in [providers.md](providers.md#supabase-persistence-optional).
+
 ## Layout
 
 ```

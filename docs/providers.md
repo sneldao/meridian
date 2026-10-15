@@ -82,12 +82,27 @@ unset, Meridian falls back to `crew-memory.json` silently.
 When `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are set, run history and
 check-ins are written to `public.meridian_events` (single JSONB table — spec in
 `src/tools/supabase.ts`). The browser/localStorage path remains the fallback,
-so offline/replay runs still work.
+so offline/replay runs still work. Live status: `GET /api/persistence/runs`
+returns `{"enabled":true,...}` when wired up.
 
 | Var | Purpose |
 |---|---|
-| `SUPABASE_URL` | Project URL |
-| `SUPABASE_SERVICE_ROLE_KEY` | Server-only service role key |
+| `SUPABASE_URL` | Project URL (`https://<ref>.supabase.co`) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server-only service role key — never expose via `NEXT_PUBLIC_*` |
+
+Provisioned project: `meridian`, ref `vpeakvspljdoxbwfsdvw`, West Europe
+(London), org `Imperfect`. Schema is versioned in `supabase/migrations/` — the
+table DDL matches `src/tools/supabase.ts`, with RLS enabled and no policies
+(only the service role, used server-side, can read/write).
+
+To recreate from a fresh clone:
+
+```bash
+supabase login
+supabase link --project-ref vpeakvspljdoxbwfsdvw
+supabase db push          # applies supabase/migrations/
+# then set the two env vars in .env.local from Dashboard → Settings → API
+```
 
 ## Cost notes
 
