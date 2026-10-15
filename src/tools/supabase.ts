@@ -1,0 +1,72 @@
+// Optional Supabase persistence for Meridian's cross-run history.
+// Falls back to the file/localStorage path when env vars are unset, so the
+// app keeps working in offline/replay mode with no cloud dependency.
+//
+// Expected table:
+//   create table public.meridian_events (
+//     id uuid default gen_random_uuid() primary key,
+//     kind text not null,
+//     payload jsonb not null,
+//     created_at timestamptz default now()
+//   );
+
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+
+interface RunPayload {
+  id?: number;
+  savedAt: string;
+  trip?: { origin: { code: string }; destination: { code: string }; requiredShiftMin: number; direction: string } | null;
+  score: number;
+  summary: string;
+  days?: { label: string; shiftMin: number }[];
+  provider?: string;
+  fallback?: boolean;
+}
+
+let client: SupabaseClient | null | undefined;
+
+export function supabaseEnabled(): boolean {
+  return Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+}
+
+function clientOrNone(): SupabaseClient | null {
+  if (client !== undefined) return client;
+  if (!supabaseEnabled()) {
+    client = null;
+    return null;
+  }
+  client = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  return client;
+}
+
+export async function persistRun(run: unknown): Promise<boolean> {
+  const c = clientOrNone();
+  if (!c) return false;
+  const { error } = await c.from("meridian_events").insert({ kind: "run", payload: run });
+  return !error;
+}
+
+export async function persistCheckIn(checkIn: unknown): Promise<boolean> {
+  const c = clientOrNone();
+  if (!c) return false;
+  const { error } = await c.from("meridian_events").insert({ kind: "checkin", payload: checkIn });
+  return !error;
+}
+
+export async function listRuns(limit = 20): Promise<RunPayload[]> {
+  const c = clientOrNone();
+  if (!c) return [];
+  const { data, error } = await c
+    .from("meridian_events")
+    .select("payload, created_at")
+    .eq("kind", "run")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error || !data) return [];
+  return data.map((row) => {
+    const payload = (row.payload ?? {}) as RunPayload;
+    return { ...payload, savedAt: payload.savedAt ?? row.created_at };
+  });
+}

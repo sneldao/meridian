@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { X } from "lucide-react";
 import { fmtMin } from "@/domain/circadian";
@@ -16,6 +17,54 @@ interface Props {
 }
 
 export function BriefingCard({ summary, score, citations, days, ics, onClose, fallback }: Props) {
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [voiceState, setVoiceState] = useState<"idle" | "loading" | "playing" | "error">("idle");
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    fetch("/api/voice")
+      .then((r) => r.json())
+      .then((d) => setVoiceEnabled(Boolean(d?.enabled)))
+      .catch(() => {});
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
+
+  const listen = async () => {
+    if (voiceState === "loading" || voiceState === "playing") return;
+    setVoiceState("loading");
+    try {
+      const res = await fetch("/api/voice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: summary }),
+      });
+      if (!res.ok) throw new Error("voice failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      audio.onended = () => {
+        URL.revokeObjectURL(url);
+        audioRef.current = null;
+        setVoiceState("idle");
+      };
+      audio.onerror = () => {
+        URL.revokeObjectURL(url);
+        audioRef.current = null;
+        setVoiceState("error");
+      };
+      await audio.play();
+      setVoiceState("playing");
+    } catch {
+      setVoiceState("error");
+    }
+  };
+
   // One action, not an information dump — surface the single next ask.
   const firstMove = days
     .flatMap((d) => d.interventions.map((iv) => ({ day: d, iv })))
@@ -100,6 +149,15 @@ export function BriefingCard({ summary, score, citations, days, ics, onClose, fa
           >
             Add to calendar (.ics)
           </button>
+          {voiceEnabled && (
+            <button
+              onClick={listen}
+              disabled={voiceState === "loading" || voiceState === "playing"}
+              className="mt-2 rounded-lg border border-[#7adfff44] bg-[#7adfff11] px-4 py-2 text-xs font-bold text-[#7adfff] transition-colors hover:bg-[#7adfff22] disabled:opacity-50"
+            >
+              {voiceState === "loading" ? "Generating voice…" : voiceState === "playing" ? "Playing…" : voiceState === "error" ? "Voice failed" : "Listen (ElevenLabs)"}
+            </button>
+          )}
         </div>
       </div>
     </motion.div>

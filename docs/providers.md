@@ -77,6 +77,18 @@ Seed local data with `bun run seed:graph`. The agent never composes Cypher;
 fixed tools live in `src/domain/graph-memory.ts`. If the database is down or
 unset, Meridian falls back to `crew-memory.json` silently.
 
+## Supabase persistence (optional)
+
+When `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are set, run history and
+check-ins are written to `public.meridian_events` (single JSONB table — spec in
+`src/tools/supabase.ts`). The browser/localStorage path remains the fallback,
+so offline/replay runs still work.
+
+| Var | Purpose |
+|---|---|
+| `SUPABASE_URL` | Project URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server-only service role key |
+
 ## Cost notes
 
 - `replay` is fully offline — safe default for UI work.

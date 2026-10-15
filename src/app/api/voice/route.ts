@@ -2,50 +2,53 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-// One voice per crew member — stock ElevenLabs voices, env-overridable
-// (ELEVENLABS_VOICE_ANALYST=... etc).
-const VOICES: Record<string, string> = {
-  analyst: "EXAVITQu4vr4xnSDxMaL", // Mara — Bella
-  researcher: "TxGEqnHWrfWFTfGW9XjX", // Jun — Josh
-  planner: "VR6AewLTigWG4xSOukaG", // Otto — Arnold
-  evaluator: "AZnzlk1XvdvUeBnXmlld", // Iris — Domi
-  negotiator: "pNInz6obpgDQGcFmaJgB", // Rex — Adam
-};
-
-const MAX_CHARS = 600;
+export async function GET() {
+  return NextResponse.json({ enabled: Boolean(process.env.ELEVENLABS_API_KEY) });
+}
 
 export async function POST(req: NextRequest) {
-  const key = process.env.ELEVENLABS_API_KEY;
-  if (!key) return new NextResponse(null, { status: 204 });
+  const apiKey = process.env.ELEVENLABS_API_KEY;
+  if (!apiKey) {
+    return NextResponse.json({ error: "ElevenLabs not configured" }, { status: 503 });
+  }
 
-  let body: { agent?: string; text?: string };
+  let text = "";
   try {
-    body = await req.json();
+    const body = (await req.json()) as { text?: string };
+    text = (body.text ?? "").trim();
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
+  if (!text) {
+    return NextResponse.json({ error: "Missing text" }, { status: 400 });
+  }
 
-  const text = (body.text ?? "").trim().slice(0, MAX_CHARS);
-  if (!text) return new NextResponse(null, { status: 204 });
-
-  const agent = body.agent ?? "";
-  const voice =
-    process.env[`ELEVENLABS_VOICE_${agent.toUpperCase()}`] ??
-    VOICES[agent] ??
-    VOICES.evaluator;
-  const model = process.env.ELEVENLABS_MODEL ?? "eleven_flash_v2_5";
-
-  const res = await fetch(
-    `https://api.elevenlabs.io/v1/text-to-speech/${voice}?output_format=mp3_44100_128`,
-    {
-      method: "POST",
-      headers: { "xi-api-key": key, "Content-Type": "application/json" },
-      body: JSON.stringify({ text, model_id: model }),
+  const voiceId = process.env.ELEVENLABS_VOICE_ID ?? "21m00Tcm4TlvBq8ikWAM";
+  const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+    method: "POST",
+    headers: {
+      "xi-api-key": apiKey,
+      "Content-Type": "application/json",
+      Accept: "audio/mpeg",
     },
-  );
-  if (!res.ok || !res.body) return new NextResponse(null, { status: 502 });
+    body: JSON.stringify({
+      text: text.slice(0, 1800),
+      model_id: process.env.ELEVENLABS_MODEL_ID ?? "eleven_multilingual_v2",
+      voice_settings: {
+        stability: Number(process.env.ELEVENLABS_STABILITY ?? 0.45),
+        similarity_boost: Number(process.env.ELEVENLABS_SIMILARITY_BOOST ?? 0.75),
+      },
+    }),
+  });
 
-  return new NextResponse(res.body, {
-    headers: { "Content-Type": "audio/mpeg", "Cache-Control": "no-store" },
+  if (!res.ok) {
+    return NextResponse.json({ error: `ElevenLabs request failed (${res.status})` }, { status: res.status });
+  }
+  const audio = await res.arrayBuffer();
+  return new Response(audio, {
+    headers: {
+      "Content-Type": "audio/mpeg",
+      "Cache-Control": "no-store",
+    },
   });
 }

@@ -19,16 +19,27 @@ export default function HistoryPage() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
+    let local: HistEntry[] = [];
     const t = setTimeout(() => {
       try {
         const raw = localStorage.getItem("meridian:history");
-        setItems(raw ? (JSON.parse(raw) as HistEntry[]) : []);
+        local = raw ? (JSON.parse(raw) as HistEntry[]) : [];
+        setItems(local);
       } catch {
         setItems([]);
       } finally {
         setLoaded(true);
       }
     }, 0);
+    fetch("/api/persistence/runs")
+      .then((r) => r.json())
+      .then((d) => {
+        if (!d?.enabled || !Array.isArray(d.runs)) return;
+        const seen = new Set((d.runs as HistEntry[]).map((r) => r.savedAt));
+        const merged = [...(d.runs as HistEntry[]), ...local.filter((r) => !seen.has(r.savedAt))].slice(0, 20);
+        setItems(merged);
+      })
+      .catch(() => {});
     return () => clearTimeout(t);
   }, []);
 

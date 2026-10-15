@@ -426,6 +426,24 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
     lockedDays: state.lockedDays.length,
     meanScore,
   });
+  try {
+    const { persistRun } = await import("@/tools/supabase");
+    await persistRun({
+      savedAt: new Date().toISOString(),
+      trip: {
+        origin: { code: trip.origin.code },
+        destination: { code: trip.destination.code },
+        requiredShiftMin: trip.requiredShiftMin,
+        direction: trip.direction,
+      },
+      score: meanScore,
+      summary: state.lockedDays.length ? `${state.lockedDays.length} days locked` : "shift complete",
+      days: state.lockedDays.map((d) => ({ label: d.label, shiftMin: d.shiftMin })),
+      provider: providerKind(),
+    });
+  } catch {
+    // Optional Supabase persistence; file memory remains source of truth.
+  }
   await persistArtifacts(state, trip, calendarSource);
   emit({ type: "done" });
 }

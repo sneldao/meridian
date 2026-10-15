@@ -17,6 +17,7 @@
   "dependencies": {
     "@ai-sdk/anthropic": "4.0.80",
     "@ai-sdk/openai-compatible": "3.0.69",
+    "@supabase/supabase-js": "^2.117.3",
     "ai": "7.0.141",
     "falkordb": "^6.8.0",
     "framer-motion": "14.2.0",

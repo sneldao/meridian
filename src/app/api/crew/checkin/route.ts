@@ -24,6 +24,12 @@ export async function POST(req: Request) {
   const checkIn = parseCheckInText(body);
   const memory = await recordCheckIn(checkIn);
   const adherence = foldCheckIns(ADHERENCE_PROFILE, memory.checkIns);
+  try {
+    const { persistCheckIn } = await import("@/tools/supabase");
+    await persistCheckIn(checkIn);
+  } catch {
+    // Supabase is optional.
+  }
 
   return NextResponse.json({ ok: true, checkIn, adherence, learned: memory.learned });
 }
