@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #07090f;
+  --color-ink-2: #0c1018;
+  --color-ink-3: #131826;
+  --color-line: #1e2637;
+  --color-mist: #8b93a7;
+  --color-paper: #e8eaf2;
+  --color-sun-home: #9db8ff;
+  --color-sun-dest: #ffc46b;
+  --color-lime: #b8e356;
+  --color-rose: #ff7a7a;
+  --color-cyan: #7adfff;
+}
+
+html,
+body {
+  background: var(--color-ink);
+  color: var(--color-paper);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  min-height: 100%;
+}
+
+.font-mono2 {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+::selection {
+  background: rgba(255, 196, 107, 0.25);
+}
+
+/* thin scrollbars for the crew feed */
+.scroll-thin::-webkit-scrollbar {
+  width: 4px;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: var(--color-line);
+  border-radius: 2px;
+}

@@ -1,0 +1,479 @@
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { stepCountIs, streamText, tool, type ToolSet } from "ai";
+import { z } from "zod";
+import { evaluatePlan, fmtMin, passes, sunProgress } from "@/domain/circadian";
+import { ADHERENCE_PROFILE, CALENDAR, DEMO_TRIP, GARMIN_BASELINE } from "@/domain/fixtures";
+import type {
+  AgentId,
+  CalendarEvent,
+  CalendarMove,
+  Citation,
+  CrewEvent,
+  DayPlan,
+  EvalResult,
+} from "@/domain/types";
+import { CREW, type CrewMember } from "./crew";
+import { providerKind, resolveModel } from "./providers";
+import { runReplay } from "./replay";
+import { buildIcs, getCalendar, proposeMove } from "@/tools/calendar";
+import { searchScience } from "@/tools/science";
+import { getAdherenceProfile, getRecentNights, getWearableBaseline } from "@/tools/wearable";
+
+const ARTIFACTS_DIR = path.join(process.cwd(), "artifacts");
+const MAX_ATTEMPTS_PER_DAY = 2;
+
+type Emit = (e: CrewEvent) => void;
+
+/** A tool description before it becomes an AI-SDK Tool. runAgent wraps
+ * execute for logging + event emission, then calls tool() once. */
+interface ToolDef {
+  description: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  inputSchema: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  execute: (input: any, options?: unknown) => Promise<unknown> | unknown;
+}
+
+/** Runs the whole crew and yields events for the SSE route. Falls back to the
+ * recorded transcript if the live provider throws — stage insurance. */
+export function runCrew(): AsyncGenerator<CrewEvent> {
+  const queue: CrewEvent[] = [];
+  const notifier: { fn: (() => void) | null } = { fn: null };
+  let finished = false;
+
+  const emit: Emit = (e) => {
+    queue.push(e);
+    notifier.fn?.();
+  };
+
+  void (async () => {
+    try {
+      if (providerKind() === "replay") {
+        await drain(runReplay(), emit);
+      } else {
+        await orchestrate(emit);
+      }
+    } catch (err) {
+      emit({
+        type: "error",
+        message: `crew uplink failed: ${err instanceof Error ? err.message : String(err)} — switching to recorded shift`,
+        recoverable: true,
+      });
+      await drain(runReplay(), emit);
+    } finally {
+      finished = true;
+      notifier.fn?.();
+    }
+  })();
+
+  return (async function* () {
+    for (;;) {
+      if (queue.length) {
+        yield queue.shift()!;
+        continue;
+      }
+      if (finished) return;
+      await new Promise<void>((r) => (notifier.fn = r));
+    }
+  })();
+}
+
+async function drain(gen: AsyncGenerator<CrewEvent>, emit: Emit) {
+  for await (const e of gen) emit(e);
+}
+
+// --- orchestrator ------------------------------------------------------------
+
+interface RunState {
+  calendar: CalendarEvent[];
+  citations: Citation[];
+  lockedDays: DayPlan[];
+  evals: EvalResult[];
+  log: { ts: string; entry: string }[];
+  pendingPlan: DayPlan | null;
+  ics: string;
+  briefingText: string;
+}
+
+async function orchestrate(emit: Emit) {
+  const state: RunState = {
+    calendar: getCalendar(),
+    citations: [],
+    lockedDays: [],
+    evals: [],
+    log: [],
+    pendingPlan: null,
+    ics: "",
+    briefingText: "",
+  };
+  const logLine = (entry: string) =>
+    state.log.push({ ts: new Date().toISOString(), entry });
+
+  emit({
+    type: "run_start",
+    provider: providerKind(),
+    trip: DEMO_TRIP,
+    baseline: GARMIN_BASELINE,
+    calendar: state.calendar,
+  });
+  logLine("shift started — crew assembling");
+
+  // 1. Analyst — reads the wearer.
+  const analyst = await runAgent(
+    CREW.analyst,
+    {
+      prompt:
+        "Baseline + adherence profile are on your tools. Give the planner the constraints: chronotype, habitual window, and the compliance floor.",
+      tools: {
+        getWearableBaseline: bare("Read the wearer's wearable baseline", () => getWearableBaseline()),
+        getRecentNights: bare("Read recent sleep nights", () => getRecentNights()),
+        getAdherenceProfile: bare("Read the adherence profile", () => getAdherenceProfile()),
+      },
+    },
+    emit,
+    state,
+  );
+  logLine(`analyst: ${analyst.text}`);
+
+  // 2. Researcher — pulls the literature.
+  const research = await runAgent(
+    CREW.researcher,
+    {
+      prompt:
+        "Eastward shift, 9 time zones, advance the clock. Find the strongest papers on timed light, melatonin timing and caffeine timing for phase advances. Two+ searches, different angles.",
+      tools: {
+        searchScience: {
+          description: "Search scientific papers by meaning. Returns citations with DOIs.",
+          inputSchema: z.object({ query: z.string(), k: z.number().default(5) }),
+          execute: async ({ query, k }: { query: string; k: number }) => searchScience(query, k),
+        },
+      },
+    },
+    emit,
+    state,
+  );
+  logLine(`researcher: ${research.toolCalls.length} searches, ${state.citations.length} citations kept`);
+
+  // 3. Planner + evaluator loop — one day at a time, default-FAIL.
+  for (const spec of DEMO_TRIP.days) {
+    let day: DayPlan | null = null;
+    let feedback = "";
+
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS_PER_DAY && !day; attempt++) {
+      state.pendingPlan = null;
+      await runAgent(
+        CREW.planner,
+        {
+          prompt: JSON.stringify(
+            {
+              task: `Submit ONE day plan for ${spec.label} (${spec.date}) via submitDayPlan.`,
+              convention: "shiftMin negative = phase advance (eastward). Minutes are local-time-of-day.",
+              requiredShiftMin: DEMO_TRIP.requiredShiftMin,
+              dayIndex: spec.dayIndex,
+              analystConstraints: analyst.text,
+              citations: state.citations.map((c) => ({ id: c.id, title: c.title })),
+              adherenceFloorMin: ADHERENCE_PROFILE.ignoresInterventionsBeforeMin,
+              calendar: state.calendar
+                .filter((e) => e.dayIndex === spec.dayIndex)
+                .map((e) => ({
+                  title: e.title,
+                  startMin: e.startMin,
+                  endMin: e.endMin,
+                  movable: e.movable,
+                })),
+              previousDays: state.lockedDays.map((d) => ({
+                label: d.label,
+                shiftMin: d.shiftMin,
+                targetBedtimeMin: d.targetBedtimeMin,
+                targetWakeMin: d.targetWakeMin,
+              })),
+              ...(feedback ? { evaluatorFeedback: feedback } : {}),
+            },
+            null,
+            2,
+          ),
+          tools: {
+            submitDayPlan: {
+              description: "Submit the plan for this single day. Exactly one call.",
+              inputSchema: z.object({
+                shiftMin: z.number(),
+                targetBedtimeMin: z.number(),
+                targetWakeMin: z.number(),
+                interventions: z.array(
+                  z.object({
+                    kind: z.enum([
+                      "light_exposure",
+                      "avoid_light",
+                      "sleep_window",
+                      "caffeine_cutoff",
+                      "melatonin",
+                      "exercise",
+                      "meal_timing",
+                      "nap",
+                    ]),
+                    startMin: z.number(),
+                    endMin: z.number().optional(),
+                    note: z.string(),
+                    citationId: z.string().optional(),
+                  }),
+                ),
+              }),
+              execute: async (input: Omit<DayPlan, "dayIndex" | "label">) => {
+                state.pendingPlan = { dayIndex: spec.dayIndex, label: spec.label, ...input };
+                return "submitted";
+              },
+            },
+          },
+        },
+        emit,
+        state,
+        "orchestrator",
+      );
+
+      const candidate = state.pendingPlan as DayPlan | null;
+      if (!candidate) {
+        emit({ type: "error", message: `planner submitted nothing for ${spec.label}`, recoverable: true });
+        continue;
+      }
+      emit({ type: "plan_candidate", day: candidate });
+
+      // Deterministic gate — the evaluator explains, the math decides.
+      const result = evaluatePlan({
+        trip: DEMO_TRIP,
+        days: [...state.lockedDays, candidate],
+        calendar: state.calendar,
+        adherence: ADHERENCE_PROFILE,
+      });
+      state.evals.push(result);
+      emit({ type: "eval_result", result, attempt });
+
+      await runAgent(
+        CREW.evaluator,
+        {
+          prompt: JSON.stringify({
+            dayPlan: candidate,
+            scorerVerdict: result,
+          }),
+          tools: {},
+        },
+        emit,
+        state,
+      );
+
+      if (passes(result)) {
+        day = candidate;
+        state.lockedDays.push(day);
+        emit({ type: "day_locked", day, sunProgress: sunProgress(DEMO_TRIP, state.lockedDays) });
+        logLine(`${spec.label} locked (${day.shiftMin}min, score ${result.score})`);
+      } else {
+        feedback = result.violations.map((v) => v.message).join(" ");
+        logLine(`${spec.label} rejected (attempt ${attempt}): ${feedback}`);
+      }
+    }
+
+    if (!day) {
+      logLine(`${spec.label} unresolved after ${MAX_ATTEMPTS_PER_DAY} attempts`);
+      emit({
+        type: "error",
+        message: `${spec.label} could not be planned within physiological limits — flagged for human review`,
+        recoverable: true,
+      });
+    }
+  }
+
+  // 4. Negotiator — make the calendar yield.
+  const lockedJson = state.lockedDays.map((d) => ({
+    dayIndex: d.dayIndex,
+    label: d.label,
+    shiftMin: d.shiftMin,
+    interventions: d.interventions.map((iv) => ({
+      kind: iv.kind,
+      startMin: iv.startMin,
+      endMin: iv.endMin,
+    })),
+  }));
+
+  await runAgent(
+    CREW.negotiator,
+    {
+      prompt: JSON.stringify({
+        task: "Move movable events so nothing collides with the locked plan, then commitPlan.",
+        lockedPlan: lockedJson,
+        calendar: state.calendar.map((e) => ({
+          id: e.id,
+          title: e.title,
+          dayIndex: e.dayIndex,
+          startMin: e.startMin,
+          endMin: e.endMin,
+          movable: e.movable,
+          movedTo: e.movedTo,
+        })),
+      }),
+      tools: {
+        proposeMove: {
+          description: "Move one movable event. Returns ok or a reason it was refused.",
+          inputSchema: z.object({
+            eventId: z.string(),
+            toDayIndex: z.number(),
+            toStartMin: z.number(),
+            reason: z.string(),
+          }),
+          execute: async ({ eventId, toDayIndex, toStartMin, reason }: { eventId: string; toDayIndex: number; toStartMin: number; reason: string }) => {
+            const r = proposeMove(state.calendar, eventId, toDayIndex, toStartMin);
+            if (r.ok) {
+              r.move.reason = reason;
+              return r.move;
+            }
+            return { error: r.reason };
+          },
+        },
+        commitPlan: bare("Commit the rescheduled calendar", () => {
+          state.ics = buildIcs(state.calendar);
+          return { committed: state.calendar.filter((e) => e.movedTo).length };
+        }),
+      },
+    },
+    emit,
+    state,
+  );
+
+  if (!state.ics) state.ics = buildIcs(state.calendar);
+
+  // 5. Briefing — the morning handoff.
+  const scores = state.evals.filter((e) => e.feasible).map((e) => e.score);
+  const meanScore = scores.length
+    ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 100) / 100
+    : 0;
+
+  const shifted = state.lockedDays.reduce((a, d) => a + Math.abs(d.shiftMin), 0);
+  const summary = `Night shift complete. ${state.lockedDays.length} days locked, ${shifted} minutes of the ${Math.abs(DEMO_TRIP.requiredShiftMin)}-minute shift covered before you land — the crew keeps working after touchdown. ${state.citations.length} papers cited. Calendar: ${state.calendar.filter((e) => e.movedTo).length} events rescheduled.`;
+
+  emit({
+    type: "briefing",
+    summary,
+    ics: state.ics,
+    score: meanScore,
+    citations: state.citations,
+    days: state.lockedDays,
+  });
+  logLine(`briefing issued — score ${meanScore}`);
+
+  await persistArtifacts(state);
+  emit({ type: "done" });
+}
+
+// --- agent plumbing ----------------------------------------------------------
+
+function bare(description: string, execute: () => unknown): ToolDef {
+  return { description, inputSchema: z.object({}), execute: async () => execute() };
+}
+
+interface AgentRunResult {
+  text: string;
+  toolCalls: { name: string; input: unknown; output: unknown }[];
+}
+
+async function runAgent(
+  member: CrewMember,
+  opts: { prompt: string; tools: Record<string, ToolDef> },
+  emit: Emit,
+  state: RunState,
+  role: "orchestrator" | "specialist" = "specialist",
+): Promise<AgentRunResult> {
+  emit({
+    type: "agent_start",
+    agent: member.id,
+    title: `${member.name} · ${member.callsign}`,
+  });
+
+  const toolCalls: AgentRunResult["toolCalls"] = [];
+  const wrappedTools: ToolSet = Object.fromEntries(
+    Object.entries(opts.tools).map(([name, def]) => [
+      name,
+      tool({
+        description: def.description,
+        inputSchema: def.inputSchema,
+        execute: async (input: unknown, options: unknown) => {
+          emit({ type: "tool_call", agent: member.id, tool: name, detail: summarizeInput(input) });
+          const output = await def.execute(input, options);
+          emit({
+            type: "tool_result",
+            agent: member.id,
+            tool: name,
+            detail: summarizeOutput(output),
+          });
+          toolCalls.push({ name, input, output });
+          // Surface citations + moves as first-class events.
+          if (name === "searchScience" && Array.isArray(output)) {
+            for (const c of output as Citation[]) {
+              state.citations.push(c);
+              emit({ type: "citation", agent: member.id, citation: c });
+            }
+          }
+          if (name === "proposeMove" && output && typeof output === "object" && "to" in (output as object)) {
+            emit({ type: "calendar_move", move: output as CalendarMove });
+          }
+          return output;
+        },
+      }),
+    ]),
+  );
+
+  const result = streamText({
+    model: resolveModel(role),
+    system: member.system,
+    prompt: opts.prompt,
+    tools: wrappedTools,
+    stopWhen: stepCountIs(8),
+    temperature: 0.6,
+  });
+
+  let text = "";
+  for await (const part of result.fullStream) {
+    const p = part as { type: string; text?: string };
+    if (p.type === "text-delta" && p.text) {
+      text += p.text;
+      emit({ type: "agent_token", agent: member.id, text: p.text });
+    }
+  }
+
+  emit({ type: "agent_end", agent: member.id });
+  return { text: text.trim(), toolCalls };
+}
+
+function summarizeInput(input: unknown): string {
+  if (input && typeof input === "object") {
+    const i = input as Record<string, unknown>;
+    if (typeof i.query === "string") return `"${i.query}"`;
+    if (typeof i.eventId === "string") return `${i.eventId} → day ${i.toDayIndex} ${fmtMin(Number(i.toStartMin))}`;
+    if (typeof i.shiftMin === "number") return `shift ${i.shiftMin}min, ${(i.interventions as unknown[])?.length ?? 0} interventions`;
+  }
+  return "";
+}
+
+function summarizeOutput(output: unknown): string {
+  if (Array.isArray(output)) return `${output.length} results`;
+  if (output && typeof output === "object") {
+    const o = output as Record<string, unknown>;
+    if (typeof o.error === "string") return `refused: ${o.error}`;
+    if (typeof o.committed === "number") return `${o.committed} events committed`;
+    if (typeof o.title === "string") return `${o.title}`;
+  }
+  return "ok";
+}
+
+async function persistArtifacts(state: RunState) {
+  await mkdir(ARTIFACTS_DIR, { recursive: true });
+  await writeFile(
+    path.join(ARTIFACTS_DIR, "shift-plan.json"),
+    JSON.stringify({ trip: DEMO_TRIP, days: state.lockedDays }, null, 2),
+  );
+  await writeFile(
+    path.join(ARTIFACTS_DIR, "shift-log.json"),
+    JSON.stringify(state.log, null, 2),
+  );
+  if (state.ics) {
+    await writeFile(path.join(ARTIFACTS_DIR, "calendar-plan.ics"), state.ics);
+  }
+}

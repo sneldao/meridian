@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Pre-commit: secrets scan + typecheck + lint.
+# Enabled via `git config core.hooksPath .githooks` (done at repo init;
+# rerun that command if you clone fresh).
+
+set -euo pipefail
+
+if command -v gitleaks >/dev/null 2>&1; then
+  echo "→ gitleaks: scanning staged changes for secrets"
+  gitleaks protect --staged --redact
+else
+  echo "⚠ gitleaks not found — skipping secrets scan" >&2
+fi
+
+echo "→ typecheck"
+bun run typecheck
+
+echo "→ lint"
+bun run lint
