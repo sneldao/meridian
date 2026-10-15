@@ -42,6 +42,18 @@ describe("run state reducer", () => {
     expect(dayStatus(run, run.activeLabel!)).toBe("scanning");
   });
 
+  test("a re-drafted day goes back under the scanner instead of staying rejected", () => {
+    const failIdx = events.findIndex(
+      (e) => e.event.type === "eval_result" && !(e.event.result.feasible && e.event.result.score >= 0.75),
+    );
+    const retryIdx = events.findIndex((e, i) => i > failIdx && e.event.type === "plan_candidate");
+    expect(retryIdx).toBeGreaterThan(failIdx);
+    const label = (events[retryIdx].event as Extract<CrewEvent, { type: "plan_candidate" }>).day.label;
+    const run = replay(retryIdx + 1);
+    expect(run.rejected.has(label)).toBe(false);
+    expect(dayStatus(run, label)).toBe("scanning");
+  });
+
   test("calendarAfter applies the negotiator's moves", () => {
     const run = replay();
     const after = calendarAfter(run);

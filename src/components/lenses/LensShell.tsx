@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export type LensId = "world" | "board" | "calendar" | "ledger";
 
@@ -49,8 +49,27 @@ export function LensShell({
     return () => window.removeEventListener("keydown", handler);
   }, [onChange, onToggleAuto]);
 
-  const mins = Math.floor(elapsedMs / 60000);
-  const secs = Math.floor((elapsedMs / 1000) % 60);
+  // The clock must keep breathing between events: elapsedMs is stamped on the
+  // latest event, so a ticking display anchors to it and lets wall time carry
+  // the seconds forward. shownMs re-anchors the instant a new event lands
+  // (render-adjust), and the interval drifts it between them.
+  const [shownMs, setShownMs] = useState(elapsedMs);
+  const [prevElapsed, setPrevElapsed] = useState(elapsedMs);
+  if (prevElapsed !== elapsedMs) {
+    setPrevElapsed(elapsedMs);
+    setShownMs(elapsedMs);
+  }
+  useEffect(() => {
+    if (!running) return;
+    const base = elapsedMs;
+    const anchoredAt = Date.now();
+    const t = setInterval(() => setShownMs(base + (Date.now() - anchoredAt)), 1000);
+    return () => clearInterval(t);
+  }, [running, elapsedMs]);
+
+  const ms = running ? shownMs : elapsedMs;
+  const mins = Math.floor(ms / 60000);
+  const secs = Math.floor((ms / 1000) % 60);
 
   return (
     <div className="flex h-full min-h-[360px] flex-col gap-3">

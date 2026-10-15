@@ -61,7 +61,7 @@ export interface RunState {
   drafts: Map<string, ShiftDraft>;
   verdicts: Map<string, EvalResult[]>;
   locked: Map<string, DayPlan>;
-  /** Days whose latest verdict failed and that are not (yet) locked. */
+  /** Days whose latest verdict failed and that are not (yet) re-drafted or locked. */
   rejected: Set<string>;
   /**
    * Days already lived when a morning replan starts. They come from the
@@ -236,6 +236,9 @@ function applyEventInner(s: RunState, event: CrewEvent, t: number): RunState {
         activeLabel: label,
         attempts: s.attempts + 1,
         drafts: withMap(s.drafts, label, { plan: event.day, attempt: (prev?.attempt ?? 0) + 1 }),
+        // A fresh draft supersedes the stale FAIL — the day goes back under
+        // the scanner instead of staying red while Iris re-reads it.
+        rejected: withoutSet(s.rejected, label),
       };
     }
 

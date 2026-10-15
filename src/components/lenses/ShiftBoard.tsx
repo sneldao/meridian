@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { CREW } from "@/agents/crew";
 import { fmtMin, passes } from "@/domain/circadian";
@@ -60,10 +61,15 @@ function rowState(
   locked: Map<string, DayPlan>,
 ): RowState {
   if (locked.has(label)) return "locked";
-  if (!drafts.has(label)) return "queued";
+  const draft = drafts.get(label);
+  if (!draft) return "queued";
+  // A draft with no verdict yet — on its first attempt or a retry — is under
+  // the scanner, not still wearing the previous rejection.
+  if ((verdicts.get(label)?.length ?? 0) < draft.attempt) {
+    return label === activeLabel ? "scanning" : "draft";
+  }
   const last = verdicts.get(label)?.at(-1);
-  if (!last) return label === activeLabel ? "scanning" : "draft";
-  return passes(last) ? "draft" : "rejected";
+  return last && !passes(last) ? "rejected" : "draft";
 }
 
 const STATE_TEXT: Record<RowState, string> = {
@@ -83,6 +89,32 @@ const STATE_COLOR: Record<RowState, string> = {
 };
 
 export function ShiftBoard({ days, drafts, verdicts, locked, activeLabel, activeAgent, readOnly }: ShiftBoardProps) {
+  // Morning dissolve: a replan drops a day's plan and the row snaps to queued
+  // instantly. Keep the vanished plan for a beat and let it fade out, so the
+  // "work unhappening" reads as a dissolve instead of a jump cut.
+  const [dissolving, setDissolving] = useState<ReadonlyMap<string, DayPlan>>(new Map());
+  const prevShown = useRef(new Map<string, DayPlan>());
+  useEffect(() => {
+    const next = new Map<string, DayPlan>();
+    const vanished: [string, DayPlan][] = [];
+    for (const d of days) {
+      const plan = locked.get(d.label) ?? drafts.get(d.label)?.plan;
+      if (plan) next.set(d.label, plan);
+      else {
+        const prev = prevShown.current.get(d.label);
+        if (prev) vanished.push([d.label, prev]);
+      }
+    }
+    prevShown.current = next;
+    if (!vanished.length) return;
+    // Deferred a frame: the fade starts on the next paint, and the setState
+    // stays out of the effect body.
+    const raf = requestAnimationFrame(() =>
+      setDissolving((m) => new Map([...m, ...vanished])),
+    );
+    return () => cancelAnimationFrame(raf);
+  }, [days, drafts, locked]);
+
   // Staircase: running total of locked shift, row by row.
   let running = 0;
   const cumulative = new Map<string, number>();
@@ -138,6 +170,7 @@ export function ShiftBoard({ days, drafts, verdicts, locked, activeLabel, active
         const attempt = draft?.attempt ?? 0;
         const shown = plan !== undefined;
         const ghost = state === "draft" || state === "scanning" || state === "rejected";
+        const fading = shown ? undefined : dissolving.get(d.label);
 
         return (
           <div key={d.dayIndex} className="grid grid-cols-[96px_1fr_84px] items-center gap-3">
@@ -224,6 +257,49 @@ export function ShiftBoard({ days, drafts, verdicts, locked, activeLabel, active
                     title={`${iv.kind.replace(/_/g, " ")} ${fmtMin(iv.startMin)}`}
                   />
                 ))}
+
+              {/* the morning dissolve — a plan the replan just dropped fades
+                  out on the now-queued row. Keyed on the plan so a second
+                  dissolve replays the fade. */}
+              {fading && (
+                <motion.div
+                  key={`dissolve-${fading.targetBedtimeMin}-${fading.targetWakeMin}`}
+                  className="pointer-events-none absolute inset-0"
+                  initial={{ opacity: 1 }}
+                  animate={{ opacity: 0 }}
+                  transition={{ duration: 0.7, ease: "easeOut" }}
+                  onAnimationComplete={() =>
+                    setDissolving((m) => {
+                      const n = new Map(m);
+                      n.delete(d.label);
+                      return n;
+                    })
+                  }
+                >
+                  {sleepSegments(fading).map((seg, i) => (
+                    <span
+                      key={i}
+                      className="absolute top-2 bottom-2 rounded-sm"
+                      style={{
+                        left: `${seg.left}%`,
+                        width: `${seg.width}%`,
+                        background: "color-mix(in srgb, var(--color-sleep) 45%, transparent)",
+                        border: "1px dashed var(--color-sleep)",
+                      }}
+                    />
+                  ))}
+                  {fading.interventions.map((iv, j) => (
+                    <span
+                      key={j}
+                      className="absolute top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rotate-45"
+                      style={{
+                        left: `${pct(iv.startMin)}%`,
+                        background: INTERVENTION_ICONS[iv.kind].tint,
+                      }}
+                    />
+                  ))}
+                </motion.div>
+              )}
 
               {/* Iris's scan line */}
               {state === "scanning" && (
