@@ -242,7 +242,7 @@ export default function Home() {
           break;
         case "briefing":
           if (e.lines?.length) speakDialogue(e.lines);
-          else speakOnce(e.summary, "evaluator");
+          else speakOnce(e.summary, "handoff");
           setHasSavedPlan(true);
           try {
             if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {

@@ -507,6 +507,8 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
       score: meanScore,
       coverage,
       summary,
+      days: state.lockedDays,
+      citationTitles: state.citations.map((c) => c.title),
     }),
   });
   logLine(`briefing issued — score ${meanScore}, coverage ${Math.round(coverage.ratio * 100)}%`);

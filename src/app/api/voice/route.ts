@@ -22,7 +22,9 @@ export const maxDuration = 60;
 // them and, worse, they shift alignment indices on the timestamps path.
 const tagCapable = (m: string) => /eleven_v[34]/.test(m);
 
-const DIALOGUE_FORMAT = "mp3_44100_96"; // decoded whole via Web Audio — no PCM needed
+// Dialogue shares the PCM output format so the client schedules it chunk by
+// chunk — the handoff starts speaking at first audio instead of after the
+// whole exchange has synthesized.
 
 // Stream the upstream body to the client while accumulating a copy for the
 // cache. A cancelled stream writes nothing — partial audio must never be a hit.
@@ -108,6 +110,7 @@ async function dialogue(lines: Line[]) {
   if (!usable.length) return NextResponse.json({ error: "lines must be {agent, text} pairs" }, { status: 400 });
 
   const model = dialogueModel();
+  const format = outputFormat();
   const inputs = usable.map((l) => {
     const tag = tagCapable(model) ? tagFor(l.agent) : "";
     return { voiceId: voiceFor(l.agent), text: (tag ? `${tag} ` : "") + cleanForTts(l.text).clean };
@@ -118,7 +121,7 @@ async function dialogue(lines: Line[]) {
     voice: inputs.map((i) => i.voiceId).sort().join(","),
     model,
     text: inputs.map((i) => i.text).join("|"),
-    format: DIALOGUE_FORMAT,
+    format,
     align: false,
     seed: voiceSeed(),
     stability: settings.stability,
@@ -127,13 +130,14 @@ async function dialogue(lines: Line[]) {
   const hit = await lookupVoice(key);
   if (hit) {
     return new Response(new Uint8Array(hit.bytes), {
-      headers: { ...streamHeaders(DIALOGUE_FORMAT), "X-Voice-Cache": `hit:${hit.source}` },
+      headers: { ...streamHeaders(format), "X-Voice-Cache": `hit:${hit.source}` },
     });
   }
 
-  const res = await dialogueStream({ inputs, model, outputFormat: DIALOGUE_FORMAT });
-  return new Response(tee(res.body!, (buf) => void storeVoice(key, buf, "audio/mpeg")), {
-    headers: { ...streamHeaders(DIALOGUE_FORMAT), "X-Voice-Cache": "miss" },
+  const res = await dialogueStream({ inputs, model, outputFormat: format });
+  const contentType = format.startsWith("pcm") ? "audio/pcm" : "audio/mpeg";
+  return new Response(tee(res.body!, (buf) => void storeVoice(key, buf, contentType)), {
+    headers: { ...streamHeaders(format), "X-Voice-Cache": "miss" },
   });
 }
 

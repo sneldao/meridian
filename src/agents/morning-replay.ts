@@ -149,6 +149,8 @@ export async function* runMorningReplay(opts: {
       coverage,
       summary,
       lead: "Morning replan wrapped.",
+      days: locked,
+      citationTitles: citations.map((c) => c.title),
     }),
   };
   await sleep(2 * BEAT);

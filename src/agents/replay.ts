@@ -250,6 +250,8 @@ export async function* runReplay(trip: Trip = DEMO_TRIP): AsyncGenerator<CrewEve
       score: meanScore,
       coverage,
       summary,
+      days: locked,
+      citationTitles: citations.map((c) => c.title),
     }),
   };
   await sleep(4 * BEAT);
