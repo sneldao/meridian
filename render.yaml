@@ -26,3 +26,33 @@ services:
         value: replay
       - key: NODE_VERSION
         value: 22.12.0
+      # Graph memory (Graph Hacks): reach the private FalkorDB service below.
+      # Local dev uses FALKORDB_URL in .env.local instead — unset locally and
+      # graph memory no-ops to crew-memory.json.
+      - key: FALKORDB_HOST
+        fromService:
+          name: meridian-falkordb
+          type: pserv
+          property: host
+      - key: FALKORDB_PORT
+        fromService:
+          name: meridian-falkordb
+          type: pserv
+          property: port
+      - key: MERIDIAN_SESSION
+        value: run-2
+
+  # FalkorDB graph memory — private service, internal TCP only (not public).
+  # The web app reaches it as falkor://<host>:<port> via the env vars above.
+  # This is the demo backend: judges hit the public URL, the crew reads the
+  # graph inside Render's network.
+  - type: pserv
+    name: meridian-falkordb
+    runtime: image
+    image:
+      url: docker.io/falkordb/falkordb:latest
+    plan: starter
+    region: frankfurt
+    # FalkorDB serves RESP on 6379; the bundled browser UI on 3000 stays
+    # private too (reachable only from inside Render).
+    envVars: []

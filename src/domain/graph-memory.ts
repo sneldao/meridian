@@ -9,8 +9,17 @@ import { FalkorDB } from "falkordb";
 
 let clientPromise: Promise<any> | null = null;
 
+function falkorUrl(): string | undefined {
+  if (process.env.FALKORDB_URL) return process.env.FALKORDB_URL;
+  // Render wires host/port separately (fromService can't compose a URL).
+  if (process.env.FALKORDB_HOST) {
+    return `falkor://${process.env.FALKORDB_HOST}:${process.env.FALKORDB_PORT ?? 6379}`;
+  }
+  return undefined;
+}
+
 export function graphEnabled(): boolean {
-  return Boolean(process.env.FALKORDB_URL);
+  return Boolean(falkorUrl());
 }
 
 export function graphId(tenant?: string): string {
@@ -22,7 +31,7 @@ async function client(): Promise<any | null> {
   if (!graphEnabled()) return null;
   try {
     if (!clientPromise) {
-      clientPromise = (FalkorDB as any).connect({ url: process.env.FALKORDB_URL });
+      clientPromise = (FalkorDB as any).connect({ url: falkorUrl() });
     }
     return await clientPromise;
   } catch {

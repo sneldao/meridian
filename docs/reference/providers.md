@@ -2,20 +2,27 @@
 
 # Providers & configuration
 
-One runtime (`src/agents/runtime.ts`), three model backends selected by
+One runtime (`src/agents/runtime.ts`), four model backends selected by
 `AGENT_PROVIDER` (`src/agents/providers.ts`). Copy `.env.example` → `.env.local`.
 
 ## `AGENT_PROVIDER`
 
 | Value | Use | Keys needed |
 |---|---|---|
-| `replay` (default) | Scripted transcript, zero tokens. Stage insurance + UI dev. | none |
-| `anthropic` | Live Claude crew. **Demo path.** | `ANTHROPIC_API_KEY` |
-| `featherless` | OpenAI-compatible open models for cheap dev iteration. | `FEATHERLESS_API_KEY` |
-| `nebius` | Crew on NVIDIA Nemotron via Nebius Token Factory (Nebius×NVIDIA hackathon track). | `NEBIUS_API_KEY` |
+| `featherless` | OpenAI-compatible open models. **Cheap dev default.** | `FEATHERLESS_API_KEY` |
+| `nebius` | NVIDIA Nemotron via Nebius Token Factory. Configured fallback. | `NEBIUS_API_KEY` |
+| `anthropic` | Live Claude crew. Highest quality, real per-token cost. | `ANTHROPIC_API_KEY` |
+| `replay` | Scripted transcript, zero tokens. Stage insurance + UI dev. | none |
 
-If a live provider throws mid-run, `runCrew` emits an `error` event and drains
-the replay transcript to completion — the demo never dies on stage.
+## `AGENT_PROVIDER_FALLBACK`
+
+One live provider name (`featherless` / `nebius` / `anthropic`). If the primary
+crew run throws, `runCrew` emits a recoverable `error` event and retries the
+whole run once on the fallback before draining the replay transcript — the
+demo never dies on stage. Ignored when unset, invalid, or the same as the
+primary. The chain is `AGENT_PROVIDER` → `AGENT_PROVIDER_FALLBACK` → replay;
+each `orchestrate` emits `run_start` with the provider actually in use, and
+the artifacts record the provider that finished the run.
 
 In replay mode the transcript is the night script by default. A morning run
 (check-ins supplied or `startDay > 0`) streams the recorded replan instead
@@ -23,25 +30,29 @@ In replay mode the transcript is the night script by default. A morning run
 
 ## Models
 
-Two roles, env-overridable:
+Two roles, env-overridable per provider:
 
 ```bash
-MERIDIAN_ORCHESTRATOR_MODEL   # planner/evaluator/negotiator — default claude-sonnet-4-5
-MERIDIAN_SPECIALIST_MODEL     # analyst/researcher             — default claude-haiku-4-5
+MERIDIAN_ORCHESTRATOR_MODEL        # anthropic — default claude-sonnet-4-5
+MERIDIAN_SPECIALIST_MODEL          # anthropic — default claude-haiku-4-5
+FEATHERLESS_ORCHESTRATOR_MODEL     # default Qwen/Qwen3-30B-A3B-Instruct-2507
+FEATHERLESS_SPECIALIST_MODEL       # default Qwen/Qwen3-32B
+NEBIUS_ORCHESTRATOR_MODEL          # default nvidia/Nemotron-3-Ultra-550b-a55b
+NEBIUS_SPECIALIST_MODEL            # default nvidia/nemotron-3-super-120b-a12b
 ```
 
-Featherless equivalents: `FEATHERLESS_ORCHESTRATOR_MODEL`,
-`FEATHERLESS_SPECIALIST_MODEL` (defaults in `.env.example`).
-Nebius equivalents: `NEBIUS_BASE_URL` (default `https://api.tokenfactory.nebius.com/v1`),
-`NEBIUS_ORCHESTRATOR_MODEL` (default `nvidia/Nemotron-3-Ultra-550b-a55b`),
-`NEBIUS_SPECIALIST_MODEL` (default `nvidia/nemotron-3-super-120b-a12b`) —
-verify IDs against the Token Factory catalog before a run.
+Orchestrator = planner/evaluator/negotiator, specialist = analyst/researcher.
+Featherless model IDs must match the live catalog (`GET
+https://api.featherless.ai/v1/models` is unauthenticated — check before
+bumping); verify Nebius IDs against the Token Factory catalog the same way.
 
 ## Other env vars
 
 | Var | Purpose |
 |---|---|
 | `FEATHERLESS_BASE_URL` | Default `https://api.featherless.ai/v1` |
+| `NEBIUS_BASE_URL` | Default `https://api.tokenfactory.nebius.com/v1` |
+| `AGENT_PROVIDER_FALLBACK` | One live provider retried once before replay — see above |
 | `FIRECRAWL_API_KEY` | Optional second science provider. Chain: ScienceMadeReadable (free, no key) → Firecrawl → verified static citations |
 | `TAVILY_API_KEY` | Live web search — gives Jun a `searchWeb` tool (and MCP `search_web`). Hits inform the read; never enter the citation set |
 | `QLOO_API_KEY` · `QLOO_BASE_URL` | Destination taste for Otto via `destinationTaste` (and MCP `destination_taste`). Hackathon keys only work against `hackathon.api.qloo.com` with the `X-Api-Key` header |
@@ -82,7 +93,9 @@ each user/tenant should get a distinct graph id in production.
 | Var | Purpose |
 |---|---|
 | `FALKORDB_URL` | FalkorDB connection URL — enables graph memory |
-| `MERIDIAN_GRAPH_ID` | Per-user/per-tenant graph name — defaults to `meridian:demo` |
+| `FALKORDB_HOST` + `FALKORDB_PORT` | Alternative to the URL — Render wires a private service's host/port separately (see `render.yaml` `pserv`) |
+| `MERIDIAN_GRAPH_ID` | Per-user/per-tenant graph name — defaults to `meridian:demo`; `?tenant=` on run/checkin/health maps to `meridian:{tenant}` |
+| `MERIDIAN_SESSION` | Session label stamped on graph writes (seed uses `run-1`; default `run-2`) |
 
 Seed local data with `bun run seed:graph`. The agent never composes Cypher;
 fixed tools live in `src/domain/graph-memory.ts`. If the database is down or
@@ -120,7 +133,9 @@ supabase db push          # applies supabase/migrations/
 
 ## Cost notes
 
-- `replay` is fully offline — safe default for UI work.
-- `featherless` keeps tool-call shape identical while iterating prompts.
+- `featherless` is the dev default — fractions of a cent per crew run.
+- `nebius` as fallback keeps a failed primary from dropping straight to replay.
+- `replay` is fully offline — keep it for CI-style checks (`bun run replay:check`)
+  and the deployed service.
 - `anthropic` spends real credits; a full crew run is on the order of tens of
-  tool calls. Keep `replay` for CI-style checks (`bun run replay:check`).
+  tool calls.

@@ -20,7 +20,7 @@ import { loadMemory, memoryBrief, recordRun } from "@/domain/memory";import type
 } from "@/domain/types";
 import { CREW, type CrewMember } from "./crew";
 import { handoffLines } from "./handoff";
-import { providerKind, resolveModel } from "./providers";
+import { providerFallback, providerKind, resolveModel, type ProviderKind } from "./providers";
 import { runReplay } from "./replay";
 import { runMorningReplay } from "./morning-replay";
 import { buildIcs, fetchCalendar, proposeMove } from "@/tools/calendar";
@@ -74,15 +74,30 @@ export function runCrew(opts?: {
         const cal = opts?.calendar
           ? { events: opts.calendar, source: opts.calendarSource ?? "fixture" }
           : await fetchCalendar(trip);
-        await orchestrate(
-          emit,
-          trip,
-          cal.events,
-          cal.source,
-          opts?.checkIns ?? [],
-          opts?.startDayIndex ?? 0,
-          opts?.tenant,
-        );
+        const run = (kind: ProviderKind) =>
+          orchestrate(
+            emit,
+            trip,
+            cal.events,
+            cal.source,
+            opts?.checkIns ?? [],
+            opts?.startDayIndex ?? 0,
+            kind,
+            opts?.tenant,
+          );
+        const primary = providerKind();
+        try {
+          await run(primary);
+        } catch (err) {
+          const fallback = providerFallback();
+          if (!fallback) throw err;
+          emit({
+            type: "error",
+            message: `${primary} uplink failed: ${err instanceof Error ? err.message : String(err)} — retrying the crew on ${fallback}`,
+            recoverable: true,
+          });
+          await run(fallback);
+        }
       }
     } catch (err) {
       emit({
@@ -136,14 +151,14 @@ interface RunState {
   briefingText: string;
 }
 
-async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[], calendarSource: "google" | "fixture" = "fixture", checkIns: CheckIn[] = [], startDayIndex: number = 0, tenant?: string) {
+async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[], calendarSource: "google" | "fixture" = "fixture", checkIns: CheckIn[] = [], startDayIndex: number = 0, kind: ProviderKind = providerKind(), tenant?: string) {
   const adherence = checkIns.length ? foldCheckIns(ADHERENCE_PROFILE, checkIns) : ADHERENCE_PROFILE;
   const memory = await loadMemory();
   // Graph memory is offered as fixed tools, not prompt prose — the analyst
   // calls recallFindings/priorFailures and every answer carries the hop path.
-  // Absent without FALKORDB_URL; a down DB returns "graph memory offline".
+  // Absent without FALKORDB_URL/HOST; a down DB returns "graph memory offline".
   let graphTools: Record<string, ToolDef> = {};
-  if (process.env.FALKORDB_URL) {
+  {
     try {
       const gm = await import("@/domain/graph-memory");
       if (gm.graphEnabled()) {
@@ -196,7 +211,7 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
 
   emit({
     type: "run_start",
-    provider: providerKind(),
+    provider: kind,
     trip,
     baseline: GARMIN_BASELINE,
     calendar: state.calendar,
@@ -226,6 +241,7 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
     },
     emit,
     state,
+    kind,
   );
   logLine(`analyst: ${analyst.text}`);
 
@@ -257,6 +273,7 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
     },
     emit,
     state,
+    kind,
   );
   logLine(`researcher: ${research.toolCalls.length} searches, ${state.citations.length} citations kept`);
 
@@ -378,6 +395,7 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
         },
         emit,
         state,
+        kind,
         "orchestrator",
       );
 
@@ -413,6 +431,7 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
         },
         emit,
         state,
+        kind,
       );
 
       if (passes(result)) {
@@ -521,6 +540,7 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
     },
     emit,
     state,
+    kind,
   );
 
   // The gate does not stop at the plan. Rex's moves are re-checked against the
@@ -612,12 +632,12 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
       score: meanScore,
       summary: state.lockedDays.length ? `${state.lockedDays.length} days locked` : "shift complete",
       days: state.lockedDays.map((d) => ({ label: d.label, shiftMin: d.shiftMin })),
-      provider: providerKind(),
+      provider: kind,
     });
   } catch {
     // Optional Supabase persistence; file memory remains source of truth.
   }
-  await persistArtifacts(state, trip, calendarSource);
+  await persistArtifacts(state, trip, calendarSource, kind);
   emit({ type: "done" });
 }
 
@@ -732,6 +752,7 @@ async function runAgent(
   opts: { prompt: string; tools: Record<string, ToolDef> },
   emit: Emit,
   state: RunState,
+  kind: ProviderKind,
   role: "orchestrator" | "specialist" = "specialist",
 ): Promise<AgentRunResult> {
   emit({
@@ -774,7 +795,7 @@ async function runAgent(
   );
 
   const result = streamText({
-    model: resolveModel(role),
+    model: resolveModel(role, kind),
     system: member.system,
     prompt: opts.prompt,
     tools: wrappedTools,
@@ -838,11 +859,11 @@ function summarizeOutput(output: unknown): string {
   return "ok";
 }
 
-async function persistArtifacts(state: RunState, trip: Trip, calendarSource: string) {
+async function persistArtifacts(state: RunState, trip: Trip, calendarSource: string, kind: ProviderKind = providerKind()) {
   await mkdir(ARTIFACTS_DIR, { recursive: true });
   await writeFile(
     path.join(ARTIFACTS_DIR, "shift-plan.json"),
-    JSON.stringify({ trip, days: state.lockedDays, provider: providerKind(), calendarBackend: calendarSource }, null, 2),
+    JSON.stringify({ trip, days: state.lockedDays, provider: kind, calendarBackend: calendarSource }, null, 2),
   );
   await writeFile(
     path.join(ARTIFACTS_DIR, "shift-log.json"),

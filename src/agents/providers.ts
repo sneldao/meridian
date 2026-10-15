@@ -2,10 +2,11 @@ import { anthropic } from "@ai-sdk/anthropic";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import type { LanguageModel } from "ai";
 
-// Provider resolution. Claude is the demo path; Featherless (any open model
-// behind an OpenAI-compatible endpoint) is for cheap dev iteration; Nebius
-// Token Factory runs the crew on NVIDIA Nemotron open models (hackathon
-// track); replay burns zero tokens and is stage insurance.
+// Provider resolution. Featherless (any open model behind an OpenAI-compatible
+// endpoint) is the cheap default; Nebius Token Factory (NVIDIA Nemotron open
+// models) is the configured fallback via AGENT_PROVIDER_FALLBACK; Claude is
+// the highest-quality crew; replay burns zero tokens and is stage insurance —
+// it stays the terminal fallback no matter what the live chain is.
 
 export type ProviderKind = "anthropic" | "featherless" | "nebius" | "replay";
 
@@ -15,9 +16,20 @@ export function providerKind(): ProviderKind {
   return "replay";
 }
 
-export function resolveModel(role: "orchestrator" | "specialist"): LanguageModel {
-  const kind = providerKind();
+// Secondary live provider. If the primary crew run throws, runCrew retries the
+// whole run once on this provider before draining the replay transcript. Ignored
+// when unset, invalid, or identical to the primary — replay is always the end
+// of the chain.
+export function providerFallback(): ProviderKind | null {
+  const p = process.env.AGENT_PROVIDER_FALLBACK;
+  if (p !== "anthropic" && p !== "featherless" && p !== "nebius") return null;
+  return p === providerKind() ? null : p;
+}
 
+export function resolveModel(
+  role: "orchestrator" | "specialist",
+  kind: ProviderKind = providerKind(),
+): LanguageModel {
   if (kind === "nebius") {
     const nebius = createOpenAICompatible({
       name: "nebius",
@@ -39,7 +51,7 @@ export function resolveModel(role: "orchestrator" | "specialist"): LanguageModel
     });
     return featherless(
       role === "orchestrator"
-        ? (process.env.FEATHERLESS_ORCHESTRATOR_MODEL ?? "Qwen/Qwen3-32B")
+        ? (process.env.FEATHERLESS_ORCHESTRATOR_MODEL ?? "Qwen/Qwen3-30B-A3B-Instruct-2507")
         : (process.env.FEATHERLESS_SPECIALIST_MODEL ?? "Qwen/Qwen3-32B"),
     ) as unknown as LanguageModel;
   }
