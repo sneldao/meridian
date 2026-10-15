@@ -1,0 +1,109 @@
+"use client";
+
+import type { Trip } from "@/domain/types";
+
+interface Props {
+  trip: Trip | null;
+  progress: number;
+  lockedLabels: Set<string>;
+  activeLabel?: string;
+  citationCount: number;
+  running: boolean;
+}
+
+const W = 1000;
+const H = 520;
+
+function xy(lon: number, lat: number) {
+  return { x: ((lon + 180) / 360) * W, y: ((90 - lat) / 180) * H };
+}
+
+function terminatorX(lon: number) {
+  return ((lon + 180) / 360) * W;
+}
+
+export function WorldLens({ trip, progress, citationCount, running }: Props) {
+  const now = new Date();
+  const utcHour = now.getUTCHours() + now.getUTCMinutes() / 60;
+  const sunLon = 15 * (12 - utcHour);
+  const origin = trip ? xy(trip.origin.lon, trip.origin.lat) : { x: W * 0.3, y: H * 0.4 };
+  const dest = trip ? xy(trip.destination.lon, trip.destination.lat) : { x: W * 0.8, y: H * 0.4 };
+  const ghostLon = trip
+    ? trip.origin.lon + progress * (trip.destination.lon - trip.origin.lon)
+    : -10;
+  const mid = { x: (origin.x + dest.x) / 2, y: Math.min(origin.y, dest.y) - 90 };
+  const path = `M ${origin.x} ${origin.y} Q ${mid.x} ${mid.y} ${dest.x} ${dest.y}`;
+
+  return (
+    <div className="relative h-full w-full bg-[#050812]">
+      <svg viewBox={`0 0 ${W} ${H}`} className="h-full w-full">
+        <defs>
+          <linearGradient id="world-night" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#050812" />
+            <stop offset="100%" stopColor="#151a2a" />
+          </linearGradient>
+        </defs>
+        <rect width={W} height={H} fill="url(#world-night)" />
+        {/* grid */}
+        {[0.25, 0.5, 0.75].map((t) => (
+          <line key={t} x1={0} y1={H * t} x2={W} y2={H * t} stroke="#1e2637" strokeWidth="1" strokeDasharray="2 6" />
+        ))}
+        {[0.25, 0.5, 0.75].map((t) => (
+          <line key={`v-${t}`} x1={W * t} y1={0} x2={W * t} y2={H} stroke="#1e2637" strokeWidth="1" strokeDasharray="2 6" />
+        ))}
+        {/* night overlay on the side opposite the sun */}
+        <rect x={0} y={0} width={terminatorX(sunLon)} height={H} fill="#000" opacity="0.45" />
+        {/* ghost body-clock terminator */}
+        <rect x={0} y={0} width={terminatorX(ghostLon)} height={H} fill="#ffd98a" opacity="0.08" />
+        <line x1={terminatorX(sunLon)} y1={0} x2={terminatorX(sunLon)} y2={H} stroke="#9db8ff" strokeWidth="2" />
+        <line x1={terminatorX(ghostLon)} y1={0} x2={terminatorX(ghostLon)} y2={H} stroke="#ffd98a" strokeWidth="2" strokeDasharray="6 4" />
+
+        {/* flight arc */}
+        {trip && (
+          <path d={path} fill="none" stroke="#ffc46b" strokeWidth="2" strokeDasharray="6 6" opacity="0.9" />
+        )}
+        {/* origin + destination */}
+        {trip && (
+          <>
+            <circle cx={origin.x} cy={origin.y} r={6} fill="#9db8ff" />
+            <text x={origin.x} y={origin.y + 20} textAnchor="middle" fill="#9db8ff" fontSize="12" fontWeight="600">
+              {trip.origin.code}
+            </text>
+            <circle cx={dest.x} cy={dest.y} r={8} fill="#ffc46b" />
+            <text x={dest.x} y={dest.y + 22} textAnchor="middle" fill="#ffc46b" fontSize="12" fontWeight="600">
+              {trip.destination.code}
+            </text>
+          </>
+        )}
+
+        {/* body position along the arc */}
+        {trip && (
+          <circle
+            cx={origin.x + progressWeight(progress, origin.x, dest.x, mid.x)}
+            cy={origin.y + progressWeight(progress, origin.y, dest.y, mid.y)}
+            r={7}
+            fill="#ffd98a"
+            stroke="#fff3d6"
+            strokeWidth="1.5"
+          />
+        )}
+
+        {/* stars */}
+        {[[120, 40], [280, 90], [470, 30], [700, 70], [860, 45]].map(([x, y], i) => (
+          <circle key={i} cx={x} cy={y} r={i % 2 === 0 ? 1.4 : 0.9} fill="#e8eaf2" opacity="0.35" />
+        ))}
+      </svg>
+      <div className="absolute left-4 top-4 rounded-lg border border-[#1e2637] bg-[#0c1018cc] px-3 py-2 text-[10px] text-[#8b93a7] backdrop-blur">
+        <div className="text-[#9db8ff]">real terminator · UTC {String(now.getUTCHours()).padStart(2, "0")}:{String(now.getUTCMinutes()).padStart(2, "0")}</div>
+        <div className="text-[#ffd98a]">ghost terminator · body clock</div>
+        {running && <div className="mt-1 text-[#b8e356]">mission live · {citationCount} evidence stars</div>}
+      </div>
+    </div>
+  );
+}
+
+function progressWeight(t: number, start: number, end: number, control: number) {
+  // quadratic bezier position at parameter t
+  const u = 1 - t;
+  return u * u * start + 2 * u * t * control + t * t * end;
+}

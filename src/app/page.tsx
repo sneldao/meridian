@@ -14,9 +14,12 @@ import type {
   WearableBaseline,
 } from "@/domain/types";
 import { BriefingCard } from "@/components/BriefingCard";
+import { LensShell, type LensId } from "@/components/lenses/LensShell";
+import { WorldLens } from "@/components/lenses/WorldLens";
 import { CrewFeed, type LogEntry } from "@/components/CrewFeed";
 import { DayStrip } from "@/components/DayStrip";
 import { SunTrack } from "@/components/SunTrack";
+import { INTERVENTION_ICONS } from "@/lib/intervention-icons";
 
 interface TripData {
   trip: Trip;
@@ -73,6 +76,12 @@ export default function Home() {
   const [startDayParam, setStartDayParam] = useState(0);
   const tripQuery = `?origin=${origin}&dest=${dest}&date=${departureDate}`;
   const [data, setData] = useState<TripData | null>(null);
+  const [lens, setLens] = useState<LensId>("world");
+  const [autoDirector, setAutoDirector] = useState(true);
+  const [elapsedMs, setElapsedMs] = useState(0);
+  const [toolCalls, setToolCalls] = useState(0);
+  const [lastEvent, setLastEvent] = useState<CrewEvent | null>(null);
+  const [runStartedAt, setRunStartedAt] = useState<number | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [sunProgress, setSunProgress] = useState(0);
@@ -148,6 +157,7 @@ export default function Home() {
 
   const handleEvent = useCallback(
     (e: CrewEvent) => {
+      setLastEvent(e);
       switch (e.type) {
         case "run_start":
           stopVoice();
@@ -158,6 +168,9 @@ export default function Home() {
           setCitationCount(0);
           setBriefing(null);
           setProviderFallback(false);
+          setElapsedMs(0);
+          setToolCalls(0);
+          setRunStartedAt(Date.now());
           try {
             localStorage.setItem("meridian:lastTrip", JSON.stringify(e.trip));
           } catch {
@@ -188,6 +201,7 @@ export default function Home() {
           utterRef.current[e.agent] = "";
           break;
         case "tool_call":
+          setToolCalls((c) => c + 1);
           push({ kind: "tool", agent: e.agent, text: `→ ${e.tool} ${e.detail}` });
           break;
         case "tool_result":
@@ -320,6 +334,15 @@ export default function Home() {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [phase, startShift, cancelShift]);
+
+  useEffect(() => {
+    if (phase !== "running" || !runStartedAt) return;
+    const id = window.setInterval(() => {
+      setElapsedMs(Date.now() - runStartedAt);
+    }, 250);
+    return () => window.clearInterval(id);
+  }, [phase, runStartedAt]);
+
   const trip = data?.trip;
 
   return (
@@ -424,76 +447,116 @@ export default function Home() {
       )}
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[1.6fr_1fr]">
         <div className="relative flex min-h-0 flex-col gap-3">
-          <div className="relative min-h-0 flex-1 overflow-hidden rounded-2xl border border-[#1e2637]">
-            {trip && (
-              <SunTrack
+          <LensShell
+            lens={lens}
+            onChange={setLens}
+            auto={autoDirector}
+            onToggleAuto={() => setAutoDirector((v) => !v)}
+            running={phase === "running"}
+            elapsedMs={elapsedMs}
+            toolCalls={toolCalls}
+            lockedDays={lockedDays.size}
+            lastEvent={lastEvent}
+          >
+            {lens === "world" && trip && (
+              <WorldLens
+                trip={trip}
                 progress={sunProgress}
-                days={trip.days}
                 lockedLabels={new Set(lockedDays.keys())}
                 activeLabel={activeDay}
                 citationCount={citationCount}
                 running={phase === "running"}
               />
             )}
-            {briefing && !briefingDismissed && (
-              <BriefingCard
-                summary={briefing.summary}
-                score={briefing.score}
-                citations={briefing.citations}
-                days={briefing.days}
-                ics={briefing.ics}
-                fallback={providerFallback}
-                onClose={() => setBriefingDismissed(true)}
-              />
-            )}
-            {briefing && briefingDismissed && (
-              <button
-                onClick={() => setBriefingDismissed(false)}
-                className="absolute bottom-4 right-4 rounded-lg border border-[#ffc46b66] bg-[#0c1018e6] px-3 py-1.5 text-[10px] font-bold tracking-widest text-[#ffc46b] uppercase"
-              >
-                show handoff
-              </button>
-            )}
-            {phase === "idle" && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center">
-                  <div className="text-sm text-[#8b93a7]">Your body clock is still in London.</div>
-                  <div className="mt-1 text-xs text-[#4a5470]">The crew is waiting for the order.</div>
-                </div>
+            {lens === "board" && trip && (
+              <div className="relative h-full w-full">
+                <SunTrack
+                  progress={sunProgress}
+                  days={trip.days}
+                  lockedLabels={new Set(lockedDays.keys())}
+                  activeLabel={activeDay}
+                  citationCount={citationCount}
+                  running={phase === "running"}
+                />
+                {briefing && !briefingDismissed && (
+                  <BriefingCard
+                    summary={briefing.summary}
+                    score={briefing.score}
+                    citations={briefing.citations}
+                    days={briefing.days}
+                    ics={briefing.ics}
+                    fallback={providerFallback}
+                    onClose={() => setBriefingDismissed(true)}
+                  />
+                )}
               </div>
             )}
-            {showOnboarding && (
-              <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#07090fcc] backdrop-blur">
-                <div className="max-w-md rounded-2xl border border-[#1e2637] bg-[#0c1018] p-6 shadow-xl">
-                  <h2 className="text-sm font-bold tracking-[0.3em] text-[#e8eaf2]">WELCOME TO MERIDIAN</h2>
-                  <p className="mt-3 text-[12px] leading-relaxed text-[#8b93a7]">
-                    Meridian flies a crew of agents ahead of you. They read your wearable baseline, pull real circadian
-                    literature, draft a day-by-day shift plan, score it against physiology and your calendar, then hand
-                    you a calendar file.
-                  </p>
-                  <ul className="mt-3 space-y-1 text-[11px] text-[#8b93a7]">
-                    <li>· <span className="text-[#e8eaf2]">Mara</span> analyst · wearable + adherence</li>
-                    <li>· <span className="text-[#e8eaf2]">Jun</span> research · papers with DOIs</li>
-                    <li>· <span className="text-[#e8eaf2]">Otto</span> planner · one day at a time</li>
-                    <li>· <span className="text-[#e8eaf2]">Iris</span> eval · explains the scorer</li>
-                    <li>· <span className="text-[#e8eaf2]">Rex</span> negotiator · reschedules events</li>
-                  </ul>
-                  <p className="mt-3 text-[11px] text-[#ff7a7a]">Agents propose; the deterministic scorer disposes.</p>
-                  <div className="mt-4 flex justify-end">
-                    <button
-                      onClick={() => {
-                        try { localStorage.setItem("meridian:onboarded", "1"); } catch {}
-                        setShowOnboarding(false);
-                      }}
-                      className="rounded-lg bg-[#b8e356] px-4 py-2 text-xs font-bold text-[#07090f]"
-                    >
-                      Got it
-                    </button>
+            {lens === "calendar" && (
+              <div className="h-full overflow-y-auto p-4 font-mono2 text-[12px] text-[#e8eaf2]">
+                <div className="mb-3 text-[10px] tracking-widest text-[#8b93a7] uppercase">calendar moves</div>
+                {entries.filter((x) => x.kind === "move").length === 0 ? (
+                  <div className="text-[#4a5470]">no moves yet</div>
+                ) : (
+                  entries
+                    .filter((x) => x.kind === "move")
+                    .map((e, i) => <div key={i} className="mb-2 rounded-md border border-[#1e2637] bg-[#131826] px-3 py-2">{(e as { text: string }).text}</div>)
+                )}
+                {lockedDays.size > 0 && (
+                  <div className="mt-4 text-[10px] tracking-widest text-[#8b93a7] uppercase">locked interventions</div>
+                )}
+                {[...lockedDays.values()].map((day) => (
+                  <div key={day.label} className="mt-2 rounded-md border border-[#1e2637] bg-[#131826] px-3 py-2">
+                    <div className="text-[#b8e356]">{day.label} · bed {fmtMin(day.targetBedtimeMin)} · wake {fmtMin(day.targetWakeMin)}</div>
+                    <div className="mt-1 flex gap-1">{day.interventions.map((iv, j) => {
+                      const info = INTERVENTION_ICONS[iv.kind];
+                      const Icon = info?.icon;
+                      return Icon ? <Icon key={j} size={12} color={info.tint} /> : null;
+                    })}</div>
                   </div>
-                </div>
+                ))}
               </div>
             )}
-          </div>
+            {lens === "ledger" && <CrewFeed entries={entries} />}
+          </LensShell>
+          {phase === "idle" && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center">
+              <div className="text-center">
+                <div className="text-sm text-[#8b93a7]">Your body clock is still in London.</div>
+                <div className="mt-1 text-xs text-[#4a5470]">The crew is waiting for the order.</div>
+              </div>
+            </div>
+          )}
+          {showOnboarding && (
+            <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#07090fcc] backdrop-blur">
+              <div className="max-w-md rounded-2xl border border-[#1e2637] bg-[#0c1018] p-6 shadow-xl">
+                <h2 className="text-sm font-bold tracking-[0.3em] text-[#e8eaf2]">WELCOME TO MERIDIAN</h2>
+                <p className="mt-3 text-[12px] leading-relaxed text-[#8b93a7]">
+                  Meridian flies a crew of agents ahead of you. They read your wearable baseline, pull real circadian
+                  literature, draft a day-by-day shift plan, score it against physiology and your calendar, then hand
+                  you a calendar file.
+                </p>
+                <ul className="mt-3 space-y-1 text-[11px] text-[#8b93a7]">
+                  <li>· <span className="text-[#e8eaf2]">Mara</span> analyst · wearable + adherence</li>
+                  <li>· <span className="text-[#e8eaf2]">Jun</span> research · papers with DOIs</li>
+                  <li>· <span className="text-[#e8eaf2]">Otto</span> planner · one day at a time</li>
+                  <li>· <span className="text-[#e8eaf2]">Iris</span> eval · explains the scorer</li>
+                  <li>· <span className="text-[#e8eaf2]">Rex</span> negotiator · reschedules events</li>
+                </ul>
+                <p className="mt-3 text-[11px] text-[#ff7a7a]">Agents propose; the deterministic scorer disposes.</p>
+                <div className="mt-4 flex justify-end">
+                  <button
+                    onClick={() => {
+                      try { localStorage.setItem("meridian:onboarded", "1"); } catch {}
+                      setShowOnboarding(false);
+                    }}
+                    className="rounded-lg bg-[#b8e356] px-4 py-2 text-xs font-bold text-[#07090f]"
+                  >
+                    Got it
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
           {trip && (
             <DayStrip
               days={trip.days}

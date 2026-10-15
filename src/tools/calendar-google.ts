@@ -1,41 +1,58 @@
-import { Composio } from "@composio/core";
 import type { CalendarEvent, CalendarMove, DayPlan, Trip } from "@/domain/types";
 
-// Real-calendar backend via Composio's Google Calendar toolkit.
-// Enabled when COMPOSIO_API_KEY + COMPOSIO_USER_ID are set; force off with
-// CALENDAR_BACKEND=fixture. The crew works in dayIndex/startMin space — this
-// module is the only place that maps that onto RFC3339 wall time.
+// Real-calendar backend via Composio's MCP endpoint (connect.composio.dev/mcp).
+// The consumer key is already bound to the connected Google account — no
+// project API key or entity id needed. Force off with CALENDAR_BACKEND=fixture.
+// The crew works in dayIndex/startMin space — this module is the only place
+// that maps that onto RFC3339 wall time.
 
+const MCP_URL = "https://connect.composio.dev/mcp";
 const TZ = () => process.env.MERIDIAN_CALENDAR_TZ ?? "Europe/London";
 const CALENDAR_ID = () => process.env.GOOGLE_CALENDAR_ID ?? "primary";
 
-let client: Composio | null = null;
+let reqId = 0;
 
 export function googleCalendarEnabled(): boolean {
   if (process.env.CALENDAR_BACKEND === "fixture") return false;
-  return Boolean(process.env.COMPOSIO_API_KEY && process.env.COMPOSIO_USER_ID);
+  return Boolean(process.env.COMPOSIO_API_KEY);
 }
 
-function composio(): Composio {
-  client ??= new Composio({
-    apiKey: process.env.COMPOSIO_API_KEY,
-    toolkitVersions: {
-      googlecalendar: process.env.COMPOSIO_GOOGLECALENDAR_VERSION ?? "20261010_00",
-    },
-  });
-  return client;
-}
-
+/** Executes one Composio tool through the MCP JSON-RPC endpoint and unwraps
+ * the nested payload: result.content[0].text → data.results[0].response.data */
 async function exec(slug: string, args: Record<string, unknown>): Promise<Record<string, unknown>> {
-  const res = await composio().tools.execute(slug, {
-    userId: process.env.COMPOSIO_USER_ID!,
-    arguments: args,
+  const res = await fetch(MCP_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json, text/event-stream",
+      "x-consumer-api-key": process.env.COMPOSIO_API_KEY!,
+    },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: ++reqId,
+      method: "tools/call",
+      params: {
+        name: "COMPOSIO_MULTI_EXECUTE_TOOL",
+        arguments: { memory: {}, tools: [{ tool_slug: slug, arguments: args }] },
+      },
+    }),
   });
-  if (!res.successful) throw new Error(res.error ?? `${slug} failed`);
-  // Composio wraps Google payloads inconsistently across tool versions —
-  // tolerate both `data.items` and `data.data.items`.
-  const data = res.data as Record<string, unknown>;
-  return (data?.data as Record<string, unknown>) ?? data ?? {};
+  if (!res.ok) throw new Error(`composio mcp ${res.status}`);
+
+  const raw = await res.text();
+  const dataLine = raw.split("\n").find((l) => l.startsWith("data:"));
+  if (!dataLine) throw new Error("composio mcp: no data frame");
+  const rpc = JSON.parse(dataLine.slice(5));
+  const text = rpc?.result?.content?.[0]?.text;
+  if (rpc?.isError || !text) {
+    throw new Error(rpc?.error?.message ?? "composio mcp: empty result");
+  }
+  const payload = JSON.parse(text);
+  const first = payload?.data?.results?.[0]?.response;
+  if (!first?.successful) {
+    throw new Error(first?.error ?? payload?.error?.message ?? `${slug} failed`);
+  }
+  return (first.data ?? {}) as Record<string, unknown>;
 }
 
 const dateOf = (trip: Trip, dayIndex: number) => trip.days[dayIndex]?.date;
@@ -64,8 +81,8 @@ export async function fetchGoogleCalendar(trip: Trip): Promise<CalendarEvent[]> 
 
   const data = await exec("GOOGLECALENDAR_EVENTS_LIST", {
     calendarId: CALENDAR_ID(),
-    timeMin: `${first}T00:00:00Z`,
-    timeMax: `${last}T23:59:59Z`,
+    timeMin: `${first}T00:00:00`,
+    timeMax: `${last}T23:59:59`,
     singleEvents: true,
     orderBy: "startTime",
     timeZone: TZ(),
@@ -122,10 +139,9 @@ export async function createPlanEvents(days: DayPlan[], trip: Trip): Promise<num
     const date = dateOf(trip, day.dayIndex);
     if (!date) return [];
     return day.interventions.map((iv) => async () => {
-      const title = `Meridian — ${iv.kind.replace(/_/g, " ")}`;
       await exec("GOOGLECALENDAR_CREATE_EVENT", {
         calendar_id: CALENDAR_ID(),
-        summary: title,
+        summary: `Meridian — ${iv.kind.replace(/_/g, " ")}`,
         description: `${iv.note}\n\nPlanned by the Meridian night shift.`,
         start_time: toRFC3339(date, iv.startMin),
         end_time: toRFC3339(date, iv.endMin ?? iv.startMin + 30),
