@@ -224,6 +224,10 @@ with the plan, 12:20. Ready."*). Typecheck, lint and 40 tests pass.
 - **14:15–14:45:** two live Anthropic rehearsals + record the sped-up backup.
   Nothing has been watched on the live provider yet — this is the highest
   remaining risk. If it's shaky, demo on `replay` and say so.
+- **Deploy a public URL** on `AGENT_PROVIDER=replay` during the rehearsal
+  window (config, not code): judges get a live link on their own phones and
+  it can't burn tokens. Deployment + monetisation thinking:
+  [commercial.md](commercial.md).
 
 ---
 <details>
