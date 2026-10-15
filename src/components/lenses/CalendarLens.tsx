@@ -9,6 +9,11 @@ import type { CalendarEvent, DaySpec } from "@/domain/types";
 // blocks are where Rex put them. Movable blocks slide between the two slots;
 // fixed commitments stay anchored. Destination meetings carry a readiness
 // badge, and the page ends with the calendar file.
+//
+// Type: 12 px throughout (design-vision.md §8). A 30-minute event is only
+// ~13 px tall on a 6:00–22:00 grid, so the in-block label carries the floor
+// with leading-none and no vertical padding; the full text lives in the row's
+// hover title and in the readiness row underneath.
 
 const VIEW_START = 6 * 60;
 const VIEW_END = 22 * 60;
@@ -40,13 +45,13 @@ export function CalendarLens({ days, events, readiness, ics }: CalendarLensProps
   };
 
   return (
-    <div className="flex h-full w-full flex-col gap-3 p-4 font-mono2 text-[11px] text-[#e8eaf2]">
+    <div className="flex h-full w-full flex-col gap-3 p-4 font-mono2 text-[12px] text-[#e8eaf2]">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] tracking-widest text-[#8b93a7] uppercase">your week · before and after</span>
+        <span className="text-[12px] text-[#8b93a7]">your week · before and after</span>
         {ics && (
           <button
             onClick={download}
-            className="rounded-lg border border-[#b8e35666] bg-[#b8e35611] px-3 py-1 text-[10px] font-bold tracking-widest text-[#b8e356] uppercase hover:bg-[#b8e35622]"
+            className="rounded-lg border border-[#b8e35666] bg-[#b8e35611] px-3 py-1 text-[12px] font-bold text-[#b8e356] hover:bg-[#b8e35622]"
           >
             download .ics
           </button>
@@ -59,7 +64,7 @@ export function CalendarLens({ days, events, readiness, ics }: CalendarLensProps
           {days.map((d) => (
             <span
               key={d.dayIndex}
-              className="text-center text-[10px] font-bold text-[#8b93a7]"
+              className="text-center text-[12px] font-bold text-[#8b93a7]"
               style={{ width: `${col}%` }}
             >
               {d.label}
@@ -72,7 +77,7 @@ export function CalendarLens({ days, events, readiness, ics }: CalendarLensProps
           {[6, 9, 12, 15, 18, 21].map((h) => (
             <span
               key={h}
-              className="absolute -left-7 -translate-y-1/2 text-[9px] text-[#4a5470]"
+              className="absolute -left-7 -translate-y-1/2 text-[12px] text-[#4a5470]"
               style={{ top: top(h * 60) }}
             >
               {String(h).padStart(2, "0")}
@@ -107,8 +112,9 @@ export function CalendarLens({ days, events, readiness, ics }: CalendarLensProps
                   />
                 )}
                 <motion.div
-                  className="absolute overflow-hidden rounded-md border px-1.5 py-1 text-[10px] leading-tight"
+                  className="absolute overflow-hidden rounded-md border px-1.5 py-0 text-[12px] leading-none"
                   style={{ ...style, borderColor: `${tone}88`, background: `${tone}22` }}
+                  title={`${e.title} ${fmtMin(e.startMin)}–${fmtMin(e.endMin)}${badge ? ` · ${badge.text}` : ""}`}
                   initial={false}
                   animate={{
                     left: moved ? newLeft : origLeft,
@@ -124,7 +130,7 @@ export function CalendarLens({ days, events, readiness, ics }: CalendarLensProps
                   </div>
                   {badge && (
                     <div
-                      className={`mt-0.5 inline-block rounded px-1 text-[9px] font-bold ${
+                      className={`mt-0.5 inline-block rounded px-1 text-[12px] font-bold ${
                         badge.status === "risk"
                           ? "bg-[#ff7a7a22] text-[#ff7a7a]"
                           : "bg-[#b8e35622] text-[#b8e356]"
@@ -143,7 +149,7 @@ export function CalendarLens({ days, events, readiness, ics }: CalendarLensProps
 
       {/* readiness — the ROI row: body-clock time before → after the plan */}
       {readiness.length > 0 && (
-        <ul className="space-y-1 border-t border-[#1e2637] pt-2 text-[10px]">
+        <ul className="space-y-1 border-t border-[#1e2637] pt-2 text-[12px]">
           {readiness.map((r) => {
             const risk = r.status === "risk";
             const improved = r.bodyWithoutPlanMin !== r.bodyMin;
@@ -157,7 +163,7 @@ export function CalendarLens({ days, events, readiness, ics }: CalendarLensProps
                   {improved ? `${fmtMin(r.bodyWithoutPlanMin)} → ${fmtMin(r.bodyMin)}` : fmtMin(r.bodyMin)}
                 </span>
                 <span
-                  className={`shrink-0 rounded px-1 text-[9px] font-bold ${
+                  className={`shrink-0 rounded px-1 text-[12px] font-bold ${
                     risk ? "bg-[#ff7a7a22] text-[#ff7a7a]" : "bg-[#b8e35622] text-[#b8e356]"
                   }`}
                 >

@@ -3,6 +3,10 @@ import type { AgentId } from "@/domain/types";
 // The crew. Each agent is a specialist with its own context, tools and job.
 // Deterministic orchestration decides WHO acts when — the same boundary a
 // clinical system keeps between agents and safety-critical decisions.
+//
+// Agent colours must never collide with the state colours: lime (#b8e356) is
+// PASS and rose (#ff7a7a) is FAIL / error, reserved by design-vision.md §8.
+// The five hues below stay clear of both (and of each other).
 
 export interface CrewMember {
   id: AgentId;
@@ -31,7 +35,7 @@ You are Mara, the crew's physiologist. Read the wearer's Garmin baseline and adh
     name: "Jun",
     callsign: "RESEARCH",
     title: "pulls the actual science",
-    color: "#b8e356",
+    color: "#c792ea",
     system: `${STYLE}
 You are Jun, the crew's researcher. Search the scientific literature for interventions that shift circadian phase for EASTWARD travel: timed light exposure, light avoidance, melatonin timing, caffeine timing, exercise timing. Use searchScience at least twice with different angles. Keep only papers that support a concrete protocol action — you are building the citation set the planner must justify itself against.`,
   },
@@ -49,7 +53,7 @@ You are Otto, the crew's planner. You receive the analyst's constraints, the res
     name: "Iris",
     callsign: "EVAL",
     title: "grades every plan cold",
-    color: "#ff7a7a",
+    color: "#5eead4",
     system: `${STYLE}
 You are Iris, the evaluator. You never saw the planning debate — only the submitted plan and the deterministic scorer output. Explain the verdict in one or two lines: what passed, what failed and why. You do not fix plans; you judge them. If the scorer reports violations, name the worst one plainly.`,
   },

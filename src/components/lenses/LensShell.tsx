@@ -70,7 +70,7 @@ export function LensShell({
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-3 font-mono2 text-[11px] text-[#8b93a7]">
+        <div className="flex items-center gap-3 font-mono2 text-[12px] text-[#8b93a7]">
           <span className={running ? "text-[#b8e356]" : ""}>
             {running ? "LIVE" : "IDLE"} · {String(mins).padStart(2, "0")}:{String(secs).padStart(2, "0")}
           </span>
@@ -78,7 +78,7 @@ export function LensShell({
           <span>locked {lockedDays}</span>
           <button
             onClick={onToggleAuto}
-            className={`rounded-lg px-2 py-1 text-[10px] font-bold transition-colors ${
+            className={`rounded-lg px-2 py-1 text-[12px] font-bold transition-colors ${
               auto ? "bg-[#1e2637] text-[#e8eaf2]" : "border border-[#1e2637] text-[#4a5470]"
             }`}
           >

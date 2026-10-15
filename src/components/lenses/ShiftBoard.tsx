@@ -29,6 +29,9 @@ export interface ShiftBoardProps {
   activeLabel?: string;
   /** Agent currently speaking or working. */
   activeAgent?: AgentId;
+  /** Static artifact mode (used by /review): the run is finished, so the
+   * legend drops the draft / scan keys and the board reads as a swimlane. */
+  readOnly?: boolean;
 }
 
 type RowState = "queued" | "draft" | "scanning" | "rejected" | "locked";
@@ -79,7 +82,7 @@ const STATE_COLOR: Record<RowState, string> = {
   locked: "#b8e356",
 };
 
-export function ShiftBoard({ days, drafts, verdicts, locked, activeLabel, activeAgent }: ShiftBoardProps) {
+export function ShiftBoard({ days, drafts, verdicts, locked, activeLabel, activeAgent, readOnly }: ShiftBoardProps) {
   // Staircase: running total of locked shift, row by row.
   let running = 0;
   const cumulative = new Map<string, number>();
@@ -258,8 +261,8 @@ export function ShiftBoard({ days, drafts, verdicts, locked, activeLabel, active
       <div className="mt-auto flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-[#4a5470]">
         <span>bar = sleep</span>
         <span>◆ = ask</span>
-        <span>dashed = draft</span>
-        <span>solid = locked</span>
+        {!readOnly && <span>dashed = draft</span>}
+        {!readOnly && <span>solid = locked</span>}
       </div>
     </div>
   );

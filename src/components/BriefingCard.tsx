@@ -95,18 +95,18 @@ export function BriefingCard({ summary, score, citations, days, ics, onClose, fa
       </button>
       <div className="flex items-start justify-between gap-6">
         <div className="min-w-0 flex-1">
-          <div className="text-[10px] font-bold tracking-[0.2em] text-[#ffc46b] uppercase">
+          <div className="text-[12px] font-bold tracking-[0.2em] text-[#ffc46b] uppercase">
             Morning handoff
           </div>
           {fallback && (
-            <div className="mt-2 rounded-md border border-[#ff7a7a44] bg-[#ff7a7a11] px-2.5 py-1.5 text-[11px] text-[#ff7a7a]">
+            <div className="mt-2 rounded-md border border-[#ff7a7a44] bg-[#ff7a7a11] px-2.5 py-1.5 text-[12px] text-[#ff7a7a]">
               Fell back to the recorded shift mid-run — review before acting.
             </div>
           )}
           <p className="mt-1.5 text-sm leading-relaxed text-[#e8eaf2]">{summary}</p>
 
           {firstMove && (
-            <div className="mt-2 inline-flex items-center gap-2 rounded-md border border-[#b8e35644] bg-[#b8e3560f] px-2.5 py-1 text-[11px] text-[#b8e356]">
+            <div className="mt-2 inline-flex items-center gap-2 rounded-md border border-[#b8e35644] bg-[#b8e3560f] px-2.5 py-1 text-[12px] text-[#b8e356]">
               <span className="font-bold tracking-wider uppercase">first move</span>
               <span className="text-[#e8eaf2]">
                 {firstMove.day.label} · {fmtMin(firstMove.iv.startMin)} — {firstMove.iv.note}
@@ -116,7 +116,7 @@ export function BriefingCard({ summary, score, citations, days, ics, onClose, fa
 
           <div className="mt-3 flex flex-wrap gap-1.5">
             {days.map((d) => (
-              <span key={d.dayIndex} className="rounded border border-[#1e2637] bg-[#131826] px-2 py-0.5 font-mono2 text-[10px] text-[#8b93a7]">
+              <span key={d.dayIndex} className="rounded border border-[#1e2637] bg-[#131826] px-2 py-0.5 font-mono2 text-[12px] text-[#8b93a7]">
                 {d.label} {d.shiftMin}m · bed {fmtMin(d.targetBedtimeMin)}
               </span>
             ))}
@@ -124,7 +124,7 @@ export function BriefingCard({ summary, score, citations, days, ics, onClose, fa
 
           <div className="mt-3 space-y-0.5">
             {citations.slice(0, 4).map((c) => (
-              <div key={c.id} className="truncate text-[10px] text-[#8b93a7]">
+              <div key={c.id} className="truncate text-[12px] text-[#8b93a7]">
                 <span className="text-[#b8e356]">▪</span>{" "}
                 <a
                   href={c.doi ? `https://doi.org/${c.doi}` : c.url}
@@ -143,7 +143,7 @@ export function BriefingCard({ summary, score, citations, days, ics, onClose, fa
         <div className="shrink-0 text-right">
           <div className="font-mono2 text-3xl font-bold text-[#b8e356]">{score.toFixed(2)}</div>
           <div
-            className="text-[10px] tracking-widest text-[#8b93a7] uppercase"
+            className="text-[12px] tracking-widest text-[#8b93a7] uppercase"
             title="Mean of the passing eval verdicts across locked days — not the last day's score."
           >
             plan score · mean of {days.length} locked day{days.length === 1 ? "" : "s"}

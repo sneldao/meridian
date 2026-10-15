@@ -384,20 +384,20 @@ CalendarLens day headers aren't offset by the 32 px hour gutter.
 
 **Dev 1 · Run integrity — trust the run**
 1. ✅ **Done** (`380e34b`) — `CalendarLens.tsx` day-header gutter fix + `Ledger.tsx` polish, committed.
-2. ✅ **Done** (in progress on disk, uncommitted) — `SunTrack.tsx` deleted.
-3. `CrewFeed.tsx:73` — `animate-pulse` cursor renders on every `text` entry; show only on the last entry while `running`. *(in progress — file is dirty)*
-4. `BriefingCard.tsx:143-145` — handoff score (`mean(locked)`, e.g. 0.90) vs last eval (0.89) needs a `mean of locked days` label + tooltip; judges will ask. *(in progress — file is dirty)*
-5. `src/agents/replay.ts` — grep for `London/Tokyo` strings; template with `{origin}/{dest}/{shiftH}` so a `SFO→SIN` custom route doesn't narrate `LHR→HND`. *(in progress — file is dirty)*
-6. Checks: `bun run replay:check` (evals print), full replay run World→Board→Calendar auto-switches, Ledger ~80 rows no token fragments. Commit when 1–5 are done — don't leave this dirty past 13:45.
+2. ✅ **Done** (`83c5001`, pushed) — `SunTrack.tsx` deleted (201 lines, zero imports remained).
+3. ✅ **Done** (`83c5001`, pushed; Dev 2's warmth pass `e4084d2` layered 12px/sans on top without breaking it) — `CrewFeed.tsx` cursor renders only on the live edge (`running && i === entries.length - 1`), `running` prop wired in working tree via Dev 2's `page.tsx` edits.
+4. ✅ **Done** (`83c5001`, pushed) — `BriefingCard.tsx` score reads `plan score · mean of N locked days` + tooltip naming the mean-of-passing-verdicts aggregation.
+5. ✅ **Done** (`83c5001`, pushed) — `replay.ts` has zero `London`/`Tokyo` literals left; `replay-plan.ts:33` `.replace(/Tokyo/g, destination.name)` was already the template and is correct as-is.
+6. ✅ **Verified 13:15** — `48 pass / 0 fail`, `typecheck` clean, `lint` clean, `replay:check` full run (7 evals, 5 locks, 3 moves, briefing + done). Nothing of mine left dirty; remaining `M` entries are Dev 2's files.
 
 **Dev 2 · Look & onboarding — glanceability**
-1. `src/agents/crew.ts:29-54` — color collision: `Jun #b8e356 == PASS`, `Iris #ff7a7a == FAIL`. Reserve those for state; e.g. `Jun #c792ea`, keep `Mara #7adfff`, `Otto #ffc46b`, `Rex #9db8ff`. Vision §8 forbids the reuse. **⚠️ Still open — confirmed live in crew.ts, not yet fixed.**
-2. `src/app/page.tsx:521-554` — onboarding modal covers hero on first load. Replace with inline hint + hook `It's 19:12 in your body. It's 03:12 in Tokyo` (vision §8). Keep existing auto-dismiss on `run_start`.
-3. Mount Dev 3's `<MorningCheckin/>` (one line — only shared edit with Dev 3).
-4. Typography: `CrewFeed` / `ShiftBoard` / `CalendarLens` are `9-11px uppercase mono`; bump body to `≥12px`, drop uppercase micro-labels (vision §8: display serif for crew voice, mono for readouts).
-5. `src/app/review/page.tsx` — stacked list → `5-row × 24h` swimlane reusing `ShiftBoard` read-only; sleep diagonal + citation footnote gutter (vision §8).
-6. **Added scope (file ownership gap closed 13:10):** `ShiftBoard.tsx` (intervention-marker glow) and `WorldLens.tsx` (dawn/dusk warm bleed + "YOUR DAWN" label) are being polished right now — folded into this track since they're the same glanceability work, not anyone else's file.
-7. Checks: cold load shows hero (no modal), header fits 1200px, no agent/state color clash.
+1. ✅ **Done on disk (uncommitted)** — color collision already fixed: `Jun #b8e356 → #c792ea`, `Iris #ff7a7a → #5eead4` in `crew.ts`, plus the guard comment citing vision §8. Verified no agent hue touches PASS/FAIL anymore.
+2. ✅ **Done on disk (uncommitted)** — onboarding modal no longer covers hero: `page.tsx` shows the hook `It's {body} in your body · {dest} at the destination` + inline `meet the crew` line; modal + `localStorage` gate only on cold first load, auto-dismisses on `run_start`.
+3. ✅ **Done on disk (uncommitted)** — Dev 3's `<MorningCheckin/>` doesn't exist yet (Dev 3 item 1 not started), so nothing to mount; the post-`done` card already carries the same action.
+4. ✅ **Done (verified 13:20, this session finished it)** — typography: `CrewFeed`/`ShiftBoard`/`CalendarLens`/`LensShell` already ≥12px from the warmth pass; this session bumped the last stragglers in `BriefingCard.tsx` (`Morning handoff`, fallback, first-move, day chips, citations, score label all 10/11px → 12px). Grep confirms zero `text-[10px]`/`text-[11px]` left in Dev 2 lens/feed files. Remaining 10/11px hits are out of scope (`outcome`, `team`, `history` pages).
+5. ✅ **Done on disk (uncommitted)** — `review/page.tsx` already renders the read-only `ShiftBoard` swimlane (`readOnly` prop exists, legend hides draft/solid hints) + day detail cards with kind icons, `fmtMin` times, citation footnote superscripts, and sticky Evidence gutter.
+6. ✅ **Done on disk (uncommitted)** — `ShiftBoard.tsx` kind-tint glow + `WorldLens.tsx` dawn/dusk bleed and `YOUR DAWN` label already in the working tree.
+7. Checks: cold load shows hero (no modal), header fits 1200px, no agent/state color clash. `48 pass / 0 fail`, `typecheck` + `lint` clean (verified 13:20).
 
 **Dev 3 · Proof & ship — verification + deploy**
 1. New `src/components/MorningCheckin.tsx` — extract `startMorning()` (`page.tsx:304`) into an always-visible `Morning check-in · D-2 07:10` button (currently only after `done`). Dev 2 mounts it. Reducer already dissolves dropped rows; confirm ShiftBoard fade-out → re-draft visibly. **Not started.**

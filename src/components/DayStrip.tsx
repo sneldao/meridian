@@ -32,15 +32,15 @@ export function DayStrip({ days, locked, activeLabel, rejectedLabels }: Props) {
             }`}
           >
             <div className="flex items-baseline justify-between">
-              <span className={`text-[11px] font-bold ${plan ? "text-[#b8e356]" : active ? "text-[#ffc46b]" : "text-[#8b93a7]"}`}>
+              <span className={`text-[12px] font-bold ${plan ? "text-[#b8e356]" : active ? "text-[#ffc46b]" : "text-[#8b93a7]"}`}>
                 {d.label}
               </span>
               {plan && (
-                <span className="font-mono2 text-[10px] text-[#8b93a7]">{plan.shiftMin}m</span>
+                <span className="font-mono2 text-[12px] text-[#8b93a7]">{plan.shiftMin}m</span>
               )}
             </div>
             {plan ? (
-              <div className="mt-1 font-mono2 text-[10px] text-[#e8eaf2]">
+              <div className="mt-1 font-mono2 text-[12px] text-[#e8eaf2]">
                 <div>bed {fmtMin(plan.targetBedtimeMin)}</div>
                 <div>wake {fmtMin(plan.targetWakeMin)}</div>
                 <div className="mt-1 flex gap-1">
@@ -51,7 +51,7 @@ export function DayStrip({ days, locked, activeLabel, rejectedLabels }: Props) {
                 </div>
               </div>
             ) : (
-              <div className="mt-1 font-mono2 text-[10px] text-[#4a5470]">
+              <div className="mt-1 font-mono2 text-[12px] text-[#4a5470]">
                 {active ? "planning…" : rejected ? "replanning…" : "queued"}
               </div>
             )}

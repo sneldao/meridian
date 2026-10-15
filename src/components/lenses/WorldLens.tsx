@@ -96,7 +96,7 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
             y={H - 12}
             textAnchor="middle"
             fill="#ffd98a"
-            fontSize="10"
+            fontSize="12"
             fontWeight="700"
             letterSpacing="2"
           >
@@ -144,7 +144,7 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
           <circle key={i} cx={x} cy={y} r={i % 2 === 0 ? 1.4 : 0.9} fill="#e8eaf2" opacity="0.35" />
         ))}
       </svg>
-      <div className="absolute left-4 top-4 rounded-lg border border-[#1e2637] bg-[#0c1018cc] px-3 py-2 text-[10px] text-[#8b93a7] backdrop-blur">
+      <div className="absolute left-4 top-4 rounded-lg border border-[#1e2637] bg-[#0c1018cc] px-3 py-2 text-[12px] text-[#8b93a7] backdrop-blur">
         <div className="text-[#9db8ff]">real terminator · UTC {String(now.getUTCHours()).padStart(2, "0")}:{String(now.getUTCMinutes()).padStart(2, "0")}</div>
         <div className="text-[#ffd98a]">ghost terminator · body clock</div>
         {running && <div className="mt-1 text-[#b8e356]">mission live · {citationCount} evidence stars</div>}

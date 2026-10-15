@@ -1,6 +1,10 @@
 @import "tailwindcss";
 
 @theme {
+  /* design-vision.md §8: display serif for the crew's voice, precise mono for
+     readouts, and nothing below 12px. `font-voice` / `font-mono2` are the two
+     voices; body copy uses the default sans. */
+  --font-voice: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
   --color-ink: #07090f;
   --color-ink-2: #0c1018;
   --color-ink-3: #131826;

@@ -361,7 +361,7 @@ export default function Home() {
 
         {baseline && (
           <div
-            className="hidden shrink-0 items-center gap-1.5 rounded-lg border border-[#1e2637] bg-[#0c1018] px-3 py-1.5 font-mono2 text-[11px] text-[#8b93a7] xl:flex"
+            className="hidden shrink-0 items-center gap-1.5 rounded-lg border border-[#1e2637] bg-[#0c1018] px-3 py-1.5 font-mono2 text-[12px] text-[#8b93a7] xl:flex"
             title="From the wearable baseline — who this plan is shaped around"
           >
             <MoonStar size={12} className="text-[#b8a8ff]" />
