@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import type { CrewMemory } from "@/domain/types";
 import Link from "next/link";
 
 interface Outcome {
@@ -15,6 +16,14 @@ export default function OutcomePage() {
   const [jetlag, setJetlag] = useState(3);
   const [notes, setNotes] = useState("");
   const [saved, setSaved] = useState(false);
+  const [memory, setMemory] = useState<CrewMemory | null>(null);
+
+  useEffect(() => {
+    fetch("/api/memory")
+      .then((r) => r.json())
+      .then(setMemory)
+      .catch(() => {});
+  }, []);
 
   const save = async () => {
     const o: Outcome = { savedAt: new Date().toISOString(), adherence, jetlag, notes };
@@ -80,6 +89,33 @@ export default function OutcomePage() {
         </button>
         {saved && <span className="text-[11px] text-[#b8e356]">saved</span>}
       </div>
+
+      {memory?.learned && (
+        <section className="mt-8 rounded-xl border border-[#1e2637] bg-[#0c1018] p-4">
+          <h2 className="text-[10px] font-bold tracking-[0.2em] text-[#ffc46b] uppercase">What Meridian has learned</h2>
+          {memory.learned.skippedKinds?.length ? (
+            <div className="mt-2 text-[11px] text-[#8b93a7]">
+              Historically difficult: {memory.learned.skippedKinds.join(", ")}
+            </div>
+          ) : null}
+          {memory.learned.earliestDoneMin !== undefined ? (
+            <div className="mt-1 text-[11px] text-[#8b93a7]">
+              Earliest ask ever completed: {String(Math.floor(memory.learned.earliestDoneMin / 60)).padStart(2, "0")}:
+              {String(memory.learned.earliestDoneMin % 60).padStart(2, "0")}
+            </div>
+          ) : null}
+          {memory.learned.notes?.length ? (
+            <ul className="mt-2 space-y-1">
+              {memory.learned.notes.slice(-5).map((n: string, i: number) => (
+                <li key={i} className="text-[11px] text-[#8b93a7]">“{n}”</li>
+              ))}
+            </ul>
+          ) : null}
+          {memory.runs?.length ? (
+            <div className="mt-2 text-[11px] text-[#8b93a7]">{memory.runs.length} prior shift(s) on file.</div>
+          ) : null}
+        </section>
+      )}
     </main>
   );
 }

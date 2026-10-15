@@ -16,6 +16,7 @@
   "dependencies": {
     "@ai-sdk/anthropic": "4.0.80",
     "@ai-sdk/openai-compatible": "3.0.69",
+    "@composio/core": "0.22.0",
     "ai": "7.0.141",
     "framer-motion": "14.2.0",
     "lucide-react": "1.57.0",
