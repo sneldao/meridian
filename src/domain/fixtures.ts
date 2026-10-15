@@ -99,6 +99,9 @@ export const CALENDAR: CalendarEvent[] = [
   { id: "ev-breakfast", title: "Team breakfast", dayIndex: 1, startMin: 7 * 60 + 30, endMin: 8 * 60 + 30, movable: false },
   { id: "ev-dinner", title: "Dinner with Sarah", dayIndex: 2, startMin: 19 * 60 + 30, endMin: 21 * 60 + 30, movable: false },
   { id: "ev-flight", title: "BA005 LHR → HND", dayIndex: 3, startMin: 11 * 60 + 20, endMin: 11 * 60 + 50, movable: false, blocksInterventions: false },
+  // The reason for the trip: the destination meeting the readiness badge judges.
+  // 14:00 local on arrival day: LHR→HND unadapted, the body thinks it's 06:00.
+  { id: "ev-pitch", title: "Client pitch", dayIndex: 4, startMin: 14 * 60, endMin: 15 * 60 + 30, movable: false },
   // Movable blocks — negotiable material.
   { id: "ev-standup-0", title: "Team standup", dayIndex: 0, startMin: 9 * 60 + 30, endMin: 10 * 60, movable: true },
   { id: "ev-standup-1", title: "Team standup", dayIndex: 1, startMin: 9 * 60 + 30, endMin: 10 * 60, movable: true },
