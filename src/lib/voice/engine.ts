@@ -73,6 +73,7 @@ const MAX_INFLIGHT = 2;
 
 let available = false;
 let enabled = true;
+let lastErrorMsg: string | null = null;
 let ctx: AudioContext | null = null;
 let kickArmed = false;
 let cursor = 0;
@@ -105,6 +106,54 @@ export function subscribeVoice(cb: () => void): () => void {
   return () => listeners.delete(cb);
 }
 
+// --- Error channel ------------------------------------------------------------
+// The route returns {error, code, fatal} on every failure. The engine used to
+// discard it, so exhausted credits left a mute crew with no explanation. Fatal
+// errors (bad key, no quota) switch the layer off for the session instead of
+// re-failing every remaining sentence.
+
+export interface VoiceError {
+  message: string;
+  code?: string;
+  fatal: boolean;
+}
+
+const errorListeners = new Set<(e: VoiceError) => void>();
+
+export function subscribeVoiceErrors(cb: (e: VoiceError) => void): () => void {
+  errorListeners.add(cb);
+  return () => errorListeners.delete(cb);
+}
+
+function reportError(e: VoiceError) {
+  // One message per distinct failure — a dead quota would otherwise log once
+  // per queued sentence.
+  if (e.message === lastErrorMsg) return;
+  lastErrorMsg = e.message;
+  if (e.fatal) {
+    // Latch off for the session — re-failing every queued sentence would
+    // spam the feed and burn requests on a dead key/quota.
+    enabled = false;
+    queue.length = 0;
+  }
+  errorListeners.forEach((l) => l(e));
+}
+
+async function reportHttpError(res: Response) {
+  let detail: { error?: string; code?: string; fatal?: boolean } = {};
+  try {
+    detail = await res.json();
+  } catch {
+    /* non-JSON failure body — keep the status line */
+  }
+  const isFatal = Boolean(detail.fatal) || res.status === 401 || res.status === 402 || res.status === 403;
+  reportError({
+    message: detail.error || `voice synthesis failed (${res.status})`,
+    code: detail.code,
+    fatal: isFatal,
+  });
+}
+
 export function spokenChars(uId: string | undefined): number {
   if (!uId) return 0;
   return spoken.get(uId) ?? 0;
@@ -129,6 +178,10 @@ export function isVoiceAvailable(): boolean {
 
 export function setVoiceEnabled(on: boolean) {
   enabled = on;
+  if (on) {
+    // Toggling back on is an explicit retry — clear the latched error message.
+    lastErrorMsg = null;
+  }
   if (!on) stopAll();
 }
 
@@ -318,7 +371,11 @@ async function produce(call: Call) {
       signal,
     });
   }
-  if (!res.ok || !res.body) return;
+  if (!res.ok) {
+    await reportHttpError(res);
+    return;
+  }
+  if (!res.body) return;
 
   call.rate = Number(res.headers.get("x-voice-sample-rate")) || 22050;
   call.codec = res.headers.get("x-voice-codec") ?? "pcm";
@@ -401,7 +458,11 @@ function drive() {
     prepared.push(call);
     producing++;
     void produce(call)
-      .catch(() => {})
+      .catch((err: unknown) => {
+        // Aborts (stop/run restart) are expected, not failures.
+        if ((err as Error)?.name === "AbortError") return;
+        reportError({ message: "voice synthesis failed — network error", fatal: false });
+      })
       .finally(() => {
         producing--;
         call.done = true;

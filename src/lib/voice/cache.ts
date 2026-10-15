@@ -31,6 +31,9 @@ export interface CacheKeyParts {
   seed: number;
   stability: number;
   similarity: number;
+  /** Previous-sentence prosody context (tts only). Changes the waveform, so
+   *  it must change the key — a hit without it can serve the wrong delivery. */
+  prev?: string;
 }
 
 export function voiceCacheKey(parts: CacheKeyParts): string {

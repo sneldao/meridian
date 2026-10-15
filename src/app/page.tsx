@@ -28,7 +28,7 @@ import { CalendarLens } from "@/components/lenses/CalendarLens";
 import { Ledger } from "@/components/lenses/Ledger";
 import { useRunState, calendarWithMoves, ledgerEvents, ghostGapDeg } from "@/state/run";
 import { meetingReadiness } from "@/domain/readiness";
-import { initVoice, setVoiceEnabled, speakDialogue, speakOnce, speakSentence, stopAll as stopVoiceAll } from "@/lib/voice/engine";
+import { initVoice, setVoiceEnabled, speakDialogue, speakOnce, speakSentence, stopAll as stopVoiceAll, subscribeVoiceErrors } from "@/lib/voice/engine";
 import { takeChunks } from "@/lib/voice/split";
 import { easeSmoothOut } from "@/lib/motion";
 
@@ -136,6 +136,17 @@ export default function Home() {
   const push = useCallback((e: LogEntry) => {
     setEntries((prev) => [...prev, e]);
   }, []);
+
+  // Voice failures surface in the feed instead of a mute crew — a dead quota
+  // or bad key is a state the operator should see, not silently absorb.
+  useEffect(() => {
+    return subscribeVoiceErrors((err) => {
+      push({
+        kind: "error",
+        text: err.fatal ? `voice unavailable: ${err.message}` : `voice: ${err.message}`,
+      });
+    });
+  }, [push]);
 
   const handleSideEffects = useCallback(
     (e: CrewEvent) => {

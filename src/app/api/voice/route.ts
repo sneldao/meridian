@@ -159,6 +159,7 @@ async function single(body: { text?: string; agent?: string; timestamps?: boolea
   const align = Boolean(body.timestamps) && karaokeEnabled();
   const format = outputFormat();
   const settings = voiceSettings();
+  const prev = body.prev ? cleanForTts(body.prev).clean : undefined;
   const key = voiceCacheKey({
     kind: "tts",
     voice,
@@ -169,6 +170,8 @@ async function single(body: { text?: string; agent?: string; timestamps?: boolea
     seed: voiceSeed(),
     stability: settings.stability,
     similarity: settings.similarity_boost,
+    // Prosody context changes the waveform, so it must change the key.
+    ...(prev ? { prev: prev.slice(-200) } : {}),
   });
   const hit = await lookupVoice(key);
   const extra = {
@@ -187,7 +190,7 @@ async function single(body: { text?: string; agent?: string; timestamps?: boolea
     model,
     outputFormat: format,
     align,
-    previousText: body.prev ? cleanForTts(body.prev).clean : undefined,
+    previousText: prev,
   });
   const contentType = align ? "application/x-ndjson" : undefined;
   return new Response(tee(res.body!, (buf) => void storeVoice(key, buf, contentType ?? "audio/pcm")), {
