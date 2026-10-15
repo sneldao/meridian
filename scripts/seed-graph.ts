@@ -49,8 +49,7 @@ async function seedDemo(g: any) {
        MERGE (d:Day {dayIndex:$dayIndex})
        SET d.label=$label, d.date=$date, d.shiftMin=$shiftMin
        MERGE (t)-[:INCLUDES]->(d)`,
-      { params: d },
-    );
+      d );
   }
 
   // --- Interventions (kind + label so entity resolution can name them) -----
@@ -71,7 +70,7 @@ async function seedDemo(g: any) {
        MERGE (i:Intervention {kind:$kind, dayIndex:$dayIndex})
        SET i.label=$label, i.startMin=$startMin
        MERGE (d)-[:HAS_INTERVENTION]->(i)`,
-      { params: { dayIndex, kind, label, startMin } },
+      { dayIndex, kind, label, startMin },
     );
   }
 
@@ -101,7 +100,7 @@ async function seedDemo(g: any) {
     await q(
       g,
       `MERGE (c:Citation {id:$id}) SET c.title=$title, c.venue=$venue`,
-      { params: { id, title, venue } },
+      { id, title, venue },
     );
   }
   await q(
@@ -134,7 +133,7 @@ async function seedDemo(g: any) {
        CREATE (c:CheckIn {at:$at, status:$status, text:$text, kind:$kind, session:'run-1'})
        CREATE (c)-[:ABOUT]->(i)
        CREATE (c)-[:ON_DAY]->(d)`,
-      { params: { dayIndex, kind, status, text, at: 1760e9 + dayIndex * 864e5 } },
+      { dayIndex, kind, status, text, at: 1760e9 + dayIndex * 864e5 },
     );
   }
 
@@ -150,7 +149,7 @@ async function seedDemo(g: any) {
       `MATCH (d:Day {dayIndex:$dayIndex})
        CREATE (f:Finding {text:$text, at:$at, session:'run-1'})
        CREATE (f)-[:ABOUT]->(d)`,
-      { params: { dayIndex, text, at: 1760e9 + dayIndex * 864e5 + 36e5 } },
+      { dayIndex, text, at: 1760e9 + dayIndex * 864e5 + 36e5 },
     );
   }
 
@@ -217,7 +216,7 @@ async function main() {
   else await seedDemo(g);
 
   const count = await g.roQuery("MATCH (n) RETURN count(n) AS nodes");
-  console.log(`Seeded ${GRAPH} on ${URL} — nodes: ${count?.data?.[0]?.nodes ?? "?"}`);
+  console.log(`Seeded ${GRAPH} on ${URL.replace(/\/\/([^:]+):[^@]+@/, "//$1:***@")} — nodes: ${count?.data?.[0]?.nodes ?? "?"}`);
   await db.close();
 }
 

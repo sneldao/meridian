@@ -26,6 +26,8 @@ import { runMorningReplay } from "./morning-replay";
 import { buildIcs, fetchCalendar, proposeMove } from "@/tools/calendar";
 import { createPlanEvents, patchGoogleEvent } from "@/tools/calendar-google";
 import { searchScience } from "@/tools/science";
+import { searchTavily, tavilyEnabled } from "@/tools/tavily";
+import { destinationTaste, qlooEnabled } from "@/tools/qloo";
 import { getAdherenceProfile, getRecentNights, getWearableBaseline } from "@/tools/wearable";
 
 const ARTIFACTS_DIR = path.join(process.cwd(), "artifacts");
@@ -51,6 +53,8 @@ export function runCrew(opts?: {
   calendarSource?: "google" | "fixture";
   checkIns?: CheckIn[];
   startDayIndex?: number;
+  /** Tenant for graph memory isolation — `meridian:{tenant}` graph. */
+  tenant?: string;
 }): AsyncGenerator<CrewEvent> {
   const queue: CrewEvent[] = [];
   const notifier: { fn: (() => void) | null } = { fn: null };
@@ -77,6 +81,7 @@ export function runCrew(opts?: {
           cal.source,
           opts?.checkIns ?? [],
           opts?.startDayIndex ?? 0,
+          opts?.tenant,
         );
       }
     } catch (err) {
@@ -131,14 +136,47 @@ interface RunState {
   briefingText: string;
 }
 
-async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[], calendarSource: "google" | "fixture" = "fixture", checkIns: CheckIn[] = [], startDayIndex: number = 0) {
+async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[], calendarSource: "google" | "fixture" = "fixture", checkIns: CheckIn[] = [], startDayIndex: number = 0, tenant?: string) {
   const adherence = checkIns.length ? foldCheckIns(ADHERENCE_PROFILE, checkIns) : ADHERENCE_PROFILE;
   const memory = await loadMemory();
-  let graphMem: { enabled: boolean; findings: { text: string; at: number; session: string; target?: string }[]; failures: { kind: string; status: string; text?: string; at: number }[] } = { enabled: false, findings: [], failures: [] };
+  // Graph memory is offered as fixed tools, not prompt prose — the analyst
+  // calls recallFindings/priorFailures and every answer carries the hop path.
+  // Absent without FALKORDB_URL; a down DB returns "graph memory offline".
+  let graphTools: Record<string, ToolDef> = {};
   if (process.env.FALKORDB_URL) {
     try {
       const gm = await import("@/domain/graph-memory");
-      if (gm.graphEnabled()) graphMem = await gm.loadGraphMemory();
+      if (gm.graphEnabled()) {
+        graphTools = {
+          recallFindings: {
+            description:
+              "Recall what the traveller's graph remembers about a named thing — an intervention label, day, or trip. Returns findings with the hop path, or a 'not in graph' note. Never answer about a name the graph doesn't resolve.",
+            inputSchema: z.object({
+              target: z.string().describe("name of the intervention, day or trip to recall"),
+              limit: z.number().int().min(1).max(10).optional(),
+            }),
+            execute: async (input: { target: string; limit?: number }) =>
+              gm.recallFindings(input.target, input.limit, tenant),
+          },
+          priorFailures: {
+            description:
+              "Past skipped/harder/partial check-ins for an intervention kind, walked back to the day and trip they happened on.",
+            inputSchema: z.object({
+              kind: z.string().describe("intervention kind, e.g. light_exposure"),
+              limit: z.number().int().min(1).max(10).optional(),
+            }),
+            execute: async (input: { kind: string; limit?: number }) =>
+              gm.priorFailures(input.kind, input.limit, tenant),
+          },
+          calendarConflicts: {
+            description: "Fixed calendar events recorded against a plan day in the graph.",
+            inputSchema: z.object({
+              dayIndex: z.number().int().min(0).describe("plan day index"),
+            }),
+            execute: async (input: { dayIndex: number }) => gm.calendarConflicts(input.dayIndex, tenant),
+          },
+        };
+      }
     } catch {
       // optional graph memory never breaks the run
     }
@@ -178,11 +216,12 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
     CREW.analyst,
     {
       prompt:
-        `Baseline + adherence profile are on your tools. Give the planner the constraints: chronotype, habitual window, and the compliance floor. Cross-run memory: ${memoryBrief(memory)} Graph memory: ${graphMem.enabled && graphMem.findings.length ? graphMem.findings.map((f) => `"${f.text}"`).join("; ") : "disabled or empty"}`,
+        `Baseline + adherence profile are on your tools. Give the planner the constraints: chronotype, habitual window, and the compliance floor. Cross-run memory: ${memoryBrief(memory)}${Object.keys(graphTools).length ? " Before answering, you MUST consult the traveller's graph memory: call priorFailures('light_exposure') and priorFailures('caffeine_cutoff'), then recallFindings for any intervention or day you constrain. Cite what came from memory with its session. If a tool answers 'not in graph', say the graph doesn't know rather than guessing." : ""}`,
       tools: {
         getWearableBaseline: bare("Read the wearer's wearable baseline", () => getWearableBaseline()),
         getRecentNights: bare("Read recent sleep nights", () => getRecentNights()),
         getAdherenceProfile: bare("Read the adherence profile", () => getAdherenceProfile()),
+        ...graphTools,
       },
     },
     emit,
@@ -190,18 +229,30 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
   );
   logLine(`analyst: ${analyst.text}`);
 
-  // 2. Researcher — pulls the literature.
+  // 2. Researcher — pulls the literature. searchWeb (Tavily) adds live
+  // non-paper context — current guidance, destination practicalities — that
+  // informs his read but never enters the citation set.
   const research = await runAgent(
     CREW.researcher,
     {
       prompt:
-        `${trip.direction === "east" ? "Eastward" : "Westward"} shift, ${Math.round(Math.abs(trip.requiredShiftMin) / 60)} time zones, ${trip.direction === "east" ? "advance" : "delay"} the clock. Find the strongest papers on timed light, melatonin timing and caffeine timing for phase ${trip.direction === "east" ? "advances" : "delays"}. Two+ searches, different angles.`,
+        `${trip.direction === "east" ? "Eastward" : "Westward"} shift, ${Math.round(Math.abs(trip.requiredShiftMin) / 60)} time zones, ${trip.direction === "east" ? "advance" : "delay"} the clock. Find the strongest papers on timed light, melatonin timing and caffeine timing for phase ${trip.direction === "east" ? "advances" : "delays"}. Two+ searches, different angles.${tavilyEnabled() ? " searchWeb is live — use it for current guidance and destination practicalities; only searchScience results are citable." : ""}`,
       tools: {
         searchScience: {
           description: "Search scientific papers by meaning. Returns citations with DOIs.",
           inputSchema: z.object({ query: z.string(), k: z.number().default(5) }),
           execute: async ({ query, k }: { query: string; k: number }) => searchScience(query, k),
         },
+        ...(tavilyEnabled()
+          ? {
+              searchWeb: {
+                description:
+                  "Live web search — current guidance, destination practicalities, daylight and venue context. Informs the read; not citable in the plan.",
+                inputSchema: z.object({ query: z.string(), k: z.number().default(5) }),
+                execute: async ({ query, k }: { query: string; k: number }) => searchTavily(query, k),
+              },
+            }
+          : {}),
       },
     },
     emit,
@@ -272,6 +323,11 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
                 targetWakeMin: d.targetWakeMin,
               })),
               ...(feedback ? { evaluatorFeedback: feedback } : {}),
+              ...(qlooEnabled()
+                ? {
+                    qloo: `destinationTaste is live — call it once for ${trip.destination.name}; use it to ground intervention notes in what the destination actually offers, never for timing or shift decisions.`,
+                  }
+                : {}),
             },
             null,
             2,
@@ -307,6 +363,17 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
                 return "submitted";
               },
             },
+            ...(qlooEnabled()
+              ? {
+                  destinationTaste: {
+                    description:
+                      "Qloo taste graph — venues and categories the destination is known for. Grounds intervention notes in what the place actually offers; never use for timing or shift decisions.",
+                    inputSchema: z.object({}),
+                    execute: async () =>
+                      destinationTaste(trip.destination.name, trip.destination.lon, trip.destination.lat),
+                  },
+                }
+              : {}),
           },
         },
         emit,
@@ -520,6 +587,19 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
     meanScore,
   });
   try {
+    const gm = await import("@/domain/graph-memory");
+    if (gm.graphEnabled()) {
+      await gm.recordFinding(
+        `Run ${trip.origin.code}→${trip.destination.code}: locked ${state.lockedDays.length} days, mean score ${meanScore}`,
+        `${trip.origin.name} → ${trip.destination.name}`,
+        undefined,
+        tenant,
+      );
+    }
+  } catch {
+    // FalkorDB is optional.
+  }
+  try {
     const { persistRun } = await import("@/tools/supabase");
     await persistRun({
       savedAt: new Date().toISOString(),
@@ -732,6 +812,9 @@ function summarizeInput(input: unknown): string {
     if (typeof i.query === "string") return `"${i.query}"`;
     if (typeof i.eventId === "string") return `${i.eventId} → day ${i.toDayIndex} ${fmtMin(Number(i.toStartMin))}`;
     if (typeof i.shiftMin === "number") return `shift ${i.shiftMin}min, ${(i.interventions as unknown[])?.length ?? 0} interventions`;
+    if (typeof i.target === "string") return `"${i.target}"`;
+    if (typeof i.kind === "string") return i.kind;
+    if (typeof i.dayIndex === "number") return `day ${i.dayIndex}`;
   }
   return "";
 }
@@ -743,6 +826,14 @@ function summarizeOutput(output: unknown): string {
     if (typeof o.error === "string") return `refused: ${o.error}`;
     if (typeof o.committed === "number") return `${o.committed} events committed`;
     if (typeof o.title === "string") return `${o.title}`;
+    // Graph tools: rows, hop path and query time — the trace judges look for.
+    if (typeof o.rows === "number") {
+      const bits = [`${o.rows} rows`];
+      if (typeof o.ms === "number") bits.push(`${o.ms}ms`);
+      if (typeof o.path === "string" && o.path) bits.push(o.path);
+      if (typeof o.note === "string") bits.push(o.note);
+      return bits.join(" · ");
+    }
   }
   return "ok";
 }

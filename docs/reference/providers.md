@@ -12,6 +12,7 @@ One runtime (`src/agents/runtime.ts`), three model backends selected by
 | `replay` (default) | Scripted transcript, zero tokens. Stage insurance + UI dev. | none |
 | `anthropic` | Live Claude crew. **Demo path.** | `ANTHROPIC_API_KEY` |
 | `featherless` | OpenAI-compatible open models for cheap dev iteration. | `FEATHERLESS_API_KEY` |
+| `nebius` | Crew on NVIDIA Nemotron via Nebius Token Factory (Nebius×NVIDIA hackathon track). | `NEBIUS_API_KEY` |
 
 If a live provider throws mid-run, `runCrew` emits an `error` event and drains
 the replay transcript to completion — the demo never dies on stage.
@@ -31,6 +32,10 @@ MERIDIAN_SPECIALIST_MODEL     # analyst/researcher             — default claud
 
 Featherless equivalents: `FEATHERLESS_ORCHESTRATOR_MODEL`,
 `FEATHERLESS_SPECIALIST_MODEL` (defaults in `.env.example`).
+Nebius equivalents: `NEBIUS_BASE_URL` (default `https://api.tokenfactory.nebius.com/v1`),
+`NEBIUS_ORCHESTRATOR_MODEL` (default `nvidia/Nemotron-3-Ultra-550b-a55b`),
+`NEBIUS_SPECIALIST_MODEL` (default `nvidia/nemotron-3-super-120b-a12b`) —
+verify IDs against the Token Factory catalog before a run.
 
 ## Other env vars
 
@@ -38,6 +43,8 @@ Featherless equivalents: `FEATHERLESS_ORCHESTRATOR_MODEL`,
 |---|---|
 | `FEATHERLESS_BASE_URL` | Default `https://api.featherless.ai/v1` |
 | `FIRECRAWL_API_KEY` | Optional second science provider. Chain: ScienceMadeReadable (free, no key) → Firecrawl → verified static citations |
+| `TAVILY_API_KEY` | Live web search — gives Jun a `searchWeb` tool (and MCP `search_web`). Hits inform the read; never enter the citation set |
+| `QLOO_API_KEY` · `QLOO_BASE_URL` | Destination taste for Otto via `destinationTaste` (and MCP `destination_taste`). Hackathon keys only work against `hackathon.api.qloo.com` with the `X-Api-Key` header |
 | `ELEVENLABS_API_KEY` | Voice layer — `POST /api/voice` streams PCM per crew member, chunk-sized so speech overlaps token generation (`timestamps:true` returns char-aligned NDJSON for feed karaoke; `{lines:[{agent,text}]}` runs multi-voice text-to-dialogue for the handoff). Config in `src/lib/voice/`: voices `ELEVENLABS_VOICE_ID`/`ELEVENLABS_VOICE_<AGENT>`; models `ELEVENLABS_MODEL_ID` (default `eleven_v4_turbo` — tags need v3/v4), `ELEVENLABS_DIALOGUE_MODEL_ID` (`eleven_v3`); `MERIDIAN_VOICE_SEED` pins determinism, `MERIDIAN_VOICE_TAGS`/`KARAOKE` are kill-switches; audio cached by content hash (memory + Supabase Storage bucket `MERIDIAN_VOICE_BUCKET`). `GET /api/voice` returns 204 when unset, `POST` 503 |
 | `REPLAY_BEAT_MS` | Replay pacing — ms between streamed events (default `60`; see [demo.md](demo.md)) |
 | `NEXT_PUBLIC_AGENT_PROVIDER` | Client-side fallback label when a run doesn't report its provider |

@@ -105,6 +105,7 @@ in [providers.md](providers.md#supabase-persistence-optional).
 | `GET /api/persistence/runs` | Supabase run history; `{"enabled":false}` without keys |
 | `GET /api/memory` · `GET /api/graph/health` | Learned cross-run memory; FalkorDB status (503 when unreachable) |
 | `GET /api/voice` · `POST /api/voice` | Voice-layer availability; TTS audio — see [providers.md](providers.md) |
+| `POST /api/mcp` | Self-hosted MCP server (Streamable HTTP, protocol 2025-11-25; stateless JSON-RPC over POST). Tools wrap the crew surface: `preview_trip`, `plan_shift`, `evaluate_plan`, `record_check_in`, `search_literature`, `crew_memory`, `recall_findings`, `latest_plan`, `search_web` (Tavily), `destination_taste` (Qloo) — implemented in `src/mcp/server.ts`. GET 405s (no server push); DELETE is a no-op. |
 
 ## Layout
 
@@ -117,6 +118,7 @@ src/components/  CrewFeed, DayStrip, BriefingCard, RoutePicker,
                  MorningCheckin, AnchoredPopover, lenses/, ui/ primitives
 src/lib/         voice/ (engine, config, cache, split, align, huddle),
                  motion tokens, intervention icon vocabulary
+src/mcp/         MCP server: JSON-RPC dispatch + tool catalogue
 src/app/         pages + api routes
 artifacts/       runtime handoff artifacts (gitignored)
 scripts/         replay-check and smoke (night + morning) checks

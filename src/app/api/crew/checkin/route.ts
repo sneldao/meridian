@@ -30,6 +30,13 @@ export async function POST(req: Request) {
   } catch {
     // Supabase is optional.
   }
+  try {
+    const { recordCheckInToGraph } = await import("@/domain/graph-memory");
+    const tenant = new URL(req.url).searchParams.get("tenant") ?? undefined;
+    await recordCheckInToGraph(checkIn, tenant);
+  } catch {
+    // FalkorDB is optional.
+  }
 
   return NextResponse.json({ ok: true, checkIn, adherence, learned: memory.learned });
 }

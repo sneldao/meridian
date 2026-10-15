@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
   const stream = new ReadableStream({
     async start(controller) {
       try {
-        for await (const event of runCrew({ trip, calendar, calendarSource, checkIns, startDayIndex })) {
+        for await (const event of runCrew({ trip, calendar, calendarSource, checkIns, startDayIndex, tenant: sp.get("tenant") ?? undefined })) {
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
         }
       } catch (err) {

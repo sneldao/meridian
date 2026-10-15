@@ -60,6 +60,10 @@ Reference (kept in sync with the code):
 - [Evals](docs/reference/evals.md) — the harness that tracks plan quality over time (`bun run eval`), not a hillclimb yet, the shape of one
 - [Graph memory](docs/reference/graph-memory.md) — FalkorDB state + Graph Hacks sprint to the 2026-10-18 deadline
 
+Active:
+
+- [Hackathon submissions](docs/plan/hackathon-submissions.md) — external hackathons Meridian is eligible for, ranked targets + per-sponsor deltas
+
 Plan & pitch (frozen at the 2026-10-15 hackathon — history, not current state):
 
 - [Hackathon plan](docs/plan/hackathon-plan.md) — the day's build: 4 lenses, any route, team split, demo script, business case (§11 still live)

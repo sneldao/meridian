@@ -18,8 +18,9 @@ BST Sunday, leaving ~4h buffer. Freeze deploys after submitting —
 | `src/domain/graph-memory.ts` | `loadGraphMemory` (2 fixed read queries), `recordFinding`, `graphMemoryBrief`; all no-op without `FALKORDB_URL` |
 | `scripts/seed-graph.ts` | Full seed (item B): London→Tokyo trip across 2 sessions — `Trip`, `Day`, `Intervention`, `CalendarEvent`, `Citation`, `CheckIn`, `Finding`, `AdherenceProfile`, `WearableBaseline` with edges; `SEED_TENANT=other` seeds a second traveller for the isolation demo; `--reset` wipes first. Written, not yet run against a live DB (`FALKORDB_URL` unset) |
 | `GET /api/graph/health` | Reports enabled + findings/failures; 503 when unreachable |
-| Runtime wiring | `runtime.ts` loads graph memory once at run start and injects `findings` into the analyst prompt as prose; `failures` is queried but unused |
-| Env | `FALKORDB_URL` unset in `.env.local`; nothing listening on `:6379`; not set on Render — **feature is off everywhere** |
+| Runtime wiring | `runtime.ts` offers the analyst fixed tools (`recallFindings`, `priorFailures`, `calendarConflicts`) when `FALKORDB_URL` is set — no prompt prose; trace shows rows/ms/hop path via `tool_result` detail. Not yet exercised against a live DB |
+| Env | ⚠️ **FalkorDB Cloud free instance was provisioned + seeded (28/5 nodes) and verified live ~17:05–17:20, then stopped accepting TCP 55865 despite console+audit saying Healthy; reboot didn't help; deleted. Recreate in progress.** `.env.local` has `FALKORDB_URL` for the OLD (deleted) endpoint — replace with the new host:port. Not yet set on Render |
+| Tenant isolation | `?tenant=` on `/api/crew/run`, `/api/crew/checkin`, `/api/graph/health` → `meridian:{tenant}` graph; `MERIDIAN_SESSION` labels writes |
 
 ## Gap vs the frozen plan
 
@@ -28,21 +29,20 @@ Implementation order (plan §"Implementation order"):
 | Step | Status |
 |---|---|
 | 1. Client + 10–20 node seed | ✅ Full seed written (all node types + edges, 2 sessions, 2 tenants); pending first run once FalkorDB is up |
-| 2. Read-only traversals | ⚠️ Queries exist; `failures` dropped before the prompt |
-| 3. Fixed-tool catalogue + entity resolution | ❌ Graph is prompt-injected prose, not agent-callable tools; no hop path returned |
-| 4. Read path replacing `memoryBrief` | ❌ Supplements it; `crew-memory.json` remains primary |
-| 5. Write path for check-ins/findings | ❌ `recordFinding` has zero callers; `recordCheckIn` writes JSON only |
+| 2. Read-only traversals | ✅ `recallFindings`/`priorFailures`/`calendarConflicts` in `graph-memory.ts` — entity resolution, hop paths, "not in graph" notes; pending live verification |
+| 3. Fixed-tool catalogue + entity resolution | ✅ Wired on the analyst (`runtime.ts`); agents never see Cypher |
+| 4. Read path replacing `memoryBrief` | ⚠️ JSON `memoryBrief` still feeds the prompt alongside graph tools; deliberate — JSON is the fallback, graph is the evidence |
+| 5. Write path for check-ins/findings | ✅ `recordCheckInToGraph` on the check-in route; `recordFinding` at end of run attaches to the resolved entity or a `Subject` fallback |
 | 6. Cross-session demo | ⚠️ Seed now covers 2 sessions + a second tenant (`SEED_TENANT`); `MERIDIAN_GRAPH_ID` is still a static global (item E) |
 
-Success criteria (plan §"Success criteria for submission") — all unmet or
-unverifiable today: the graph currently *is* a pile of retrieved text
-(prompt-injected findings); no tool trace; no writes means no second-run
-delta; empty traversal reads "disabled or empty" and the agent guesses from
-JSON memory; tenant isolation is one global graph id.
+Success criteria (plan §"Success criteria for submission") — code now exists
+for all six (agent-called tools, trace with args/rows/ms/path, write path for
+second-run deltas, "not in graph" notes, 2-session + 2-tenant seed) but none
+is verified against a live DB — that is tonight's gate.
 
-`tool_call` trace plumbing already exists (`runtime.ts` emits
-`{type:"tool_call", agent, tool, detail}`) — row count and ms just need to go
-into `detail` once the reads are real tools.
+`tool_call`/`tool_result` events already stream to the feed —
+`summarizeOutput` renders graph results as `N rows · Mms · hop path`, which is
+the trace the track asks for.
 
 ## Sprint plan
 
