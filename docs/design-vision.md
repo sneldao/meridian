@@ -10,6 +10,10 @@ globe — and let the crew close it on screen. Rule of the world: **nothing is
 decorative**; sun position, sky colour, city lights and the body clock are real
 or modelled. Build in three tiers; Tier 1 (~3–4 days) delivers most of the wow.
 
+> **For the 2026-10-15 hackathon**, see [hackathon-plan.md](hackathon-plan.md):
+> the event-driven subset (four lenses, any route, the business case) that a
+> team of four can ship by 15:00.
+
 ---
 
 ## 1. Why — research highlights
@@ -31,8 +35,9 @@ or modelled. Build in three tiers; Tier 1 (~3–4 days) delivers most of the wow
 Render the real Earth with today's real day/night line. Overlay a second, ghostly
 terminator: **where your body thinks dawn is.**
 
-- LHR → HND starts with the ghost **135° of longitude** behind the real Tokyo
-  dawn (9 h × 15°/h). The gap *is* the jet lag, drawn on the planet.
+- LHR → HND starts with the ghost **120° of longitude** behind the real Tokyo
+  dawn in mid-October (8 h × 15°/h while London is on BST; 135° / 9 h in
+  winter). The gap *is* the jet lag, drawn on the planet.
 - Each scorer-locked day drags the ghost east across real continents.
 - Climax: the two lines fuse. At 70% the handoff says honestly
   *"you'll land with 30° to go — the crew keeps working after touchdown."*
