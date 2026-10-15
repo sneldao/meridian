@@ -18,6 +18,12 @@ ship a public URL today:
 
 **Recommended shape — two deployments, one repo:**
 
+> **Live 2026-10-15:** public URL is up — **https://meridian-afud.onrender.com**
+> (Render Starter `meridian`, frankfurt, `AGENT_PROVIDER=replay`, autoDeploy on
+> `main`, ~$7/mo from Hackathon Participant credits). Infra as code in
+> `render.yaml`. Old free `meridian-replay` service suspended (Render can't
+> upgrade free→paid in place).
+
 1. **Public URL (`AGENT_PROVIDER=replay`)** — free, instant, can't burn tokens,
    works if judges open it on their phones. This is the *product surface*:
    route picker, four lenses, check-in beat, `.ics` download. Zero cost per
