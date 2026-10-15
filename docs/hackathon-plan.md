@@ -183,3 +183,138 @@ interface RunState {
 
 3D globe, Window Seat, generative sound, light-signature poster, oscillator
 model. They go on one "where this goes" slide.
+
+---
+
+## 10. Integration review — 12:20 · instructions for the next 2 hours
+
+**Checks are green:** typecheck, lint and 30 tests pass; the console is clean.
+The lenses are built but **the demo page doesn't use most of them yet**,
+and three correctness bugs would be visible to judges. Work top to bottom;
+P0 must land before the **14:15 freeze**.
+
+### Status
+
+| Piece | Built | On the demo page (`/`) | Verdict |
+|---|---|---|---|
+| Shared `RunState` + `/dev` workbench (A) | ✅ | ❌ page keeps its own `useState`s | wire it (C) |
+| Route picker, any airport, DST, wrap (A) | ✅ | ❌ header still has the 6-city `<select>`s | wire it (C) |
+| `LensShell` + director (C) | ✅ | ✅ | **director skips beats** (bug 1) |
+| `WorldLens` (C) | ✅ | ✅ | **terminator and body dot are wrong** (bugs 2, 3) |
+| `ShiftBoard` (B) | ✅ works on `/dev` | ❌ "Shift Board" tab shows the old `SunTrack` | wire it (C) |
+| `CalendarLens` + readiness (D) | ✅ | ❌ tab shows an inline list | wire it (C); **readiness is wrong westward** (bug 4) |
+| `Ledger` (D) | ✅ | ❌ tab shows `CrewFeed` (duplicate of the right panel) | wire it (C) |
+| Team view `/team` (D) | ✅ | n/a | bugs 4 and 5; make it really run (P1) |
+| Check-in → replan beat | ✅ backend | ❌ only reachable by URL params | add a button (B) |
+| Google Calendar via Composio, graph memory | ✅ | ✅ falls back cleanly | keep |
+
+### The bugs (found by running the app)
+
+1. **Director mode misses beats.** It reacts to `lastEvent`, but React batches
+   bursts of events, so `plan_candidate` and `calendar_move` are usually
+   swallowed by the token events after them. In a full run it never switched to
+   Calendar. **Fix (done in state):** use `run.focus` / `run.focusSeq` from
+   `src/state/run.ts`, which the reducer sets on every meaningful event.
+2. **The "real terminator" is the noon meridian.** `WorldLens` draws the line at
+   the sub-solar longitude and darkens everything west of it. At 11:15 UTC it
+   shows London in night. Day is the band **within ±90° of the sub-solar
+   longitude** (equinox approximation; good enough this week): dawn line at
+   `sunLon − 90`, dusk line at `sunLon + 90`, night outside.
+3. **The body-clock dot is drawn off-screen.** `cx={origin.x + progressWeight(...)}`
+   adds `origin.x` twice (`progressWeight` already returns the full Bézier
+   coordinate). Use the value directly.
+4. **Readiness is wrong for every westward trip.** `bodyClockMin` always
+   subtracts the lag. Westward, the body is *ahead*: 09:00 in New York is 14:00
+   on a London body clock, but the badge says 04:00. Body time is
+   `local − lag` east and `local + lag` west. Also:
+   - The risk window (02:00–06:00 body time) marks "your body thinks it's 01:00"
+     as **Ready**. Use the wearer's habitual sleep window instead (baseline bed
+     23:55 → wake 06:45, padded ±45 min).
+   - Suggestions like "Rex suggests 19:36 / 21:00" for a board meeting are not
+     credible. Suggest the earliest **business-hours slot (10:00–17:00, on the
+     half hour)** whose body time is awake, or "move to D+2" if none.
+   - Add the before/after line, which *is* the ROI: *"Client pitch D+1 14:00 —
+     without Meridian your body thinks it's 06:00; with the plan, 12:20."*
+5. **Team page:** the card title uses `CITY_TABLE[code].name`, which crashes for
+   any non-featured airport; use `trip.destination.name`. It says "running in
+   parallel" while nothing runs (labelled simulated: honest, but weak; see P1).
+
+Smaller things: the World lens still letterboxes (empty bands top and bottom);
+the idle overlay "Your body clock is still in London." is hardcoded (use
+`trip.origin.name`); the ~1 s blank while `/api/trip` reads Google Calendar has
+no loading state; the header wraps to two lines at 1200 px; the Shift Board's
+rule code (`CALENDAR_CONFLICT`) overflows into the staircase column;
+CalendarLens day headers aren't offset by the 32 px hour gutter.
+
+### Instructions per developer
+
+**C — page integration (critical path, start now)**
+1. Replace the page's run `useState`s with the shared state:
+   ```tsx
+   const { run, dispatch, reset } = useRunState();          // src/state/run.ts
+   es.onmessage = (m) => { const e = JSON.parse(m.data); dispatch(e); handleSideEffects(e); };
+   ```
+   Keep only side effects in the old handler (voice, localStorage, history).
+2. Director: `useEffect(() => { if (auto && run.focus) setLens(run.focus) }, [run.focusSeq])`.
+   Pressing 1–4 should turn director **off** (it currently fights the presenter).
+3. Mount the real lenses:
+   ```tsx
+   board:    <ShiftBoard days={run.trip.days} drafts={run.drafts} verdicts={run.verdicts}
+               locked={run.locked} activeLabel={run.activeLabel} activeAgent={run.activeAgent} />
+   calendar: <CalendarLens days={run.trip.days} events={calendarWithMoves(run)}
+               readiness={meetingReadiness(run.trip, calendarWithMoves(run), [...run.locked.values()])}
+               ics={run.briefing?.ics} />
+   ledger:   <Ledger events={ledgerEvents(run)} />
+   ```
+   Show the handoff card on whichever lens is active, docked to the bottom so
+   it doesn't cover the view.
+4. Header: `<RoutePicker origin dest date onChange />` replaces the selects and
+   the duplicate route chip. Move history / replay / provider into one
+   overflow menu so the header fits on one line at 1200 px.
+5. Fix World lens bugs 2 and 3, and set `preserveAspectRatio="xMidYMid slice"`.
+   Ghost line = real dawn line offset by `ghostGapDeg(run)`, closing to zero
+   as days lock; it moves **only** on `day_locked`. For routes crossing the
+   antimeridian (SFO → HND, SYD → LHR), draw the arc the short way, wrapping
+   at ±180°.
+6. **Done when:** a full replay run on `/` switches World → Board → Calendar
+   by itself, Rex's three blocks slide in the Calendar lens, and the Ledger
+   shows about 80 rows with no token fragments.
+
+**D — readiness + team view**
+1. Fix bug 4 in `src/domain/readiness.ts` (direction sign, sleep-window risk,
+   business-hours suggestion, before/after text). Add
+   `tests/readiness.test.ts`: LHR → JFK 09:00 is body 14:00 (ready);
+   LHR → HND D+1 14:00 is body 06:00 unadapted (risk) and 12:20 after the
+   replay plan (ready). The fixture now has that meeting (`ev-pitch`).
+2. Fix bug 5 (`trip.destination.name`).
+3. **P1 — make the team view real.** Add `GET /api/team/run` that runs the 12
+   travellers' `runReplay(buildTrip(...))` generators **concurrently in one SSE
+   stream**, tagging each event `{ traveller, event }`. One stream avoids the
+   browser's 6-connection-per-host limit. Each tile folds its events with
+   `reduceRun` and shows its own ghost gap, attempts, rejections and readiness.
+   Then the label is true: twelve crews running in parallel. The replay
+   is already route-aware and scorer-verified for every route.
+
+**B — the long-running beat + pacing**
+1. Add a **"Morning check-in · D-2 07:10"** button that appears when a run is
+   done. It restarts the stream with
+   `checkins=btoa(JSON.stringify([{ id: "ci-1", dayIndex: 1, kind: "light_exposure", startMin: 300, status: "skipped", text: "couldn't face 5am light", at: Date.now() }]))&startDay=2`.
+   The reducer already dissolves the dropped days on `replan`; make the
+   dissolve visible on the Shift Board (rows fade out, then re-draft).
+2. Pacing: `BEAT = 60` makes the whole night shift take **7.5 s**, which is
+   too fast to narrate. Read `BEAT` from `process.env.REPLAY_BEAT_MS ?? 60` in
+   `replay.ts` and `morning-replay.ts`; use about 300 on stage (around 40 s),
+   and keep 60 for tests and fixture recording.
+3. Fix the Shift Board rule-code overflow (truncate it, or show it in the row's tooltip).
+
+**A — standing by for review and merges.** Shipped since the last update:
+`run.focus` / `focusSeq`, `calendarWithMoves`, `ledgerEvents`, and the
+`ev-pitch` destination meeting in the fixture.
+
+**Everyone**
+- **Stage your own files only** (`git add <paths>`, never `git add -A`). One
+  commit already swept up another developer's half-finished files.
+- Re-run `bun test && bun run typecheck` before each commit; the pre-commit
+  hook runs gitleaks, typecheck and lint.
+- Rehearse on `AGENT_PROVIDER=replay` until 14:15, then switch to the live
+  Anthropic run.
