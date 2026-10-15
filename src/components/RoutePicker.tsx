@@ -30,32 +30,36 @@ export function RoutePicker({ origin, dest, date, onChange, disabled }: Props) {
   }, [origin, dest, date]);
 
   return (
-    <Card className="flex items-center gap-2 px-2 py-1.5 font-mono2 text-xs">
-      <AirportField label="from" value={origin} date={date} disabled={disabled} onPick={(c) => onChange({ origin: c, dest, date })} />
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => onChange({ origin: dest, dest: origin, date })}
-        className="px-1 text-sun-dest hover:text-paper disabled:opacity-40"
-        aria-label="Swap origin and destination"
-        title="Swap"
-      >
-        →
-      </button>
-      <AirportField label="to" value={dest} date={date} disabled={disabled} onPick={(c) => onChange({ origin, dest: c, date })} />
-      <input
-        type="date"
-        value={date}
-        disabled={disabled}
-        onChange={(e) => e.target.value && onChange({ origin, dest, date: e.target.value })}
-        className="bg-transparent text-mist [color-scheme:dark]"
-        aria-label="Departure date"
-      />
-      {shift && (
-        <span className="whitespace-nowrap pl-1 text-mist" title="Real offsets on these dates, DST included">
-          <span className="text-paper">{Math.abs(shift.requiredShiftMin / 60)}h</span> {shift.direction}
-        </span>
-      )}
+    <Card className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 font-mono2 text-xs">
+      <div className="flex items-center gap-1.5">
+        <AirportField label="from" value={origin} date={date} disabled={disabled} onPick={(c) => onChange({ origin: c, dest, date })} />
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => onChange({ origin: dest, dest: origin, date })}
+          className="px-1 text-sun-dest hover:text-paper disabled:opacity-40"
+          aria-label="Swap origin and destination"
+          title="Swap"
+        >
+          →
+        </button>
+        <AirportField label="to" value={dest} date={date} disabled={disabled} onPick={(c) => onChange({ origin, dest: c, date })} />
+      </div>
+      <div className="flex items-center gap-2">
+        <input
+          type="date"
+          value={date}
+          disabled={disabled}
+          onChange={(e) => e.target.value && onChange({ origin, dest, date: e.target.value })}
+          className="min-w-0 bg-transparent text-mist [color-scheme:dark]"
+          aria-label="Departure date"
+        />
+        {shift && (
+          <span className="whitespace-nowrap text-mist" title="Real offsets on these dates, DST included">
+            <span className="text-paper">{Math.abs(shift.requiredShiftMin / 60)}h</span> {shift.direction}
+          </span>
+        )}
+      </div>
     </Card>
   );
 }

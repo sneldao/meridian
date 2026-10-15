@@ -742,19 +742,19 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
       </AnimatePresence>
 
       {/* frosted status pill — floats on the world, no box inside a box */}
-      <div className="pointer-events-none absolute left-4 top-4 rounded-full border border-white/10 bg-ink-2/80 px-3.5 py-1.5 font-mono2 text-xs backdrop-blur-md">
+      <div className="pointer-events-none absolute top-3 left-3 max-w-[calc(100%-170px)] truncate rounded-full border border-white/10 bg-ink-2/80 px-3 py-1.5 font-mono2 text-2xs backdrop-blur-md sm:top-4 sm:left-4 sm:text-xs">
         <span className="text-sun-home">
-          real terminator · UTC{" "}
+          UTC{" "}
           {hydrated
             ? `${String(now.getUTCHours()).padStart(2, "0")}:${String(now.getUTCMinutes()).padStart(2, "0")}`
             : "--:--"}
         </span>
         {ghostGap > 0 && (
-          <span className="ml-3 text-ghost">
-            ghost · body clock {Math.round(ghostGap)}° {trip?.direction === "west" ? "ahead" : "behind"}
+          <span className="ml-2 text-ghost sm:ml-3">
+            · body {Math.round(ghostGap)}° {trip?.direction === "west" ? "ahead" : "behind"}
           </span>
         )}
-        {running && <span className="ml-3 text-progress">live · {citationCount} evidence stars</span>}
+        {running && <span className="ml-2 text-progress sm:ml-3">· live ({citationCount})</span>}
       </div>
 
       {/* mode + zoom controls */}
