@@ -25,7 +25,13 @@ export function CrewFeed({ entries }: { entries: LogEntry[] }) {
   }, [entries.length]);
 
   return (
-    <div ref={ref} className="scroll-thin h-full overflow-y-auto pr-2 font-mono2 text-[12px] leading-relaxed">
+    <div
+      ref={ref}
+      role="log"
+      aria-live="polite"
+      aria-label="Crew activity feed"
+      className="scroll-thin h-full overflow-y-auto pr-2 font-mono2 text-[12px] leading-relaxed"
+    >
       {entries.map((e, i) => {
         switch (e.kind) {
           case "agent":
@@ -59,6 +65,7 @@ export function CrewFeed({ entries }: { entries: LogEntry[] }) {
                   {e.citation.venue}
                   {e.citation.year ? ` · ${e.citation.year}` : ""}
                   {e.citation.doi ? ` · doi:${e.citation.doi}` : ""}
+                  {e.citation.source === "verified-fallback" ? " · verified fallback" : ""}
                 </div>
               </div>
             );

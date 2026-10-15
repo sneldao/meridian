@@ -1,0 +1,10 @@
+{
+  "name": "Meridian — agents that fly ahead of you",
+  "short_name": "Meridian",
+  "description": "A crew of agents resets your body clock before you land.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#07090f",
+  "theme_color": "#b8e356",
+  "icons": []
+}

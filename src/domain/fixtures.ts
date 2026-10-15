@@ -2,6 +2,7 @@ import type {
   AdherenceProfile,
   CalendarEvent,
   City,
+  CityCode,
   Trip,
   WearableBaseline,
 } from "./types";
@@ -13,6 +14,36 @@ import type {
 
 export const LONDON: City = { code: "LHR", name: "London", utcOffsetMin: 0, lon: -0.1276, lat: 51.5 };
 export const TOKYO: City = { code: "HND", name: "Tokyo", utcOffsetMin: 540, lon: 139.69, lat: 35.7 };
+
+export const CITY_TABLE: Record<CityCode, City> = {
+  LHR: { code: "LHR", name: "London", utcOffsetMin: 0, lon: -0.1276, lat: 51.5 },
+  HND: { code: "HND", name: "Tokyo", utcOffsetMin: 540, lon: 139.69, lat: 35.7 },
+  JFK: { code: "JFK", name: "New York", utcOffsetMin: -300, lon: -74.0, lat: 40.7 },
+  SFO: { code: "SFO", name: "San Francisco", utcOffsetMin: -480, lon: -122.4, lat: 37.8 },
+  CDG: { code: "CDG", name: "Paris", utcOffsetMin: 60, lon: 2.35, lat: 48.9 },
+  SIN: { code: "SIN", name: "Singapore", utcOffsetMin: 480, lon: 103.8, lat: 1.35 },
+};
+
+export function buildTrip(originCode: CityCode, destCode: CityCode, departureDate: string): Trip {
+  const origin = CITY_TABLE[originCode];
+  const destination = CITY_TABLE[destCode];
+  const requiredShiftMin = origin.utcOffsetMin - destination.utcOffsetMin; // negative = eastward advance
+  const direction: Trip["direction"] = requiredShiftMin <= 0 ? "east" : "west";
+  const flight = new Date(departureDate + "T00:00:00Z");
+  const days = ["D-3", "D-2", "D-1", "Flight", "D+1"].map((label, i) => {
+    const d = new Date(flight);
+    d.setUTCDate(d.getUTCDate() + (i - 3));
+    return { dayIndex: i, label, date: d.toISOString().slice(0, 10) };
+  });
+  return {
+    origin,
+    destination,
+    requiredShiftMin,
+    departureDayIndex: 3,
+    direction,
+    days,
+  };
+}
 
 export const DEMO_TRIP: Trip = {
   origin: LONDON,

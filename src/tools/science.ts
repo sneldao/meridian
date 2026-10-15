@@ -38,6 +38,7 @@ async function searchSmr(query: string, k: number): Promise<Citation[]> {
         url: r.doi
           ? `https://doi.org/${r.doi}`
           : (r.openalex ?? `https://sciencemadereadable.com/?work=${r.id}`),
+        source: "live" as const,
       }));
   } catch {
     return [];
@@ -77,6 +78,7 @@ async function searchFirecrawl(query: string, k: number): Promise<Citation[]> {
           year: p.year,
           doi,
           url: doi ? `https://doi.org/${doi}` : `https://sciencemadereadable.com/?work=${p.paperId}`,
+          source: "live" as const,
         };
       });
   } catch {
@@ -90,6 +92,7 @@ export function fallbackCitations(): Citation[] {
   return [
     {
       id: "W4309308783",
+      source: "verified-fallback",
       title: "Circadian acclimatization of performance, sleep, and 6-sulfatoxymelatonin using multiple phase shifting stimuli",
       year: 2022,
       venue: "Frontiers in Endocrinology",
@@ -98,6 +101,7 @@ export function fallbackCitations(): Citation[] {
     },
     {
       id: "W3209274995",
+      source: "verified-fallback",
       title: "Implementing a Circadian Adaptation Schedule after Eastward Flight in Young Male Athletes",
       year: 2021,
       venue: "Applied Sciences",
@@ -106,6 +110,7 @@ export function fallbackCitations(): Citation[] {
     },
     {
       id: "W2477505029",
+      source: "verified-fallback",
       title: "Short Blue Light Pulses (30 Min) in the Morning Support a Sleep-Advancing Protocol in a Home Setting",
       year: 2016,
       venue: "Journal of Biological Rhythms",
@@ -114,6 +119,7 @@ export function fallbackCitations(): Citation[] {
     },
     {
       id: "W2903435945",
+      source: "verified-fallback",
       title: "Strategies to decrease social jetlag: Reducing evening blue light advances sleep and melatonin",
       year: 2018,
       venue: "European Journal of Neuroscience",

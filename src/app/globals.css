@@ -30,6 +30,16 @@ body {
   background: rgba(255, 196, 107, 0.25);
 }
 
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 /* thin scrollbars for the crew feed */
 .scroll-thin::-webkit-scrollbar {
   width: 4px;

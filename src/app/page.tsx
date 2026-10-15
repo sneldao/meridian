@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fmtMin } from "@/domain/circadian";
+import { CITY_TABLE } from "@/domain/fixtures";
 import type {
   CalendarEvent,
   Citation,
@@ -33,6 +35,10 @@ interface Briefing {
 type Phase = "idle" | "running" | "done";
 
 export default function Home() {
+  const [origin, setOrigin] = useState("LHR");
+  const [dest, setDest] = useState("HND");
+  const [departureDate, setDepartureDate] = useState("2026-10-18");
+  const tripQuery = `?origin=${origin}&dest=${dest}&date=${departureDate}`;
   const [data, setData] = useState<TripData | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
   const [entries, setEntries] = useState<LogEntry[]>([]);
@@ -44,14 +50,30 @@ export default function Home() {
   const [citationCount, setCitationCount] = useState(0);
   const [briefing, setBriefing] = useState<Briefing | null>(null);
   const [briefingDismissed, setBriefingDismissed] = useState(false);
+  const [hasSavedPlan, setHasSavedPlan] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const esRef = useRef<EventSource | null>(null);
 
   useEffect(() => {
-    fetch("/api/trip")
+    fetch("/api/trip" + tripQuery)
       .then((r) => r.json())
       .then(setData)
       .catch(() => {});
-    return () => esRef.current?.close();
+  }, [tripQuery]);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      try {
+        setHasSavedPlan(Boolean(localStorage.getItem("meridian:lastPlan")));
+        setShowOnboarding(!localStorage.getItem("meridian:onboarded"));
+      } catch {
+        /* ignore */
+      }
+    }, 0);
+    return () => {
+      clearTimeout(t);
+      esRef.current?.close();
+    };
   }, []);
 
   const push = useCallback((e: LogEntry) => {
@@ -68,6 +90,11 @@ export default function Home() {
           setRejected(new Set());
           setCitationCount(0);
           setBriefing(null);
+          try {
+            localStorage.setItem("meridian:lastTrip", JSON.stringify(e.trip));
+          } catch {
+            /* ignore */
+          }
           break;
         case "agent_start":
           push({ kind: "agent", agent: e.agent, title: e.title });
@@ -122,6 +149,37 @@ export default function Home() {
         case "briefing":
           setBriefing({ summary: e.summary, score: e.score, citations: e.citations, days: e.days, ics: e.ics });
           setBriefingDismissed(false);
+          setHasSavedPlan(true);
+          try {
+            if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
+              new Notification("Meridian handoff ready", { body: e.summary });
+            }
+          } catch {
+            /* ignore */
+          }
+          try {
+            localStorage.setItem(
+              "meridian:lastPlan",
+              JSON.stringify({ summary: e.summary, score: e.score, citations: e.citations, days: e.days, ics: e.ics }),
+            );
+            const entry = {
+              id: Date.now(),
+              savedAt: new Date().toISOString(),
+              trip: (() => {
+                try { return JSON.parse(localStorage.getItem("meridian:lastTrip") || "null"); } catch { return null; }
+              })(),
+              score: e.score,
+              summary: e.summary,
+              days: e.days,
+            };
+            const prev = (() => {
+              try { return JSON.parse(localStorage.getItem("meridian:history") || "[]"); } catch { return []; }
+            })();
+            prev.unshift(entry);
+            localStorage.setItem("meridian:history", JSON.stringify(prev.slice(0, 20)));
+          } catch {
+            /* ignore */
+          }
           push({ kind: "system", text: "morning handoff ready" });
           break;
         case "error":
@@ -136,13 +194,22 @@ export default function Home() {
     [push],
   );
 
+  const cancelShift = useCallback(() => {
+    esRef.current?.close();
+    setPhase("done");
+    push({ kind: "system", text: "shift cancelled by operator" });
+  }, [push]);
+
   const startShift = useCallback(() => {
     if (phase === "running") return;
+    if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission().catch(() => {});
+    }
     esRef.current?.close();
     setPhase("running");
     setEntries([]);
     setBriefing(null);
-    const es = new EventSource("/api/crew/run");
+    const es = new EventSource("/api/crew/run" + tripQuery);
     esRef.current = es;
     es.onmessage = (m) => handleEvent(JSON.parse(m.data) as CrewEvent);
     es.onerror = () => {
@@ -150,12 +217,26 @@ export default function Home() {
       setPhase("done");
       es.close();
     };
-  }, [handleEvent, phase, push]);
+  }, [handleEvent, phase, push, tripQuery]);
 
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      if (e.code === "Space") {
+        e.preventDefault();
+        if (phase !== "running") startShift();
+      } else if (e.code === "Escape" && phase === "running") {
+        cancelShift();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [phase, startShift, cancelShift]);
   const trip = data?.trip;
 
   return (
-    <main className="flex h-screen flex-col p-4">
+    <main className="flex min-h-screen flex-col p-4 lg:h-screen">
       {/* header */}
       <header className="mb-4 flex items-center justify-between">
         <div>
@@ -172,6 +253,35 @@ export default function Home() {
               {trip.origin.code} <span className="text-[#ffc46b]">→</span> {trip.destination.code} · {Math.abs(trip.requiredShiftMin / 60)}h {trip.direction}
             </div>
           )}
+          <div className="flex items-center gap-2 rounded-lg border border-[#1e2637] bg-[#0c1018] px-2 py-1.5 font-mono2 text-[11px]">
+            <select value={origin} onChange={(e) => setOrigin(e.target.value)} className="bg-transparent text-[#e8eaf2]">
+              {Object.keys(CITY_TABLE).map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <span className="text-[#ffc46b]">→</span>
+            <select value={dest} onChange={(e) => setDest(e.target.value)} className="bg-transparent text-[#e8eaf2]">
+              {Object.keys(CITY_TABLE).map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <input
+              type="date"
+              value={departureDate}
+              onChange={(e) => setDepartureDate(e.target.value)}
+              className="bg-transparent text-[#8b93a7]"
+            />
+          </div>
+          {hasSavedPlan && (
+            <Link
+              href="/review"
+              className="rounded-lg border border-[#1e2637] bg-[#0c1018] px-3 py-1.5 font-mono2 text-[11px] text-[#b8e356] transition-colors hover:border-[#b8e35644]"
+            >
+              view saved handoff →
+            </Link>
+          )}
+          <Link
+            href="/history"
+            className="rounded-lg border border-[#1e2637] bg-[#0c1018] px-3 py-1.5 font-mono2 text-[11px] text-[#8b93a7] transition-colors hover:border-[#8b93a7]"
+          >
+            history
+          </Link>
           {data && (
             <div className="rounded-lg border border-[#1e2637] bg-[#0c1018] px-3 py-1.5 font-mono2 text-[11px] text-[#4a5470]">
               {data.provider}
@@ -188,11 +298,19 @@ export default function Home() {
           >
             {phase === "running" ? "shift in progress…" : phase === "done" ? "run it again" : "start the night shift"}
           </button>
+          {phase === "running" && (
+            <button
+              onClick={cancelShift}
+              className="rounded-lg border border-[#ff7a7a44] bg-[#ff7a7a11] px-3 py-2 text-xs font-bold text-[#ff7a7a] transition-colors hover:bg-[#ff7a7a22]"
+            >
+              cancel
+            </button>
+          )}
         </div>
       </header>
 
       {/* main grid */}
-      <div className="grid min-h-0 flex-1 grid-cols-[1.6fr_1fr] gap-4">
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[1.6fr_1fr]">
         <div className="relative flex min-h-0 flex-col gap-3">
           <div className="relative min-h-0 flex-1 overflow-hidden rounded-2xl border border-[#1e2637]">
             {trip && (
@@ -228,6 +346,37 @@ export default function Home() {
                 <div className="text-center">
                   <div className="text-sm text-[#8b93a7]">Your body clock is still in London.</div>
                   <div className="mt-1 text-xs text-[#4a5470]">The crew is waiting for the order.</div>
+                </div>
+              </div>
+            )}
+            {showOnboarding && (
+              <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#07090fcc] backdrop-blur">
+                <div className="max-w-md rounded-2xl border border-[#1e2637] bg-[#0c1018] p-6 shadow-xl">
+                  <h2 className="text-sm font-bold tracking-[0.3em] text-[#e8eaf2]">WELCOME TO MERIDIAN</h2>
+                  <p className="mt-3 text-[12px] leading-relaxed text-[#8b93a7]">
+                    Meridian flies a crew of agents ahead of you. They read your wearable baseline, pull real circadian
+                    literature, draft a day-by-day shift plan, score it against physiology and your calendar, then hand
+                    you a calendar file.
+                  </p>
+                  <ul className="mt-3 space-y-1 text-[11px] text-[#8b93a7]">
+                    <li>· <span className="text-[#e8eaf2]">Mara</span> analyst · wearable + adherence</li>
+                    <li>· <span className="text-[#e8eaf2]">Jun</span> research · papers with DOIs</li>
+                    <li>· <span className="text-[#e8eaf2]">Otto</span> planner · one day at a time</li>
+                    <li>· <span className="text-[#e8eaf2]">Iris</span> eval · explains the scorer</li>
+                    <li>· <span className="text-[#e8eaf2]">Rex</span> negotiator · reschedules events</li>
+                  </ul>
+                  <p className="mt-3 text-[11px] text-[#ff7a7a]">Agents propose; the deterministic scorer disposes.</p>
+                  <div className="mt-4 flex justify-end">
+                    <button
+                      onClick={() => {
+                        try { localStorage.setItem("meridian:onboarded", "1"); } catch {}
+                        setShowOnboarding(false);
+                      }}
+                      className="rounded-lg bg-[#b8e356] px-4 py-2 text-xs font-bold text-[#07090f]"
+                    >
+                      Got it
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

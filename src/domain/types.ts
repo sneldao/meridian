@@ -73,6 +73,8 @@ export interface Citation {
   venue?: string;
   doi?: string;
   url: string;
+  /** Where this citation came from. */
+  source?: "live" | "verified-fallback";
 }
 
 export interface EvalViolation {
@@ -84,7 +86,9 @@ export interface EvalViolation {
     | "SLEEP_TOO_SHORT"
     | "CALENDAR_CONFLICT"
     | "ADHERENCE_RISK"
-    | "MISSING_LIGHT_ANCHOR";
+    | "MISSING_LIGHT_ANCHOR"
+    | "DOSE_PRESCRIPTION"
+    | "UNSAFE_CLAIM";
   message: string;
   dayIndex?: number;
 }
@@ -164,6 +168,53 @@ export type CrewEvent =
       days: DayPlan[];
     }
   | { type: "error"; message: string; recoverable: boolean }
+  | { type: "check_in"; checkIn: CheckIn }
+  | { type: "replan"; droppedDays: number[]; reason: string }
   | { type: "done" };
 
 export const PASS_SCORE = 0.75;
+
+// --- Check-ins: what the wearer actually did --------------------------------
+// The adherence loop. A night shift produces a plan; a morning shift ingests
+// what really happened and replans the days that remain. Statuses mirror a
+// mission lifecycle: accepted -> done, or pushed back (easier/later/skipped).
+
+export type CheckInStatus = "done" | "partial" | "skipped" | "harder" | "easier";
+
+export interface CheckIn {
+  id: string;
+  dayIndex: number;
+  /** Which intervention this refers to (kind + optional startMin), or null for
+   * a free-text check-in about the whole day. */
+  kind?: InterventionKind;
+  startMin?: number;
+  status: CheckInStatus;
+  /** Free text as spoken by the wearer ("couldn't face 5am light"). */
+  text?: string;
+  at: number; // epoch ms
+}
+
+/** POST body for /api/crew/checkin — free text or structured. */
+export interface CheckInRequest {
+  text?: string;
+  dayIndex?: number;
+  kind?: InterventionKind;
+  status?: CheckInStatus;
+}
+
+/** Persisted cross-run memory: what the wearer did vs. what was planned. */
+export interface CrewMemory {
+  runs: {
+    at: number;
+    tripLabel: string;
+    lockedDays: number;
+    meanScore: number;
+  }[];
+  checkIns: CheckIn[];
+  /** Learned adherence hints derived from check-in history. */
+  learned: {
+    earliestDoneMin?: number;
+    skippedKinds: InterventionKind[];
+    notes: string[];
+  };
+}

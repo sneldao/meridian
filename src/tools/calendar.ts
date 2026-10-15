@@ -1,6 +1,6 @@
 import { fmtMin } from "@/domain/circadian";
 import { CALENDAR } from "@/domain/fixtures";
-import type { CalendarEvent, CalendarMove } from "@/domain/types";
+import type { CalendarEvent, CalendarMove, Trip } from "@/domain/types";
 
 // Fixture-backed calendar. In production this is Google Calendar; for the
 // demo the "real output" is the committed move set + a downloadable .ics.
@@ -75,4 +75,13 @@ export function buildIcs(events: CalendarEvent[]): string {
   }
   lines.push("END:VCALENDAR");
   return lines.join("\r\n");
+}
+
+export function buildCalendar(trip: Trip): CalendarEvent[] {
+  return CALENDAR.map((e) => {
+    if (e.id === "ev-flight") {
+      return { ...e, title: `${trip.origin.code} → ${trip.destination.code}` };
+    }
+    return { ...e };
+  });
 }

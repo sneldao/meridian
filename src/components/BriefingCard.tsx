@@ -70,7 +70,15 @@ export function BriefingCard({ summary, score, citations, days, ics, onClose }: 
           <div className="mt-3 space-y-0.5">
             {citations.slice(0, 4).map((c) => (
               <div key={c.id} className="truncate text-[10px] text-[#8b93a7]">
-                <span className="text-[#b8e356]">▪</span> {c.title}
+                <span className="text-[#b8e356]">▪</span>{" "}
+                <a
+                  href={c.doi ? `https://doi.org/${c.doi}` : c.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[#8b93a7] hover:text-[#b8e356] hover:underline"
+                >
+                  {c.title}
+                </a>
                 {c.year ? ` (${c.year})` : ""}
               </div>
             ))}

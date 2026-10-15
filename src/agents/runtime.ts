@@ -4,9 +4,12 @@ import { stepCountIs, streamText, tool, type ToolSet } from "ai";
 import { z } from "zod";
 import { evaluatePlan, fmtMin, passes, sunProgress } from "@/domain/circadian";
 import { ADHERENCE_PROFILE, DEMO_TRIP, GARMIN_BASELINE } from "@/domain/fixtures";
+import { foldCheckIns } from "@/domain/adherence";
 import type {
   CalendarEvent,
   CalendarMove,
+  CheckIn,
+  Trip,
   Citation,
   CrewEvent,
   DayPlan,
@@ -36,7 +39,12 @@ interface ToolDef {
 
 /** Runs the whole crew and yields events for the SSE route. Falls back to the
  * recorded transcript if the live provider throws — stage insurance. */
-export function runCrew(): AsyncGenerator<CrewEvent> {
+export function runCrew(opts?: {
+  trip?: Trip;
+  calendar?: CalendarEvent[];
+  checkIns?: CheckIn[];
+  startDayIndex?: number;
+}): AsyncGenerator<CrewEvent> {
   const queue: CrewEvent[] = [];
   const notifier: { fn: (() => void) | null } = { fn: null };
   let finished = false;
@@ -51,7 +59,13 @@ export function runCrew(): AsyncGenerator<CrewEvent> {
       if (providerKind() === "replay") {
         await drain(runReplay(), emit);
       } else {
-        await orchestrate(emit);
+        await orchestrate(
+          emit,
+          opts?.trip ?? DEMO_TRIP,
+          opts?.calendar ?? getCalendar(),
+          opts?.checkIns ?? [],
+          opts?.startDayIndex ?? 0,
+        );
       }
     } catch (err) {
       emit({
@@ -95,9 +109,10 @@ interface RunState {
   briefingText: string;
 }
 
-async function orchestrate(emit: Emit) {
+async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[], checkIns: CheckIn[] = [], startDayIndex: number = 0) {
+  const adherence = checkIns.length ? foldCheckIns(ADHERENCE_PROFILE, checkIns) : ADHERENCE_PROFILE;
   const state: RunState = {
-    calendar: getCalendar(),
+    calendar: calendarInput.map((e) => ({ ...e })),
     citations: [],
     lockedDays: [],
     evals: [],
@@ -112,10 +127,17 @@ async function orchestrate(emit: Emit) {
   emit({
     type: "run_start",
     provider: providerKind(),
-    trip: DEMO_TRIP,
+    trip,
     baseline: GARMIN_BASELINE,
     calendar: state.calendar,
   });
+  if (startDayIndex > 0) {
+    emit({
+      type: "replan",
+      droppedDays: trip.days.filter((d) => d.dayIndex < startDayIndex).map((d) => d.dayIndex),
+      reason: "morning shift: replanning remaining days with updated adherence",
+    });
+  }
   logLine("shift started — crew assembling");
 
   // 1. Analyst — reads the wearer.
@@ -140,7 +162,7 @@ async function orchestrate(emit: Emit) {
     CREW.researcher,
     {
       prompt:
-        "Eastward shift, 9 time zones, advance the clock. Find the strongest papers on timed light, melatonin timing and caffeine timing for phase advances. Two+ searches, different angles.",
+        `${trip.direction === "east" ? "Eastward" : "Westward"} shift, ${Math.round(Math.abs(trip.requiredShiftMin) / 60)} time zones, ${trip.direction === "east" ? "advance" : "delay"} the clock. Find the strongest papers on timed light, melatonin timing and caffeine timing for phase ${trip.direction === "east" ? "advances" : "delays"}. Two+ searches, different angles.`,
       tools: {
         searchScience: {
           description: "Search scientific papers by meaning. Returns citations with DOIs.",
@@ -155,7 +177,7 @@ async function orchestrate(emit: Emit) {
   logLine(`researcher: ${research.toolCalls.length} searches, ${state.citations.length} citations kept`);
 
   // 3. Planner + evaluator loop — one day at a time, default-FAIL.
-  for (const spec of DEMO_TRIP.days) {
+  for (const spec of trip.days.filter((d) => d.dayIndex >= startDayIndex)) {
     let day: DayPlan | null = null;
     let feedback = "";
 
@@ -168,11 +190,11 @@ async function orchestrate(emit: Emit) {
             {
               task: `Submit ONE day plan for ${spec.label} (${spec.date}) via submitDayPlan.`,
               convention: "shiftMin negative = phase advance (eastward). Minutes are local-time-of-day.",
-              requiredShiftMin: DEMO_TRIP.requiredShiftMin,
+              requiredShiftMin: trip.requiredShiftMin,
               dayIndex: spec.dayIndex,
               analystConstraints: analyst.text,
               citations: state.citations.map((c) => ({ id: c.id, title: c.title })),
-              adherenceFloorMin: ADHERENCE_PROFILE.ignoresInterventionsBeforeMin,
+              adherenceFloorMin: adherence.ignoresInterventionsBeforeMin,
               calendar: state.calendar
                 .filter((e) => e.dayIndex === spec.dayIndex)
                 .map((e) => ({
@@ -239,10 +261,10 @@ async function orchestrate(emit: Emit) {
 
       // Deterministic gate — the evaluator explains, the math decides.
       const result = evaluatePlan({
-        trip: DEMO_TRIP,
+        trip,
         days: [...state.lockedDays, candidate],
         calendar: state.calendar,
-        adherence: ADHERENCE_PROFILE,
+        adherence,
       });
       state.evals.push(result);
       emit({ type: "eval_result", result, attempt });
@@ -263,7 +285,7 @@ async function orchestrate(emit: Emit) {
       if (passes(result)) {
         day = candidate;
         state.lockedDays.push(day);
-        emit({ type: "day_locked", day, sunProgress: sunProgress(DEMO_TRIP, state.lockedDays) });
+        emit({ type: "day_locked", day, sunProgress: sunProgress(trip, state.lockedDays) });
         logLine(`${spec.label} locked (${day.shiftMin}min, score ${result.score})`);
       } else {
         feedback = result.violations.map((v) => v.message).join(" ");
@@ -346,7 +368,7 @@ async function orchestrate(emit: Emit) {
     : 0;
 
   const shifted = state.lockedDays.reduce((a, d) => a + Math.abs(d.shiftMin), 0);
-  const summary = `Night shift complete. ${state.lockedDays.length} days locked, ${shifted} minutes of the ${Math.abs(DEMO_TRIP.requiredShiftMin)}-minute shift covered before you land — the crew keeps working after touchdown. ${state.citations.length} papers cited. Calendar: ${state.calendar.filter((e) => e.movedTo).length} events rescheduled.`;
+  const summary = `Night shift complete. ${state.lockedDays.length} days locked, ${shifted} minutes of the ${Math.abs(trip.requiredShiftMin)}-minute shift covered before you land — the crew keeps working after touchdown. ${state.citations.length} papers cited. Calendar: ${state.calendar.filter((e) => e.movedTo).length} events rescheduled.`;
 
   emit({
     type: "briefing",
@@ -358,7 +380,7 @@ async function orchestrate(emit: Emit) {
   });
   logLine(`briefing issued — score ${meanScore}`);
 
-  await persistArtifacts(state);
+  await persistArtifacts(state, trip);
   emit({ type: "done" });
 }
 
@@ -462,11 +484,11 @@ function summarizeOutput(output: unknown): string {
   return "ok";
 }
 
-async function persistArtifacts(state: RunState) {
+async function persistArtifacts(state: RunState, trip: Trip) {
   await mkdir(ARTIFACTS_DIR, { recursive: true });
   await writeFile(
     path.join(ARTIFACTS_DIR, "shift-plan.json"),
-    JSON.stringify({ trip: DEMO_TRIP, days: state.lockedDays }, null, 2),
+    JSON.stringify({ trip, days: state.lockedDays }, null, 2),
   );
   await writeFile(
     path.join(ARTIFACTS_DIR, "shift-log.json"),
