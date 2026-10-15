@@ -18,7 +18,7 @@ can actually deliver.
 
 ```bash
 bun install
-cp .env.example .env.local    # AGENT_PROVIDER=replay works with zero keys
+cp .env.example .env.local    # set AGENT_PROVIDER=replay to run with zero keys
 bun run dev                   # http://localhost:3000
 ```
 
@@ -55,7 +55,7 @@ Reference (kept in sync with the code):
 
 - [Architecture](docs/reference/architecture.md) — pipeline, event stream, API surface, artifacts, adherence loop
 - [Scoring](docs/reference/scoring.md) — the deterministic gate every plan must pass
-- [Providers](docs/reference/providers.md) — replay / anthropic / featherless, env vars, fallbacks
+- [Providers](docs/reference/providers.md) — featherless / nebius / anthropic / replay, env vars, fallback chain
 - [Demo runbook](docs/reference/demo.md) — stage path, pacing, localStorage keys, troubleshooting
 - [Evals](docs/reference/evals.md) — the harness that tracks plan quality over time (`bun run eval`), not a hillclimb yet, the shape of one
 - [Graph memory](docs/reference/graph-memory.md) — FalkorDB state + Graph Hacks sprint to the 2026-10-18 deadline

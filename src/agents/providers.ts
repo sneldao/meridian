@@ -51,7 +51,7 @@ export function resolveModel(
     });
     return featherless(
       role === "orchestrator"
-        ? (process.env.FEATHERLESS_ORCHESTRATOR_MODEL ?? "Qwen/Qwen3-30B-A3B-Instruct-2507")
+        ? (process.env.FEATHERLESS_ORCHESTRATOR_MODEL ?? "Qwen/Qwen3-32B")
         : (process.env.FEATHERLESS_SPECIALIST_MODEL ?? "Qwen/Qwen3-32B"),
     ) as unknown as LanguageModel;
   }

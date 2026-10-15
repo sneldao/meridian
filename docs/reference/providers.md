@@ -35,7 +35,7 @@ Two roles, env-overridable per provider:
 ```bash
 MERIDIAN_ORCHESTRATOR_MODEL        # anthropic — default claude-sonnet-4-5
 MERIDIAN_SPECIALIST_MODEL          # anthropic — default claude-haiku-4-5
-FEATHERLESS_ORCHESTRATOR_MODEL     # default Qwen/Qwen3-30B-A3B-Instruct-2507
+FEATHERLESS_ORCHESTRATOR_MODEL     # default Qwen/Qwen3-32B
 FEATHERLESS_SPECIALIST_MODEL       # default Qwen/Qwen3-32B
 NEBIUS_ORCHESTRATOR_MODEL          # default nvidia/Nemotron-3-Ultra-550b-a55b
 NEBIUS_SPECIALIST_MODEL            # default nvidia/nemotron-3-super-120b-a12b
@@ -43,8 +43,12 @@ NEBIUS_SPECIALIST_MODEL            # default nvidia/nemotron-3-super-120b-a12b
 
 Orchestrator = planner/evaluator/negotiator, specialist = analyst/researcher.
 Featherless model IDs must match the live catalog (`GET
-https://api.featherless.ai/v1/models` is unauthenticated — check before
-bumping); verify Nebius IDs against the Token Factory catalog the same way.
+https://api.featherless.ai/v1/models` is unauthenticated) **and** actually
+serve — several catalogued models return `no_response` at inference time, so
+verify with a real chat completion before bumping. Featherless limits how
+many distinct models an account can switch between
+(`model_switching_limit_exceeded`), so both roles share `Qwen/Qwen3-32B`.
+Verify Nebius IDs against the Token Factory catalog the same way.
 
 ## Other env vars
 

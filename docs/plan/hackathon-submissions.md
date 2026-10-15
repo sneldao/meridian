@@ -60,11 +60,14 @@ hitting the endpoint), public repo, submission text.
   Nebius AI Cloud compute) **and ≥1 NVIDIA open-source model** (Nemotron
   family).
 
-### Meridian angle — **code shipped** (2026-10-15), needs key
+### Meridian angle — **code shipped + key verified** (2026-10-15)
 
 - `AGENT_PROVIDER=nebius` is live in `src/agents/providers.ts` — Token Factory
   (`api.tokenfactory.nebius.com/v1`, OpenAI-compatible), defaults Nemotron 3
-  Ultra (orchestrator) + Super 120b (specialists). Just needs `NEBIUS_API_KEY`.
+  Ultra (orchestrator) + Super 120b (specialists). `NEBIUS_API_KEY` is set in
+  `.env.local` and verified: both model IDs exist in the catalog, inference
+  works (mind `max_tokens` — Nemotron spends reasoning tokens first), and
+  `bun run provider:check` confirms JSON-schema tool calls work end to end.
 - **Tavily prize ($3K):** `src/tools/tavily.ts` shipped — Jun gets a `searchWeb`
   tool (live guidance, destination practicalities) alongside `searchScience`;
   also exposed as MCP `search_web`. Deliberately non-citable: web hits inform
@@ -74,9 +77,9 @@ hitting the endpoint), public repo, submission text.
   skills (crew tools), cross-run learning (`/outcome` loop). "Best Apps &
   Agents" is the fallback category.
 - Free credits via the Nebius Builder Program (Token Factory + Tavily).
-- Remaining: get a Token Factory key, one `plan_shift` run on Nemotron to
-  verify tool-call fidelity (models differ on strict JSON schema adherence —
-  have replay fallback ready), submission text describing the delta.
+- Remaining: one full `plan_shift` run on Nemotron (tool fidelity is proven,
+  but watch whether the multi-step crew loop stays coherent on a non-Claude
+  model — replay fallback covers a bad run anyway), submission text.
 
 ## 3. Qloo Agentic Hackathon
 
@@ -102,11 +105,10 @@ the repo About**, text description.
   reference, 2026-10-15). Otto gets a `destinationTaste` tool grounding
   intervention notes in what the place actually offers — never touches timing
   or the scorer. Also MCP `destination_taste`.
-- **CRITICAL PATH — do now:** Qloo keys are provisioned manually, "a few
-  business days". Submit the API key form TODAY
-  (https://forms.gle/zz12orkLHTAneLGz6). Keys only work against
-  `hackathon.api.qloo.com` (`X-Api-Key` header) — wired as `QLOO_API_KEY` +
-  `QLOO_BASE_URL` in `.env.local`.
+- ~~CRITICAL PATH~~ **key requested 2026-10-15** — provisioning is manual,
+  "a few business days". Keys only work against `hackathon.api.qloo.com`
+  (`X-Api-Key` header) — wired as `QLOO_API_KEY` + `QLOO_BASE_URL` in
+  `.env.local`, drop the key in when the email lands.
 - Once the key lands: smoke `destination_taste` for a real place list (params
   verified; response fields still need a live check), one `plan_shift` run,
   submission text.

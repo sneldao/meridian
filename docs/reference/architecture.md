@@ -113,7 +113,8 @@ in [providers.md](providers.md#supabase-persistence-optional).
 ```
 src/domain/      types, circadian scorer + phase-response model, placement
                  solver, adherence, readiness, fixtures
-src/tools/       science (SMR → Firecrawl → static), calendar (ICS), wearable
+src/tools/       science (SMR → Firecrawl → static), tavily, qloo,
+                 calendar (ICS), wearable
 src/agents/      providers, crew prompts, runtime, night replay, morning replay
 src/components/  CrewFeed, DayStrip, BriefingCard, RoutePicker,
                  MorningCheckin, AnchoredPopover, lenses/, ui/ primitives
@@ -122,6 +123,7 @@ src/lib/         voice/ (engine, config, cache, split, align, huddle),
 src/mcp/         MCP server: JSON-RPC dispatch + tool catalogue
 src/app/         pages + api routes
 artifacts/       runtime handoff artifacts (gitignored)
-scripts/         replay-check and smoke (night + morning) checks
+scripts/         replay-check, provider-check, smoke (night + morning),
+                 eval, seed-graph, verify-commit
 docs/            this documentation
 ```
