@@ -62,6 +62,21 @@ Calendar account. Events with attendees are treated as fixed walls; personal
 blocks are movable — same semantics as the fixtures. `send_updates: "none"`
 on every write, so the demo never emails attendees.
 
+## Graph memory (Graph Hacks track, optional)
+
+Set `FALKORDB_URL` (e.g. `falkor://localhost:6379`) to back cross-run
+memory with FalkorDB. `MERIDIAN_GRAPH_ID` defaults to `meridian:demo`;
+each user/tenant should get a distinct graph id in production.
+
+| Var | Purpose |
+|---|---|
+| `FALKORDB_URL` | FalkorDB connection URL — enables graph memory |
+| `MERIDIAN_GRAPH_ID` | Per-user/per-tenant graph name — defaults to `meridian:demo` |
+
+Seed local data with `bun run seed:graph`. The agent never composes Cypher;
+fixed tools live in `src/domain/graph-memory.ts`. If the database is down or
+unset, Meridian falls back to `crew-memory.json` silently.
+
 ## Cost notes
 
 - `replay` is fully offline — safe default for UI work.

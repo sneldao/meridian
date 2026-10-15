@@ -11,12 +11,14 @@
     "typecheck": "tsc --noEmit",
     "replay:check": "bun scripts/replay-check.ts",
     "test": "bun test",
-    "smoke": "bun scripts/smoke.ts"
+    "smoke": "bun scripts/smoke.ts",
+    "seed:graph": "bun scripts/seed-graph.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "4.0.80",
     "@ai-sdk/openai-compatible": "3.0.69",
     "ai": "7.0.141",
+    "falkordb": "^6.8.0",
     "framer-motion": "14.2.0",
     "lucide-react": "1.57.0",
     "next": "16.4.1",

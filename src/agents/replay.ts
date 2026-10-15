@@ -1,8 +1,9 @@
-import { evaluatePlan, passes, sunProgress } from "@/domain/circadian";
-import { ADHERENCE_PROFILE, CALENDAR, DEMO_TRIP, GARMIN_BASELINE } from "@/domain/fixtures";
-import type { AgentId, Citation, CalendarEvent, CrewEvent, DayPlan } from "@/domain/types";
+import { evaluatePlan, fmtMin, passes, sunProgress } from "@/domain/circadian";
+import { ADHERENCE_PROFILE, DEMO_TRIP, GARMIN_BASELINE, calendarFor } from "@/domain/fixtures";
+import type { AgentId, Citation, CalendarEvent, CrewEvent, DayPlan, EvalResult, Trip } from "@/domain/types";
 import { buildIcs, proposeMove } from "@/tools/calendar";
 import { fallbackCitations } from "@/tools/science";
+import { replayPlanFor } from "./replay-plan";
 
 // The recorded shift: a full scripted run used for UI development and as
 // on-stage fallback. Every eval_result is produced by the real deterministic
@@ -83,10 +84,13 @@ export function scriptedDays(citations: Citation[]): DayPlan[] {
   ];
 }
 
-export async function* runReplay(): AsyncGenerator<CrewEvent> {
+export async function* runReplay(trip: Trip = DEMO_TRIP): AsyncGenerator<CrewEvent> {
   const citations = fallbackCitations();
   const locked: DayPlan[] = [];
-  const cal: CalendarEvent[] = CALENDAR.map((e) => ({ ...e }));
+  const evals: EvalResult[] = [];
+  const cal: CalendarEvent[] = calendarFor(trip);
+  const east = trip.direction === "east";
+  const verb = east ? "advance" : "delay";
 
   const speak = async function* (agent: AgentId, text: string) {
     const chunks = text.match(/.{1,24}(\s|$)/g) ?? [text];
@@ -99,7 +103,7 @@ export async function* runReplay(): AsyncGenerator<CrewEvent> {
   yield {
     type: "run_start",
     provider: "replay",
-    trip: DEMO_TRIP,
+    trip,
     baseline: GARMIN_BASELINE,
     calendar: cal,
   };
@@ -119,44 +123,29 @@ export async function* runReplay(): AsyncGenerator<CrewEvent> {
 
   // --- Researcher ----------------------------------------------------------
   yield { type: "agent_start", agent: "researcher", title: "Jun · RESEARCH" };
-  yield { type: "tool_call", agent: "researcher", tool: "searchScience", detail: '"circadian phase shift timed light exposure eastward travel"' };
+  yield { type: "tool_call", agent: "researcher", tool: "searchScience", detail: `"circadian phase shift timed light exposure ${east ? "eastward" : "westward"} travel"` };
   yield { type: "tool_result", agent: "researcher", tool: "searchScience", detail: "4 results" };
   for (const c of citations.slice(0, 3)) {
     yield { type: "citation", agent: "researcher", citation: c };
     await sleep(4 * BEAT);
   }
-  yield { type: "tool_call", agent: "researcher", tool: "searchScience", detail: '"caffeine timing sleep onset phase advance jet lag"' };
+  yield { type: "tool_call", agent: "researcher", tool: "searchScience", detail: `"caffeine timing sleep onset phase ${verb} jet lag"` };
   yield { type: "tool_result", agent: "researcher", tool: "searchScience", detail: "3 results" };
   yield { type: "citation", agent: "researcher", citation: citations[3] };
   yield* speak(
     "researcher",
-    "Four papers worth building on. Morning light advances the clock — that's our lever. Caffeine's half-life makes anything after ~8h pre-bed a tax on the shift.",
+    east
+      ? "Four papers worth building on. Morning light advances the clock — that's our lever. Caffeine's half-life makes anything after ~8h pre-bed a tax on the shift."
+      : "Four papers worth building on. Evening light delays the clock — that's our lever; morning light is the enemy. Caffeine's half-life makes anything after ~8h pre-bed a tax on the shift.",
   );
   yield { type: "agent_end", agent: "researcher" };
 
   // --- Planner + evaluator, day by day --------------------------------------
-  const days = scriptedDays(citations);
-
-  // Scripted failures that make the recovery visible.
-  const badD2: DayPlan = {
-    ...days[1],
-    interventions: [
-      { kind: "light_exposure", startMin: 6 * 60, endMin: 7 * 60 + 45, note: "Wide morning light block." },
-      { kind: "sleep_window", startMin: 21 * 60 + 40, endMin: 4 * 60 + 30, note: "Bed 21:40, up 04:30." },
-    ],
-  };
-  const badD1: DayPlan = {
-    ...days[2],
-    targetBedtimeMin: 20 * 60,
-    targetWakeMin: 3 * 60 + 5,
-    interventions: [
-      { kind: "sleep_window", startMin: 20 * 60, endMin: 3 * 60 + 5, note: "Aggressive early night." },
-      { kind: "light_exposure", startMin: 3 * 60 + 30, endMin: 4 * 60 + 30, note: "Wake anchor." },
-    ],
-  };
+  // Route-aware plans; the deliberately bad first drafts make recovery visible.
+  const { days, badFirstDrafts } = replayPlanFor(trip, cal, citations, ADHERENCE_PROFILE);
 
   for (let i = 0; i < days.length; i++) {
-    const scriptedBad = i === 1 ? badD2 : i === 2 ? badD1 : null;
+    const scriptedBad = badFirstDrafts.get(i) ?? null;
 
     for (let attempt = 1; attempt <= 2; attempt++) {
       const candidate = attempt === 1 && scriptedBad ? scriptedBad : days[i];
@@ -165,7 +154,7 @@ export async function* runReplay(): AsyncGenerator<CrewEvent> {
         "planner",
         attempt === 1 && scriptedBad
           ? `${candidate.label}: drafting an ambitious shift — ${Math.abs(candidate.shiftMin)} minutes.`
-          : `${candidate.label}: ${Math.abs(candidate.shiftMin)}min advance, ${candidate.interventions.length} interventions.`,
+          : `${candidate.label}: ${Math.abs(candidate.shiftMin)}min ${verb}, ${candidate.interventions.length} interventions.`,
       );
       yield {
         type: "tool_call",
@@ -176,11 +165,12 @@ export async function* runReplay(): AsyncGenerator<CrewEvent> {
       yield { type: "plan_candidate", day: candidate };
 
       const result = evaluatePlan({
-        trip: DEMO_TRIP,
+        trip,
         days: [...locked, candidate],
         calendar: cal,
         adherence: ADHERENCE_PROFILE,
       });
+      evals.push(result);
       yield { type: "eval_result", result, attempt };
       yield { type: "agent_start", agent: "evaluator", title: "Iris · EVAL" };
       yield* speak(
@@ -194,7 +184,7 @@ export async function* runReplay(): AsyncGenerator<CrewEvent> {
 
       if (passes(result)) {
         locked.push(candidate);
-        yield { type: "day_locked", day: candidate, sunProgress: sunProgress(DEMO_TRIP, locked) };
+        yield { type: "day_locked", day: candidate, sunProgress: sunProgress(trip, locked) };
         await sleep(8 * BEAT);
         break;
       }
@@ -206,11 +196,18 @@ export async function* runReplay(): AsyncGenerator<CrewEvent> {
   yield { type: "agent_start", agent: "negotiator", title: "Rex · NEGOTIATOR" };
   yield* speak("negotiator", "Plan's locked. Now the calendar bends. Three moves and we're clean.");
 
-  const moves: [string, number, number, string][] = [
-    ["ev-gym-1", 1, 12 * 60 + 30, "Evenings are protected for the light curfew — gym moves to lunch."],
-    ["ev-deep-1", 1, 10 * 60 + 30, "Deep work slides into the post-anchor alertness window."],
-    ["ev-pack", 2, 15 * 60, "Packing earlier keeps the wind-down intact before a 21:20 bedtime."],
-  ];
+  const d1Bed = locked.find((d) => d.dayIndex === 2)?.targetBedtimeMin;
+  const moves: [string, number, number, string][] = east
+    ? [
+        ["ev-gym-1", 1, 12 * 60 + 30, "Evenings are protected for the light curfew — gym moves to lunch."],
+        ["ev-deep-1", 1, 10 * 60 + 30, "Deep work slides into the post-anchor alertness window."],
+        ["ev-pack", 2, 15 * 60, `Packing earlier keeps the wind-down intact before a ${d1Bed !== undefined ? fmtMin(d1Bed) : "earlier"} bedtime.`],
+      ]
+    : [
+        ["ev-standup-1", 1, 11 * 60, "Mornings stay dim while the clock delays — standup slides later."],
+        ["ev-deep-1", 1, 16 * 60 + 30, "Deep work moves into the later alertness peak."],
+        ["ev-gym-0", 0, 20 * 60, "Gym moves into the evening — movement and light both push the clock later."],
+      ];
   for (const [id, dayIdx, start, reason] of moves) {
     const r = proposeMove(cal, id, dayIdx, start);
     if (r.ok) {
@@ -226,13 +223,18 @@ export async function* runReplay(): AsyncGenerator<CrewEvent> {
   yield { type: "agent_end", agent: "negotiator" };
 
   // --- Briefing ---------------------------------------------------------------
-  const ics = buildIcs(cal, DEMO_TRIP);
+  const ics = buildIcs(cal, trip);
+  // Same aggregation as the live orchestrator: mean of the passing verdicts.
+  const scores = evals.filter((e) => e.feasible).map((e) => e.score);
+  const meanScore = scores.length ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 100) / 100 : 0;
+  const shifted = locked.reduce((a, d) => a + Math.abs(d.shiftMin), 0);
+  const required = Math.abs(trip.requiredShiftMin);
+  const movedCount = cal.filter((e) => e.movedTo).length;
   yield {
     type: "briefing",
-    summary:
-      "Night shift complete. 5 days locked, 380 minutes of the 540-minute shift covered before you land — the crew keeps working after touchdown. 4 papers cited. Calendar: 3 events rescheduled, every fixed commitment intact.",
+    summary: `Night shift complete. ${locked.length} days locked, ${shifted} minutes of the ${required}-minute ${trip.origin.name} → ${trip.destination.name} shift covered${shifted < required ? " before you land — the crew keeps working after touchdown" : ""}. ${citations.length} papers cited. Calendar: ${movedCount} events rescheduled, every fixed commitment intact.`,
     ics,
-    score: 0.9,
+    score: meanScore,
     citations,
     days: locked,
   };

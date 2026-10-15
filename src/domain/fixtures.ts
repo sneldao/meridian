@@ -7,34 +7,48 @@ import type {
   WearableBaseline,
 } from "./types";
 
-// Demo persona: Alex flies London -> Tokyo Saturday morning, 9 time zones
-// east. The crew gets D-3, D-2, D-1 pre-flight plus arrival days.
+import { cityOn, findAirport } from "./airports";
+import { wrapShiftMin } from "./timezones";
+
+// Demo persona: Alex flies London -> Tokyo Sunday 18 Oct 2026. London is on
+// BST (UTC+1) until 25 Oct, so that's 8 time zones east, not 9. The crew gets
+// D-3, D-2, D-1 pre-flight plus arrival days.
 //
 // shiftMin convention: negative = phase advance (earlier), positive = delay.
 
-export const LONDON: City = { code: "LHR", name: "London", utcOffsetMin: 0, lon: -0.1276, lat: 51.5 };
-export const TOKYO: City = { code: "HND", name: "Tokyo", utcOffsetMin: 540, lon: 139.69, lat: 35.7 };
+export const DEMO_DEPARTURE = "2026-10-18";
 
-export const CITY_TABLE: Record<CityCode, City> = {
-  LHR: { code: "LHR", name: "London", utcOffsetMin: 0, lon: -0.1276, lat: 51.5 },
-  HND: { code: "HND", name: "Tokyo", utcOffsetMin: 540, lon: 139.69, lat: 35.7 },
-  JFK: { code: "JFK", name: "New York", utcOffsetMin: -300, lon: -74.0, lat: 40.7 },
-  SFO: { code: "SFO", name: "San Francisco", utcOffsetMin: -480, lon: -122.4, lat: 37.8 },
-  CDG: { code: "CDG", name: "Paris", utcOffsetMin: 60, lon: 2.35, lat: 48.9 },
-  SIN: { code: "SIN", name: "Singapore", utcOffsetMin: 480, lon: 103.8, lat: 1.35 },
-};
+/** Featured routes for quick picks; any IATA code in src/data/airports.json works. */
+export const FEATURED_CODES = ["LHR", "HND", "JFK", "SFO", "CDG", "SIN"] as const;
 
+/** Featured cities with offsets on the demo dates. Prefer `cityOn(code, date)`. */
+export const CITY_TABLE: Record<CityCode, City> = Object.fromEntries(
+  FEATURED_CODES.map((c) => [c, cityOn(c, DEMO_DEPARTURE)]),
+);
+
+export const LONDON: City = CITY_TABLE.LHR;
+export const TOKYO: City = CITY_TABLE.HND;
+
+export function isKnownCity(code: string | null | undefined): code is CityCode {
+  return !!findAirport(code);
+}
+
+/**
+ * Build a trip for any two airports. Offsets are evaluated on real dates
+ * (home on D-3, destination on arrival), and the shift wraps into ±12 h so
+ * SFO → SIN is an 8 h delay, not a 16 h advance.
+ */
 export function buildTrip(originCode: CityCode, destCode: CityCode, departureDate: string): Trip {
-  const origin = CITY_TABLE[originCode];
-  const destination = CITY_TABLE[destCode];
-  const requiredShiftMin = origin.utcOffsetMin - destination.utcOffsetMin; // negative = eastward advance
-  const direction: Trip["direction"] = requiredShiftMin <= 0 ? "east" : "west";
   const flight = new Date(departureDate + "T00:00:00Z");
   const days = ["D-3", "D-2", "D-1", "Flight", "D+1"].map((label, i) => {
     const d = new Date(flight);
     d.setUTCDate(d.getUTCDate() + (i - 3));
     return { dayIndex: i, label, date: d.toISOString().slice(0, 10) };
   });
+  const origin = cityOn(originCode, days[0].date);
+  const destination = cityOn(destCode, days[4].date);
+  const requiredShiftMin = wrapShiftMin(origin.utcOffsetMin - destination.utcOffsetMin); // negative = eastward advance
+  const direction: Trip["direction"] = requiredShiftMin <= 0 ? "east" : "west";
   return {
     origin,
     destination,
@@ -45,20 +59,14 @@ export function buildTrip(originCode: CityCode, destCode: CityCode, departureDat
   };
 }
 
-export const DEMO_TRIP: Trip = {
-  origin: LONDON,
-  destination: TOKYO,
-  requiredShiftMin: -540, // 9h advance
-  departureDayIndex: 3,
-  direction: "east",
-  days: [
-    { dayIndex: 0, label: "D-3", date: "2026-10-15" },
-    { dayIndex: 1, label: "D-2", date: "2026-10-16" },
-    { dayIndex: 2, label: "D-1", date: "2026-10-17" },
-    { dayIndex: 3, label: "Flight", date: "2026-10-18" },
-    { dayIndex: 4, label: "D+1", date: "2026-10-19" },
-  ],
-};
+export const DEMO_TRIP: Trip = buildTrip("LHR", "HND", DEMO_DEPARTURE);
+
+/** The fixture calendar with the flight retitled for the trip's route. */
+export function calendarFor(trip: Trip): CalendarEvent[] {
+  return CALENDAR.map((e) =>
+    e.id === "ev-flight" ? { ...e, title: `Flight ${trip.origin.code} → ${trip.destination.code}` } : { ...e },
+  );
+}
 
 export const GARMIN_BASELINE: WearableBaseline = {
   wearer: "Alex Rivera",

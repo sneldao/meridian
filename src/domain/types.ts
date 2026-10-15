@@ -3,15 +3,20 @@
 // layer can port back into a larger health platform later
 // (observation -> plan -> outcome loop).
 
-export type CityCode = "LHR" | "HND" | "JFK" | "SFO" | "CDG" | "SIN";
+/** IATA airport code (any of the ~1,100 in src/data/airports.json). */
+export type CityCode = string;
 
 export interface City {
   code: CityCode;
   name: string;
-  /** UTC offset in minutes at the fixture date (DST ignored for the demo). */
+  /** UTC offset in minutes on the trip's dates (DST-aware, from `tz`). */
   utcOffsetMin: number;
   lon: number; // for scene placement
   lat: number;
+  /** IANA time zone, e.g. "Europe/London". */
+  tz?: string;
+  airport?: string;
+  country?: string;
 }
 
 export interface Trip {

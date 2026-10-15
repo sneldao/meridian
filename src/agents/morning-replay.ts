@@ -1,10 +1,10 @@
 import { evaluatePlan, fmtMin, passes, sunProgress } from "@/domain/circadian";
 import { foldCheckIns, summarizeCheckIn } from "@/domain/adherence";
-import { ADHERENCE_PROFILE, CALENDAR, DEMO_TRIP, GARMIN_BASELINE } from "@/domain/fixtures";
-import type { AdherenceProfile, AgentId, CalendarEvent, CheckIn, CrewEvent, DayPlan, EvalResult } from "@/domain/types";
+import { ADHERENCE_PROFILE, DEMO_TRIP, GARMIN_BASELINE, calendarFor } from "@/domain/fixtures";
+import type { AdherenceProfile, AgentId, CalendarEvent, CheckIn, CrewEvent, DayPlan, EvalResult, Trip } from "@/domain/types";
 import { buildIcs } from "@/tools/calendar";
 import { fallbackCitations } from "@/tools/science";
-import { scriptedDays } from "./replay";
+import { replayPlanFor } from "./replay-plan";
 
 // The recorded morning shift: the adherence-replan beat without a live
 // provider. Mirrors orchestrate's replan event order. Remaining days are
@@ -25,21 +25,23 @@ async function* speak(agent: AgentId, text: string): AsyncGenerator<CrewEvent> {
 export async function* runMorningReplay(opts: {
   startDayIndex: number;
   checkIns: CheckIn[];
+  trip?: Trip;
 }): AsyncGenerator<CrewEvent> {
+  const trip = opts.trip ?? DEMO_TRIP;
   const adherence: AdherenceProfile = opts.checkIns.length
     ? foldCheckIns(ADHERENCE_PROFILE, opts.checkIns)
     : ADHERENCE_PROFILE;
   const citations = fallbackCitations();
-  const cal: CalendarEvent[] = CALENDAR.map((e) => ({ ...e }));
-  const specs = DEMO_TRIP.days.filter((d) => d.dayIndex >= opts.startDayIndex);
-  const dropped = DEMO_TRIP.days.filter((d) => d.dayIndex < opts.startDayIndex).map((d) => d.dayIndex);
+  const cal: CalendarEvent[] = calendarFor(trip);
+  const specs = trip.days.filter((d) => d.dayIndex >= opts.startDayIndex);
+  const dropped = trip.days.filter((d) => d.dayIndex < opts.startDayIndex).map((d) => d.dayIndex);
   const locked: DayPlan[] = [];
   const evals: EvalResult[] = [];
 
   yield {
     type: "run_start",
     provider: "replay",
-    trip: DEMO_TRIP,
+    trip,
     baseline: GARMIN_BASELINE,
     calendar: cal,
   };
@@ -72,7 +74,7 @@ export async function* runMorningReplay(opts: {
   yield { type: "agent_end", agent: "analyst" };
 
   // --- Planner + evaluator, remaining days only ------------------------------
-  const scripted = scriptedDays(citations);
+  const scripted = replayPlanFor(trip, cal, citations, adherence).days;
   for (const spec of specs) {
     const candidate = scripted.find((d) => d.dayIndex === spec.dayIndex);
     if (!candidate) continue;
@@ -88,7 +90,7 @@ export async function* runMorningReplay(opts: {
     yield { type: "plan_candidate", day: candidate };
 
     const result = evaluatePlan({
-      trip: DEMO_TRIP,
+      trip,
       days: [...locked, candidate],
       calendar: cal,
       adherence,
@@ -107,7 +109,7 @@ export async function* runMorningReplay(opts: {
 
     if (passes(result)) {
       locked.push(candidate);
-      yield { type: "day_locked", day: candidate, sunProgress: sunProgress(DEMO_TRIP, locked) };
+      yield { type: "day_locked", day: candidate, sunProgress: sunProgress(trip, locked) };
       await sleep(4 * BEAT);
     } else {
       yield {
@@ -131,7 +133,7 @@ export async function* runMorningReplay(opts: {
   yield {
     type: "briefing",
     summary: `Morning replan complete. ${locked.length} of ${specs.length} remaining days re-locked after ${opts.checkIns.length} check-in(s).`,
-    ics: buildIcs(cal, DEMO_TRIP),
+    ics: buildIcs(cal, trip),
     score: meanScore,
     citations,
     days: locked,

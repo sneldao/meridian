@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { CITY_TABLE, buildTrip } from "@/domain/fixtures";
+import { buildTrip, isKnownCity } from "@/domain/fixtures";
 import { fetchCalendar } from "@/tools/calendar";
 import { runCrew } from "@/agents/runtime";
 import type { CheckIn } from "@/domain/types";
@@ -7,22 +7,21 @@ import type { CheckIn } from "@/domain/types";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-function isCityCode(v: string): v is keyof typeof CITY_TABLE {
-  return Object.prototype.hasOwnProperty.call(CITY_TABLE, v);
-}
-
 function isValidDate(v: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v));
 }
 
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
-  const originRaw = sp.get("origin") ?? "LHR";
-  const destRaw = sp.get("dest") ?? "HND";
+  const originRaw = (sp.get("origin") ?? "LHR").toUpperCase();
+  const destRaw = (sp.get("dest") ?? "HND").toUpperCase();
   const date = sp.get("date") ?? "2026-10-18";
 
-  if (!isCityCode(originRaw) || !isCityCode(destRaw)) {
+  if (!isKnownCity(originRaw) || !isKnownCity(destRaw)) {
     return new Response(JSON.stringify({ error: "invalid origin/dest" }), { status: 400 });
+  }
+  if (originRaw === destRaw) {
+    return new Response(JSON.stringify({ error: "origin and destination are the same" }), { status: 400 });
   }
   if (!isValidDate(date)) {
     return new Response(JSON.stringify({ error: "invalid date" }), { status: 400 });

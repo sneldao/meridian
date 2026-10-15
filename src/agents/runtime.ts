@@ -5,8 +5,7 @@ import { z } from "zod";
 import { evaluatePlan, fmtMin, passes, sunProgress } from "@/domain/circadian";
 import { ADHERENCE_PROFILE, DEMO_TRIP, GARMIN_BASELINE } from "@/domain/fixtures";
 import { foldCheckIns } from "@/domain/adherence";
-import { loadMemory, memoryBrief, recordRun } from "@/domain/memory";
-import type {
+import { loadMemory, memoryBrief, recordRun } from "@/domain/memory";import type {
   CalendarEvent,
   CalendarMove,
   CheckIn,
@@ -107,12 +106,12 @@ async function drain(gen: AsyncGenerator<CrewEvent>, emit: Emit) {
 
 /** Recorded transcript for this run: a morning shift (check-ins or a later
  * start day) gets the replan script, otherwise the night script. */
-function replayFor(opts?: { checkIns?: CheckIn[]; startDayIndex?: number }): AsyncGenerator<CrewEvent> {
+function replayFor(opts?: { checkIns?: CheckIn[]; startDayIndex?: number; trip?: Trip }): AsyncGenerator<CrewEvent> {
   const checkIns = opts?.checkIns ?? [];
   const startDayIndex = opts?.startDayIndex ?? 0;
   return checkIns.length > 0 || startDayIndex > 0
-    ? runMorningReplay({ startDayIndex, checkIns })
-    : runReplay();
+    ? runMorningReplay({ startDayIndex, checkIns, trip: opts?.trip })
+    : runReplay(opts?.trip);
 }
 
 // --- orchestrator ------------------------------------------------------------
@@ -131,6 +130,15 @@ interface RunState {
 async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[], calendarSource: "google" | "fixture" = "fixture", checkIns: CheckIn[] = [], startDayIndex: number = 0) {
   const adherence = checkIns.length ? foldCheckIns(ADHERENCE_PROFILE, checkIns) : ADHERENCE_PROFILE;
   const memory = await loadMemory();
+  let graphMem: { enabled: boolean; findings: { text: string; at: number; session: string; target?: string }[]; failures: { kind: string; status: string; text?: string; at: number }[] } = { enabled: false, findings: [], failures: [] };
+  if (process.env.FALKORDB_URL) {
+    try {
+      const gm = await import("@/domain/graph-memory");
+      if (gm.graphEnabled()) graphMem = await gm.loadGraphMemory();
+    } catch {
+      // optional graph memory never breaks the run
+    }
+  }
   const state: RunState = {
     calendar: calendarInput.map((e) => ({ ...e })),
     citations: [],
@@ -166,7 +174,7 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
     CREW.analyst,
     {
       prompt:
-        `Baseline + adherence profile are on your tools. Give the planner the constraints: chronotype, habitual window, and the compliance floor. Cross-run memory: ${memoryBrief(memory)}`,
+        `Baseline + adherence profile are on your tools. Give the planner the constraints: chronotype, habitual window, and the compliance floor. Cross-run memory: ${memoryBrief(memory)} Graph memory: ${graphMem.enabled && graphMem.findings.length ? graphMem.findings.map((f) => `"${f.text}"`).join("; ") : "disabled or empty"}`,
       tools: {
         getWearableBaseline: bare("Read the wearer's wearable baseline", () => getWearableBaseline()),
         getRecentNights: bare("Read recent sleep nights", () => getRecentNights()),
