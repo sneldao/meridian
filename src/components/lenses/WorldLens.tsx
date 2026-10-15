@@ -22,7 +22,7 @@ import { utcOffsetMinOn } from "@/domain/timezones";
 import { AIRPORTS, findAirport } from "@/domain/airports";
 import { clusterAirports, shouldSplit } from "@/domain/city-lights";
 
-// World rendering follows the primitives in docs/design-vision.md §3a:
+// World rendering follows the primitives in docs/plan/design-vision.md §3a:
 // real coastline polygons, the terminator as a geoCircle on the subsolar
 // antipode, the ghost as the same circle shifted by the body-clock gap,
 // depth as a layer stack, and clamped pan/zoom with inverse-scaled markers.

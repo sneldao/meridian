@@ -1,3 +1,5 @@
+<!-- LIVE reference — keep in sync with the code. -->
+
 # Providers & configuration
 
 One runtime (`src/agents/runtime.ts`), three model backends selected by
@@ -36,7 +38,9 @@ Featherless equivalents: `FEATHERLESS_ORCHESTRATOR_MODEL`,
 |---|---|
 | `FEATHERLESS_BASE_URL` | Default `https://api.featherless.ai/v1` |
 | `FIRECRAWL_API_KEY` | Optional second science provider. Chain: ScienceMadeReadable (free, no key) → Firecrawl → verified static citations |
-| `ELEVENLABS_API_KEY` | Voice layer — `POST /api/voice` TTS per crew member (distinct stock voices per agent, `ELEVENLABS_VOICE_*` / `ELEVENLABS_MODEL` overridable, default `eleven_flash_v2_5`). Client queues utterances sequentially; 204 when unset |
+| `ELEVENLABS_API_KEY` | Voice layer — `POST /api/voice` streams PCM per crew member, sentence-chunked so speech overlaps token generation (`timestamps:true` returns char-aligned JSONL for feed karaoke; `{lines:[{agent,text}]}` runs multi-voice text-to-dialogue for the handoff). Voices: `ELEVENLABS_VOICE_ID` / `ELEVENLABS_VOICE_<AGENT>`; models: `ELEVENLABS_MODEL` (crew, default `eleven_flash_v2_5`), `ELEVENLABS_HANDOFF_MODEL` (`eleven_v4`), `ELEVENLABS_DIALOGUE_MODEL` (`eleven_v3`); `ELEVENLABS_SEED` pins determinism; responses cached by content hash. `GET /api/voice` returns 204 when unset, `POST` returns 503 |
+| `REPLAY_BEAT_MS` | Replay pacing — ms between streamed events (default `60`; see [demo.md](demo.md)) |
+| `NEXT_PUBLIC_AGENT_PROVIDER` | Client-side fallback label when a run doesn't report its provider |
 
 ## Calendar backend
 

@@ -1,3 +1,5 @@
+<!-- ASPIRATIONAL — design direction, not current state; adopted items are marked. Living docs: docs/reference/. -->
+
 # Design vision — the second sun
 
 **Date:** 2026-10-15 · **POC:** product / design (TBD) · **Status:** proposal
@@ -129,7 +131,7 @@ the world briefly loses colour with a dissonant tone → the beam slides to 07:0
 → PASS, a resolved chord, a bell as the day locks.
 
 The oscillator model (Tier 3) is labelled as a model and **never overrides
-`evaluatePlan`** — see [scoring](scoring.md).
+`evaluatePlan`** — see [scoring](../reference/scoring.md).
 
 ## 6. Sound
 
@@ -160,7 +162,8 @@ the thing people share.
   member introduces themselves in place.
 - **Review page:** a 5-row × 24 h swimlane; sleep blocks form a diagonal
   staircase sliding earlier; citations in a footnote gutter.
-- **Reduced motion:** the current SVG `SunTrack` becomes the fallback.
+- **Reduced motion:** the SVG `SunTrack` (since removed; the world lens now
+  runs on `d3-geo`) was the intended fallback.
 
 ## 9. 90-second demo flow
 
@@ -193,7 +196,8 @@ Motion + GSAP for interface and camera animation.
 
 ## 11. Tier 0 — current-scaffold issues (from the 2026-10-15 UI review)
 
-- `SunTrack.tsx` and the idle copy hardcode London / Tokyo / UTC offsets; other routes render wrong.
+- `SunTrack.tsx` (since deleted) and the idle copy hardcoded London / Tokyo /
+  UTC offsets; other routes rendered wrong.
 - "Across the dateline" is wrong — LHR → HND doesn't cross the International Date Line.
 - The SVG letterboxes (fixed 1000×430 viewBox), leaving empty bands in the hero card.
 - The handoff card covers the whole hero, hiding the payoff (where the sun ended up).

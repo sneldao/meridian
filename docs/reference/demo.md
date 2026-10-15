@@ -1,3 +1,5 @@
+<!-- LIVE reference — keep in sync with the code. -->
+
 # Demo runbook
 
 ## The safe path
@@ -17,7 +19,7 @@ Pacing knob: `REPLAY_BEAT_MS` env var (default `60`, read in `replay.ts` and
 `morning-replay.ts`) — ms between streamed events. Default is too fast to
 narrate (~7.5 s for a full night shift); set `REPLAY_BEAT_MS=300` in
 `.env.local` on the stage machine (~40 s, narratable). Keep the default for
-tests and fixture recording — see `docs/hackathon-plan.md` §11.
+tests and fixture recording — see `docs/plan/hackathon-plan.md` §11.
 
 ## The morning replan (replay)
 

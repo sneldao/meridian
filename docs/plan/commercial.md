@@ -1,3 +1,5 @@
+<!-- FROZEN — Accel AI Innovate London, 2026-10-15. Historical record; see docs/reference/ for the current state. -->
+
 # Commercial & deployment — the "live product" story
 
 Written pre-freeze for the pitch. Judges reward monetisation; the honest

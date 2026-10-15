@@ -1,3 +1,5 @@
+<!-- FROZEN — Accel AI Innovate London, 2026-10-15. §1–10 are a day-log; §11 remains the live polish list. Current state: docs/reference/. -->
+
 # Hackathon plan — Accel AI Innovate London
 
 **Date:** Thu 2026-10-15 · **Team:** 4 devs + pitch lead · **Submit:** 15:00 · **Top 8 pitch:** 16:00
@@ -341,9 +343,10 @@ CalendarLens day headers aren't offset by the 32 px hour gutter.
    LHR → HND D+1 14:00 is body 06:00 unadapted (risk) and 12:20 after the
    replay plan (ready). The fixture now has that meeting (`ev-pitch`).
 2. Fix bug 5 (`trip.destination.name`).
-3. **P1 — make the team view real.** Add `GET /api/team/run` that runs the 12
-   travellers' `runReplay(buildTrip(...))` generators **concurrently in one SSE
-   stream**, tagging each event `{ traveller, event }`. One stream avoids the
+3. **P1 — make the team view real.** ✅ **Done** — `GET /api/team/run` runs the
+   12 travellers' `runReplay(buildTrip(...))` generators **concurrently in one
+   SSE stream**, tagging each event `{ traveller, event }`. One stream avoids
+   the
    browser's 6-connection-per-host limit. Each tile folds its events with
    `reduceRun` and shows its own ghost gap, attempts, rejections and readiness.
    Then the label is true: twelve crews running in parallel. The replay

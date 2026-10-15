@@ -1,3 +1,5 @@
+<!-- LIVE reference — keep in sync with the code. -->
+
 # The deterministic gate
 
 `evaluatePlan` in `src/domain/circadian.ts` is the evaluator's ground truth.
@@ -22,6 +24,9 @@ passes(result) = result.feasible && result.score >= PASS_SCORE   // 0.75
 | `UNSAFE_CLAIM` | Note makes a clinical claim (cure/treat/diagnose/proven-to-fix) |
 | `UNKNOWN_CITATION` | Intervention cites an id outside the research set Jun actually returned |
 | `SHIFT_OVERSTATED` | Declared shift exceeds what the phase-response model says the day's timing supports by more than 45 min |
+
+(`ADHERENCE_RISK` is declared in the `EvalViolation` code union but not
+currently emitted — adherence feeds the soft score below.)
 
 ## The model behind `SHIFT_OVERSTATED`
 

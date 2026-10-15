@@ -1,3 +1,5 @@
+<!-- LIVE reference — keep in sync with the code. -->
+
 # Evals — the shape, not the hillclimb
 
 **Not done today:** tuning prompts against these numbers. **Done today:** the

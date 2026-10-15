@@ -1,3 +1,5 @@
+<!-- FROZEN — Graph Hacks participation plan. Historical record; see docs/reference/ for the current state. -->
+
 # Graph Hacks hackathon — Meridian participation plan
 
 **Event:** Graph Hacks (WeMakeDevs + FalkorDB)  
@@ -120,5 +122,3 @@ Do:
 ## If there is not enough time
 
 Skip the hackathon integration and ship the already-working Meridian memory loop as the story, but do not pretend the JSON file is a graph. The current product value does not depend on FalkorDB; the graph track only adds value if it is live.
-EOF
-echo done

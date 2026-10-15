@@ -5,7 +5,7 @@
 //   const { run, dispatch, reset } = useRunState();
 //   es.onmessage = (m) => dispatch(JSON.parse(m.data));
 //
-// Lenses take slices of `run` as props; see docs/hackathon-plan.md §3.
+// Lenses take slices of `run` as props; see docs/plan/hackathon-plan.md §3.
 
 import { useCallback, useReducer, useRef } from "react";
 import { passes, sunProgress } from "@/domain/circadian";
@@ -20,6 +20,7 @@ import type {
   EvalResult,
   ShiftCoverage,
   Trip,
+  VoiceLine,
   WearableBaseline,
 } from "@/domain/types";
 
@@ -34,6 +35,8 @@ export interface Briefing {
   score: number;
   citations: Citation[];
   days: DayPlan[];
+  /** Multi-voice handoff script when the run emitted one. */
+  lines?: VoiceLine[];
   /** How much of the required shift the locked days cover. `undefined` on
    *  briefings recorded before coverage was measured, so old fixtures and
    *  persisted events still load. */
@@ -294,8 +297,8 @@ function applyEventInner(s: RunState, event: CrewEvent, t: number): RunState {
       return { ...base, moves: [...s.moves, event.move] };
 
     case "briefing": {
-      const { summary, ics, score, citations, days, coverage } = event;
-      return { ...base, briefing: { summary, ics, score, citations, days, coverage } };
+      const { summary, ics, score, citations, days, coverage, lines } = event;
+      return { ...base, briefing: { summary, ics, score, citations, days, coverage, lines } };
     }
 
     case "error":

@@ -1,3 +1,5 @@
+<!-- FROZEN — pitch framing as delivered at Accel AI Innovate London, 2026-10-15. -->
+
 # Pitch narrative — verified framing material
 
 Cold-open line: **"The people who beat jet lag for a living have a crew. We

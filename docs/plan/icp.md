@@ -1,3 +1,5 @@
+<!-- FROZEN — ICP research from the 2026-10 hackathon. Still the source of the demo fixtures. -->
+
 # ICP — who the night shift serves
 
 Two personas. **ICP-1 is the wedge** (revenue, frequent-flyer spend). **ICP-2 is

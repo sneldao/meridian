@@ -24,7 +24,7 @@ bun run dev                   # http://localhost:3000
 
 Optional: `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` in `.env.local` persist
 run history server-side (project `vpeakvspljdoxbwfsdvw`, see
-[providers.md](docs/providers.md#supabase-persistence-optional)).
+[providers.md](docs/reference/providers.md#supabase-persistence-optional)).
 
 ## The crew
 
@@ -47,17 +47,26 @@ run history server-side (project `vpeakvspljdoxbwfsdvw`, see
 | `/outcome` | Post-trip self-report (adherence, jetlag, notes); learned cross-run memory |
 | `/team` | Travel-manager view: 12 travellers, 12 crews in parallel (stretch) |
 | `/dev` | Lens workbench + recorded-event fixture playback (dev only) |
+| `/api/*` | Server surface — run SSE, check-in, trip, team, persistence, memory, graph health, voice ([reference](docs/reference/architecture.md#api-surface)) |
 
 ## Docs
 
-- [Architecture](docs/architecture.md) — pipeline, event stream, artifacts, adherence loop
-- [Scoring](docs/scoring.md) — the deterministic gate every plan must pass
-- [Providers](docs/providers.md) — replay / anthropic / featherless, env vars, fallbacks
-- [Demo runbook](docs/demo.md) — stage path, pacing, localStorage keys, troubleshooting
-- [Hackathon plan](docs/hackathon-plan.md) — today's build: 4 lenses, any route, team split, demo script, business case
-- [Design vision](docs/design-vision.md) — the Ghost Terminator, immersive-world plan, build tiers, current UI fixes
-- [Graph Hacks plan](docs/graph-hackathon.md) — FalkorDB participation strategy, tracks, scope guardrails
-- [Evals](docs/evals.md) — the harness that tracks plan quality over time (`bun run eval`), not a hillclimb yet, the shape of one
+Reference (kept in sync with the code):
+
+- [Architecture](docs/reference/architecture.md) — pipeline, event stream, API surface, artifacts, adherence loop
+- [Scoring](docs/reference/scoring.md) — the deterministic gate every plan must pass
+- [Providers](docs/reference/providers.md) — replay / anthropic / featherless, env vars, fallbacks
+- [Demo runbook](docs/reference/demo.md) — stage path, pacing, localStorage keys, troubleshooting
+- [Evals](docs/reference/evals.md) — the harness that tracks plan quality over time (`bun run eval`), not a hillclimb yet, the shape of one
+
+Plan & pitch (frozen at the 2026-10-15 hackathon — history, not current state):
+
+- [Hackathon plan](docs/plan/hackathon-plan.md) — the day's build: 4 lenses, any route, team split, demo script, business case (§11 still live)
+- [Design vision](docs/plan/design-vision.md) — the Ghost Terminator, immersive-world plan, build tiers
+- [Graph Hacks plan](docs/plan/graph-hackathon.md) — FalkorDB participation strategy, tracks, scope guardrails
+- [ICP](docs/plan/icp.md) — the two personas the fixtures are built from
+- [Commercial](docs/plan/commercial.md) — deployment + monetisation story behind the live URL
+- [Pitch narrative](docs/plan/pitch.md) — verified framing material for the stage
 
 ## Checks
 

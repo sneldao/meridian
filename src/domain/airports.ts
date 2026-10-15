@@ -1,5 +1,5 @@
 // ~1,100 scheduled large airports with IANA zones (OurAirports, public domain,
-// joined with mwgg/Airports for tz). Regenerate: see docs/hackathon-plan.md §2.
+// joined with mwgg/Airports for tz). Regenerate: see docs/plan/hackathon-plan.md §2.
 
 import raw from "@/data/airports.json";
 import type { City } from "./types";

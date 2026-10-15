@@ -1,3 +1,5 @@
+<!-- LIVE reference — keep in sync with the code. -->
+
 # Architecture
 
 One Next.js app. The crew runs server-side and streams `CrewEvent`s over SSE;
@@ -42,7 +44,7 @@ other.
 
 ## Event stream
 
-`CrewEvent` union in `src/domain/types.ts` (~18 variants). Everything the UI
+`CrewEvent` union in `src/domain/types.ts` (16 variants). Everything the UI
 needs is an event: agent lifecycle, token deltas, tool calls/results,
 citations, plan candidates, eval verdicts, day locks, calendar moves,
 check-ins, replans, errors.
@@ -87,6 +89,18 @@ Optional Supabase layer (`src/tools/supabase.ts`): when `SUPABASE_URL` +
 Without them everything falls back to `localStorage`. Project + schema details
 in [providers.md](providers.md#supabase-persistence-optional).
 
+## API surface
+
+| Route | Purpose |
+|---|---|
+| `GET /api/crew/run` | SSE crew stream (`checkins`, `startDay` query params) |
+| `POST /api/crew/checkin` | Free-text check-in → structured `CheckIn` |
+| `GET /api/trip` | Trip preview: schedule, baseline, calendar, provider |
+| `GET /api/team/run` | 12 parallel crews, one tagged SSE stream |
+| `GET /api/persistence/runs` | Supabase run history; `{"enabled":false}` without keys |
+| `GET /api/memory` · `GET /api/graph/health` | Learned cross-run memory; FalkorDB status (503 when unreachable) |
+| `GET /api/voice` · `POST /api/voice` | Voice-layer availability; TTS audio — see [providers.md](providers.md) |
+
 ## Layout
 
 ```
@@ -94,7 +108,8 @@ src/domain/      types, circadian scorer + phase-response model, placement
                  solver, adherence, readiness, fixtures
 src/tools/       science (SMR → Firecrawl → static), calendar (ICS), wearable
 src/agents/      providers, crew prompts, runtime, night replay, morning replay
-src/components/  SunTrack, CrewFeed, DayStrip, BriefingCard
+src/components/  CrewFeed, DayStrip, BriefingCard, RoutePicker,
+                 MorningCheckin, AnchoredPopover, lenses/
 src/lib/         intervention icon vocabulary
 src/app/         pages + api routes
 artifacts/       runtime handoff artifacts (gitignored)
