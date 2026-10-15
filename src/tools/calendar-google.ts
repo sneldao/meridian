@@ -17,6 +17,58 @@ export function googleCalendarEnabled(): boolean {
   return Boolean(process.env.COMPOSIO_API_KEY);
 }
 
+/** Wall-clock date and minute of day for an instant, in an IANA zone. */
+export function zoneWall(zone: string, instantMs: number): { date: string; min: number } {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: zone,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).formatToParts(new Date(instantMs));
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "0";
+  return {
+    date: `${get("year")}-${get("month")}-${get("day")}`,
+    min: Number(get("hour")) * 60 + Number(get("minute")),
+  };
+}
+
+/** Offset of an IANA zone from UTC, in minutes, at an instant. */
+export function zoneOffsetMin(zone: string, instantMs: number): number {
+  const { date, min } = zoneWall(zone, instantMs);
+  const [y, mo, d] = date.split("-").map(Number);
+  const wallAsUtc = Date.UTC(y, mo - 1, d) + min * 60_000;
+  return Math.round((wallAsUtc - Math.floor(instantMs / 60_000) * 60_000) / 60_000);
+}
+
+/** The instant a Google timestamp refers to. Strings without an offset are wall
+ * time in `zone`. */
+export function instantOf(iso: string, zone: string): number {
+  if (/(Z|[+-]\d{2}:?\d{2})$/.test(iso)) return Date.parse(iso);
+  const asUtc = Date.parse(`${iso.slice(0, 19)}Z`);
+  const once = asUtc - zoneOffsetMin(zone, asUtc) * 60_000;
+  return asUtc - zoneOffsetMin(zone, once) * 60_000;
+}
+
+/** Where an instant sits on the trip clock. Up to the flight the calendar reads
+ * in home time; after it, in destination time. */
+export function tripClockOf(
+  instantMs: number,
+  trip: Trip,
+  homeZone: string,
+): { dayIndex: number; startMin: number } | null {
+  const home = zoneWall(homeZone, instantMs);
+  const homeIdx = trip.days.findIndex((d) => d.date === home.date);
+  if (homeIdx === -1) return null;
+  if (homeIdx <= trip.departureDayIndex) return { dayIndex: homeIdx, startMin: home.min };
+  const dest = new Date(instantMs + trip.destination.utcOffsetMin * 60_000);
+  const dayIndex = trip.days.findIndex((d) => d.date === dest.toISOString().slice(0, 10));
+  if (dayIndex === -1) return null;
+  return { dayIndex, startMin: dest.getUTCHours() * 60 + dest.getUTCMinutes() };
+}
+
 /** Executes one Composio tool through the MCP JSON-RPC endpoint and unwraps
  * the nested payload: result.content[0].text → data.results[0].response.data */
 async function exec(slug: string, args: Record<string, unknown>): Promise<Record<string, unknown>> {
@@ -97,15 +149,15 @@ export async function fetchGoogleCalendar(trip: Trip): Promise<CalendarEvent[]> 
     const startDt = ev.start?.dateTime;
     const endDt = ev.end?.dateTime;
     if (!startDt || !endDt) continue; // all-day events don't carry wall time
-    const dayIndex = trip.days.findIndex((d) => d.date === startDt.slice(0, 10));
-    if (dayIndex === -1) continue;
-    const toMin = (iso: string) => Number(iso.slice(11, 13)) * 60 + Number(iso.slice(14, 16));
+    const start = tripClockOf(instantOf(startDt, TZ()), trip, TZ());
+    const end = tripClockOf(instantOf(endDt, TZ()), trip, TZ());
+    if (!start || !end) continue;
     out.push({
       id: ev.id ?? `gcal-${out.length}`,
       title: ev.summary ?? "(busy)",
-      dayIndex,
-      startMin: toMin(startDt),
-      endMin: Math.max(toMin(endDt), toMin(startDt) + 15),
+      dayIndex: start.dayIndex,
+      startMin: start.startMin,
+      endMin: Math.max(end.startMin, start.startMin + 15),
       // Meetings with other attendees are walls; personal blocks (no
       // attendees, or only the wearer listed as self) are movable.
       movable: !(ev.attendees ?? []).some((a) => !a.self),
@@ -130,6 +182,27 @@ export async function patchGoogleEvent(
     end_time: toRFC3339(date, move.to.endMin),
     timezone: TZ(),
     send_updates: "none",
+  });
+}
+
+/** Creates one event in the calendar's home time, for a meeting the plan
+ * depends on (the arrival-day client pitch). send_updates:"none". */
+export async function createHomeClockEvent(input: {
+  summary: string;
+  description: string;
+  date: string;
+  startMin: number;
+  endMin: number;
+}): Promise<void> {
+  const duration = input.endMin - input.startMin;
+  await exec("GOOGLECALENDAR_CREATE_EVENT", {
+    calendar_id: CALENDAR_ID(),
+    summary: input.summary,
+    description: input.description,
+    start_datetime: toRFC3339(input.date, input.startMin),
+    event_duration_hour: Math.floor(duration / 60),
+    event_duration_minutes: duration % 60,
+    timezone: TZ(),
   });
 }
 
