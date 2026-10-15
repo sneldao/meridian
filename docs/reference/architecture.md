@@ -53,6 +53,11 @@ Errors are `recoverable: true` where the run can continue (e.g. planner
 submitted nothing → `continue`). A provider-level throw mid-run falls back to
 the replay transcript — see [providers.md](providers.md).
 
+The voice layer is a consumer of the same stream: `agent_token` deltas are
+sentence-chunked client-side and queued to `POST /api/voice` while generation
+is still in flight, so speech overlaps thinking; `briefing.lines` become one
+text-to-dialogue call — see [providers.md](providers.md).
+
 ## Artifacts
 
 `persistArtifacts` writes to `artifacts/` (gitignored except `.gitkeep`):
@@ -109,8 +114,9 @@ src/domain/      types, circadian scorer + phase-response model, placement
 src/tools/       science (SMR → Firecrawl → static), calendar (ICS), wearable
 src/agents/      providers, crew prompts, runtime, night replay, morning replay
 src/components/  CrewFeed, DayStrip, BriefingCard, RoutePicker,
-                 MorningCheckin, AnchoredPopover, lenses/
-src/lib/         intervention icon vocabulary
+                 MorningCheckin, AnchoredPopover, lenses/, ui/ primitives
+src/lib/         voice/ (engine, config, cache, split, align, huddle),
+                 motion tokens, intervention icon vocabulary
 src/app/         pages + api routes
 artifacts/       runtime handoff artifacts (gitignored)
 scripts/         replay-check and smoke (night + morning) checks

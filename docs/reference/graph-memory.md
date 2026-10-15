@@ -16,7 +16,7 @@ BST Sunday, leaving ~4h buffer. Freeze deploys after submitting —
 | Piece | State |
 |---|---|
 | `src/domain/graph-memory.ts` | `loadGraphMemory` (2 fixed read queries), `recordFinding`, `graphMemoryBrief`; all no-op without `FALKORDB_URL` |
-| `scripts/seed-graph.ts` | Seeds ~4 nodes, 1 session (`run-1`), one graph |
+| `scripts/seed-graph.ts` | Full seed (item B): London→Tokyo trip across 2 sessions — `Trip`, `Day`, `Intervention`, `CalendarEvent`, `Citation`, `CheckIn`, `Finding`, `AdherenceProfile`, `WearableBaseline` with edges; `SEED_TENANT=other` seeds a second traveller for the isolation demo; `--reset` wipes first. Written, not yet run against a live DB (`FALKORDB_URL` unset) |
 | `GET /api/graph/health` | Reports enabled + findings/failures; 503 when unreachable |
 | Runtime wiring | `runtime.ts` loads graph memory once at run start and injects `findings` into the analyst prompt as prose; `failures` is queried but unused |
 | Env | `FALKORDB_URL` unset in `.env.local`; nothing listening on `:6379`; not set on Render — **feature is off everywhere** |
@@ -27,12 +27,12 @@ Implementation order (plan §"Implementation order"):
 
 | Step | Status |
 |---|---|
-| 1. Client + 10–20 node seed | ⚠️ Seed is ~4 nodes; missing `Trip`, `Day`, `CalendarEvent`, `Citation`, `AdherenceProfile` + most edges |
+| 1. Client + 10–20 node seed | ✅ Full seed written (all node types + edges, 2 sessions, 2 tenants); pending first run once FalkorDB is up |
 | 2. Read-only traversals | ⚠️ Queries exist; `failures` dropped before the prompt |
 | 3. Fixed-tool catalogue + entity resolution | ❌ Graph is prompt-injected prose, not agent-callable tools; no hop path returned |
 | 4. Read path replacing `memoryBrief` | ❌ Supplements it; `crew-memory.json` remains primary |
 | 5. Write path for check-ins/findings | ❌ `recordFinding` has zero callers; `recordCheckIn` writes JSON only |
-| 6. Cross-session demo | ❌ Single seeded session; `MERIDIAN_GRAPH_ID` is a static global |
+| 6. Cross-session demo | ⚠️ Seed now covers 2 sessions + a second tenant (`SEED_TENANT`); `MERIDIAN_GRAPH_ID` is still a static global (item E) |
 
 Success criteria (plan §"Success criteria for submission") — all unmet or
 unverifiable today: the graph currently *is* a pile of retrieved text

@@ -34,6 +34,28 @@ The feed shows `wearer reported: …` then `replan — …`. On the board, the
 dropped days' plans visibly dissolve (the old sleep bars fade out) and re-draft;
 D-1, Flight and D+1 are re-locked; D-3 and D-2 carry over as lived.
 
+## Voice on stage
+
+With `ELEVENLABS_API_KEY` in `.env.local`, the crew talks while it thinks:
+each agent's output is spoken sentence-by-sentence as tokens stream (no
+waiting for `agent_end`), the spoken prefix lights up in the feed in the
+agent's colour, and the handoff is a multi-voice text-to-dialogue exchange —
+the crew talking the locked plan over in one call (the "huddle"). Without a
+key, voice reads as "unavailable" in the menu and everything else works.
+
+- Menu → voice toggle controls live speech; the BriefingCard **Listen** button
+  replays the handoff even when the toggle is off.
+- **Replay runs are instant and free after the first.** Audio is cached by
+  content hash (memory + Supabase Storage bucket `meridian-voice`), and the
+  replay transcript is deterministic — verified: second run serves 23/23
+  sentences from cache at ~7ms each. Warm the cache with one full run before
+  the slot; the live (anthropic) path never caches because text differs per run.
+- Failures are visible, not silent: a bad key or exhausted quota posts a
+  `voice unavailable: …` error to the feed and switches the layer off for the
+  session.
+- Env knobs (`ELEVENLABS_MODEL_ID`, `MERIDIAN_VOICE_SEED`, kill-switches,
+  per-seat voices): [providers.md](providers.md).
+
 ## The live path
 
 ```bash
