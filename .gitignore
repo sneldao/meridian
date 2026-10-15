@@ -8,6 +8,7 @@ artifacts/*.json
 artifacts/*.ics
 !artifacts/.gitkeep
 artifacts/slides/
+artifacts/proof/
 .qoder/
 *.mp4
 *.webm
