@@ -40,25 +40,27 @@ Featherless equivalents: `FEATHERLESS_ORCHESTRATOR_MODEL`,
 
 ## Calendar backend
 
-The negotiator's calendar is fixture-backed by default. With Composio
-configured it becomes a **real Google Calendar** — `proposeMove` patches actual
-events and `commitPlan` writes every locked intervention as a `Meridian — …`
-block. Any Google failure falls back to fixtures; a failed patch rolls the
-local move back and surfaces as a tool error the negotiator can route around.
+The negotiator's calendar is fixture-backed by default. With a Composio MCP
+consumer key it becomes a **real Google Calendar** — `proposeMove` patches
+actual events and `commitPlan` writes every locked intervention as a
+`Meridian — …` block. Transport is the MCP endpoint
+(`connect.composio.dev/mcp`, `x-consumer-api-key` header →
+`COMPOSIO_MULTI_EXECUTE_TOOL`); the consumer key is already bound to the
+connected account, so no project API key or entity id is needed. Any Google
+failure falls back to fixtures; a failed patch rolls the local move back and
+surfaces as a tool error the negotiator can route around.
 
 | Var | Purpose |
 |---|---|
-| `COMPOSIO_API_KEY` | Composio project key — enables the Google backend |
-| `COMPOSIO_USER_ID` | Entity whose connected Google account is used |
-| `CALENDAR_BACKEND` | `fixture` forces fixtures even with keys present |
+| `COMPOSIO_API_KEY` | MCP consumer key (`x-consumer-api-key` from the dashboard MCP panel) |
+| `CALENDAR_BACKEND` | `fixture` forces fixtures even with the key present |
 | `GOOGLE_CALENDAR_ID` | Default `primary` |
-| `MERIDIAN_CALENDAR_TZ` | Wall-time zone for read/write — default `Europe/London` |
-| `COMPOSIO_GOOGLECALENDAR_VERSION` | Toolkit pin — default `20261010_00` |
+| `MERIDIAN_CALENDAR_TZ` | Wall-time zone for read/write — default `Europe/London`; should match the connected calendar's tz |
 
-Setup: create a Composio project, connect Google Calendar for the entity id,
-drop the two env vars in `.env.local`. Events with attendees are treated as
-fixed walls; personal blocks are movable — same semantics as the fixtures.
-`send_updates: "none"` on every write, so the demo never emails attendees.
+Setup: dashboard → MCP URL → copy the consumer key → connect a Google
+Calendar account. Events with attendees are treated as fixed walls; personal
+blocks are movable — same semantics as the fixtures. `send_updates: "none"`
+on every write, so the demo never emails attendees.
 
 ## Cost notes
 
