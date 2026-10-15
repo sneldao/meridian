@@ -13,6 +13,18 @@ on D-2 and D-1) and five day locks.
 
 Pacing knob: `BEAT` in `src/agents/replay.ts` — ms between streamed events.
 
+## The morning replan (replay)
+
+The recorded morning beat needs no keys. Open the run with a start day and a
+check-in (base64 JSON array of `CheckIn`):
+
+```
+http://localhost:3000/?startDay=2&checkins=<base64 of [{"id":"c1","dayIndex":1,"kind":"light_exposure","startMin":300,"status":"skipped","text":"skipped the 5am light","at":0}]>
+```
+
+The feed shows `wearer reported: …` then `replan — …`. D-1, Flight and D+1
+are re-locked; D-3 and D-2 are dropped.
+
 ## The live path
 
 ```bash
@@ -51,3 +63,4 @@ per day and may need tuning.
 | Plan stuck locked at 0 | `bun run replay:check` — prints every eval verdict |
 | Fresh clone, hooks silent | `git config core.hooksPath .githooks` |
 | Stage wifi dead | `replay` needs no network at all — that's the point |
+| Morning replan shows the night script | URL has no `startDay` or `checkins` — add them |

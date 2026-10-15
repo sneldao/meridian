@@ -14,6 +14,10 @@ One runtime (`src/agents/runtime.ts`), three model backends selected by
 If a live provider throws mid-run, `runCrew` emits an `error` event and drains
 the replay transcript to completion — the demo never dies on stage.
 
+In replay mode the transcript is the night script by default. A morning run
+(check-ins supplied or `startDay > 0`) streams the recorded replan instead
+(`src/agents/morning-replay.ts`).
+
 ## Models
 
 Two roles, env-overridable:

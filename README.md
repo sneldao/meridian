@@ -68,6 +68,6 @@ live in `localStorage`, so a completed plan stays readable offline.
 
 ```bash
 bun test                 # pure-function tests (scorer, adherence)
-bun run smoke            # SSE smoke against a running dev server
+bun run smoke            # SSE smoke against a running dev server: night run + morning replan
 bun run replay:check     # streams the replay transcript; prints eval verdicts
 ```

@@ -64,19 +64,24 @@ early-ask time that still failed, skipped kinds join `weakAt`. The scorer then
 penalizes plans the wearer demonstrably won't follow.
 
 Intake endpoint `POST /api/crew/checkin` parses a free-text check-in via
-`parseCheckInText`; the `check_in` / `replan` event types exist in `types.ts`.
-Folding check-ins into `runCrew` (morning-shift replan) is the pending piece.
+`parseCheckInText`. `GET /api/crew/run` takes `checkins` (base64 JSON array of
+`CheckIn`) and `startDay` (0–4); when either is set, `runCrew` folds the
+check-ins into the adherence profile and replans only the days from `startDay`
+onward. Each check-in streams as a `check_in` event, then a `replan` event
+drops the earlier days. In replay mode the morning beat runs
+`runMorningReplay` (`src/agents/morning-replay.ts`), which re-scores the
+scripted days under the folded profile with the same deterministic gate.
 
 ## Layout
 
 ```
 src/domain/      types, circadian scorer, adherence, fixtures
 src/tools/       science (SMR → Firecrawl → static), calendar (ICS), wearable
-src/agents/      providers, crew prompts, runtime, replay transcript
+src/agents/      providers, crew prompts, runtime, night replay, morning replay
 src/components/  SunTrack, CrewFeed, DayStrip, BriefingCard
 src/lib/         intervention icon vocabulary
 src/app/         pages + api routes
 artifacts/       runtime handoff artifacts (gitignored)
-scripts/         replay-check smoke test
+scripts/         replay-check and smoke (night + morning) checks
 docs/            this documentation
 ```
