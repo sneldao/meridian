@@ -40,6 +40,10 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
   const ghostLon = trip ? sunLon - 90 - ghostGap : -10;
   const mid = { x: (origin.x + destPlot.x) / 2, y: Math.min(origin.y, dest.y, destPlot.y) - 90 };
   const path = `M ${origin.x} ${origin.y} Q ${mid.x} ${mid.y} ${destPlot.x} ${destPlot.y}`;
+  // When the arc wraps at ±180° its destination end sits off-screen; draw the
+  // continuation shifted by one map width so it re-enters the opposite edge.
+  const wrapShift = destPlot.x < 0 ? W : destPlot.x > W ? -W : 0;
+  const wrapX = (v: number) => ((v % W) + W) % W;
 
   return (
     <div className="relative h-full w-full bg-[#050812]">
@@ -77,7 +81,12 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
 
         {/* flight arc */}
         {trip && (
-          <path d={path} fill="none" stroke="#ffc46b" strokeWidth="2" strokeDasharray="6 6" opacity="0.9" />
+          <>
+            <path d={path} fill="none" stroke="#ffc46b" strokeWidth="2" strokeDasharray="6 6" opacity="0.9" />
+            {wrapShift !== 0 && (
+              <path d={path} transform={`translate(${wrapShift} 0)`} fill="none" stroke="#ffc46b" strokeWidth="2" strokeDasharray="6 6" opacity="0.9" />
+            )}
+          </>
         )}
         {/* origin + destination */}
         {trip && (
@@ -96,7 +105,7 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
         {/* body position along the arc */}
         {trip && (
           <circle
-            cx={progressWeight(progress, origin.x, destPlot.x, mid.x)}
+            cx={wrapX(progressWeight(progress, origin.x, destPlot.x, mid.x))}
             cy={progressWeight(progress, origin.y, destPlot.y, mid.y)}
             r={7}
             fill="#ffd98a"

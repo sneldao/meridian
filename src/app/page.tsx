@@ -26,6 +26,7 @@ interface TripData {
   trip: Trip;
   baseline: WearableBaseline;
   calendar: CalendarEvent[];
+  calendarSource?: "google" | "fixture";
   provider: string;
 }
 
@@ -337,17 +338,12 @@ export default function Home() {
           </div>
         </div>
 
-        {trip && (
-          <div className="shrink-0 rounded-lg border border-[#1e2637] bg-[#0c1018] px-3 py-1.5 font-mono2 text-[11px] text-[#8b93a7]">
-            {trip.origin.code} <span className="text-[#ffc46b]">→</span> {trip.destination.code} · {Math.abs(trip.requiredShiftMin / 60)}h {trip.direction}
-          </div>
-        )}
-
         <div className="shrink-0">
           <RoutePicker origin={origin} dest={dest} date={departureDate} onChange={(next) => {
               setOrigin(next.origin);
               setDest(next.dest);
               setDepartureDate(next.date);
+              reset(); // the previous run's trip/briefing belong to the old route
             }} disabled={run.phase === "running"} />
         </div>
 
@@ -430,6 +426,11 @@ export default function Home() {
           Crew fell back mid-run — review the plan before acting.
         </div>
       )}
+      {data?.calendarSource === "fixture" && (
+        <div className="mb-3 rounded-lg border border-[#ffc46b44] bg-[#ffc46b11] px-4 py-2 text-[12px] text-[#ffc46b]">
+          Sample calendar in use — your live Google Calendar isn&apos;t being read.
+        </div>
+      )}
 
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[1.6fr_1fr]">
         <div className="relative flex min-h-0 flex-col gap-3">
@@ -442,8 +443,6 @@ export default function Home() {
             elapsedMs={run.elapsedMs}
             toolCalls={run.toolCalls}
             lockedDays={run.locked.size}
-            focus={run.focus}
-            focusSeq={run.focusSeq}
           >
             {lens === "world" && (
               <WorldLens
@@ -507,7 +506,9 @@ export default function Home() {
             <div className="absolute inset-0 z-10 flex items-center justify-center">
               <div className="text-center">
                 <div className="text-sm text-[#8b93a7]">Your body clock is still in {trip?.origin.name ?? "London"}.</div>
-                <div className="mt-1 text-xs text-[#4a5470]">The crew is waiting for the order.</div>
+                <div className="mt-1 text-xs text-[#4a5470]">
+                  {data ? "The crew is waiting for the order." : "reading your calendar…"}
+                </div>
               </div>
             </div>
           )}

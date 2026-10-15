@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import type { CrewEvent } from "@/domain/types";
 
 export type LensId = "world" | "board" | "calendar" | "ledger";
 
@@ -12,31 +11,11 @@ const LENSES: { id: LensId; label: string; key: string }[] = [
   { id: "ledger", label: "Ledger", key: "4" },
 ];
 
-export function directorLens(event?: CrewEvent | null): LensId | null {
-  if (!event) return null;
-  switch (event.type) {
-    case "citation":
-      return "world";
-    case "plan_candidate":
-    case "eval_result":
-      return "board";
-    case "calendar_move":
-      return "calendar";
-    case "briefing":
-    case "done":
-      return "board";
-    default:
-      return null;
-  }
-}
-
 interface Props {
   lens: LensId;
   onChange: (lens: LensId) => void;
   auto: boolean;
   onToggleAuto: () => void;
-  focus?: string | null;
-  focusSeq?: number;
   running: boolean;
   elapsedMs: number;
   toolCalls: number;
@@ -49,19 +28,14 @@ export function LensShell({
   onChange,
   auto,
   onToggleAuto,
-  focus,
-  focusSeq,
   running,
   elapsedMs,
   toolCalls,
   lockedDays,
   children,
 }: Props) {
-  useEffect(() => {
-    if (!auto || !focus) return;
-    onChange(focus as LensId);
-  }, [focus, focusSeq, auto, onChange]);
-
+  // The director drives `lens` in page.tsx by deriving it from run.focus.
+  // It must NOT go through onChange — manual selection disables auto mode.
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.target && (e.target as HTMLElement).tagName === "INPUT") return;
