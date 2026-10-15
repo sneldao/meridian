@@ -25,7 +25,7 @@ The recorded morning beat needs no keys. Open the run with a start day and a
 check-in (base64 JSON array of `CheckIn`):
 
 ```
-http://localhost:3000/?startDay=2&checkins=<base64 of [{"id":"c1","dayIndex":1,"kind":"light_exposure","startMin":300,"status":"skipped","text":"skipped the 5am light","at":0}]>
+https://meridian-afud.onrender.com/?startDay=2&checkins=<base64 of [{"id":"c1","dayIndex":1,"kind":"light_exposure","startMin":300,"status":"skipped","text":"skipped the 5am light","at":0}]>
 ```
 
 The feed shows `wearer reported: …` then `replan — …`. On the board, the
