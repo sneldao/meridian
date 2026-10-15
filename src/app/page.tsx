@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Compass, SlidersHorizontal, Sparkles, Volume2, VolumeX } from "lucide-react";
 import { fmtMin } from "@/domain/circadian";
 import { summarizeCheckIn } from "@/domain/adherence";
 import type {
@@ -11,8 +10,6 @@ import type {
   Trip,
   WearableBaseline,
 } from "@/domain/types";
-import { Button, Card } from "@/components/ui";
-import { AnchoredPopover } from "@/components/AnchoredPopover";
 import { type LogEntry } from "@/components/CrewFeed";
 import { NudgeFeedScreen } from "@/components/NudgeFeedScreen";
 import { TripSetupScreen } from "@/components/TripSetupScreen";
@@ -58,14 +55,16 @@ export default function Home() {
   const tripQuery = `?origin=${origin}&dest=${dest}&date=${departureDate}`;
   const { run, dispatch, reset } = useRunState();
   const [data, setData] = useState<TripData | null>(null);
-  const [selectedDayLabel, setSelectedDayLabel] = useState<string>("D-3");
+  const [selectedDayLabel, setSelectedDayLabel] = useState<string>("D-1");
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [briefingDismissed, setBriefingDismissed] = useState(false);
   const [hasSavedPlan, setHasSavedPlan] = useState(false);
   const [runCount, setRunCount] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
-  // Agents are invisible by default — users only see behind-the-scenes work if they opt in.
   const [agentDrawerOpen, setAgentDrawerOpen] = useState(false);
+
+  const guideRef = useRef<HTMLDivElement | null>(null);
+  const setupRef = useRef<HTMLDivElement | null>(null);
 
   const trip = (run.trip ?? data?.trip ?? null) as Trip | null;
 
@@ -89,7 +88,9 @@ export default function Home() {
       .then((r) => r.json())
       .then((d: TripData) => {
         setData(d);
-        if (d?.trip?.days?.[0]?.label) {
+        if (d?.trip?.days?.[1]?.label) {
+          setSelectedDayLabel(d.trip.days[1].label);
+        } else if (d?.trip?.days?.[0]?.label) {
           setSelectedDayLabel(d.trip.days[0].label);
         }
       })
@@ -387,12 +388,23 @@ export default function Home() {
         if (run.phase !== "running") startShift();
       } else if (e.code === "Escape") {
         if (agentDrawerOpen) setAgentDrawerOpen(false);
+        else if (menuOpen) setMenuOpen(false);
         else if (run.phase === "running") cancelShift();
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [run.phase, startShift, cancelShift, agentDrawerOpen]);
+  }, [run.phase, startShift, cancelShift, agentDrawerOpen, menuOpen]);
+
+  const goGuide = () => {
+    setActiveScreen("guide");
+    guideRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const goSetup = () => {
+    setActiveScreen("setup");
+    setupRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const providerFallback = run.errors.length > 0;
   const baseline = run.baseline ?? data?.baseline;
@@ -404,188 +416,191 @@ export default function Home() {
   const activeCitations = run.citations.length > 0 ? run.citations : DEFAULT_CITATIONS;
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-ink text-paper">
-      {/* Top Consumer Navigation Bar with Dedicated Screen Switcher */}
-      <header className="sticky top-0 z-30 border-b border-line/80 bg-ink/85 backdrop-blur-md">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setActiveScreen("guide")}
-              className="flex items-baseline gap-2.5 text-left"
+    <div className="root" ref={menuRef}>
+      <div className="beam" />
+      <div className="in">
+        {/* Top Sunlit Horizon Navigation */}
+        <div className="nav rise">
+          <button type="button" className="brand" onClick={goGuide}>
+            <b>MERIDIAN</b>
+            <span>Land at 100%</span>
+          </button>
+
+          <div className="pill" role="navigation" aria-label="Primary screens">
+            <a
+              tabIndex={0}
+              className={activeScreen === "guide" ? "on" : ""}
+              onClick={goGuide}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  goGuide();
+                }
+              }}
             >
-              <span className="text-base font-bold tracking-[0.28em] text-paper">MERIDIAN</span>
-              <span className="hidden text-xs text-mist md:inline">
-                Land at 100%
-              </span>
-            </button>
+              Daily Guide
+            </a>
+            <a
+              tabIndex={0}
+              className={activeScreen === "setup" ? "on" : ""}
+              onClick={goSetup}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  goSetup();
+                }
+              }}
+            >
+              Trip Setup
+            </a>
           </div>
 
-          {/* Dedicated Two-Screen Navigation Pill */}
-          <nav
-            aria-label="Primary screens"
-            className="inline-flex items-center rounded-full border border-line bg-ink-2 p-1"
-          >
+          <div className="right">
             <button
               type="button"
-              onClick={() => setActiveScreen("guide")}
-              aria-current={activeScreen === "guide" ? "page" : undefined}
-              className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
-                activeScreen === "guide"
-                  ? "bg-paper text-ink shadow-sm"
-                  : "text-mist hover:text-paper"
-              }`}
+              className="btn"
+              onClick={() => {
+                voiceOnRef.current = true;
+                setVoiceOn(true);
+                setVoiceEnabled(true);
+              }}
+              aria-pressed={voiceOn}
             >
-              <Compass size={13} />
-              <span>Daily Guide</span>
+              Voice
             </button>
-
             <button
               type="button"
-              onClick={() => setActiveScreen("setup")}
-              aria-current={activeScreen === "setup" ? "page" : undefined}
-              className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
-                activeScreen === "setup"
-                  ? "bg-paper text-ink shadow-sm"
-                  : "text-mist hover:text-paper"
-              }`}
+              className="btn"
+              onClick={() => {
+                voiceOnRef.current = false;
+                setVoiceOn(false);
+                setVoiceEnabled(false);
+                stopVoice();
+              }}
+              aria-pressed={!voiceOn}
             >
-              <SlidersHorizontal size={13} />
-              <span>Trip Setup</span>
+              Muted
             </button>
-          </nav>
-
-          <div className="flex items-center gap-2">
-            {/* Voice toggle when available */}
-            {voiceAvail && (
-              <button
-                type="button"
-                onClick={() => {
-                  const next = !voiceOn;
-                  voiceOnRef.current = next;
-                  setVoiceOn(next);
-                  setVoiceEnabled(next);
-                  if (!next) stopVoice();
-                }}
-                className="inline-flex items-center gap-1.5 rounded-full border border-line bg-ink-2 px-3 py-1.5 text-xs text-mist transition-colors hover:border-mist hover:text-paper"
-                title={voiceOn ? "Mute voice briefing" : "Enable voice briefing"}
-              >
-                {voiceOn ? <Volume2 size={13} className="text-sun-dest" /> : <VolumeX size={13} />}
-                <span className="hidden sm:inline">{voiceOn ? "Voice" : "Muted"}</span>
-              </button>
-            )}
-
-            <div className="relative" ref={menuRef}>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setMenuOpen((v) => !v)}
-                aria-expanded={menuOpen}
-                aria-haspopup="menu"
-              >
-                Menu
-              </Button>
-              {menuOpen && (
-                <AnchoredPopover anchorRef={menuRef}>
-                  <Card className="w-52 p-2 shadow-xl">
-                    <div className="space-y-1">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setActiveScreen("guide");
-                          setMenuOpen(false);
-                        }}
-                        className="w-full rounded-lg px-3 py-1.5 text-left text-xs text-paper hover:bg-line"
-                      >
-                        Daily Guide (Nudges)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setActiveScreen("setup");
-                          setMenuOpen(false);
-                        }}
-                        className="w-full rounded-lg px-3 py-1.5 text-left text-xs text-paper hover:bg-line"
-                      >
-                        Trip &amp; Flight Setup
-                      </button>
-                      {hasSavedPlan && (
-                        <Link
-                          href="/review"
-                          className="block rounded-lg px-3 py-1.5 text-xs text-mist hover:bg-line hover:text-paper"
-                        >
-                          Printable guide →
-                        </Link>
-                      )}
-                      <Link
-                        href="/history"
-                        className="block rounded-lg px-3 py-1.5 text-xs text-mist hover:bg-line hover:text-paper"
-                      >
-                        Past trips {runCount > 0 ? `(${runCount})` : ""}
-                      </Link>
-                      <Link
-                        href="/outcome"
-                        className="block rounded-lg px-3 py-1.5 text-xs text-mist hover:bg-line hover:text-paper"
-                      >
-                        Log sleep outcome
-                      </Link>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setMenuOpen(false);
-                          setAgentDrawerOpen(true);
-                        }}
-                        className="flex w-full items-center gap-1.5 rounded-lg px-3 py-1.5 text-left text-xs text-mist hover:bg-line hover:text-paper"
-                      >
-                        <Sparkles size={12} className="text-sun-dest" />
-                        Behind the scenes (AI)
-                      </button>
-                    </div>
-                  </Card>
-                </AnchoredPopover>
-              )}
-            </div>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-expanded={menuOpen}
+              aria-haspopup="menu"
+            >
+              Menu
+            </button>
           </div>
         </div>
-      </header>
 
-      {/* Main Focused Content Area */}
-      <main className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:py-8">
-        {activeScreen === "guide" ? (
-          <div className="mx-auto flex max-w-2xl flex-col gap-5">
-            {run.briefing && !briefingDismissed && (
-              <HandoffBanner
-                summary={run.briefing.summary}
-                score={run.briefing.score}
-                citations={run.briefing.citations}
-                days={run.briefing.days}
-                ics={run.briefing.ics}
-                lines={run.briefing.lines}
-                coverage={run.briefing.coverage}
-                fallback={providerFallback}
-                voiceAvailable={voiceAvail}
-                onDismiss={() => setBriefingDismissed(true)}
-              />
+        {/* Dropdown Menu */}
+        {menuOpen && (
+          <div className="menu rise" style={{ animationDelay: ".1s" }} role="menu">
+            <div
+              role="menuitem"
+              tabIndex={0}
+              onClick={() => {
+                goGuide();
+                setMenuOpen(false);
+              }}
+            >
+              Daily Guide (Nudges)
+            </div>
+            <div
+              role="menuitem"
+              tabIndex={0}
+              onClick={() => {
+                goSetup();
+                setMenuOpen(false);
+              }}
+            >
+              Trip &amp; Flight Setup
+            </div>
+            {hasSavedPlan ? (
+              <Link href="/review" className="m" onClick={() => setMenuOpen(false)}>
+                Printable guide →
+              </Link>
+            ) : (
+              <Link href="/review" className="m" onClick={() => setMenuOpen(false)}>
+                Printable guide →
+              </Link>
             )}
+            <Link href="/history" className="m" onClick={() => setMenuOpen(false)}>
+              Past trips{runCount > 0 ? ` (${runCount})` : ""}
+            </Link>
+            <Link href="/outcome" className="m" onClick={() => setMenuOpen(false)}>
+              Log sleep outcome
+            </Link>
+            <div
+              role="menuitem"
+              tabIndex={0}
+              className="m"
+              onClick={() => {
+                setMenuOpen(false);
+                setAgentDrawerOpen(true);
+              }}
+            >
+              Behind the scenes (AI)
+            </div>
+          </div>
+        )}
 
-            <NudgeFeedScreen
-              trip={trip}
-              phase={run.phase}
-              selectedDayLabel={selectedDayLabel}
-              onSelectDay={setSelectedDayLabel}
-              locked={run.locked}
-              drafts={run.drafts}
-              baseline={baseline}
-              calendarEvents={currentEvents}
-              moves={run.moves}
-              citations={activeCitations}
-              ics={run.briefing?.ics}
-              selectedFlightId={selectedFlightId}
-              onOpenTripSetup={() => setActiveScreen("setup")}
-              onStartCrewSync={startShift}
+        {/* Titlebar Header */}
+        <div
+          className="titlebar rise"
+          style={{ animationDelay: ".1s", marginTop: "70px" }}
+        >
+          <div>
+            <h1>Trip &amp; Flight Setup</h1>
+            <p>
+              Choose your route, pick the best flight window for zero jet lag,
+              and manage your wearable &amp; calendar sync.
+            </p>
+          </div>
+          <button type="button" className="p1" onClick={goGuide}>
+            Back to Daily Nudges
+          </button>
+        </div>
+
+        {run.briefing && !briefingDismissed && (
+          <div style={{ marginBottom: "18px" }}>
+            <HandoffBanner
+              summary={run.briefing.summary}
+              score={run.briefing.score}
+              citations={run.briefing.citations}
+              days={run.briefing.days}
+              ics={run.briefing.ics}
+              lines={run.briefing.lines}
+              coverage={run.briefing.coverage}
+              fallback={providerFallback}
+              voiceAvailable={voiceAvail}
+              onDismiss={() => setBriefingDismissed(true)}
             />
           </div>
-        ) : (
+        )}
+
+        {/* Daily Guide: Split-Horizon Hero + Bento Deck */}
+        <div ref={guideRef}>
+          <NudgeFeedScreen
+            trip={trip}
+            phase={run.phase}
+            selectedDayLabel={selectedDayLabel}
+            onSelectDay={setSelectedDayLabel}
+            locked={run.locked}
+            drafts={run.drafts}
+            baseline={baseline}
+            calendarEvents={currentEvents}
+            moves={run.moves}
+            citations={activeCitations}
+            ics={run.briefing?.ics}
+            selectedFlightId={selectedFlightId}
+            onOpenTripSetup={goSetup}
+            onStartCrewSync={startShift}
+          />
+        </div>
+
+        {/* Bottom-Sheet Flight Advisor + Route/Wearable + Deep-Dive Visuals */}
+        <div ref={setupRef}>
           <TripSetupScreen
             trip={trip}
             origin={origin}
@@ -620,12 +635,11 @@ export default function Home() {
             onStart={startShift}
             onCancel={cancelShift}
             onCheckIn={(extra) => beginStream(extra)}
-            onBackToGuide={() => setActiveScreen("guide")}
+            onBackToGuide={goGuide}
           />
-        )}
-      </main>
+        </div>
+      </div>
 
-      {/* Optional Behind-the-Scenes Drawer (Default Closed / Invisible) */}
       <AgentDrawer
         open={agentDrawerOpen}
         onClose={() => setAgentDrawerOpen(false)}
