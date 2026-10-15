@@ -95,7 +95,8 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
   const [rot, setRot] = useState({ lng: -30, lat: -18 });
   // Continuous time + ambient traffic: one rAF drives everything that moves.
   // `tick` re-renders each frame; the sun recomputes from Date.now() inside it.
-  const [tick, setTick] = useState(0);
+  // Starts at -1 so SSR and initial hydration use a deterministic epoch before the first frame.
+  const [tick, setTick] = useState(-1);
   const t0 = useRef(0);
   const gesture = useRef({
     dragging: false,
@@ -133,12 +134,16 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
   // Static clock for reduced-motion: still true, just not animated.
   useEffect(() => {
     if (!reduce) return;
+    const init = setTimeout(() => setTick(0), 0);
     const t = setInterval(() => setTick((v) => v + 1), 30_000);
-    return () => clearInterval(t);
+    return () => {
+      clearTimeout(init);
+      clearInterval(t);
+    };
   }, [reduce]);
 
-  void tick; // every frame is a render — sun, clocks and planes read Date.now() fresh
-  const now = new Date();
+  const hydrated = tick >= 0;
+  const now = hydrated ? new Date() : new Date(0);
 
   // --- projections ---------------------------------------------------------
   // Map: fitted Natural Earth; zoom/pan live in a wrapper <g>. Globe:
@@ -380,7 +385,7 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
   // re-diff ~700 nodes per frame. Plain computation: the rAF tick re-renders
   // every frame regardless, so a memo keyed on these values would never hit.
   const dotLayer = (() => {
-    if (isGlobe) return null;
+    if (isGlobe || !hydrated) return null;
     const ppd = pxPerDeg * view.scale;
     const memberR = 1.3 / view.scale; // a constant few px on screen at any zoom
     return dotClusters.map((c, i) => {
@@ -392,7 +397,7 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
             cy={m.p[1]}
             r={memberR}
             fill="var(--color-paper)"
-            opacity={0.05 + m.l * 0.3}
+            opacity={Number((0.05 + m.l * 0.3).toFixed(4))}
           />
         ));
       }
@@ -402,9 +407,9 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
           key={i}
           cx={c.xy![0]}
           cy={c.xy![1]}
-          r={0.9 + Math.min(1.6, 0.34 * extra)}
+          r={Number((0.9 + Math.min(1.6, 0.34 * extra)).toFixed(4))}
           fill="var(--color-paper)"
-          opacity={0.04 + c.lit * (0.12 + Math.min(0.24, 0.055 * extra))}
+          opacity={Number((0.04 + c.lit * (0.12 + Math.min(0.24, 0.055 * extra))).toFixed(4))}
         />
       );
     });
@@ -537,6 +542,7 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
 
               {/* ambient traffic — faint crossings that never sleep */}
               {!reduce &&
+                hydrated &&
                 ambientArcs.map((a, i) => {
                   const t = (tick * 0.03 + a.phase) % 1;
                   const ll = ambientLegs[i].interp(t);
@@ -556,11 +562,11 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
                 })}
 
               {/* twilight band on the day side, then the soft-edged night */}
-              {twilightPath && <path d={twilightPath} fill="var(--color-sun-dest)" opacity={0.09} />}
-              {nightPath && (
+              {hydrated && twilightPath && <path d={twilightPath} fill="var(--color-sun-dest)" opacity={0.09} />}
+              {hydrated && nightPath && (
                 <path d={nightPath} fill="#02040a" opacity={0.62} filter="url(#night-soft)" />
               )}
-              {terminatorPath && (
+              {hydrated && terminatorPath && (
                 <path
                   d={terminatorPath}
                   fill="none"
@@ -573,7 +579,7 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
               {/* the ghost terminator — where your body thinks the sun is.
                   While the crew is working (running, gap still open) the dash
                   marches — motion that says "working" without needing to read. */}
-              {ghostPath && (
+              {hydrated && ghostPath && (
                 <path
                   d={ghostPath}
                   fill="none"
@@ -711,7 +717,7 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
               )}
 
               {/* the sun, parked at the true subsolar point */}
-              {sunXY && (
+              {hydrated && sunXY && (
                 <g transform={`translate(${sunXY[0]} ${sunXY[1]}) scale(${invScale})`}>
                   <circle r={13} fill="var(--color-sun-dest)" opacity={0.18} />
                   <circle r={4.5} fill="var(--color-sun-dest)" opacity={0.95} />
@@ -738,8 +744,10 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
       {/* frosted status pill — floats on the world, no box inside a box */}
       <div className="pointer-events-none absolute left-4 top-4 rounded-full border border-white/10 bg-ink-2/80 px-3.5 py-1.5 font-mono2 text-xs backdrop-blur-md">
         <span className="text-sun-home">
-          real terminator · UTC {String(now.getUTCHours()).padStart(2, "0")}:
-          {String(now.getUTCMinutes()).padStart(2, "0")}
+          real terminator · UTC{" "}
+          {hydrated
+            ? `${String(now.getUTCHours()).padStart(2, "0")}:${String(now.getUTCMinutes()).padStart(2, "0")}`
+            : "--:--"}
         </span>
         {ghostGap > 0 && (
           <span className="ml-3 text-ghost">
