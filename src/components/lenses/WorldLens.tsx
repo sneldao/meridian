@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { Trip } from "@/domain/types";
 import { utcOffsetMinOn } from "@/domain/timezones";
 import airports from "@/data/airports.json";
+import coastPaths from "@/data/coast-paths.json";
 
 interface Props {
   trip: Trip | null;
@@ -84,6 +85,10 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
           </linearGradient>
         </defs>
         <rect width={W} height={H} fill="url(#world-night)" />
+        {/* continents — bundled 110m coastlines, equirectangular */}
+        {(coastPaths as string[]).map((d, i) => (
+          <path key={i} d={d} fill="#121a2c" stroke="#263252" strokeWidth="0.8" />
+        ))}
         {/* the world, drawn as its airports */}
         {AIRPORT_DOTS.map((d, i) => (
           <circle key={i} cx={d.x} cy={d.y} r={1.2} fill="#e8eaf2" opacity="0.16" />
