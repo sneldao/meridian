@@ -151,12 +151,11 @@ the repo About**, text description.
   reference, 2026-10-15). Otto gets a `destinationTaste` tool grounding
   intervention notes in what the place actually offers — never touches timing
   or the scorer. Also MCP `destination_taste`.
-- ~~CRITICAL PATH~~ **key requested 2026-10-15** — provisioning is manual,
-  "a few business days". Keys only work against `hackathon.api.qloo.com`
-  (`X-Api-Key` header) — wired as `QLOO_API_KEY` + `QLOO_BASE_URL` in
-  `.env.local`, drop the key in when the email lands.
-- Once the key lands: smoke `destination_taste` for a real place list (params
-  verified; response fields still need a live check), one `plan_shift` run,
+- ~~CRITICAL PATH~~ **key landed + verified live (2026-10-15)** —
+  `destinationTaste("Tokyo")` returns real places (Tokyo Tower, Mori Art
+  Museum, Fuglen coffee, observation decks) via `hackathon.api.qloo.com`.
+  Key set on `.env.local` + Render service.
+- Remaining: one `plan_shift` run showing Otto's note grounded by Qloo,
   submission text.
 - **Action needed before submit:** add an OSI license file (repo currently
   private/unlicensed — confirm with team) and describe the Qloo delta in the

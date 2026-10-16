@@ -198,6 +198,22 @@ export function NudgeFeedScreen({
   const heroNudge: TravelerNudge | undefined =
     allDayNudges.find((n) => !completedIds.has(n.id)) ?? allDayNudges[0];
 
+  // "The one thing to do now" — countdown + honest readiness. Countdown only
+  // shows when the selected day is today (or the fixture preview has no date).
+  const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+  const isToday =
+    !activeDaySpec?.date || activeDaySpec.date === new Date().toISOString().slice(0, 10);
+  const countdown = useMemo(() => {
+    if (!heroNudge || !isToday) return null;
+    const until = heroNudge.startMin - nowMin;
+    if (until > 0) {
+      const h = Math.floor(until / 60);
+      const m = until % 60;
+      return h > 0 ? `in ${h}h ${m}m` : `in ${m}m`;
+    }
+    return until > -60 ? "now" : "window passed";
+  }, [heroNudge, isToday, nowMin]);
+
   const completedTodayCount = allDayNudges.filter((n) =>
     completedIds.has(n.id),
   ).length;
@@ -206,6 +222,15 @@ export function NudgeFeedScreen({
     6,
     Math.round((completedTodayCount / totalTodayCount) * 100),
   );
+
+  // Honest readiness: % of required shift actually locked by the crew —
+  // falls back to "today done" progress pre-run.
+  const lockedShiftMin = [...locked.values()].reduce((a, p) => a + p.shiftMin, 0);
+  const shiftPct = trip && trip.requiredShiftMin
+    ? Math.min(100, Math.round((lockedShiftMin / Math.abs(trip.requiredShiftMin)) * 100))
+    : 0;
+  const readinessValue = shiftPct > 0 ? shiftPct : progressPct;
+  const readinessLabel = shiftPct > 0 ? "of shift locked" : "of today done";
 
   const shiftHours = trip ? Math.abs(trip.requiredShiftMin / 60) : 8;
   const shiftDir = trip?.direction === "east" ? "East" : "West";
@@ -262,8 +287,8 @@ export function NudgeFeedScreen({
                 </em>
               </div>
               <div className="stat">
-                <em>{chosenFlight ? `${chosenFlight.landingReadinessPct}%` : "92%"}</em>
-                arrival readiness
+                <em>{readinessValue}%</em>
+                {readinessLabel}
               </div>
             </div>
           </div>
@@ -319,6 +344,7 @@ export function NudgeFeedScreen({
           </div>
 
           <span className="tw" style={{ alignSelf: "flex-start" }}>
+            {countdown ? `${countdown} · ` : ""}
             {heroNudge ? heroNudge.timeWindow : "07:00 – 07:35"}
           </span>
 
@@ -327,6 +353,28 @@ export function NudgeFeedScreen({
               ? heroNudge.title
               : "Get Direct Morning Sunlight on Your Face"}
           </h2>
+
+          {heroNudge && (
+            <button
+              type="button"
+              onClick={() => toggleComplete(heroNudge.id)}
+              style={{
+                alignSelf: "flex-start",
+                background: "linear-gradient(90deg, #D96B43, #e99a6f)",
+                color: "#fff8ef",
+                border: "none",
+                borderRadius: "999px",
+                padding: "10px 22px",
+                fontSize: "13px",
+                fontWeight: 800,
+                letterSpacing: "0.04em",
+                cursor: "pointer",
+                marginTop: "2px",
+              }}
+            >
+              {completedIds.has(heroNudge.id) ? "✓ done — tap to undo" : "I did this →"}
+            </button>
+          )}
 
           <p className="s">
             {heroNudge
