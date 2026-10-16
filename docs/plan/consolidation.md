@@ -81,3 +81,21 @@ delete the orphaned imports; re-home them under the depth-3 view.
 Meridian's differentiator is provable provenance, not the dashboard. The
 consumer surface becomes the *compressed* agent story; operator depth stays
 the evidence judges inspect. Same submission assets, stronger product.
+
+## Brand harmonization (2026-10-15, post-merge)
+
+The two surfaces now share one identity instead of trading it off:
+
+- **Hero = the namesake.** The stock photo is gone; the hero panel is a
+  night-ink gradient with the glowing terminator line (`--color-ghost`),
+  destination sun + home dot — "ghost terminator" as the literal product
+  visual inside the sunlit card.
+- **Depth is visible.** Third nav pill "Crew" — Operator is a rung, not a
+  buried link.
+- **Evidence is a badge.** Gate score / rejected-retried / citation /
+  memory-path render as chips (`.evchip`), not a prose footnote.
+- **Honesty tightened.** Index-picked citation fallbacks removed — a nudge
+  shows a paper only when the intervention carries a real `citationId`.
+
+Palette note: sunlit `#D96B43` is terminator gold `#ffd98a` deepened for
+daylight — the same dawn, seen from the consumer side.

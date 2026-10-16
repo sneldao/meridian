@@ -324,6 +324,38 @@ body {
 .evchip.warn { background: rgba(217, 107, 67, 0.16); color: #b04523; border-color: rgba(217, 107, 67, 0.4); }
 .evchip.cite { background: rgba(157, 184, 255, 0.16); color: #4a6492; border-color: rgba(157, 184, 255, 0.4); }
 .evchip.mem  { background: rgba(184, 168, 255, 0.16); color: #6a5a9c; border-color: rgba(184, 168, 255, 0.4); }
+
+/* Day-chip terminator glyph — a 7px day/night line bisecting a circle, the
+   brand's motif riding inside every day button. */
+.day::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, #241a1c 0 50%, var(--color-ghost) 50% 100%);
+  vertical-align: 1px;
+}
+
+/* Dawn-crossing into /crew: the hero's terminator horizon expands to fill
+   the screen, then resolves to the ink surface — the same dawn seen from
+   inside the mission. Pure CSS, one-shot on mount. */
+.dawnIn {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 90% at 78% 74%, rgba(217, 107, 67, 0.55), transparent 55%),
+    linear-gradient(180deg, #0b0e16 0%, #10141f 46%, #241a1c 66%, #3a2118 82%, #D96B43 120%);
+  animation: dawnIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes dawnIn {
+  from { opacity: 1; }
+  40% { opacity: 1; }
+  to { opacity: 0; }
+}
 .hl > *:not(.bg):not(.sc) {
   position: relative;
 }
