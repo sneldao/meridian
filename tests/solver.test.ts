@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { modelShiftMin, evaluatePlan, passes } from "../src/domain/circadian";
-import { solveDay } from "../src/domain/solver";
+import { previewPlan, solveDay } from "../src/domain/solver";
 import type { DayPlan } from "../src/domain/types";
 import { ADHERENCE_PROFILE, CALENDAR, DEMO_TRIP, GARMIN_BASELINE, buildTrip } from "../src/domain/fixtures";
 
@@ -148,4 +148,127 @@ describe("solveDay", () => {
     expect(solved).not.toBeNull();
     expect(Math.abs(solved!.plan.shiftMin)).toBeLessThanOrEqual(Math.abs(small.requiredShiftMin));
   });
+
+  test("converts the previous day's frame across the flight", () => {
+    // D+1 solves from the flight day in destination time: the locked
+    // 22:25/05:15 London schedule becomes 06:25/13:15 Tokyo (+480min), and a
+    // −90 draft shifts it from there.
+    const flightPlan: DayPlan = {
+      dayIndex: 3,
+      label: "Flight",
+      shiftMin: 0,
+      targetBedtimeMin: 22 * 60 + 25,
+      targetWakeMin: 5 * 60 + 15,
+      interventions: [],
+    };
+    const solved = solveDay({
+      trip,
+      spec: trip.days[4],
+      lockedDays: [flightPlan],
+      calendar: CALENDAR,
+      adherence: ADHERENCE_PROFILE,
+      baseline: GARMIN_BASELINE,
+    });
+    expect(solved).not.toBeNull();
+    expect(solved!.plan.targetBedtimeMin).toBe((22 * 60 + 25 + 480 - 90) % 1440); // 04:55 Tokyo
+    expect(solved!.plan.targetWakeMin).toBe((5 * 60 + 15 + 480 - 90) % 1440); // 11:45 Tokyo
+    expect(solved!.plan.shiftMin).toBe(-90); // a hold no longer blocks resuming
+  });
+});
+
+describe("previewPlan", () => {
+  const preview = previewPlan({
+    trip,
+    calendar: CALENDAR,
+    adherence: ADHERENCE_PROFILE,
+    baseline: GARMIN_BASELINE,
+  });
+
+  test("has an entry for every day label", () => {
+    expect(preview.size).toBe(trip.days.length);
+    for (const spec of trip.days) expect(preview.has(spec.label)).toBe(true);
+  });
+
+  test("every non-null day passes the scorer with the days locked before it", () => {
+    const prior: DayPlan[] = [];
+    for (const spec of trip.days) {
+      const solved = preview.get(spec.label);
+      if (!solved) continue;
+      const check = evaluatePlan({
+        trip,
+        days: [...prior, solved.plan],
+        calendar: CALENDAR,
+        adherence: ADHERENCE_PROFILE,
+        baseline: GARMIN_BASELINE,
+      });
+      expect(passes(check)).toBe(true);
+      prior.push(solved.plan);
+    }
+  });
+
+  test("east days never wake earlier than floor − 105 unless holding", () => {
+    const floor = ADHERENCE_PROFILE.ignoresInterventionsBeforeMin;
+    for (const spec of trip.days) {
+      const solved = preview.get(spec.label);
+      if (!solved || solved.plan.shiftMin === 0) continue;
+      // Unwrapped comparison would be ideal; fixture wakes stay in the
+      // early-morning range so the wrapped value is safe here.
+      expect(solved.plan.targetWakeMin).toBeGreaterThanOrEqual(floor - 105);
+    }
+  });
+
+  test("light starts at/after the floor unless every ≥floor slot is blocked", () => {
+    const floor = ADHERENCE_PROFILE.ignoresInterventionsBeforeMin;
+    for (const spec of trip.days) {
+      const solved = preview.get(spec.label);
+      if (!solved) continue;
+      const iv = solved.plan.interventions.find((i) => i.kind === "light_exposure");
+      expect(iv).toBeDefined();
+      if (iv!.startMin >= floor) continue;
+      // A sub-floor ask is only honest when the whole floor band is blocked.
+      const bandFree = [0, 15, 30, 45, 60, 75, 90, 105].some((off) => {
+        const s = floor + off;
+        return !CALENDAR.some(
+          (e) =>
+            e.dayIndex === spec.dayIndex &&
+            e.blocksInterventions !== false &&
+            s < e.endMin &&
+            e.startMin < s + 60,
+        );
+      });
+      expect(bandFree).toBe(false);
+    }
+  });
+
+  test("days after the flight are null — planned after touchdown, not previewed", () => {
+    for (const spec of trip.days) {
+      const solved = preview.get(spec.label);
+      if (spec.dayIndex > trip.departureDayIndex) expect(solved).toBeNull();
+    }
+    expect(preview.get("D+1")).toBeNull();
+  });
+
+  test("no light block overlaps a blocking calendar event on its day", () => {
+    for (const spec of trip.days) {
+      const solved = preview.get(spec.label);
+      if (!solved) continue;
+      for (const iv of solved.plan.interventions) {
+        if (iv.kind !== "light_exposure" || iv.endMin === undefined) continue;
+        const clash = CALENDAR.some(
+          (e) =>
+            e.dayIndex === spec.dayIndex &&
+            e.blocksInterventions !== false &&
+            iv.startMin < e.endMin &&
+            e.startMin < iv.endMin,
+        );
+        expect(clash).toBe(false);
+      }
+    }
+  });
+});
+
+test("previewPlan over the demo trip stays under the render budget", () => {
+  const t0 = performance.now();
+  previewPlan({ trip, calendar: CALENDAR, adherence: ADHERENCE_PROFILE, baseline: GARMIN_BASELINE });
+  expect(performance.now() - t0).toBeLessThan(50);
 });

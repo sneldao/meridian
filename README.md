@@ -41,7 +41,7 @@ run history server-side (project `vpeakvspljdoxbwfsdvw`, see
 | Path | What |
 |---|---|
 | `/pitch` | Slide deck — scrollytelling pitch, self-contained
-| `/` | Live crew run — lens shell (world/board/calendar/ledger), crew feed (SSE) |
+| `/` | Today — the one step to do now, then the day timeline and readiness. No trip yet → setup; trip set → a trip chip with an Edit sheet. `?depth=guided` adds the deep-dive visuals |
 | `/review` | Saved plan: days, citations, .ics download |
 | `/history` | Past runs (with provider + fallback provenance) |
 | `/outcome` | Post-trip self-report (adherence, jetlag, notes); learned cross-run memory |
@@ -66,6 +66,7 @@ Active:
 - [Consolidation](docs/plan/consolidation.md) — consumer face + depth dial spec (Calm/Guided/Operator)
 - [Next steps](docs/plan/next-steps.md) — consumer simplification direction, post-Oct-30
 - [Consumer appeal plan](docs/plan/consumer-appeal-implementation.md) — sequenced implementation plan from the design research
+- [Home page overhaul](docs/plan/home-page-overhaul.md) — accuracy fixes, one-flow layout, honest claims; split across three dev lanes
 
 Plan & pitch (frozen at the 2026-10-15 hackathon — history, not current state):
 

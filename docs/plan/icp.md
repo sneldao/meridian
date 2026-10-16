@@ -47,7 +47,7 @@ deviates.
 | `GARMIN_BASELINE` | Late chronotype, 6h50 avg, stable HRV |
 | `ADHERENCE_PROFILE` | Compliance floor 07:00, weak at early alarms |
 | `CALENDAR` / seeded Google events | Fixed meetings w/ attendees vs movable personal blocks |
-| `DEMO_TRIP` | LHR → HND, +9h eastward, departs 2026-10-18 |
+| `DEMO_TRIP` | LHR → HND, −8h eastward (London on BST), departs 2026-10-18 |
 
 ## ICP-2 · Valentina — the insight
 
@@ -75,7 +75,7 @@ fails.
 
 | Persona | Trip | Scorer path | Story |
 |---|---|---|---|
-| Alex | LHR → HND (+9h, advance) | morning light anchors, caffeine cutoff | the wedge — exec travel |
+| Alex | LHR → HND (−8h, advance) | morning light anchors, caffeine cutoff | the wedge — exec travel |
 | Valentina | LHR → MEX (−6h, delay) | evening light, delayed windows | the insight — adherence engine |
 
 Pitches lead with Alex (commercial), land the Valentina line as the origin
