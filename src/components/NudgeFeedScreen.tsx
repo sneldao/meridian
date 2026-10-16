@@ -232,11 +232,21 @@ export function NudgeFeedScreen({
       {/* Split-Horizon Hero Card */}
       <div className="hero rise" style={{ animationDelay: ".2s" }}>
         <div className="hl">
-          <img
-            className="bg"
-            src="https://media.base44.com/images/public/6ad11b6b2adaa10aea07a19e/26e2d4a80_generated_99b9bdd8.jpg"
-            alt="Sunlit architectural shadow study"
-          />
+          <div className="bg term" aria-hidden="true">
+            <svg viewBox="0 0 320 470" preserveAspectRatio="xMidYMid slice" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
+              <circle className="tstar" cx="38" cy="42" r="1.1" />
+              <circle className="tstar" cx="92" cy="24" r="0.8" />
+              <circle className="tstar" cx="160" cy="52" r="1" />
+              <circle className="tstar" cx="230" cy="30" r="0.9" />
+              <circle className="tstar" cx="284" cy="66" r="1.2" />
+              <circle className="tstar" cx="64" cy="96" r="0.8" />
+              <circle className="tstar" cx="196" cy="88" r="0.7" />
+              {/* the terminator — the body's day/night line crossing the frame */}
+              <path className="tline" d="M-20 300 Q80 258 160 286 T340 250" />
+              <circle className="tsun" cx="272" cy="268" r="5.5" />
+              <circle className="thome" cx="52" cy="296" r="3.5" opacity="0.8" />
+            </svg>
+          </div>
           <div className="sc" />
           <div>
             <div className="route">Route</div>
@@ -657,21 +667,33 @@ export function NudgeFeedScreen({
                     <p>{nudge.actionSummary}</p>
                     <p>{nudge.whyItHelps}</p>
                     {nudge.evidence ? (
-                      <p style={{ marginTop: "6px", fontSize: "11px", color: "#7a6a5c" }}>
-                        <b>From the crew:</b>{" "}
-                        {nudge.evidence.draftRejected
-                          ? "scorer rejected an earlier draft, then "
-                          : ""}
-                        scored {nudge.evidence.evalVerdict?.score.toFixed(2)} by the
-                        circadian gate
-                        {nudge.evidence.evalVerdict?.violations.length
-                          ? ` — flagged: ${nudge.evidence.evalVerdict.violations.join("; ")}`
-                          : " — no violations"}
-                        {nudge.citation ? ` · backed by ${nudge.citation.title}` : ""}
-                        {nudge.evidence.memoryPath
-                          ? ` · memory: ${nudge.evidence.memoryPath}`
-                          : ""}
-                      </p>
+                      <div className="evrow">
+                        {nudge.evidence.evalVerdict && (
+                          <span className={`evchip ${nudge.evidence.evalVerdict.violations.length ? "warn" : "pass"}`}>
+                            gate {nudge.evidence.evalVerdict.score.toFixed(2)}
+                          </span>
+                        )}
+                        {nudge.evidence.draftRejected && (
+                          <span className="evchip warn">draft rejected → retried</span>
+                        )}
+                        {nudge.citation && (
+                          <span className="evchip cite" title={nudge.citation.title}>
+                            ◈ {nudge.citation.title.length > 48
+                              ? `${nudge.citation.title.slice(0, 46)}…`
+                              : nudge.citation.title}
+                          </span>
+                        )}
+                        {nudge.evidence.memoryPath && (
+                          <span className="evchip mem" title={nudge.evidence.memoryPath}>
+                            ↝ trip memory
+                          </span>
+                        )}
+                        {nudge.evidence.evalVerdict?.violations.length ? (
+                          <span style={{ width: "100%", fontSize: "10px", color: "#b04523" }}>
+                            {nudge.evidence.evalVerdict.violations.join("; ")}
+                          </span>
+                        ) : null}
+                      </div>
                     ) : null}
                   </div>
                 )}

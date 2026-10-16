@@ -288,6 +288,42 @@ body {
   inset: 0;
   background: linear-gradient(180deg, rgba(30, 27, 24, 0.35), rgba(30, 27, 24, 0.78));
 }
+/* The ghost-terminator hero: the crew surface's ink + terminator gold living
+   inside the sunlit card — the brand's day/night line as the hero visual. */
+.hl .bg.term {
+  background:
+    radial-gradient(120% 90% at 78% 74%, rgba(217, 107, 67, 0.55), transparent 55%),
+    linear-gradient(180deg, #0b0e16 0%, #10141f 46%, #241a1c 66%, #3a2118 82%, #D96B43 120%);
+}
+.term .tstar { fill: rgba(245, 239, 230, 0.55); }
+.term .tline {
+  stroke: var(--color-ghost);
+  stroke-width: 1.8;
+  fill: none;
+  filter: drop-shadow(0 0 7px rgba(255, 217, 138, 0.55));
+}
+.term .tsun { fill: var(--color-sun-dest); filter: drop-shadow(0 0 8px rgba(255, 196, 107, 0.8)); }
+.term .thome { fill: var(--color-sun-home); }
+
+/* Evidence chips — the crew's gate output as badges, not prose. */
+.evrow { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.evchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  background: rgba(217, 107, 67, 0.1);
+  color: #a35a35;
+  border: 1px solid rgba(217, 107, 67, 0.25);
+}
+.evchip.pass { background: rgba(140, 160, 90, 0.14); color: #5a7030; border-color: rgba(140, 160, 90, 0.3); }
+.evchip.warn { background: rgba(217, 107, 67, 0.16); color: #b04523; border-color: rgba(217, 107, 67, 0.4); }
+.evchip.cite { background: rgba(157, 184, 255, 0.16); color: #4a6492; border-color: rgba(157, 184, 255, 0.4); }
+.evchip.mem  { background: rgba(184, 168, 255, 0.16); color: #6a5a9c; border-color: rgba(184, 168, 255, 0.4); }
 .hl > *:not(.bg):not(.sc) {
   position: relative;
 }

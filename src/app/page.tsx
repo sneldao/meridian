@@ -483,6 +483,7 @@ export default function Home() {
             >
               Trip Setup
             </a>
+            <Link href="/crew">Crew</Link>
           </div>
 
           <div className="right">

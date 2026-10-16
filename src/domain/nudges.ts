@@ -232,7 +232,7 @@ export function buildDailyNudgesForDay(params: {
     whyItHelps: east
       ? `Morning blue-spectrum light hits melanopsin receptors at your peak phase-advance window, pulling your clock ~65–90 min toward ${trip.destination.name}.`
       : `Evening light delays your master clock so you don't wake up at 04:00 AM in ${trip.destination.name}.`,
-    citation: lightIv?.citationId ? citationMap.get(lightIv.citationId) : citations[2],
+    citation: lightIv?.citationId ? citationMap.get(lightIv.citationId) : undefined,
   });
 
   // 2. RUN & WORKOUT PLANNING NUDGE
@@ -269,7 +269,7 @@ export function buildDailyNudgesForDay(params: {
           : `Schedule your run at ${fmtMin(runStart)}. Raising core body temperature late afternoon helps delay evening drowsiness.`,
     whyItHelps:
       "Skeletal muscle has its own peripheral circadian clock—timed aerobic movement plus outdoor daylight locks in your new timezone without spiking late-night cortisol.",
-    citation: exerciseIv?.citationId ? citationMap.get(exerciseIv.citationId) : citations[0],
+    citation: exerciseIv?.citationId ? citationMap.get(exerciseIv.citationId) : undefined,
   });
 
   // 3. EAT, HYDRATE & CAFFEINE CUTOFF NUDGE
@@ -293,7 +293,7 @@ export function buildDailyNudgesForDay(params: {
       : `Enjoy coffee after your morning light window, then cut all caffeine at ${fmtMin(cafMin)} (8h before bed). Eat a protein-rich breakfast within 60 min of waking and finish a lighter dinner by ${fmtMin(dinnerMin)}.`,
     whyItHelps:
       "Caffeine has a 5–6 hour half-life that blocks adenosine and flattens nocturnal melatonin; finishing dinner 3 hours before bed lets core temperature drop for deep slow-wave sleep.",
-    citation: cafIv?.citationId ? citationMap.get(cafIv.citationId) : citations[0],
+    citation: cafIv?.citationId ? citationMap.get(cafIv.citationId) : undefined,
   });
 
   // 4. CALENDAR TWEAKS NUDGE (what to move on your calendar)
@@ -365,7 +365,7 @@ export function buildDailyNudgesForDay(params: {
       ? `Put your eye mask on at ${fmtMin(windDownMin)} and sleep ${fmtMin(bedMin)}–${fmtMin(wakeMin)} so your brain experiences a true night synced to ${trip.destination.name}.`
       : `Turn off overhead lights and screens at ${fmtMin(windDownMin)}, cool bedroom to 18°C (65°F), and target lights-out at ${fmtMin(bedMin)} until ${fmtMin(wakeMin)}.`,
     whyItHelps: `Shifts your sleep midpoint by ${Math.abs(plan?.shiftMin ?? 65)} min today without triggering circadian whiplash or losing REM sleep.`,
-    citation: citations[1],
+    citation: undefined,
   });
 
   // Evidence chain: the day's actual scorer verdicts — shared by every nudge
