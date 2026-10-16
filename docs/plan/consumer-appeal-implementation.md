@@ -55,7 +55,10 @@ fabricated provenance; replay fallback stays stage-safe.
    - Files: `NudgeFeedScreen.tsx`, `TripSetupScreen.tsx`, `HandoffBanner.tsx`
      copy pass. ~1 hour, zero logic.
 
-7. **Flight-advisor honesty**
+7. **Flight-advisor honesty** *(done for the domain + home feed: `48223a0`
+   replaced the fake numbers with `badge` + `bestFor`, `5f3cc83` deleted the
+   hardcoded preview window. Remaining: the setup-screen rendering, task 3.8 in
+   [home-page-overhaul.md](home-page-overhaul.md).)*
    - `getFlightRecommendations` returns fabricated flight numbers/times —
      relabel "ideal departure windows" (it's genuinely useful circadian
      guidance) or wire a real flight API later. Never present fake flights

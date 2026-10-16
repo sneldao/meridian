@@ -1,6 +1,8 @@
 # Home page overhaul — accuracy, one flow, honest claims
 
-2026-10-16, updated same day after PR 0 merged. Derived from a critical
+2026-10-16, updated same day after PR 0 merged, then again by lane 2 alongside
+PR #2 so the status notes and `file:line` citations match the code on
+`overhaul/main`. Derived from a critical
 review of `/` against
 [next-steps.md](next-steps.md), [consolidation.md](consolidation.md),
 [consumer-appeal-implementation.md](consumer-appeal-implementation.md) and
@@ -8,53 +10,63 @@ review of `/` against
 developers. **Phase A items merge first (target: 17 Oct EOD, ahead of the
 18 Oct Graph Hacks deadline)**; B and C follow in the same lanes.
 
-**Branch state (`48223a0`, on `overhaul/dev1-contract`, clean):** the contract
-shipped with more than stubs — landed: `previewPlan` full body **and the
-solver's eastbound floor cap** (the "Cap the shift, don't chase 100%"
-decision — `LIGHT_START_MAX_OFFSET_MIN`, `solver.ts:55,238-255`), the
-solver-side destination-clock conversion for the first post-flight day
-(`solver.ts:123-126`), all `today.ts` helpers, `TravelerNudge.endMin`,
-`buildDailyNudgesForDay`'s `adherence` param (still ignored, not destructured —
-1.2 makes it operative), the qualitative flight shape, `baselineSource` in
-`/api/trip`, and tests for `today.ts` + `previewPlan`. **Not yet landed, all
-in PR 0's scope:** the `adherence` *sentinel* floor rule in nudges (1.2), the
-nudge-level floor test (1.4), `previewPlan`'s floor-candidate + budget tests
-(1.4), the props-type export (1.0), and the CSS lane blocks. Everything else
-below is the open work.
+**Branch state (updated 16 Oct, after lane 2's Phase A opened):** `overhaul/main`
+is the integration branch — every lane PRs into it, and merging it into `main`
+is the deploy step (Render auto-deploys `main`), which stays the orchestrator's
+call. Dev 1's Phase A is **fully landed** there: `48223a0` (contract) →
+`4a12fa9` → `4532c60` (1.2) → `775eb1f` → `4cbe946` (1.7) → `96fe3b1`.
+`buildDailyNudgesForDay`'s `adherence` param is now **operative**
+(`nudges.ts:195,206` — floor, `eventClash`, `freeSlot`), with floor tests
+(`tests/nudges.test.ts:50`, `tests/solver.test.ts:208-219`). Lane 2's 2.1–2.4
+are pushed as **PR #2** (`overhaul/dev2-today` @ `5f3cc83`).
+**Still not landed from PR 0:** the CSS lane blocks — `globals.css` on
+`overhaul/main` carries no `/* ── lane: … ── */` marker at all, so the sanctioned
+append site never arrived. Lane 3 has already appended its own
+`lane: shell` block on `overhaul/dev3-shell` (`eac1a23`), which means Dev 1 owes
+the `engine` and `today` blocks *above* lane 3's, and 3.10's cleanup now has to
+reconcile two histories. The props-type half of PR 0 landed *inside* PR #2
+instead of as its own contract commit, with one deviation — recorded under
+"The React prop contract" below. That export also unblocks the second half of
+3.1 (`eac1a23` records it as blocked on task 2.1): `page.tsx` can now pass
+`adherence`, and because the prop is optional it can do so before or after
+PR #2 merges without breaking typecheck either way.
 
 ## Why
 
 `/` is supposed to be the Calm rung: *"tell me your trip; I tell you the one
 thing to do now so you land fresh"* — with the scorer authoritative and no
-fabricated evidence. Today it breaks that in five ways (all verified in code).
+fabricated evidence. It broke that in five ways (all verified in code).
+**1–4 are closed; 5 is open.**
 
 **Every claim below cites `file:line`.** If an implementation contradicts one,
 the *code* wins — update this doc in the same PR rather than picking silently.
+Citations are against `overhaul/main`; re-derive them after a lane merges,
+because these lines move — several already have.
 
-1. **The pre-run preview bypasses the solver and the scorer.**
-   `src/domain/nudges.ts:193` — `const stepMin = (east ? -65 : 65) * (dayIndex + 1)`,
-   consumed at `:196-197` (`wakeMin = plan ? plan.targetWakeMin : wrap(baseWake + stepMin)`).
-   When there is no plan, Alex (compliance floor 07:00) is told to get light at
-   04:50 and run at 05:20, and is offered "Move standup 09:30 → 07:35" — straight
-   into the fixed *Team breakfast* 07:30–08:30 on the same day.
-2. **Fabricated numbers.** `NudgeFeedScreen.tsx:239` (`Math.max(6, …)` → "6% done"
-   beside "0 of 5"); `TripSetupScreen.tsx` (invented HRV 62 / RHR 52, `|| 3`,
-   `"2/2"`, a duplicate hardcoded flight array); `NudgeFeedScreen.tsx`
-   `downloadIcs` (empty calendar pre-run); fixture Garmin data never labelled as
-   demo; `FlightOptionRecommendation.landingReadinessPct` hardcoded percentages
-   *(the percentages are gone since `48223a0` — qualitative badges/`bestFor`
-   landed; the 6% floor, invented setup fallbacks and empty `.ics` remain)*.
-3. **"Your next move" is wrong.** The hero picks the first incomplete nudge by
-   *category* order, not by time, and `NudgeFeedScreen.tsx:224` compares
-   `activeDaySpec.date === new Date().toISOString().slice(0, 10)` — UTC, and
-   `slice(0,10)` truncates to a date rather than comparing instants. Result: the
-   hero shows a window that has already passed.
-4. **Readiness never works eastbound.** `NudgeFeedScreen.tsx:250` — the
-   denominator *already* has `Math.abs`; the failure is the **numerator**:
-   `lockedShiftMin` sums negative `shiftMin` for eastbound advances, so the
-   `shiftPct > 0` gate at `:251` never passes and readiness silently falls back
-   to the "of today done" progress label. (`today.ts:shiftLockedPct` documents the
-   correct cause — take `Math.abs` on *both* sides.)
+1. **The pre-run preview bypassed the solver and the scorer.** ✅ Closed by
+   `4532c60`. The `stepMin = (east ? -65 : 65) * (dayIndex + 1)` synthesis is
+   gone; `buildDailyNudgesForDay` returns `[]` with no plan (`nudges.ts:199`)
+   and places every ask at/after the compliance floor through the solver's own
+   helpers (`nudges.ts:206-221`). Alex is no longer told to get light at 04:50
+   or offered "Move standup 09:30 → 07:35" into the fixed *Team breakfast*.
+2. **Fabricated numbers.** Feed side ✅ closed by `5f3cc83` (PR #2): the
+   `Math.max(6, …)` progress floor, `downloadIcs`'s empty-calendar fallback, the
+   hardcoded route / flight-window / time preview strings, the hardcoded
+   five-day selector array and a fake "% body-clock shift aligned" stepper label
+   are deleted, and a day the solver can't place renders "not placed yet —
+   personalise". `FlightOptionRecommendation`'s percentages went with `48223a0`.
+   **Still open (3.2):** `TripSetupScreen.tsx:98` (`|| 3`), `:101` (`"2/2"`),
+   `:231` (`62 ms`), `:235` (`52 bpm`), the duplicate hardcoded flight array,
+   and the missing "Demo profile" tag.
+3. **"Your next move" was wrong.** ✅ Closed by `5f3cc83`. The hero comes from
+   `pickNextStep(nudges, completed, nowMinOnDay(...))`, gated on
+   `todayDayIndex(...) === dayIndex` (else `null`); the UTC
+   `toISOString().slice(0, 10)` comparison and the category-order pick are gone,
+   and passed windows collapse into a "Missed (n)" row.
+4. **Readiness never worked eastbound.** ✅ Closed by `5f3cc83`. The feed calls
+   `today.ts:shiftLockedPct` (`Math.abs` on both sides) instead of summing raw
+   `shiftMin` into a negative numerator, and shows "% of shift locked" only when
+   that value is > 0.
 5. **Two screens stacked, not one flow.** The page title is the Setup heading,
    setup sections render 2 → 1 → 3 → 4, "Morning Check-in" pre-run just starts
    a run, and the hardcoded default `2026-10-18` (`page.tsx:57`, plus
@@ -78,21 +90,31 @@ the *code* wins — update this doc in the same PR rather than picking silently.
 
 ## Branches
 
-One branch per lane, off `main` — **never a shared working tree** (lanes 1 and 3
-both had uncommitted work in one tree on 16 Oct, which is how the merge-conflict
-risk this plan exists to avoid gets created):
+One branch per lane — **never a shared working tree** (lanes 1 and 3 both had
+uncommitted work in one tree on 16 Oct, which is how the merge-conflict risk
+this plan exists to avoid gets created). Lane 2 worked in its own
+`git worktree` for exactly this reason.
+
+The integration branch is **`overhaul/main`**, not `main`: lanes branch from it
+and open PRs back into it. `main` stays untouched until Phase A is integrated
+and checked locally, because Render auto-deploys `main` — that merge is the
+orchestrator's call, not a lane's.
 
 ```
-lane/engine   Dev 1   lane/today   Dev 2   lane/shell   Dev 3
+overhaul/dev1-engine   Dev 1   overhaul/dev2-today   Dev 2   overhaul/dev3-shell   Dev 3
 ```
 
-PR 0 is the only PR that lands before the others start. Each subsequent PR must
-name the contract items it consumes. A lane must not implement against a contract
-item that isn't on `main` — if it's urgent, land the contract stubs as their own
-commit first.
+PR 0 was the only PR that landed before the others started (as
+`overhaul/dev1-contract` → `48223a0`). Each subsequent PR must name the contract
+items it consumes; a lane must not implement against a contract item that isn't
+on `overhaul/main` — if it's urgent, land the contract stubs as their own commit
+first. Current state: Dev 1's Phase A is on `overhaul/main` through `96fe3b1`;
+Dev 2's is open as PR #2 (`5f3cc83`); Dev 3's Phase A is still only in a local
+branch.
 
 Merge order within a phase: **lane 1 → lane 3 → lane 2.** Lane 3 rewrites
-`page.tsx`, which is lane 2's only call site (`page.tsx:646`); lane 2 rebases
+`page.tsx`, which is lane 2's only call site (`page.tsx:646` on `overhaul/main`);
+lane 2 rebases
 last.
 
 The contract currently sits on `overhaul/dev1-contract`, **not on `main`** —
@@ -107,9 +129,9 @@ Types and signatures only, with stub/minimal bodies that compile, so Dev 2
 and Dev 3 build against them immediately. Bodies + tests land in Dev 1's A
 PRs.
 
-**Status:** partially merged (`48223a0`) — the domain types/shapes below
-shipped with full bodies and tests. Outstanding for PR 0: the props type
-(see next subsection) and the CSS lane blocks.
+**Status:** domain half ✅ merged (`48223a0`, bodies + tests, `adherence` made
+operative by `4532c60`). Props half ✅ merged inside PR #2 (`5f3cc83`) — see the
+deviation below. **Outstanding for PR 0: only the CSS lane blocks.**
 
 ```ts
 // src/domain/solver.ts
@@ -171,8 +193,9 @@ Domain types alone don't cover the plan's largest conflict: `page.tsx:646` is
 task 2.x changes three of that component's 19 props. Freeze the shape now:
 
 ```ts
-// src/components/NudgeFeedScreen.tsx — export the props type (currently
-// unexported at line 22) with exactly these deltas:
+// src/components/NudgeFeedScreen.tsx — export the props type (landed: it is
+// exported at :30 as of `5f3cc83`; it was unexported at line 22 when this was
+// written) with exactly these deltas:
 export interface NudgeFeedScreenProps {
   // …existing 19 props…
   + adherence: AdherenceProfile;      // task 2.1
@@ -185,9 +208,20 @@ Dev 2 changes nothing about the prop *shape* after PR 0. If a task appears to
 need another prop, it is a contract amendment: propose it in a PR 0.1 that
 Dev 3 rebases onto before Dev 3 starts 3.3/3.4.
 
-**Status:** not landed. `NudgeFeedScreenProps` is still unexported and has no
-`adherence` (`NudgeFeedScreen.tsx:22`) — this export is PR 0's remaining
-must-have; nothing in lane 2 can compile against the contract until it exists.
+**Status:** landed in PR #2 (`5f3cc83`), with one deliberate deviation.
+`NudgeFeedScreenProps` is now exported (`NudgeFeedScreen.tsx:30`) and `ics?`
+arrived as specified. **`adherence` shipped *optional* (`adherence?:
+AdherenceProfile`, `:54`), not required.** Reason: the only call site
+(`page.tsx:646`) is lane 3's file and 3.1 is not on `overhaul/main`, so a
+required prop would leave every lane failing `bun run typecheck` until 3.1
+merged — the deadlock PR 0 exists to prevent. Until then the feed falls back to
+`ADHERENCE_PROFILE` (`:105`), so the preview still respects a floor rather than
+silently using none. **Amendment to ratify when 3.1 merges:** drop the fallback
+and tighten to `adherence: AdherenceProfile` in lane 2's Phase B PR. Separately,
+the contract's `- chosenFlightId` line names a prop that never existed — the
+real one is `selectedFlightId: string`, still required and still read by the
+route/flight summary block, because removing it is 2.6 (Phase B). The `-`
+half of this contract is therefore deferred, not violated.
 
 ## Lanes
 
@@ -207,9 +241,9 @@ classes, at the end.
 |---|---|---|
 | 1.0 | A | **PR 0** — the shared contract above, including the props type and the CSS lane blocks. **⚠ partially landed (`48223a0`)**: domain shapes + tests are in; the props-type export and the three CSS lane blocks are not. Finish those, then merge `overhaul/dev1-contract` → `main`. |
 | 1.1 | A | ✅ Landed (`48223a0`) — `previewPlan` body as specified, **plus** the eastbound shift cap from the Decisions table (`LIGHT_START_MAX_OFFSET_MIN`, `solver.ts:55,238-255`) and the destination-clock conversion for the first post-flight day (`solver.ts:123-126`). The replay side of that decision also landed (`replay.ts:172`, `replay-plan.ts:25`). Nothing left unless 1.2's sentinel tests contradict it. |
-| 1.2 | A | **Merges first, alone** — the live bug (Why #1). `buildDailyNudgesForDay`: delete the `wake − 65 × (i+1)` synthesis (`nudges.ts:193`). With no `plan`, emit only steps that don't need invented times (none, or a single "not placed yet" sentinel — Dev 2 renders it). With a plan: run = paired with the light block (same window) or the first slot ≥ floor with no blocking event; calendar suggestion only moves a `movable` event into a slot ≥ floor that overlaps no fixed event, else no calendar step. Populate `endMin` on every step. The `adherence` param exists but is never destructured (`nudges.ts:185`) — this task makes it operative. For slot placement **reuse the solver's overlap/floor helpers**; a second placement implementation in this function is the divergence bug waiting to happen. |
+| 1.2 | A | ✅ Landed (`4532c60`) — the live bug (Why #1) is closed. Synthesis deleted, `[]` with no plan (`nudges.ts:199`), `adherence` destructured and operative (`nudges.ts:195,206`), run/calendar asks placed through floor-aware helpers that reuse the solver's overlap logic (`nudges.ts:211-221`) rather than a second placement implementation, `endMin` populated on every step. Dev 2 renders the empty return as "not placed yet — personalise" (`5f3cc83`). |
 | 1.3 | A | ✅ Landed (`48223a0`) — `today.ts` bodies, `shiftLockedPct` taking `Math.abs` on both sides (see Why #4). |
-| 1.4 | A | Mostly landed (`48223a0`): every non-null `previewPlan` day passes `evaluatePlan`; no preview step overlaps a fixed event on its day; all `pickNextStep` cases (before all, mid-window, after a window, crossing midnight, all done, `nowMin = null`); `shiftLockedPct > 0` eastbound, 0 with none locked, capped at 100; `todayDayIndex` null when no trip day is today. **Remaining:** light starts ≥ floor whenever the floor is inside the solver's light-start candidates; a 1.2-floor test — an eastbound no-plan day with floor 07:00 emits no step starting before 07:00 when a legal later slot exists (this fails until 1.2 makes `adherence` operative, which is the point); and the `previewPlan` budget test from Acceptance. |
+| 1.4 | A | Mostly landed. `48223a0`: every non-null `previewPlan` day passes `evaluatePlan`; no preview step overlaps a fixed event on its day; all `pickNextStep` cases (before all, mid-window, after a window, crossing midnight, all done, `nowMin = null`); `shiftLockedPct > 0` eastbound, 0 with none locked, capped at 100; `todayDayIndex` null when no trip day is today. `4532c60` added the floor half: `tests/nudges.test.ts:50` (every non-sleep step starts ≥ 07:00) and `tests/solver.test.ts:208-219` (east wake never before floor − 105 unless holding; light starts ≥ floor unless every ≥floor slot is blocked). **Remaining:** the `previewPlan` budget test from Acceptance (< 50 ms over the demo trip) — nothing in `tests/` asserts it yet. |
 | 1.5 | C | ✅ Landed (`48223a0`) — `getFlightRecommendations` → new shape; `bestFor` lines, no percentages. |
 | 1.6 | C | Copy sweep of all strings in `nudges.ts` per the vocabulary rule (mechanism wording moves into `whyItHelps` only, plainly phrased). Drop unsupported precision ("~65–90 min", "~1.4x", "10x"). |
 | 1.7 | C | `icp.md`: the demo trip is an **8h eastward advance** on 18 Oct (London still on BST; Tokyo +9), not "+9h" — the code's DST-aware `timezones.ts` already computes −8h in the east-negative convention, so keep the doc in human words. |
@@ -221,10 +255,10 @@ it).
 
 | # | Phase | Task |
 |---|---|---|
-| 2.1 | A | New prop `adherence: AdherenceProfile` (frozen in PR 0). When a day has no locked/draft plan, use `previewPlan(...)` (memoised on trip/calendar/adherence/baseline) as `plan`; render the "not placed yet — personalise" state for null days. |
-| 2.2 | A | Hero via `pickNextStep` with `nowMinOnDay(trip, dayIndex, new Date())` when `todayDayIndex === dayIndex`, else null. Missed steps collapse into a "Missed (n)" row. One completion button ("Done"), not two. Kill the UTC `toISOString` date check (`NudgeFeedScreen.tsx:224`). |
-| 2.3 | A | Progress: remove the 6% floor (`NudgeFeedScreen.tsx:239`); one string everywhere — "N of M done today". Readiness uses `shiftLockedPct`; show "of shift locked" only when > 0, otherwise just the done count. |
-| 2.4 | A | Hide "Add .ics" unless a real `ics` prop exists (delete the empty-calendar fallback). |
+| 2.1 | A | ✅ Landed (`5f3cc83`). `adherence` prop added — optional with an `ADHERENCE_PROFILE` fallback (deviation explained under the props contract). `previewPlan(...)` memoised on `[trip, calendarEvents, effectiveAdherence, baseline]`; the day's plan resolves `locked → drafts → preview`, and a null/absent entry renders "Not placed yet — personalise" (`NudgeFeedScreen.tsx:414`, `:798`) instead of invented times. |
+| 2.2 | A | ✅ Landed (`5f3cc83`). Hero = `pickNextStep(allDayNudges, completedIds, nowMin)` with `nowMin = nowMinOnDay(...)` only when `todayDayIndex(...) === dayIndex`, else `null`. Missed steps collapse behind a "Missed (n)" toggle with `aria-expanded` (`:458-469`) and their own Done buttons; one "Done" button in the hero (`:451`), the duplicate "Mark Nudge Done" primary is gone; the UTC `toISOString` date check is deleted. Countdown derives from the wrap-aware `endMin`. |
+| 2.3 | A | ✅ Landed (`5f3cc83`). `Math.max(6, …)` deleted; the meter and the stat both read "N of M done today". Readiness calls `shiftLockedPct` and shows "% of shift locked" only above 0, otherwise the done count — no silent fallback label. |
+| 2.4 | A | ✅ Landed (`5f3cc83`). "Add .ics" renders only when `ics` is present; `downloadIcs` returns early without it and the empty-calendar fallback is deleted. |
 | 2.5 | B | Timeline is the only view: delete `GuideViewMode` focus/cards, the default-view star and localStorage, and the category filter row. Each timeline row: time (with city) — title — Done — expandable "Why & details" (keeps the evidence chips and `expandAllWhy`). |
 | 2.6 | B | Remove the route/flight summary block from the feed (Dev 3's trip-summary chip replaces it); drop the `chosenFlightId` dependency. Keep the "Personalise with the crew" CTA, renamed per vocabulary. |
 | 2.7 | C | Times labelled via `dayPlace` ("04:50 London"); flight-day chip shows its date ("✈️ Sun 18 Oct"). |
@@ -252,30 +286,36 @@ it).
 
 ## Sequencing
 
-Task 1.2 merges **alone and first** — it is the only still-open user-visible
-correctness bug and the one the whole "honest claims" thesis rests on.
+1.2 merged (`4532c60`) and the demo-safe correctness bug is closed on
+`overhaul/main`. What is left of Phase A is **3.1 and 3.2** (lane 3) plus
+PR 0's CSS lane blocks (lane 1).
 
 ```
-Day 0   PR 0 finish (props-type export, CSS lane blocks) — the domain
-        half is already in `48223a0` — then merge `overhaul/dev1-contract`
-        → `main`; lanes branch from `main`                      ← all three lanes
-        │
-        ├─► 1.2 (kill the 65-min synthesis) ── live bug, merges alone
-        │   1.4 remainder · 3.1 · 3.2
-        │   (previewPlan, today.ts, solver cap, flight shape are on `main`)
-        │
-        └─► Day 1: 2.1–2.4 Dev 2 · 3.3–3.7 Dev 3 · 1.6–1.7 Dev 1
+Done    PR 0 domain half (48223a0) → 1.2/1.3/1.4 floor work (4a12fa9,
+        4532c60, 775eb1f) → 1.7 (4cbe946) → preview stops at the flight
+        day (96fe3b1)                                        ← on overhaul/main
+Done    PR 0 props half + 2.1–2.4 → **PR #2** (`overhaul/dev2-today` @
+        `5f3cc83`), open against `overhaul/main`; blocked on review, not
+        on lane 1
+Open    3.1 · 3.2 (lane 3 Phase A) — written and committed on
+        `overhaul/dev3-shell` (`eac1a23`) but **not pushed**, so they are
+        not on `overhaul/main` yet. Merge them before PR #2 per lane
+        order lane 1 → lane 3 → lane 2, then rebase PR #2 once 3.1 lands
+        so `page.tsx` passes `adherence` and the fixture fallback goes
+Open    PR 0 CSS lane blocks (lane 1) — required before 3.10
+Next    Day 1: 2.5–2.6 Dev 2 · 3.3–3.7 Dev 3 · 1.6 Dev 1
 Final   Dev 3: CSS cleanup + integration QA pass + re-check the stage path
         in `docs/reference/demo.md` (the pre-run preview changes shape).
 ```
 
-**Merge all A by 17 Oct EOD — demo-safe checkpoint.** If 17 Oct slips, the
-demo-safe subset is **1.2 + 2.2 + 2.3 + 3.1**: no fabricated times, a correct
-next step, one honest progress number, provenance tagged. Everything else is
+**Merge all A by 17 Oct EOD — demo-safe checkpoint.** The demo-safe subset
+(1.2 + 2.2 + 2.3 + 3.1) is three-quarters landed: no fabricated times, a
+correct next step and one honest progress number are on-branch or in PR #2;
+**provenance tagging (3.1/3.2) is the only open item.** Everything else is
 cosmetic and can move past 18 Oct.
 
 3.8's dependency is gone — 1.5's type change is already merged; Dev 1's C
-work is 1.6–1.7 only.
+work is 1.6 only (1.7 landed as `4cbe946`).
 
 ## Verification (every PR)
 
@@ -292,18 +332,18 @@ Lane 3 additionally: `bun run replay:check`, `bun run eval`, and
 ## Acceptance — the integrated `/` (final QA, Dev 3)
 
 - [ ] Fresh visit, replay provider, no keys: a populated Today in < 10 s for a trip starting today.
-- [ ] `previewPlan` over the demo trip < 50 ms client-side (asserted in a 1.4 test); the feed's memo recomputes only when trip/calendar/adherence/baseline change — no re-solve on unrelated state.
-- [ ] No preview step before 07:00 London when a later legal slot exists; no step overlaps a fixed calendar event; every preview day passes the gate.
-- [ ] "Your next step" is never a passed window; passed ones sit under "Missed".
-- [ ] One progress number; no 6%; eastbound readiness shows "of shift locked" after a run.
-- [ ] No invented values anywhere — assert on rendered values, not source shape (see the grep note below); demo data is tagged "Demo profile".
-- [ ] No ".ics" button without a real plan.
+- [ ] `previewPlan` over the demo trip < 50 ms client-side (**test still owed — 1.4 remainder**); the feed's memo recomputes only when trip/calendar/adherence/baseline change — landed in `5f3cc83` (`NudgeFeedScreen.tsx` memo deps), no re-solve on unrelated state.
+- [ ] No preview step before 07:00 London when a later legal slot exists; no step overlaps a fixed calendar event; every preview day passes the gate. *(lane 1: asserted at `tests/nudges.test.ts:50`, `tests/solver.test.ts:208-219`)*
+- [ ] "Your next step" is never a passed window; passed ones sit under "Missed". *(feed side landed `5f3cc83`; re-verify on the integrated page)*
+- [ ] One progress number; no 6%; eastbound readiness shows "of shift locked" after a run. *(feed side landed `5f3cc83`; needs a real run to show > 0)*
+- [ ] No invented values anywhere — assert on rendered values, not source shape (see the grep note below); demo data is tagged "Demo profile". *(feed-side strings deleted in `5f3cc83`; the "Demo profile" tag is 3.2)*
+- [ ] No ".ics" button without a real plan. *(landed `5f3cc83`)*
 - [ ] No "Trip & Flight Setup" title, no section numbers, no Guide/Setup pills; setup lives in the trip-summary sheet.
 - [ ] Flight windows show Best / Workable / Hardest, no percentages.
 - [ ] Every time is labelled with its city; the flight day shows a date.
 - [ ] Screen reader pass: no "Evening linen"-style alt text; DOM order = visual order.
 - [ ] `/crew` and `?depth=guided` still work (evidence drawers open, deep-dive visuals visible).
-- [ ] `page.tsx:646` is the only `NudgeFeedScreen` caller and typechecks against the PR 0 props type.
+- [ ] `page.tsx:646` is the only `NudgeFeedScreen` caller and typechecks against the PR 0 props type. **Re-derive this line before running QA** — `646` is correct on `overhaul/main`, and 3.3's titlebar/pills deletion moves it (it already sits at `624` in lane 3's in-progress tree). Better check: `grep -rn "<NudgeFeedScreen" src/` returns exactly one file.
 
 **Grep note.** The obvious single-line greps silently pass — `Math.max(6` is
 split across lines, as are several of the others. Assert on rendered values, not
