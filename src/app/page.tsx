@@ -543,23 +543,18 @@ export default function Home() {
             >
               Edit trip
             </div>
-            {hasSavedPlan ? (
-              <Link href="/review" className="m" onClick={() => setMenuOpen(false)}>
-                Printable guide →
-              </Link>
-            ) : (
-              <Link href="/review" className="m" onClick={() => setMenuOpen(false)}>
-                Printable guide →
-              </Link>
-            )}
+            {/* Both branches were identical — a leftover conditional, collapsed. */}
+            <Link href="/review" className="m" onClick={() => setMenuOpen(false)}>
+              Your plan{hasSavedPlan ? " →" : ""}
+            </Link>
             <Link href="/history" className="m" onClick={() => setMenuOpen(false)}>
               Past trips{runCount > 0 ? ` (${runCount})` : ""}
             </Link>
             <Link href="/outcome" className="m" onClick={() => setMenuOpen(false)}>
-              Log sleep outcome
+              How the trip went
             </Link>
             <Link href="/crew" className="m" onClick={() => setMenuOpen(false)}>
-              See the crew work →
+              See the crew →
             </Link>
             {run.briefing && (
               <button
@@ -579,7 +574,7 @@ export default function Home() {
                   window.open(url, "_blank");
                 }}
               >
-                Share plan link →
+                Share plan →
               </button>
             )}
             <div
@@ -591,7 +586,7 @@ export default function Home() {
                 setAgentDrawerOpen(true);
               }}
             >
-              Behind the scenes (AI)
+              Behind the scenes
             </div>
           </div>
         )}

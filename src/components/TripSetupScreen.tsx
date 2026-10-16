@@ -86,8 +86,8 @@ export function TripSetupScreen({
       {/* 2. Best Flight Time Advisor Bottom-Sheet Drawer */}
       <div className="sheet rise" style={{ animationDelay: ".5s" }}>
         <div className="hand" />
-        <h2>2. Ideal Departure Windows</h2>
-        <div className="sub">Circadian guidance — pick a real flight inside the best window; these are windows, not bookable flights</div>
+        <h2>Best departure windows</h2>
+        <div className="sub">Pick a real flight inside the best window — these are windows, not bookable flights</div>
         <div className="fl">
           {flightOptions.map((opt, idx) => {
             const isSelected = activeFlightId
@@ -121,7 +121,7 @@ export function TripSetupScreen({
       {/* Two-Column Setup Cards: Route & Timezone Shift + Garmin Wearable & Work Calendar */}
       <div className="two rise" style={{ animationDelay: ".55s" }}>
         <div className="card">
-          <h3>1. Route &amp; Timezone Shift</h3>
+          <h3>Route &amp; timezone shift</h3>
           {editingRoute ? (
             <div style={{ marginBottom: "12px" }}>
               <RoutePicker
@@ -174,7 +174,7 @@ export function TripSetupScreen({
             >
               {phase === "running"
                 ? `Building (${lockedCount}/${totalDays})…`
-                : "Personalize & View Nudges"}
+                : "Personalise"}
             </button>
             {phase === "running" ? (
               <button type="button" className="p2" onClick={onCancel}>
@@ -193,7 +193,7 @@ export function TripSetupScreen({
         </div>
 
         <div className="card">
-          <h3>3. Garmin Wearable &amp; Work Calendar</h3>
+          <h3>Wearable &amp; work calendar</h3>
           {isDemo && (
             <p className="demo-tag">
               Demo profile — these numbers are sample data, not your measurements.
@@ -219,12 +219,12 @@ export function TripSetupScreen({
           </div>
           <div className="m3" style={{ gridTemplateColumns: "1fr 1fr" }}>
             <div>
-              {movableCount} flexible
+              {movableCount} movable
               <b>Work Calendar</b>
             </div>
             <div>
               {readinessLabel}
-              <b>biologically ready</b>
+              <b>meetings ready</b>
             </div>
           </div>
         </div>
