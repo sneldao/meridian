@@ -200,6 +200,20 @@ export function NudgeFeedScreen({
     [trip, calendarEvents, effectiveAdherence, baseline],
   );
 
+  // Days after the flight are always null in the preview — they're planned
+  // after landing. What the pre-flight days banked shows as the residual.
+  const isPostFlightDay =
+    !!trip && !!activeDaySpec && activeDaySpec.dayIndex > trip.departureDayIndex;
+  const landedResidualMin = useMemo(() => {
+    let last: number | null = null;
+    preview?.forEach((s) => {
+      if (s?.result.coverage) last = s.result.coverage.residualMin;
+    });
+    return last;
+  }, [preview]);
+  const landedResidualHours =
+    landedResidualMin !== null ? Math.round(landedResidualMin / 60) : null;
+
   const allDayNudges = useMemo(() => {
     if (!trip || !activeDaySpec) return [];
     const plan =
@@ -410,14 +424,26 @@ export function NudgeFeedScreen({
           </div>
 
           {totalTodayCount === 0 ? (
-            <>
-              <h2>Not placed yet — personalise</h2>
-              <p className="s">
-                We couldn&apos;t honestly place this day against your calendar
-                and baseline, so there are no invented times here — run the
-                crew and it will draft this day with you.
-              </p>
-            </>
+            isPostFlightDay ? (
+              <>
+                <h2>Planned with you after you land</h2>
+                <p className="s">
+                  The days before your flight bank what they can
+                  {landedResidualHours !== null &&
+                    ` — you land about ${landedResidualHours}h short of ${trip?.destination.name ?? "your destination"} time`}{" "}
+                  and the crew finishes the plan once you&apos;re down.
+                </p>
+              </>
+            ) : (
+              <>
+                <h2>Not placed yet — personalise</h2>
+                <p className="s">
+                  We couldn&apos;t honestly place this day against your calendar
+                  and baseline, so there are no invented times here — run the
+                  crew and it will draft this day with you.
+                </p>
+              </>
+            )
           ) : heroNudge ? (
             <>
               <span className="tw" style={{ alignSelf: "flex-start", fontSize: "15px", fontWeight: 800 }}>
@@ -795,7 +821,9 @@ export function NudgeFeedScreen({
           })}
           {filteredNudges.length === 0 && (
             <p style={{ fontSize: "12px", color: "#7a6a5c" }}>
-              Not placed yet — personalise.
+              {isPostFlightDay
+                ? "Planned with you after you land."
+                : "Not placed yet — personalise."}
             </p>
           )}
         </div>

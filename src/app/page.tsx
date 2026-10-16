@@ -85,6 +85,9 @@ export default function Home() {
   const tripQuery = `?origin=${origin}&dest=${dest}&date=${departureDate}`;
   const { run, dispatch, reset } = useRunState();
   const [data, setData] = useState<TripData | null>(null);
+  /** Whether the first /api/trip fetch has settled — keeps the setup sheet
+   *  (the no-trip branch) from flashing before the trip arrives. */
+  const [tripResolved, setTripResolved] = useState(false);
   const [selectedDayLabel, setSelectedDayLabel] = useState<string>("D-1");
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [briefingDismissed, setBriefingDismissed] = useState(false);
@@ -120,6 +123,7 @@ export default function Home() {
     fetch("/api/trip" + tripQuery)
       .then((r) => r.json())
       .then((d: TripData) => {
+        setTripResolved(true);
         setData(d);
         if (d?.trip?.days?.[1]?.label) {
           setSelectedDayLabel(d.trip.days[1].label);
@@ -127,7 +131,7 @@ export default function Home() {
           setSelectedDayLabel(d.trip.days[0].label);
         }
       })
-      .catch(() => {});
+      .catch(() => setTripResolved(true));
   }, [tripQuery, departureDate]);
 
   const hook = trip
@@ -425,14 +429,15 @@ export default function Home() {
         e.preventDefault();
         if (run.phase !== "running") startShift();
       } else if (e.code === "Escape") {
-        if (agentDrawerOpen) setAgentDrawerOpen(false);
+        if (setupOpen) setSetupOpen(false);
+        else if (agentDrawerOpen) setAgentDrawerOpen(false);
         else if (menuOpen) setMenuOpen(false);
         else if (run.phase === "running") cancelShift();
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [run.phase, startShift, cancelShift, agentDrawerOpen, menuOpen]);
+  }, [run.phase, startShift, cancelShift, agentDrawerOpen, menuOpen, setupOpen]);
 
   const goGuide = () => {
     guideRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -608,7 +613,9 @@ export default function Home() {
           </div>
         )}
 
-        {/* One flow: no trip → setup. Trip set → Today, with setup behind a sheet. */}
+        {/* One flow: no trip → setup. Trip set → Today, with setup behind a
+            sheet. Until the first /api/trip resolves we render a quiet spacer,
+            not the setup sheet — the trip almost always exists. */}
         {trip ? (
           <>
             <div ref={setupRef}>
@@ -633,6 +640,7 @@ export default function Home() {
                 citations={activeCitations}
                 ics={run.briefing?.ics}
                 selectedFlightId={selectedFlightId}
+                adherence={data?.adherence}
                 onOpenTripSetup={openSetup}
                 onStartCrewSync={startShift}
                 onCheckIn={(status) => beginStream({ checkins: status })}
@@ -658,6 +666,8 @@ export default function Home() {
               />
             )}
           </>
+        ) : !tripResolved ? (
+          <div ref={setupRef} style={{ minHeight: "40vh" }} />
         ) : (
           <div ref={setupRef}>
             <TripSetupScreen
