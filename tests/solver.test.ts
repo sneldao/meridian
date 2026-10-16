@@ -180,6 +180,48 @@ describe("previewPlan", () => {
     }
   });
 
+  test("east days never wake earlier than floor − 105 unless holding", () => {
+    const floor = ADHERENCE_PROFILE.ignoresInterventionsBeforeMin;
+    for (const spec of trip.days) {
+      const solved = preview.get(spec.label);
+      if (!solved || solved.plan.shiftMin === 0) continue;
+      // Unwrapped comparison would be ideal; fixture wakes stay in the
+      // early-morning range so the wrapped value is safe here.
+      expect(solved.plan.targetWakeMin).toBeGreaterThanOrEqual(floor - 105);
+    }
+  });
+
+  test("light starts at/after the floor unless every ≥floor slot is blocked", () => {
+    const floor = ADHERENCE_PROFILE.ignoresInterventionsBeforeMin;
+    for (const spec of trip.days) {
+      const solved = preview.get(spec.label);
+      if (!solved) continue;
+      const iv = solved.plan.interventions.find((i) => i.kind === "light_exposure");
+      expect(iv).toBeDefined();
+      if (iv!.startMin >= floor) continue;
+      // A sub-floor ask is only honest when the whole floor band is blocked.
+      const bandFree = [0, 15, 30, 45, 60, 75, 90, 105].some((off) => {
+        const s = floor + off;
+        return !CALENDAR.some(
+          (e) =>
+            e.dayIndex === spec.dayIndex &&
+            e.blocksInterventions !== false &&
+            s < e.endMin &&
+            e.startMin < s + 60,
+        );
+      });
+      expect(bandFree).toBe(false);
+    }
+  });
+
+  test("the day after the flight is destination-local", () => {
+    const d1 = preview.get("D+1");
+    expect(d1).not.toBeNull();
+    // Converted from the locked 05:15 London wake (+8h) — a plausible Tokyo
+    // late-morning, not ~00:45.
+    expect(d1!.plan.targetWakeMin).toBeGreaterThanOrEqual(7 * 60);
+  });
+
   test("no light block overlaps a blocking calendar event on its day", () => {
     for (const spec of trip.days) {
       const solved = preview.get(spec.label);
