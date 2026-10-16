@@ -642,10 +642,7 @@ export default function Home() {
                 calendarEvents={currentEvents}
                 moves={run.moves}
                 citations={activeCitations}
-                ics={run.briefing?.ics}
-                selectedFlightId={selectedFlightId}
                 adherence={data?.adherence}
-                onOpenTripSetup={openSetup}
                 onStartCrewSync={startShift}
                 onCheckIn={(status) => beginStream({ checkins: status })}
               />
