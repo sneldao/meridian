@@ -57,9 +57,12 @@ the *code* wins — update this doc in the same PR rather than picking silently.
    correct cause — take `Math.abs` on *both* sides.)
 5. **Two screens stacked, not one flow.** The page title is the Setup heading,
    setup sections render 2 → 1 → 3 → 4, "Morning Check-in" pre-run just starts
-   a run, and the hardcoded default `2026-10-18` (`page.tsx:57`, plus
+   a run, and the hardcoded default `2026-10-18` (was `page.tsx:57`; also
    `api/trip/route.ts:16`, `crew/page.tsx:52`, `api/crew/run/route.ts:19`) means
    any visitor after that date gets no "today" at all.
+   *(Items 3–5 are now fixed by lane 3 — `0d6d1f4`, `f744b66`, `3aecb12`. The
+   citations are kept pointing at the pre-fix locations so the claim stays
+   auditable; the date sites are now `defaultDepartureDate()`.)*
 
 ## Decisions (settled — don't re-litigate in PRs)
 
@@ -92,8 +95,9 @@ item that isn't on `main` — if it's urgent, land the contract stubs as their o
 commit first.
 
 Merge order within a phase: **lane 1 → lane 3 → lane 2.** Lane 3 rewrites
-`page.tsx`, which is lane 2's only call site (`page.tsx:646`); lane 2 rebases
-last.
+`page.tsx`, which is lane 2's only call site (`<NudgeFeedScreen` at
+`page.tsx:619` — re-grep rather than trust this line number, lane 3 keeps
+moving it); lane 2 rebases last.
 
 The contract currently sits on `overhaul/dev1-contract`, **not on `main`** —
 add the remaining CSS lane blocks there and merge it to `main` before any lane
@@ -240,19 +244,21 @@ it).
 ### Dev 3 — Shell, setup & data
 
 **Owns:** `src/app/page.tsx`, `src/components/TripSetupScreen.tsx`,
-`src/components/TripPassport.tsx`, `src/components/RoutePicker.tsx`,
-`src/app/api/trip/route.ts`, `src/app/crew/page.tsx` (date default only),
-`README.md`, final `globals.css` cleanup.
+`src/components/RoutePicker.tsx`, `src/components/TripSummary.tsx` (new),
+`src/components/DeepDiveVisuals.tsx` (new), `src/app/api/trip/route.ts`,
+`src/app/crew/page.tsx` (date default only), `README.md`,
+`docs/reference/architecture.md`, final `globals.css` cleanup.
+(`TripPassport.tsx` was owned here and is now deleted.)
 
 | # | Phase | Task |
 |---|---|---|
 | 3.1 | A | ✅ **Landed (`eac1a23`)** — `baselineSource: "fixture"` in `/api/trip`; `TripData` holds `baselineSource` + `adherence`; `baselineSource` threads to `TripSetupScreen`. **Outstanding:** passing `adherence` to `NudgeFeedScreen` — blocked on Dev 2's props export. One line at the call site once it lands. |
 | 3.2 | A | ✅ **Landed (`eac1a23`)** — `|| 3`, `"2/2"`, `23:30–06:45`, `62 ms`, `52 bpm` all removed; absent values render "—"; a "Demo profile" tag appears when `baselineSource`/`calendarSource` is `fixture` (`.demo-tag` in the `lane: shell` CSS block). |
 | 3.3 | B | One flow in `page.tsx`: delete the titlebar, the Guide/Setup pills, `activeScreen`, `goSetup` scrolling and `?screen=setup`. No trip → render setup (route, date, Personalise). Trip → Today. Voice/Muted become one toggle button. Nav: brand · Crew · voice · menu; menu items renamed per vocabulary. | 🟢 **Landed (`0d6d1f4`)** — titlebar, Guide/Setup pills, `activeScreen`, `?screen=setup` and `goSetup` scrolling all gone; Voice/Muted collapsed to one toggle reading "Voice on"/"Voice off"; nav is brand · Crew · voice · menu; menu items renamed. |
-| 3.4 | B | New compact `TripSummary` chip above Today ("LHR → HND · Sun 18 Oct · 8h east · Edit") opening a sheet whose body is the refactored `TripSetupScreen`: route, date, flight windows, wearable/calendar summary — no section numbers. Delete `TripPassport.tsx` (currently unimported — confirmed by grep on 16 Oct). | 🟢 **Landed (`0d6d1f4`)** — `TripSummary` chip above Today, opening a `role="dialog" aria-modal` sheet carrying the refactored `TripSetupScreen`. `TripPassport.tsx` deleted (grep confirmed zero references). |
+| 3.4 | B | New compact `TripSummary` chip above Today ("LHR → HND · Mon 19 Oct · 8h east · Edit" — the date is today + 3 after 3.7, not the fixture's 18 Oct) opening a sheet whose body is the refactored `TripSetupScreen`: route, date, flight windows, wearable/calendar summary — no section numbers. Delete `TripPassport.tsx` (currently unimported — confirmed by grep on 16 Oct). | 🟢 **Landed (`0d6d1f4`)** — `TripSummary` chip above Today, opening a `role="dialog" aria-modal` sheet carrying the refactored `TripSetupScreen`. `TripPassport.tsx` deleted (grep confirmed zero references). |
 | 3.5 | B | Extract the deep-dive visuals (globe, swimlane, week) out of `TripSetupScreen` into `DeepDiveVisuals`; `page.tsx` renders it only when `depth === "guided"`. | 🟢 **Landed (`0d6d1f4`)** — new `DeepDiveVisuals.tsx`; `page.tsx` renders it only at `?depth=guided`. Verified in Chrome: deep-dive tabs absent on Calm, present at guided. |
 | 3.6 | B | ✅ **Landed (`f744b66`)** — pre-run "Morning Check-in" was a second button wired to the same `onStart`; it now renders only when `phase === "done"`. |
-| 3.7 | B | Default departure = client-local today + 3 in `page.tsx` (`page.tsx:57`) **and `src/app/crew/page.tsx:52`** — after 18 Oct a `/crew` visit would otherwise default to a past trip. `api/crew/run/route.ts:19` reads the query param and needs no change. Fixtures in `src/domain/fixtures.ts` + `src/state/fixture-events.json` stay frozen (test/replay inputs). URL `?date=` still wins. **Verify** `bun run replay:check`, `bun run eval` (`scripts/eval.ts:29-31` hardcodes `2026-10-18` in all three scenarios) and a replay-provider run still work for a non-`DEMO_DEPARTURE` date before merging; report if replay is pinned to the fixture date. (Replay's floor policy already landed — `replay.ts:172`, `replay-plan.ts:25` thread `adherence` — so a `replay:check` failure after your change is a new regression, not the old script.) | 🟢 **Landed (`f744b66`)** — today+3 local default on `/` and `/crew`, set in the mount effect (no hydration mismatch), fetch guarded on a non-empty date, `?date=` still wins. ⚠ **`bun run eval` hangs by default**: it runs `AGENT_PROVIDER=featherless` and blocks on the provider. Use `AGENT_PROVIDER=replay bun run eval` — then all 3 scenarios pass. Pre-existing, reproduced on the base commit. Worth defaulting eval to replay when no key is present. |
+| 3.7 | B | Default departure = client-local today + 3 in `page.tsx` (was `page.tsx:57`) **and `src/app/crew/page.tsx:52`** — after 18 Oct a `/crew` visit would otherwise default to a past trip. `api/crew/run/route.ts:19` reads the query param and needs no change. Fixtures in `src/domain/fixtures.ts` + `src/state/fixture-events.json` stay frozen (test/replay inputs). URL `?date=` still wins. **Verify** `bun run replay:check`, `bun run eval` (`scripts/eval.ts:29-31` hardcodes `2026-10-18` in all three scenarios) and a replay-provider run still work for a non-`DEMO_DEPARTURE` date before merging; report if replay is pinned to the fixture date. (Replay's floor policy already landed — `replay.ts:172`, `replay-plan.ts:25` thread `adherence` — so a `replay:check` failure after your change is a new regression, not the old script.) | 🟢 **Landed (`f744b66`)** — today+3 local default on `/` and `/crew`, set in the mount effect (no hydration mismatch), fetch guarded on a non-empty date, `?date=` still wins. ⚠ **`bun run eval` hangs by default**: it runs `AGENT_PROVIDER=featherless` and blocks on the provider. Use `AGENT_PROVIDER=replay bun run eval` — then all 3 scenarios pass. Pre-existing, reproduced on the base commit. Worth defaulting eval to replay when no key is present. |
 | 3.8 | C | ✅ **Already satisfied** — cards render `badge` + `bestFor` + `departsLocal` → `arrivesDest` only (`TripSetupScreen.tsx`, unchanged by lane 3). |
 | 3.9 | C | Copy sweep of `page.tsx`, `TripSetupScreen`, menu, `RoutePicker`; remove orphan labels ("8 flexible", "biologically ready" → "3 movable events", "Pitch: ready"). | 🟢 **Landed (`3aecb12`)** — section numbers dropped, "Circadian guidance" reworded, "Personalize" → "Personalise", "N flexible" → "N movable", "biologically ready" → "meetings ready", menu items renamed; also collapsed a `hasSavedPlan` conditional whose branches were identical. |
 | 3.10 | C | 🟡 **Partial (`bb6a2d5`)** — `.titlebar` rules deleted (incl. the responsive override); README "Active" link landed in `6b7989f`. **Kept deliberately:** `.pill` (the nav still uses it for the Crew link) and the view-mode/filter styles (Dev 2 still renders that row until 2.5). Delete those after 2.5 merges. |
@@ -303,14 +309,14 @@ Lane 3 additionally: `bun run replay:check`, `bun run eval`, and
 - [ ] No preview step before 07:00 London when a later legal slot exists; no step overlaps a fixed calendar event; every preview day passes the gate.
 - [ ] "Your next step" is never a passed window; passed ones sit under "Missed".
 - [ ] One progress number; no 6%; eastbound readiness shows "of shift locked" after a run.
-- [ ] No invented values anywhere — assert on rendered values, not source shape (see the grep note below); demo data is tagged "Demo profile".
+- [x] No invented values anywhere — assert on rendered values, not source shape (see the grep note below); demo data is tagged "Demo profile". *(lane 3: verified in Chrome on both rungs — `62 ms`, `52 bpm`, `2/2`, `23:30` all absent; the tag renders in the edit sheet)*
 - [ ] No ".ics" button without a real plan.
-- [ ] No "Trip & Flight Setup" title, no section numbers, no Guide/Setup pills; setup lives in the trip-summary sheet.
-- [ ] Flight windows show Best / Workable / Hardest, no percentages.
+- [x] No "Trip & Flight Setup" title, no section numbers, no Guide/Setup pills; setup lives in the trip-summary sheet. *(landed `0d6d1f4`, `3aecb12` — verified in rendered DOM on `/`)*
+- [x] Flight windows show Best / Workable / Hardest, no percentages. *(landed `48223a0`; cards render badge + bestFor + times only)*
 - [ ] Every time is labelled with its city; the flight day shows a date.
 - [ ] Screen reader pass: no "Evening linen"-style alt text; DOM order = visual order.
-- [ ] `/crew` and `?depth=guided` still work (evidence drawers open, deep-dive visuals visible).
-- [ ] `page.tsx:646` is the only `NudgeFeedScreen` caller and typechecks against the PR 0 props type.
+- [x] `/crew` and `?depth=guided` still work (evidence drawers open, deep-dive visuals visible). *(both checked in headless Chrome: deep-dive tabs absent on Calm, present at `?depth=guided`; `/crew` renders with the today+3 default `2026-10-19` and no runtime errors. Evidence-drawer *open/close* itself still needs a human click-through.)*
+- [ ] `page.tsx` is the only `NudgeFeedScreen` caller and typechecks against the exported props type. *(caller is unique; the props type does not exist yet — Dev 2's first commit. Blocks 3.1's last step.)*
 
 **Grep note.** The obvious single-line greps silently pass — `Math.max(6` is
 split across lines, as are several of the others. Assert on rendered values, not

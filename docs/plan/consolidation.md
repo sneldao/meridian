@@ -9,8 +9,8 @@ underneath** — one `CrewEvent` stream, purely presentational depth.
 
 | Depth | Audience | Surface |
 |---|---|---|
-| Calm (default) | traveller | `NudgeFeedScreen` + `HandoffBanner` + `TripPassport` |
-| Guided | skeptic | + per-nudge "why" expansion + slim crew ribbon (human verdicts, not raw tokens) |
+| Calm (default) | traveller | `NudgeFeedScreen` + `HandoffBanner` + `TripSummary` chip (the old `TripPassport` was deleted in the home-page overhaul — the trip is a fact you gave, not a section to configure) |
+| Guided | skeptic | + per-nudge "why" expansion + `DeepDiveVisuals` (globe / swimlane / week) + slim crew ribbon (human verdicts, not raw tokens) |
 | Operator | judge/dev | full lens shell: `LensShell`, `CrewFeed`, `WorldLens`, `ShiftBoard`, `CalendarLens`, `Ledger` |
 
 Toggle: a persistent depth control named for curiosity — **Calm → Guided →

@@ -41,7 +41,7 @@ run history server-side (project `vpeakvspljdoxbwfsdvw`, see
 | Path | What |
 |---|---|
 | `/pitch` | Slide deck — scrollytelling pitch, self-contained
-| `/` | Live crew run — lens shell (world/board/calendar/ledger), crew feed (SSE) |
+| `/` | Today — the one step to do now, then the day timeline and readiness. No trip yet → setup; trip set → a trip chip with an Edit sheet. `?depth=guided` adds the deep-dive visuals |
 | `/review` | Saved plan: days, citations, .ics download |
 | `/history` | Past runs (with provider + fallback provenance) |
 | `/outcome` | Post-trip self-report (adherence, jetlag, notes); learned cross-run memory |
