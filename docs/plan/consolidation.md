@@ -62,8 +62,11 @@ delete the orphaned imports; re-home them under the depth-3 view.
       latest verdict score + violation messages + draftRejected)
 - [x] `NudgeFeedScreen`: "Why & details" drawer renders the crew evidence row
       (score, violations, retry flag, backing citation)
-- [x] Operator view: resurrected verbatim at `/crew` — `/` links to it from
-      the nav menu ("See the crew work →")
+- [x] Operator view: resurrected at `/crew` — `/` links from the nav pill +
+      menu; `/crew` links back ("← the traveller's view"). NOTE: first attempt
+      silently captured the wrong rev (merge fast-forwarded, `HEAD^1` was a
+      branch commit, not pre-merge main) — restored correctly from `bc26481`
+      and verified the lens surface (LensShell/CrewFeed/lenses) is real.
 - [x] Remove `DEFAULT_CITATIONS` fake-evidence fallback
 - [x] `?depth=` param — `guided` opens every evidence drawer, `operator`
       redirects to `/crew` (shareable judge URLs). localStorage persistence
@@ -99,3 +102,9 @@ The two surfaces now share one identity instead of trading it off:
 
 Palette note: sunlit `#D96B43` is terminator gold `#ffd98a` deepened for
 daylight — the same dawn, seen from the consumer side.
+
+- **Transition, not teleport.** `.dawnIn` overlay: crossing `/` → `/crew`
+  replays the hero's terminator horizon full-screen for a beat before
+  resolving to ink — the same dawn seen from inside the mission.
+- **Motif at chip scale.** `.day::before` — a 7px circle bisected ink/gold —
+  the terminator rides inside every day button.
