@@ -628,13 +628,6 @@ body {
   outline: 2px solid #D96B43;
   outline-offset: 2px;
 }
-.view {
-  margin-left: auto;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  color: #7a6a5c;
-}
 .deck {
   display: grid;
   grid-template-columns: 1fr 1fr;
