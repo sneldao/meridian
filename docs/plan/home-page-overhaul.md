@@ -1,5 +1,9 @@
 # Home page overhaul — accuracy, one flow, honest claims
 
+> **SHIPPED 2026-10-17 — merged to `main` via `overhaul/main` (deployed).**
+> Status annotations below are the historical record; don't implement from
+> this doc. Current work: [home-signature-pass.md](home-signature-pass.md).
+
 2026-10-16, updated same day after PR 0 merged, then again by lane 2 alongside
 PR #2 and PR #4 so the status notes and `file:line` citations match the code on
 `overhaul/main`. Derived from a critical

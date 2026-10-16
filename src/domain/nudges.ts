@@ -229,11 +229,14 @@ export function buildDailyNudgesForDay(params: {
 
   const nudges: TravelerNudge[] = [];
 
-  // 1. OUTSIDE LIGHT — straight from the plan's light block.
+  // 1. OUTSIDE LIGHT — only when the plan carries a light block. Never fall
+  // back to wakeMin: a step at the wake target reads as "get light at 05:15"
+  // when the scorer actually placed it at the 07:00 floor.
   const lightIv = plan.interventions.find((iv) => iv.kind === "light_exposure");
-  const lightStart = lightIv?.startMin ?? wakeMin;
-  const lightEnd = lightIv?.endMin ?? wrap(lightStart + 60);
-  if (lightIv) {
+  const lightStart = lightIv?.startMin;
+  const lightEnd =
+    lightIv !== undefined ? (lightIv.endMin ?? wrap(lightIv.startMin + 60)) : undefined;
+  if (lightIv && lightStart !== undefined && lightEnd !== undefined) {
     nudges.push({
       id: `${spec.label}-sunlight`,
       dayIndex,
@@ -272,11 +275,11 @@ export function buildDailyNudgesForDay(params: {
     runEnd = exerciseIv.endMin ?? wrap(runStart + 40);
   } else if (!isFlightDay) {
     if (east) {
-      if (lightIv && lightStart >= floor && !eventClash(lightStart, lightStart + 40)) {
-        runStart = lightStart;
-        runEnd = wrap(lightStart + 40);
+      if (lightIv && lightIv.startMin >= floor && !eventClash(lightIv.startMin, lightIv.startMin + 40)) {
+        runStart = lightIv.startMin;
+        runEnd = wrap(lightIv.startMin + 40);
       } else {
-        const s = freeSlot(Math.max(floor, lightEnd), bedMin - 180, 40);
+        const s = freeSlot(Math.max(floor, lightEnd ?? floor), bedMin - 180, 40);
         if (s !== null) {
           runStart = s;
           runEnd = wrap(s + 40);
@@ -389,7 +392,7 @@ export function buildDailyNudgesForDay(params: {
       .filter((ev) => protectedIvs.some((p) => ev.startMin < p.e && p.s < ev.endMin))
       .map((ev) => {
         const dur = ev.endMin - ev.startMin;
-        for (let s = Math.max(floor, lightEnd); s + dur <= 17 * 60; s += 15) {
+        for (let s = Math.max(floor, lightEnd ?? floor); s + dur <= 17 * 60; s += 15) {
           const evClash = calendarEvents.some(
             (o) => o.dayIndex === dayIndex && o.id !== ev.id && s < o.endMin && o.startMin < s + dur,
           );

@@ -87,3 +87,19 @@ describe("buildDailyNudgesForDay", () => {
     expect(flight.some((n) => n.category === "run")).toBe(false);
   });
 });
+
+test("sunlight step only exists when the plan carries a light iv, and never at wake", () => {
+  const planNoLight: DayPlan = {
+    dayIndex: 0, label: "D-3", shiftMin: 0,
+    targetBedtimeMin: 22 * 60 + 25, targetWakeMin: 5 * 60 + 15,
+    interventions: [
+      { kind: "caffeine_cutoff", startMin: 14 * 60 + 20, note: "" },
+      { kind: "sleep_window", startMin: 22 * 60 + 25, endMin: 5 * 60 + 15, note: "" },
+    ],
+  };
+  const out = buildDailyNudgesForDay({
+    trip, dayIndex: 0, plan: planNoLight, baseline: GARMIN_BASELINE,
+    calendarEvents: CALENDAR, moves: [], citations: [], adherence: ADHERENCE_PROFILE,
+  });
+  expect(out.find((n) => n.category === "sunlight")).toBeUndefined();
+});
