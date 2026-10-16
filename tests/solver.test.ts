@@ -266,3 +266,9 @@ describe("previewPlan", () => {
     }
   });
 });
+
+test("previewPlan over the demo trip stays under the render budget", () => {
+  const t0 = performance.now();
+  previewPlan({ trip, calendar: CALENDAR, adherence: ADHERENCE_PROFILE, baseline: GARMIN_BASELINE });
+  expect(performance.now() - t0).toBeLessThan(50);
+});
