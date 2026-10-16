@@ -108,35 +108,7 @@ export function TripSetupScreen({
         <h2>2. Ideal Departure Windows</h2>
         <div className="sub">Circadian guidance — pick a real flight inside the best window; these are windows, not bookable flights</div>
         <div className="fl">
-          {(flightOptions.length > 0
-            ? flightOptions
-            : [
-                {
-                  id: "midday-afternoon",
-                  badge: "Best for Zero Jet Lag" as const,
-                  recommended: true,
-                  departsLocal: "11:20",
-                  arrivesDest: "07:50 (+1)",
-                  landingReadinessPct: 92,
-                },
-                {
-                  id: "evening-redeye",
-                  badge: "Good Alternative" as const,
-                  recommended: false,
-                  departsLocal: "19:15",
-                  arrivesDest: "15:45 (+1)",
-                  landingReadinessPct: 78,
-                },
-                {
-                  id: "early-morning",
-                  badge: "Hardest on Body Clock" as const,
-                  recommended: false,
-                  departsLocal: "06:30",
-                  arrivesDest: "02:50 (+1)",
-                  landingReadinessPct: 54,
-                },
-              ]
-          ).map((opt, idx) => {
+          {flightOptions.map((opt, idx) => {
             const isSelected = activeFlightId
               ? opt.id === activeFlightId
               : idx === 0;
@@ -158,11 +130,7 @@ export function TripSetupScreen({
                 <b>
                   {opt.departsLocal} → {opt.arrivesDest}
                 </b>
-                <span>
-                  {idx === 0
-                    ? `${opt.landingReadinessPct}% day-1 readiness`
-                    : `${opt.landingReadinessPct}%`}
-                </span>
+                <span>{opt.bestFor}</span>
               </div>
             );
           })}

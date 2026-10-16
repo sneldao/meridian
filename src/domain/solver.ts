@@ -211,3 +211,25 @@ export function solveDay(input: SolveDayInput): SolvedDay | null {
   }
   return null;
 }
+
+/** Solves every day of the trip in order — the pre-run preview runs the same
+ *  chain the crew would lock, so what the preview shows is what the scorer
+ *  accepts. Days the solver can't place stay null (the honest "not placed"
+ *  signal) and don't advance the chain; later days solve from the last
+ *  locked plan. Keyed by DaySpec.label, like run.locked / run.drafts. */
+export function previewPlan(input: {
+  trip: Trip;
+  calendar: CalendarEvent[];
+  adherence: AdherenceProfile;
+  baseline?: { avgBedtimeMin: number; avgWakeMin: number };
+}): Map<string, SolvedDay | null> {
+  const { trip, calendar, adherence, baseline } = input;
+  const lockedDays: DayPlan[] = [];
+  const out = new Map<string, SolvedDay | null>();
+  for (const spec of trip.days) {
+    const solved = solveDay({ trip, spec, lockedDays, calendar, adherence, baseline });
+    out.set(spec.label, solved);
+    if (solved) lockedDays.push(solved.plan);
+  }
+  return out;
+}

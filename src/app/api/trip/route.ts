@@ -30,6 +30,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     trip,
     baseline: GARMIN_BASELINE,
+    baselineSource: "fixture" as const,
     adherence: ADHERENCE_PROFILE,
     calendar: cal.events,
     calendarSource: cal.source,

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { modelShiftMin, evaluatePlan, passes } from "../src/domain/circadian";
-import { solveDay } from "../src/domain/solver";
+import { previewPlan, solveDay } from "../src/domain/solver";
 import type { DayPlan } from "../src/domain/types";
 import { ADHERENCE_PROFILE, CALENDAR, DEMO_TRIP, GARMIN_BASELINE, buildTrip } from "../src/domain/fixtures";
 
@@ -147,5 +147,54 @@ describe("solveDay", () => {
     });
     expect(solved).not.toBeNull();
     expect(Math.abs(solved!.plan.shiftMin)).toBeLessThanOrEqual(Math.abs(small.requiredShiftMin));
+  });
+});
+
+describe("previewPlan", () => {
+  const preview = previewPlan({
+    trip,
+    calendar: CALENDAR,
+    adherence: ADHERENCE_PROFILE,
+    baseline: GARMIN_BASELINE,
+  });
+
+  test("has an entry for every day label", () => {
+    expect(preview.size).toBe(trip.days.length);
+    for (const spec of trip.days) expect(preview.has(spec.label)).toBe(true);
+  });
+
+  test("every non-null day passes the scorer with the days locked before it", () => {
+    const prior: DayPlan[] = [];
+    for (const spec of trip.days) {
+      const solved = preview.get(spec.label);
+      if (!solved) continue;
+      const check = evaluatePlan({
+        trip,
+        days: [...prior, solved.plan],
+        calendar: CALENDAR,
+        adherence: ADHERENCE_PROFILE,
+        baseline: GARMIN_BASELINE,
+      });
+      expect(passes(check)).toBe(true);
+      prior.push(solved.plan);
+    }
+  });
+
+  test("no light block overlaps a blocking calendar event on its day", () => {
+    for (const spec of trip.days) {
+      const solved = preview.get(spec.label);
+      if (!solved) continue;
+      for (const iv of solved.plan.interventions) {
+        if (iv.kind !== "light_exposure" || iv.endMin === undefined) continue;
+        const clash = CALENDAR.some(
+          (e) =>
+            e.dayIndex === spec.dayIndex &&
+            e.blocksInterventions !== false &&
+            iv.startMin < e.endMin &&
+            e.startMin < iv.endMin,
+        );
+        expect(clash).toBe(false);
+      }
+    }
   });
 });
