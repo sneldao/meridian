@@ -101,7 +101,7 @@ in [providers.md](providers.md#supabase-persistence-optional).
 |---|---|
 | `GET /api/crew/run` | SSE crew stream (`checkins`, `startDay` query params) |
 | `POST /api/crew/checkin` | Free-text check-in → structured `CheckIn` |
-| `GET /api/trip` | Trip preview: schedule, baseline, calendar, provider |
+| `GET /api/trip` | Trip preview: schedule, `baseline` + `baselineSource` (`"fixture"` until real Garmin wiring lands), `adherence`, calendar + `calendarSource`, provider. Defaults `date` to `2026-10-18`; the client always sends an explicit date (today + 3 by default) |
 | `GET /api/team/run` | 12 parallel crews, one tagged SSE stream |
 | `GET /api/persistence/runs` | Supabase run history; `{"enabled":false}` without keys |
 | `GET /api/memory` · `GET /api/graph/health` | Learned cross-run memory; FalkorDB status (503 when unreachable); `?tenant=` selects the `meridian:{tenant}` graph |
@@ -117,8 +117,12 @@ src/domain/      types, circadian scorer + phase-response model, placement
 src/tools/       science (SMR → Firecrawl → static), tavily, qloo,
                  calendar (ICS), wearable
 src/agents/      providers, crew prompts, runtime, night replay, morning replay
-src/components/  CrewFeed, DayStrip, BriefingCard, RoutePicker,
-                 MorningCheckin, AnchoredPopover, lenses/, ui/ primitives
+src/components/  NudgeFeedScreen (the Calm `/` surface: next step, timeline,
+                 readiness), TripSummary (trip chip + edit sheet),
+                 TripSetupScreen (setup body), DeepDiveVisuals (globe /
+                 swimlane / week, `?depth=guided` only), CrewFeed, DayStrip,
+                 BriefingCard, HandoffBanner, RoutePicker, MorningCheckin,
+                 DailyJourney, AgentDrawer, AnchoredPopover, lenses/, ui/
 src/lib/         voice/ (engine, config, cache, split, align, huddle),
                  motion tokens, intervention icon vocabulary
 src/mcp/         MCP server: JSON-RPC dispatch + tool catalogue

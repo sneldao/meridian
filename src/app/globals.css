@@ -237,26 +237,6 @@ body {
 .menu a.m {
   color: #7a6a5c;
 }
-.titlebar {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 16px;
-  margin: 12px 0 18px;
-}
-.titlebar h1 {
-  font-size: 32px;
-  line-height: 1.1;
-  font-weight: 800;
-  letter-spacing: -0.01em;
-}
-.titlebar p {
-  font-size: 13px;
-  color: #7a6a5c;
-  margin-top: 6px;
-  max-width: 470px;
-  line-height: 1.4;
-}
 .hero {
   display: grid;
   grid-template-columns: 1.05fr 0.95fr;
@@ -918,10 +898,6 @@ body {
     min-width: 56px;
     font-size: 12px;
   }
-  .titlebar {
-    flex-direction: column;
-    align-items: flex-start;
-  }
 }
 
 .font-mono2 {
@@ -972,4 +948,121 @@ textarea:focus-visible,
 .scroll-thin::-webkit-scrollbar-thumb {
   background: var(--color-line);
   border-radius: 2px;
+}
+
+/* ── lane: shell ─────────────────────────────────────────────────────────
+   Dev 3 owns this block. New classes go inside it; only Dev 3 deletes
+   obsolete classes, and only after lanes 1–2 have merged. (Task 3.2) */
+
+/* Marks numbers that came from the demo fixture rather than a measurement. */
+.demo-tag {
+  margin: 0 0 12px;
+  padding: 7px 11px;
+  border: 1px solid var(--color-line);
+  border-left: 3px solid var(--color-ghost);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-ghost) 7%, transparent);
+  color: var(--color-mist);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+/* The trip identity line above Today — replaces the old setup screen title. */
+.trip-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 70px 0 14px;
+  padding: 10px 14px;
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-ink-2) 70%, transparent);
+  font-size: 13px;
+  color: var(--color-mist);
+}
+.trip-summary .route {
+  font-weight: 700;
+  color: var(--color-paper);
+  letter-spacing: 0.02em;
+}
+.trip-summary .when,
+.trip-summary .shift {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--color-ink-3);
+}
+.trip-summary .edit {
+  margin-left: auto;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border: 1px solid var(--color-line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-paper);
+  cursor: pointer;
+}
+.trip-summary .edit:hover {
+  border-color: #D96B43;
+  color: #D96B43;
+}
+.trip-summary .edit:focus-visible {
+  outline: 2px solid #D96B43;
+  outline-offset: 2px;
+}
+
+/* Visually hidden, still announced — used to spell out the "→" in the route. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Setup as an overlay on Today rather than a screen you navigate to. */
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 8vh 16px 16px;
+  background: color-mix(in srgb, var(--color-ink) 78%, transparent);
+  backdrop-filter: blur(3px);
+  overflow-y: auto;
+}
+.sheet-panel {
+  position: relative;
+  width: 100%;
+  max-width: 860px;
+  padding: 22px;
+  border: 1px solid var(--color-line);
+  border-radius: 16px;
+  background: var(--color-ink-2);
+}
+.sheet-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font: inherit;
+  font-size: 22px;
+  line-height: 1;
+  padding: 4px 10px;
+  border: 1px solid var(--color-line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-mist);
+  cursor: pointer;
+}
+.sheet-close:hover {
+  color: var(--color-paper);
+  border-color: #D96B43;
 }
