@@ -623,6 +623,7 @@ export default function Home() {
                 moves={run.moves}
                 citations={activeCitations}
                 adherence={data?.adherence}
+                baselineSource={data?.baselineSource}
                 onStartCrewSync={startShift}
                 onCheckIn={(status) => beginStream({ checkins: status })}
               />

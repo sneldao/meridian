@@ -47,6 +47,9 @@ export interface NudgeFeedScreenProps {
    *  `TripData.adherence` is itself optional at the caller (`page.tsx:43`), so
    *  the feed falls back to the fixture profile during the `/api/trip` window. */
   adherence?: AdherenceProfile;
+  /** "fixture" = the sample traveller's numbers. Shown on Today, not only in
+   *  the setup sheet, so a first-time visitor knows the plan is sample data. */
+  baselineSource?: "fixture" | "garmin";
   onStartCrewSync: () => void;
   /** D+1..D+4 daily touch: report how the selected day went — feeds replan. */
   onCheckIn?: (status: string) => void;
@@ -92,6 +95,7 @@ export function NudgeFeedScreen({
   moves,
   citations,
   adherence,
+  baselineSource,
   onStartCrewSync,
   onCheckIn,
 }: NudgeFeedScreenProps) {
@@ -288,6 +292,12 @@ export function NudgeFeedScreen({
             beam={heroBeam}
             readinessPct={readinessPct}
           />
+        )}
+
+        {baselineSource === "fixture" && (
+          <p className="demo-tag">
+            Sample traveller — these numbers are not your measurements.
+          </p>
         )}
 
         <div className="hr">
