@@ -15,9 +15,10 @@ footage never changes. Shot list lives in `docs/plan/hackathon-submissions.md`
 ## Subject
 
 Meridian — a crew of five agents that plans a day-by-day circadian shift
-before a trip across time zones. "Agents propose, code disposes": a
-deterministic phase-response scorer gates every plan. Live:
-https://meridian-afud.onrender.com
+around a trip across time zones: what you can bank pre-flight under your
+real adherence limits, and what honestly lands after touchdown. "Agents
+propose, code disposes": a deterministic phase-response scorer gates every
+plan. Live: https://meridian-afud.onrender.com
 
 ## What must appear (the sponsor deltas, in shot order)
 

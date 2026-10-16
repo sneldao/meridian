@@ -12,7 +12,7 @@ times, the crew debates intent, and a scorer backed by a phase-response model
 decides — a plan's declared shift is checked against what its zeitgeber timing
 can actually deliver.
 
-**Live:** https://meridian-afud.onrender.com · deck: `/pitch`
+**Live:** https://meridian-afud.onrender.com
 
 ## Quickstart
 
@@ -40,7 +40,7 @@ run history server-side (project `vpeakvspljdoxbwfsdvw`, see
 
 | Path | What |
 |---|---|
-| `/pitch` | Slide deck — scrollytelling pitch, self-contained
+| `/pitch` | *(removed — the deck retired with the pre-overhaul surface)* |
 | `/` | Today — the one step to do now, then the day timeline and readiness. No trip yet → setup; trip set → a trip chip with an Edit sheet. `?depth=guided` adds the deep-dive visuals |
 | `/review` | Saved plan: days, citations, .ics download |
 | `/history` | Past runs (with provider + fallback provenance) |

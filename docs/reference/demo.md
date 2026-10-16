@@ -73,8 +73,12 @@ per day and may need tuning.
 
 ## Routes for the pitch
 
-- `/pitch` — the slide deck (scrollytelling, self-contained)
-- `/` — the run: sun-track scene + crew feed + eval verdict cards
+- `/` — Today: the one step to do now, the day timeline, readiness. Pre-run
+  days show the solver's own preview (scorer-checked, compliance-floor-capped —
+  the eastward demo banks ~90 min pre-flight and says so, ~6.5h still owed at
+  landing). Post-flight days are planned after landing. `?depth=guided` adds
+  the deep-dive visuals; `/crew` is the operator rung (lens shell + crew feed
+  + eval verdict cards).
 - `/review` — the artifact: plan, citations, `.ics` download (persists via
   localStorage, survives refresh)
 - `/history` — past runs (`meridian:history` localStorage capped at 20, plus

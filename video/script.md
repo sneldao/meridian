@@ -1,6 +1,6 @@
 # Narration script — one line per scene (scene name = filename)
 
-sc01_coldopen: "Meridian. Agents that fly ahead of you — a crew of AI agents that resets your body clock before you ever land."
+sc01_coldopen: "Meridian. Agents that fly ahead of you — a crew of AI agents that shifts your body clock as far as you'll honestly go before you fly, and finishes the job after you land."
 
 sc02_crewfeed: "Mara reads the wearer's baseline. Jun pulls the literature — real papers, real DOIs — and live guidance from the open web."
 
