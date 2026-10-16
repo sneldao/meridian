@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fmtMin } from "@/domain/circadian";
+import { todayDayIndex } from "@/domain/today";
 import { summarizeCheckIn } from "@/domain/adherence";
 import type {
   AdherenceProfile,
@@ -125,11 +126,14 @@ export default function Home() {
       .then((d: TripData) => {
         setTripResolved(true);
         setData(d);
-        if (d?.trip?.days?.[1]?.label) {
-          setSelectedDayLabel(d.trip.days[1].label);
-        } else if (d?.trip?.days?.[0]?.label) {
-          setSelectedDayLabel(d.trip.days[0].label);
-        }
+        // Open on the day that is actually today; fall back to the first
+        // pre-flight day when the trip doesn't span today.
+        const todayIdx = d?.trip ? todayDayIndex(d.trip, new Date()) : null;
+        const daySpec =
+          (todayIdx !== null ? d.trip.days.find((x) => x.dayIndex === todayIdx) : undefined) ??
+          d?.trip?.days?.[1] ??
+          d?.trip?.days?.[0];
+        if (daySpec?.label) setSelectedDayLabel(daySpec.label);
       })
       .catch(() => setTripResolved(true));
   }, [tripQuery, departureDate]);
