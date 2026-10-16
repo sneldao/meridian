@@ -342,19 +342,19 @@ Lane 3 additionally: `bun run replay:check`, `bun run eval`, and
 
 ## Acceptance — the integrated `/` (final QA, Dev 3)
 
-- [ ] Fresh visit, replay provider, no keys: a populated Today in < 10 s for a trip starting today.
+- [ ] Fresh visit, replay provider, no keys: a populated Today in < 10 s for a trip starting today. *(left open: Chrome hydrates and populates, but the timing itself is unverified — CDP `ws.send` no-ops under this Bun/Chrome pair, so there's no reliable client-side timer here.)*
 - [ ] `previewPlan` over the demo trip < 50 ms client-side (**test still owed — 1.4 remainder**); the feed's memo recomputes only when trip/calendar/adherence/baseline change — landed in `5f3cc83` (`NudgeFeedScreen.tsx` memo deps), no re-solve on unrelated state.
-- [ ] No preview step before 07:00 London when a later legal slot exists; no step overlaps a fixed calendar event; every preview day passes the gate. *(lane 1: asserted at `tests/nudges.test.ts:50`, `tests/solver.test.ts:208-219`)*
-- [ ] "Your next step" is never a passed window; passed ones sit under "Missed". *(feed side landed `5f3cc83`; re-verify on the integrated page)*
-- [ ] One progress number; no 6%; eastbound readiness shows "of shift locked" after a run. *(feed side landed `5f3cc83`; needs a real run to show > 0)*
+- [x] No preview step before 07:00 London when a later legal slot exists; no step overlaps a fixed calendar event; every preview day passes the gate. *(lane 1: asserted at `tests/nudges.test.ts:50`, `tests/solver.test.ts:208-219`. Re-verified on the integrated build: earliest ask is 08:30; the lone 06:30 is the sleep-window wake — "lights out 23:40, up 06:30" — which the Decisions table exempts. No 04:50/05:20 asks.)*
+- [x] "Your next step" is never a passed window; passed ones sit under "Missed". *(feed side landed `5f3cc83`; verified on the integrated page: hero reads "Your next step · Fri 16 Oct · in 59m" with "Missed (3)" collapsed beneath)*
+- [ ] One progress number; no 6%; eastbound readiness shows "of shift locked" after a run. *(no 6% confirmed — the feed reads "0 of 4 done today". The "of shift locked" half still needs a *completed* crew run to observe; do that in final QA.)*
 - [x] No invented values anywhere — assert on rendered values, not source shape (see the grep note below); demo data is tagged "Demo profile". *(feed-side strings deleted in `5f3cc83`; the "Demo profile" tag is 3.2 — lane 3 verified in Chrome on both rungs: `62 ms`, `52 bpm`, `2/2`, `23:30` all absent)*
-- [ ] No ".ics" button without a real plan. *(landed `5f3cc83`)*
+- [x] No ".ics" button without a real plan. *(landed `5f3cc83`; no "Add .ics" anywhere in the pre-run DOM)*
 - [x] No "Trip & Flight Setup" title, no section numbers, no Guide/Setup pills; setup lives in the trip-summary sheet. *(landed `0d6d1f4`, `3aecb12` — verified in rendered DOM on `/`)*
 - [x] Flight windows show Best / Workable / Hardest, no percentages. *(landed `48223a0`; cards render badge + bestFor + times only)*
-- [ ] Every time is labelled with its city; the flight day shows a date.
+- [ ] Every time is labelled with its city; the flight day shows a date. *(re-checked on the integrated build — still unlabelled; task 2.7, Dev 2)*
 - [ ] Screen reader pass: no "Evening linen"-style alt text; DOM order = visual order.
 - [x] `/crew` and `?depth=guided` still work (evidence drawers open, deep-dive visuals visible). *(checked in headless Chrome: deep-dive tabs absent on Calm, present at `?depth=guided`; `/crew` renders with the today+3 default `2026-10-19` and no runtime errors. Evidence-drawer *open/close* itself still needs a human click-through.)*
-- [ ] `page.tsx` is the only `NudgeFeedScreen` caller and typechecks against the exported props type. *(props type exported in `5f3cc83`; caller is unique — check with `grep -rn "<NudgeFeedScreen" src/` — but `adherence` is still not passed (3.1's last step).)*
+- [x] `page.tsx` is the only `NudgeFeedScreen` caller and typechecks against the exported props type. *(`NudgeFeedScreenProps` exported at `NudgeFeedScreen.tsx:30`; `adherence` wired through the call site, so lane 3 task 3.1 is complete. Caller is unique: `grep -rn "<NudgeFeedScreen" src/` → `page.tsx` only.)*
 
 **Grep note.** The obvious single-line greps silently pass — `Math.max(6` is
 split across lines, as are several of the others. Assert on rendered values, not
