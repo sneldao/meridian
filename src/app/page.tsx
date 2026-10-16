@@ -24,13 +24,10 @@ import { meetingReadiness } from "@/domain/readiness";
 import {
   initVoice,
   setVoiceEnabled,
-  speakDialogue,
   speakOnce,
-  speakSentence,
   stopAll as stopVoiceAll,
   subscribeVoiceErrors,
 } from "@/lib/voice/engine";
-import { takeChunks } from "@/lib/voice/split";
 
 interface TripData {
   trip: Trip;
@@ -65,6 +62,11 @@ function defaultDepartureDate(now = new Date()): string {
   const dd = String(d.getDate()).padStart(2, "0");
   return `${d.getFullYear()}-${mm}-${dd}`;
 }
+
+/** Depth and voice choices persist per browser. Voice is only ever changed by
+ *  the traveller's own toggle, never by the depth dial. */
+const DEPTH_KEY = "meridian:depth";
+const VOICE_KEY = "meridian:voice";
 
 const MEMORY_TOOL_NAMES = new Set([
   "recallFindings",
@@ -103,17 +105,13 @@ export default function Home() {
   const trip = (run.trip ?? data?.trip ?? null) as Trip | null;
 
   const esRef = useRef<EventSource | null>(null);
-  const [voiceOn, setVoiceOn] = useState(true);
-  const voiceOnRef = useRef(true);
+  // Off until the traveller turns it on, on every depth rung. Guided makes the
+  // narrator available; it does not start it. Restored from storage on mount.
+  const [voiceOn, setVoiceOn] = useState(false);
   const [voiceAvail, setVoiceAvail] = useState(false);
-  const uttRef = useRef<
-    Record<string, { uId: string; total: number; sent: number; pending: string; last: string }>
-  >({});
-  const uSeqRef = useRef(0);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
   const stopVoice = useCallback(() => {
-    uttRef.current = {};
     stopVoiceAll();
   }, []);
 
@@ -221,73 +219,18 @@ export default function Home() {
           break;
         case "agent_start":
           push({ kind: "agent", agent: e.agent, title: e.title });
-          uttRef.current[e.agent] = {
-            uId: `${e.agent}-${++uSeqRef.current}`,
-            total: 0,
-            sent: 0,
-            pending: "",
-            last: "",
-          };
           break;
-        case "agent_token": {
-          const u = uttRef.current[e.agent];
-          const uStart = u ? u.total : undefined;
+        case "agent_token":
+          // Per-agent speech is the Operator huddle on /crew. Here the crew's
+          // words only stream into the drawer; the narrator speaks the handoff.
           setEntries((prev) => {
             const last = prev[prev.length - 1];
             if (last?.kind === "text" && last.agent === e.agent) {
               return [...prev.slice(0, -1), { ...last, text: last.text + e.text }];
             }
-            return [...prev, { kind: "text", agent: e.agent, text: e.text, uId: u?.uId, uStart }];
+            return [...prev, { kind: "text", agent: e.agent, text: e.text }];
           });
-          if (u) {
-            u.total += e.text.length;
-            u.pending += e.text;
-            const { chunks, rest } = takeChunks(u.pending);
-            const base = u.sent;
-            for (const c of chunks) {
-              speakSentence({
-                uId: u.uId,
-                agent: e.agent,
-                text: c.text,
-                charBase: base + c.start,
-                prev: u.last || undefined,
-              });
-              u.last = c.text;
-            }
-            u.sent += u.pending.length - rest.length;
-            u.pending = rest;
-          }
           break;
-        }
-        case "agent_end": {
-          const u = uttRef.current[e.agent];
-          if (u) {
-            const { chunks } = takeChunks(u.pending, { flush: true });
-            const base = u.sent;
-            chunks.forEach((c, i) => {
-              speakSentence({
-                uId: u.uId,
-                agent: e.agent,
-                text: c.text,
-                charBase: base + c.start,
-                prev: u.last || undefined,
-                utterTotal: i === chunks.length - 1 ? u.total : undefined,
-              });
-              u.last = c.text;
-            });
-            if (!chunks.length) {
-              speakSentence({
-                uId: u.uId,
-                agent: e.agent,
-                text: "",
-                charBase: base,
-                utterTotal: u.total,
-              });
-            }
-          }
-          delete uttRef.current[e.agent];
-          break;
-        }
         case "tool_call":
           push({ kind: "tool", agent: e.agent, text: `→ ${e.tool} ${e.detail}` });
           break;
@@ -314,8 +257,8 @@ export default function Home() {
           });
           break;
         case "briefing":
-          if (e.lines?.length) speakDialogue(e.lines);
-          else speakOnce(e.summary, "handoff");
+          // One narrator on the home surface, whatever the run's line count.
+          speakOnce(e.summary, "handoff");
           setHasSavedPlan(true);
           try {
             if (
@@ -481,11 +424,44 @@ export default function Home() {
       window.location.replace("/crew");
       return;
     }
+    // Calm is the default; a remembered Guided choice applies when the URL is silent.
+    let saved: string | null = null;
+    try {
+      saved = localStorage.getItem(DEPTH_KEY);
+    } catch {
+      /* storage unavailable */
+    }
+    const effective = d ?? (saved === "guided" ? "guided" : null);
     const t = setTimeout(() => {
-      setDepth(d);
+      setDepth(effective);
+      let savedVoice: string | null = null;
+      try {
+        savedVoice = localStorage.getItem(VOICE_KEY);
+      } catch {
+        /* storage unavailable */
+      }
+      // Voice is never switched on by depth: Guided only makes the narrator
+      // available. It plays when the traveller turns it on.
+      const voice = savedVoice === "1";
+      setVoiceOn(voice);
+      setVoiceEnabled(voice);
     }, 0);
     return () => clearTimeout(t);
   }, []);
+
+  /** Calm ↔ Guided from the depth control. Changing depth never changes voice. */
+  const chooseDepth = (next: "calm" | "guided") => {
+    setDepth(next === "guided" ? "guided" : null);
+    const url = new URL(window.location.href);
+    if (next === "guided") url.searchParams.set("depth", "guided");
+    else url.searchParams.delete("depth");
+    window.history.replaceState(null, "", url.toString());
+    try {
+      localStorage.setItem(DEPTH_KEY, next);
+    } catch {
+      /* storage unavailable */
+    }
+  };
 
   return (
     <div className="root" ref={menuRef}>
@@ -508,14 +484,18 @@ export default function Home() {
               className="btn"
               onClick={() => {
                 const next = !voiceOn;
-                voiceOnRef.current = next;
                 setVoiceOn(next);
                 setVoiceEnabled(next);
+                try {
+                  localStorage.setItem(VOICE_KEY, next ? "1" : "0");
+                } catch {
+                  /* storage unavailable */
+                }
                 if (!next) stopVoice();
               }}
               aria-pressed={voiceOn}
             >
-              {voiceOn ? "Voice on" : "Voice off"}
+              {voiceOn ? "Voice on" : "Hear the crew"}
             </button>
             <button
               type="button"
@@ -748,6 +728,30 @@ export default function Home() {
                 onCheckIn={(extra) => beginStream(extra)}
                 onBackToGuide={closeSetup}
               />
+            </div>
+          </div>
+        )}
+
+        {trip && (
+          <div className="depth-foot">
+            <div className="pill depth" role="group" aria-label="How much to see">
+              <button
+                type="button"
+                className={depth !== "guided" ? "on" : undefined}
+                aria-pressed={depth !== "guided"}
+                onClick={() => chooseDepth("calm")}
+              >
+                Today
+              </button>
+              <button
+                type="button"
+                className={depth === "guided" ? "on" : undefined}
+                aria-pressed={depth === "guided"}
+                onClick={() => chooseDepth("guided")}
+              >
+                See why
+              </button>
+              <Link href="/crew">Watch the crew</Link>
             </div>
           </div>
         )}
