@@ -5,9 +5,17 @@ import {
   buildDailyNudgesForDay,
   getFlightRecommendations,
   type NudgeCategory,
-  type TravelerNudge,
 } from "@/domain/nudges";
+import { previewPlan } from "@/domain/solver";
+import {
+  nowMinOnDay,
+  pickNextStep,
+  shiftLockedPct,
+  todayDayIndex,
+} from "@/domain/today";
+import { ADHERENCE_PROFILE } from "@/domain/fixtures";
 import type {
+  AdherenceProfile,
   CalendarEvent,
   CalendarMove,
   Citation,
@@ -19,7 +27,7 @@ import type {
 
 export type GuideViewMode = "focus" | "cards" | "timeline";
 
-interface NudgeFeedScreenProps {
+export interface NudgeFeedScreenProps {
   trip: Trip | null;
   phase: "idle" | "running" | "done";
   selectedDayLabel: string;
@@ -40,6 +48,10 @@ interface NudgeFeedScreenProps {
   citations: Citation[];
   ics?: string;
   selectedFlightId: string;
+  /** The traveller's compliance floor + adherence profile. Optional until
+   *  lane 3 (task 3.1) wires it through from /api/trip; until then the
+   *  preview falls back to the fixture profile rather than no floor. */
+  adherence?: AdherenceProfile;
   onOpenTripSetup: () => void;
   onStartCrewSync: () => void;
   /** D+1..D+4 daily touch: report how the selected day went — feeds replan. */
@@ -85,16 +97,19 @@ export function NudgeFeedScreen({
   citations,
   ics,
   selectedFlightId,
+  adherence,
   onOpenTripSetup,
   onStartCrewSync,
   onCheckIn,
 }: NudgeFeedScreenProps) {
+  const effectiveAdherence = adherence ?? ADHERENCE_PROFILE;
   const [viewMode, setViewMode] = useState<GuideViewMode>("focus");
   const [defaultViewMode, setDefaultViewMode] = useState<GuideViewMode>("focus");
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
   const [acceptedMoves, setAcceptedMoves] = useState<Set<string>>(new Set());
   const [categoryFilter, setCategoryFilter] = useState<NudgeCategory | "all">("all");
   const [expandedWhyId, setExpandedWhyId] = useState<string | null>(null);
+  const [showMissed, setShowMissed] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -169,10 +184,28 @@ export function NudgeFeedScreen({
     flightOptions.find((f) => f.recommended) ??
     flightOptions[0];
 
+  // Solver-backed preview (PR 0 contract): what the crew would lock today,
+  // without running the crew. Post-landing days and solver-infeasible days
+  // are honestly null — the feed renders "not placed yet — personalise".
+  const preview = useMemo(
+    () =>
+      trip
+        ? previewPlan({
+            trip,
+            calendar: calendarEvents,
+            adherence: effectiveAdherence,
+            baseline,
+          })
+        : null,
+    [trip, calendarEvents, effectiveAdherence, baseline],
+  );
+
   const allDayNudges = useMemo(() => {
     if (!trip || !activeDaySpec) return [];
     const plan =
-      locked.get(activeDaySpec.label) ?? drafts.get(activeDaySpec.label)?.plan;
+      locked.get(activeDaySpec.label) ??
+      drafts.get(activeDaySpec.label)?.plan ??
+      preview?.get(activeDaySpec.label)?.plan;
     const raw = buildDailyNudgesForDay({
       trip,
       dayIndex: activeDaySpec.dayIndex,
@@ -184,12 +217,13 @@ export function NudgeFeedScreen({
       verdicts: verdicts.get(activeDaySpec.label),
       dayRejected: rejected.has(activeDaySpec.label) || (verdicts.get(activeDaySpec.label) ?? []).some((v) => !v.feasible),
       memoryPath,
+      adherence: effectiveAdherence,
     });
     return [...raw].sort(
       (a, b) =>
         CANONICAL_ORDER.indexOf(a.category) - CANONICAL_ORDER.indexOf(b.category),
     );
-  }, [trip, activeDaySpec, locked, drafts, baseline, calendarEvents, moves, citations, verdicts, rejected, memoryPath]);
+  }, [trip, activeDaySpec, locked, drafts, preview, baseline, calendarEvents, moves, citations, verdicts, rejected, memoryPath, effectiveAdherence]);
 
   // Guided ribbon — the day's crew beats, distilled to one line. Only real
   // events, never reconstructed.
@@ -214,56 +248,55 @@ export function NudgeFeedScreen({
     return allDayNudges.filter((n) => n.category === categoryFilter);
   }, [allDayNudges, categoryFilter]);
 
-  const heroNudge: TravelerNudge | undefined =
-    allDayNudges.find((n) => !completedIds.has(n.id)) ?? allDayNudges[0];
-
-  // "The one thing to do now" — countdown + honest readiness. Countdown only
-  // shows when the selected day is today (or the fixture preview has no date).
-  const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+  // "Your next step" — the first incomplete step by TIME, never by category
+  // order. Windows whose end has passed collapse into "Missed". A day that
+  // isn't today (at its own place — see dayPlace) has nothing missed.
   const isToday =
-    !activeDaySpec?.date || activeDaySpec.date === new Date().toISOString().slice(0, 10);
-  const countdown = useMemo(() => {
-    if (!heroNudge || !isToday) return null;
+    !!trip &&
+    !!activeDaySpec &&
+    todayDayIndex(trip, new Date()) === activeDaySpec.dayIndex;
+  const nowMin =
+    trip && activeDaySpec && isToday
+      ? nowMinOnDay(trip, activeDaySpec.dayIndex, new Date())
+      : null;
+  const { next: heroNudge, missed: missedNudges } = pickNextStep(
+    allDayNudges,
+    completedIds,
+    nowMin,
+  );
+  const completedTodayCount = allDayNudges.filter((n) =>
+    completedIds.has(n.id),
+  ).length;
+  const totalTodayCount = allDayNudges.length;
+  const progressPct = totalTodayCount
+    ? Math.round((completedTodayCount / totalTodayCount) * 100)
+    : 0;
+  const countdown = (() => {
+    if (!heroNudge || nowMin === null) return null;
     const until = heroNudge.startMin - nowMin;
     if (until > 0) {
       const h = Math.floor(until / 60);
       const m = until % 60;
       return h > 0 ? `in ${h}h ${m}m` : `in ${m}m`;
     }
-    return until > -60 ? "now" : "window passed";
-  }, [heroNudge, isToday, nowMin]);
+    const end =
+      heroNudge.endMin < heroNudge.startMin
+        ? heroNudge.endMin + 1440
+        : heroNudge.endMin;
+    return nowMin < end ? "now" : null;
+  })();
 
-  const completedTodayCount = allDayNudges.filter((n) =>
-    completedIds.has(n.id),
-  ).length;
-  const totalTodayCount = Math.max(1, allDayNudges.length);
-  const progressPct = Math.max(
-    6,
-    Math.round((completedTodayCount / totalTodayCount) * 100),
-  );
+  // Honest readiness: the share of the required shift the locked days cover
+  // (sign-safe — eastbound shifts are negative). Before anything is locked,
+  // the hero shows just the done count.
+  const readinessPct = trip ? shiftLockedPct(trip, [...locked.values()]) : 0;
 
-  // Honest readiness: % of required shift actually locked by the crew —
-  // falls back to "today done" progress pre-run.
-  const lockedShiftMin = [...locked.values()].reduce((a, p) => a + p.shiftMin, 0);
-  const shiftPct = trip && trip.requiredShiftMin
-    ? Math.min(100, Math.round((lockedShiftMin / Math.abs(trip.requiredShiftMin)) * 100))
-    : 0;
-  const readinessValue = shiftPct > 0 ? shiftPct : progressPct;
-  const readinessLabel = shiftPct > 0 ? "of shift locked" : "of today done";
-
-  const shiftHours = trip ? Math.abs(trip.requiredShiftMin / 60) : 8;
+  const shiftHours = trip ? Math.abs(trip.requiredShiftMin / 60) : null;
   const shiftDir = trip?.direction === "east" ? "East" : "West";
 
   const downloadIcs = () => {
-    const content =
-      ics ||
-      [
-        "BEGIN:VCALENDAR",
-        "VERSION:2.0",
-        "PRODID:-//Meridian//Circadian Shift//EN",
-        "END:VCALENDAR",
-      ].join("\r\n");
-    const blob = new Blob([content], { type: "text/calendar" });
+    if (!ics) return;
+    const blob = new Blob([ics], { type: "text/calendar" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = "meridian-shift-plan.ics";
@@ -297,17 +330,29 @@ export function NudgeFeedScreen({
             <div className="city">
               {trip
                 ? `${trip.origin.name} (${trip.origin.code}) → ${trip.destination.name} (${trip.destination.code})`
-                : "London (LHR) → Tokyo (HND)"}
+                : "No trip set — personalise to plan one"}
             </div>
             <div className="stats">
+              {shiftHours !== null && (
+                <div className="stat">
+                  <em>
+                    {shiftHours}h {shiftDir}
+                  </em>
+                </div>
+              )}
               <div className="stat">
-                <em>
-                  {shiftHours}h {shiftDir}
-                </em>
-              </div>
-              <div className="stat">
-                <em>{readinessValue}%</em>
-                {readinessLabel}
+                {readinessPct > 0 ? (
+                  <>
+                    <em>{readinessPct}%</em>of shift locked
+                  </>
+                ) : (
+                  <>
+                    <em>
+                      {completedTodayCount}/{totalTodayCount}
+                    </em>
+                    done today
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -329,11 +374,13 @@ export function NudgeFeedScreen({
             <br />
             {chosenFlight
               ? `Departs ${chosenFlight.departsLocal} · Arrives ${chosenFlight.arrivesDest}`
-              : "Departs 11:20 · Arrives 07:50 (+1)"}
+              : "No flight window yet — personalise to see options"}
             <div className="acts">
-              <button type="button" className="btn" onClick={downloadIcs}>
-                Add .ics
-              </button>
+              {ics && (
+                <button type="button" className="btn" onClick={downloadIcs}>
+                  Add .ics
+                </button>
+              )}
               <button type="button" className="btn" onClick={onOpenTripSetup}>
                 Flight &amp; Setup
               </button>
@@ -358,78 +405,133 @@ export function NudgeFeedScreen({
               </svg>
             </div>
             <div>
-              <div className="mini">Your next move · {currentDayName}</div>
+              <div className="mini">Your next step · {currentDayName}</div>
             </div>
           </div>
 
-          <span className="tw" style={{ alignSelf: "flex-start", fontSize: "15px", fontWeight: 800 }}>
-            {countdown ?? ""}
-            {countdown ? " · " : ""}
-            {heroNudge ? heroNudge.timeWindow : "07:00 – 07:35"}
-          </span>
-
-          <h2>
-            {heroNudge
-              ? heroNudge.title
-              : "Get Direct Morning Sunlight on Your Face"}
-          </h2>
-
-          {heroNudge && (
-            <button
-              type="button"
-              onClick={() => toggleComplete(heroNudge.id)}
-              style={{
-                alignSelf: "flex-start",
-                background: "linear-gradient(90deg, #D96B43, #e99a6f)",
-                color: "#fff8ef",
-                border: "none",
-                borderRadius: "999px",
-                padding: "10px 22px",
-                fontSize: "13px",
-                fontWeight: 800,
-                letterSpacing: "0.04em",
-                cursor: "pointer",
-                marginTop: "2px",
-              }}
-            >
-              {completedIds.has(heroNudge.id) ? "✓ done — tap to undo" : "I did this →"}
-            </button>
+          {totalTodayCount === 0 ? (
+            <>
+              <h2>Not placed yet — personalise</h2>
+              <p className="s">
+                We couldn&apos;t honestly place this day against your calendar
+                and baseline, so there are no invented times here — run the
+                crew and it will draft this day with you.
+              </p>
+            </>
+          ) : heroNudge ? (
+            <>
+              <span className="tw" style={{ alignSelf: "flex-start", fontSize: "15px", fontWeight: 800 }}>
+                {countdown ?? ""}
+                {countdown ? " · " : ""}
+                {heroNudge.timeWindow}
+              </span>
+              <h2>{heroNudge.title}</h2>
+              <p className="s">{heroNudge.actionSummary}</p>
+              <div className="drawer">
+                <b>Why this helps</b>
+                <p>{heroNudge.whyItHelps}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => toggleComplete(heroNudge.id)}
+                style={{
+                  alignSelf: "flex-start",
+                  background: "linear-gradient(90deg, #D96B43, #e99a6f)",
+                  color: "#fff8ef",
+                  border: "none",
+                  borderRadius: "999px",
+                  padding: "10px 22px",
+                  fontSize: "13px",
+                  fontWeight: 800,
+                  letterSpacing: "0.04em",
+                  cursor: "pointer",
+                  marginTop: "2px",
+                }}
+              >
+                Done
+              </button>
+              {missedNudges.length > 0 && (
+                <div style={{ width: "100%" }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowMissed((v) => !v)}
+                    aria-expanded={showMissed}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      padding: 0,
+                      cursor: "pointer",
+                      color: "#7a6a5c",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                    }}
+                  >
+                    Missed ({missedNudges.length}) {showMissed ? "▲" : "▼"}
+                  </button>
+                  {showMissed && (
+                    <ul style={{ listStyle: "none", margin: "6px 0 0", padding: 0 }}>
+                      {missedNudges.map((m) => (
+                        <li
+                          key={m.id}
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "baseline",
+                            gap: "10px",
+                            padding: "6px 0",
+                            borderTop: "1px solid #eee3d6",
+                            fontSize: "12px",
+                            color: "#7a6a5c",
+                          }}
+                        >
+                          <span>
+                            {m.timeWindow.split("–")[0].trim()} · {m.title}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => toggleComplete(m.id)}
+                            style={{
+                              background: "transparent",
+                              border: "1px solid #e3d5c3",
+                              borderRadius: 999,
+                              padding: "3px 10px",
+                              fontSize: "11px",
+                              fontWeight: 700,
+                              color: "#5b4d41",
+                              cursor: "pointer",
+                            }}
+                          >
+                            Done
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <h2>All done today ✓</h2>
+              <p className="s">
+                Every step is marked done — the rest of the shift happens
+                tonight, on the plan you kept.
+              </p>
+            </>
           )}
 
-          <p className="s">
-            {heroNudge
-              ? heroNudge.actionSummary
-              : "Step outside within 20 min of waking (07:00). Get 30 min of natural sky light on your eyes."}
-          </p>
-
-          <div className="drawer">
-            <b>Why this matters for landing at 100%</b>
-            <p>
-              {heroNudge
-                ? heroNudge.whyItHelps
-                : "Morning light anchors your body clock for the shift ahead."}
-            </p>
-          </div>
-
-          <div className="meter">
-            <div className="t">
-              {completedTodayCount} of {allDayNudges.length || 5} done today
+          {totalTodayCount > 0 && (
+            <div className="meter">
+              <div className="t">
+                {completedTodayCount} of {totalTodayCount} done today
+              </div>
+              <div className="bar">
+                <i style={{ width: `${progressPct}%` }} />
+              </div>
             </div>
-            <div className="bar">
-              <i style={{ width: `${progressPct}%` }} />
-            </div>
-          </div>
+          )}
 
           <div className="cta">
-            <button
-              type="button"
-              className="p1"
-              onClick={() => heroNudge && toggleComplete(heroNudge.id)}
-            >
-              {heroNudge && completedIds.has(heroNudge.id)
-                ? "Completed — Undo"
-                : "Mark Nudge Done"}
-            </button>
             <button
               type="button"
               className="p2"
@@ -437,52 +539,45 @@ export function NudgeFeedScreen({
               disabled={phase === "running"}
             >
               {phase === "running"
-                ? `Checking your plan (${locked.size}/${days.length || 5})…`
+                ? `Checking your plan (${locked.size}/${days.length})…`
                 : "Personalise with the crew"}
             </button>
           </div>
-          {phase === "idle" && (
+          {phase === "idle" && totalTodayCount > 0 && (
             <p style={{ marginTop: "8px", fontSize: "11px", color: "#7a6a5c" }}>
-              Showing a preview for this route — personalise it and the crew
-              tailors every step to your baseline and calendar.
+              This is the solver&apos;s preview — the same placement the crew
+              would lock. Personalise and every step is tailored to your
+              calendar and baseline.
             </p>
           )}
         </div>
       </div>
 
-      {/* Day Selector Pills */}
-      <div
-        className="row days rise"
-        style={{ animationDelay: ".3s" }}
-        role="group"
-        aria-label="Select trip day"
-      >
-        {(days.length > 0
-          ? days
-          : [
-              { dayIndex: 0, label: "D-2", date: "2026-10-16" },
-              { dayIndex: 1, label: "D-1", date: "2026-10-17" },
-              { dayIndex: 2, label: "D0", date: "2026-10-18" },
-              { dayIndex: 3, label: "D+1", date: "2026-10-19" },
-              { dayIndex: 4, label: "D+2", date: "2026-10-20" },
-            ]
-        ).map((d) => {
-          const isFlight =
-            trip ? d.dayIndex === trip.departureDayIndex : d.label === "D0";
-          const isSelected = d.label === currentLabel;
-          return (
-            <button
-              key={d.dayIndex}
-              type="button"
-              onClick={() => onSelectDay(d.label)}
-              aria-pressed={isSelected}
-              className={`day ${isSelected ? "on" : ""}`}
-            >
-              {isFlight ? "✈️ Fly" : friendlyDayLabel(d, trip?.departureDayIndex)}
-            </button>
-          );
-        })}
-      </div>
+      {/* Day Selector Pills — real trip days only, never invented fixture dates */}
+      {days.length > 0 && (
+        <div
+          className="row days rise"
+          style={{ animationDelay: ".3s" }}
+          role="group"
+          aria-label="Select trip day"
+        >
+          {days.map((d) => {
+            const isFlight = d.dayIndex === trip?.departureDayIndex;
+            const isSelected = d.label === currentLabel;
+            return (
+              <button
+                key={d.dayIndex}
+                type="button"
+                onClick={() => onSelectDay(d.label)}
+                aria-pressed={isSelected}
+                className={`day ${isSelected ? "on" : ""}`}
+              >
+                {isFlight ? "✈️ Fly" : friendlyDayLabel(d, trip?.departureDayIndex)}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Guided ribbon — the day's crew beats in one line */}
       {dayBeat && (
@@ -646,13 +741,7 @@ export function NudgeFeedScreen({
             <div className="mini">
               Day {activeDayIndex + 1} of {days.length} · {currentLabel}
             </div>
-            <strong style={{ fontSize: "15px" }}>
-              {Math.min(
-                100,
-                Math.round(((activeDayIndex + 1) / Math.max(1, days.length)) * 100),
-              )}
-              % body-clock shift aligned
-            </strong>
+            <strong style={{ fontSize: "15px" }}>{currentDayName}</strong>
           </div>
           <button
             type="button"
@@ -705,7 +794,9 @@ export function NudgeFeedScreen({
             );
           })}
           {filteredNudges.length === 0 && (
-            <p style={{ fontSize: "12px", color: "#7a6a5c" }}>Nothing on this day yet.</p>
+            <p style={{ fontSize: "12px", color: "#7a6a5c" }}>
+              Not placed yet — personalise.
+            </p>
           )}
         </div>
       )}

@@ -72,7 +72,12 @@ and underuses the web canvas (space, map, route, horizon).
    a consumer expects to act (timer, done, remind), gets a document.
 2. **Hero is decorative.** The terminator panel is pretty but answers
    nothing; it should answer "what do I do next?"
-3. **Flight advisor is fabricated.** `getFlightRecommendations` returns
+3. **Flight advisor is fabricated.** *(resolved in `48223a0` —
+   `FlightOptionRecommendation` now carries `badge: Best|Workable|Hardest` +
+   `bestFor`; `flightNumberExample`, `landingReadinessPct` and `headline` are
+   deleted from `nudges.ts`, so nothing reads as a bookable flight. Home
+   feed side landed in `5f3cc83`; the setup-screen rendering is task 3.8.)*
+   `getFlightRecommendations` returns
    hardcoded flight times + readiness percents presented as real — a user
    will try to book "Departs 11:20". Wire real data or label "ideal
    windows".
