@@ -22,6 +22,46 @@ kills jet lag with one instruction at a time" — with the agent depth
 available on tap (the dial is our "there's real tech under this" answer).
 Calm surface + provable engine = the pitch shape.
 
+## Consumer-appeal research synthesis (2026-10-15, via Tavily)
+
+Patterns that survive across the sources (wellness apps, Duolingo, Calm,
+onboarding/retention literature) — mapped to Meridian:
+
+**Design**
+- **Value before friction.** Show value before asking for anything; first
+  session delivers it fast. We already do: pick route → plan streams, zero
+  signup. Push further: the feed should show a useful preview instantly
+  (replay-served nudges) so "run the crew" feels like upgrading, not
+  starting from empty.
+- **One goal per screen; visible progress.** Day strip + readiness % is the
+  progress scaffold — keep one dominant action per view.
+- **Wellness = trust state.** Users open jet-lagged and exhausted; readable
+  type, calm pace, no alarmist reds. Our evidence chips are the right tone —
+  "here's the proof" reads as care, not bureaucracy.
+- **Habit loop is the check-in.** D+1..D+4 morning card + readiness moving
+  is the retention loop. Streak equivalent = trips, not days.
+
+**Positioning & marketing**
+- **Outcome language, not mechanism.** Duolingo sells "study abroad," not
+  spaced repetition. Our equivalent: "Land at 100%" is right — push it into
+  pain terms everywhere ("arrive ready for day one," never "circadian
+  phase-advance plan" on the consumer surface).
+- **The shareable artifact is the viral loop.** The plan card / .ics is our
+  Duo-progress-screenshot: make the handoff card forwardable (a travel
+  companion can open your plan read-only). Cheap share = organic channel.
+- **Crew as mascot.** The five named agents are the personality asset —
+  Calm has silence, Duo has the owl, we have a flight crew. Keep their
+  names/faces consistent on the consumer surface; they're already the brand.
+- **Free, instant trial.** The live URL with zero signup IS the funnel —
+  every share link should land a stranger inside 10 seconds.
+- **Honesty as differentiator.** "Evidence-linked, not medical advice" is a
+  positioning strength in wellness, not a caveat — say it proudly.
+
+**For the video:** open on the pain + one-instruction promise ("fly ahead
+of yourself"), consumer face first — the crew reveal is the second act.
+Calacanis-shaped: five-second comprehension, traction-shaped demo, tech
+depth available on tap.
+
 ## Diagnosis: app-cosplay
 
 The surface borrows mobile-app idioms (bento cards, pill navs, chunky

@@ -54,8 +54,9 @@ different:
   ledger. This is where you watch the model work.
 
 The public URL runs the deterministic replay transcript — zero cost, can't
-burn tokens on a judge's phone. A live open-model run is shown in the demo
-video and reproducible locally with `AGENT_PROVIDER=nebius bun run dev`.
+burn tokens on a judge's phone. A live open-model run is one env var away:
+`AGENT_PROVIDER=nebius bun run dev` locally, or the same variable flipped on
+the Render service.
 
 <!-- [ADD when ready] **Video:** ~3 min — shot list in tracker: calm face →
      why-expansion → /crew feed → scorer rejection → hop path → .ics → MCP.
@@ -176,8 +177,8 @@ a fleet of crews. The first real user test is next.
 - **Best Use of ElevenLabs** — per-agent voice layer (`src/lib/voice/`): five
   distinct voices streamed chunk-aligned over token generation, char-aligned
   karaoke highlighting, multi-voice dialogue mode for the plan handoff.
-- **Best Use of Entire** — built almost entirely by an agent; session:
-  [TODO: DevRelay link]
+<!-- [ADD when ready] - **Best Use of Entire** — built almost entirely by an
+     agent; session: <DevRelay link>. Uncomment once the link exists. -->
 
 *This post also serves as the project write-up for Graph Hacks (FalkorDB ×
 WeMakeDevs), Track 2 — Agent Memory and Coordination.*
@@ -187,17 +188,20 @@ WeMakeDevs), Track 2 — Agent Memory and Coordination.*
 Morning check-ins already trigger a replan loop — report your sleep, the crew
 re-scores the remaining days. The missing piece for the advisor workflow is
 multi-client management; the `/team` route is a first pass at a fleet view.
-[TODO: 1–2 closing sentences — land the side-hustle story]
 
-<!-- PRE-PUBLISH CHECKLIST
-- [ ] Resolve [VERIFY] markers against final graph state (Sun morning)
-- [ ] Resolve every [TODO]: video link, DevRelay session link, first-user note
+The bet underneath all of it: the advisors who win the next decade won't be
+the ones with the biggest budgets — they'll be the ones whose tools remember.
+Open models are what make a five-agent crew with a graph behind it cheap
+enough to be a side hustle instead of an enterprise contract.
+
+<!-- PRE-PUBLISH CHECKLIST (publishing today)
+- [ ] Strip these comment blocks before pasting into the DEV editor
+- [ ] Use the challenge submission template (adds #devchallenge #hf26challenge)
 - [ ] List DEV handles of teammates if any (teams ≤4 — built at Accel with others?)
-- [ ] Repo is public ✓ (github.com/sneldao/meridian)
+- [ ] Repo is public ✓ · live URL up ✓ · graph seeded + health live ✓
 - [ ] README note: commits after Oct 18 must be declared (rules requirement)
-- [ ] Tags: devchallenge, hf26challenge (auto-added by template)
-- [ ] PUBLISH BEFORE 19:29 BST Sun — link the live DEV URL in the Graph Hacks
-      submission as the blog-post prize entry (AirPods)
-- [ ] Decide: public URL stays on replay, or add a live featherless Render
-      service (strengthens "AI runtime" claim — see tracker)
+- [ ] Sunday: paste the live DEV URL into the Graph Hacks submission (blog
+      prize) — deadline 19:29 BST, earlier than DEV's
+- [ ] Optional later adds (post stays editable): demo video, DevRelay link →
+      Entire category, first-user quote, .tech domain
 -->
