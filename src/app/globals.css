@@ -158,6 +158,18 @@ body {
   border-radius: 999px;
   padding: 4px;
 }
+.pill button {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  border: 0;
+  background: none;
+  padding: 7px 14px;
+  border-radius: 999px;
+  color: #7a6a5c;
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s;
+}
 .pill a {
   font-size: 12px;
   font-weight: 700;
@@ -168,11 +180,18 @@ body {
   transition: color 0.2s, background 0.2s;
   text-decoration: none;
 }
-.pill a.on {
+.pill a.on,
+.pill button.on {
   background: #1E1B18;
   color: #F5EFE6;
 }
-.pill a:hover {
+.depth-foot {
+  display: flex;
+  justify-content: center;
+  margin: 28px 0 8px;
+}
+.pill a:hover,
+.pill button:hover {
   color: #D96B43;
 }
 .pill a.on:hover {
