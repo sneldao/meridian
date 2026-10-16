@@ -182,7 +182,14 @@ export function evaluatePlan(input: EvalInput): EvalResult {
         message: `${day.label}: ${Math.abs(day.shiftMin)}min shift exceeds the ${MAX_SHIFT_MIN_PER_DAY}min/day physiological ceiling.`,
       });
     }
-    if (i > 0 && Math.sign(day.shiftMin) !== Math.sign(input.days[i - 1].shiftMin) && day.shiftMin !== 0) {
+    // Direction flips are judged against the most recent day that actually
+    // shifted — a hold day is a pause, not a direction, so 0 → −90 after
+    // holds is a resume, not a yo-yo.
+    const prevShift = input.days
+      .slice(0, i)
+      .reverse()
+      .find((d) => d.shiftMin !== 0);
+    if (day.shiftMin !== 0 && prevShift && Math.sign(day.shiftMin) !== Math.sign(prevShift.shiftMin)) {
       violations.push({
         code: "SHIFT_DIRECTION_FLIP",
         dayIndex: day.dayIndex,

@@ -150,8 +150,9 @@ describe("solveDay", () => {
   });
 
   test("converts the previous day's frame across the flight", () => {
-    // D+1 solves from the flight day in destination time: the locked 22:25
-    // London bedtime becomes 06:25 Tokyo (+480min), so a hold draft keeps it.
+    // D+1 solves from the flight day in destination time: the locked
+    // 22:25/05:15 London schedule becomes 06:25/13:15 Tokyo (+480min), and a
+    // −90 draft shifts it from there.
     const flightPlan: DayPlan = {
       dayIndex: 3,
       label: "Flight",
@@ -169,9 +170,9 @@ describe("solveDay", () => {
       baseline: GARMIN_BASELINE,
     });
     expect(solved).not.toBeNull();
-    expect(solved!.plan.targetBedtimeMin).toBe((22 * 60 + 25 + 480) % 1440); // 06:25 Tokyo
-    expect(solved!.plan.targetWakeMin).toBe((5 * 60 + 15 + 480) % 1440); // 13:15 Tokyo
-    expect(Math.abs(solved!.plan.shiftMin)).toBe(0);
+    expect(solved!.plan.targetBedtimeMin).toBe((22 * 60 + 25 + 480 - 90) % 1440); // 04:55 Tokyo
+    expect(solved!.plan.targetWakeMin).toBe((5 * 60 + 15 + 480 - 90) % 1440); // 11:45 Tokyo
+    expect(solved!.plan.shiftMin).toBe(-90); // a hold no longer blocks resuming
   });
 });
 
