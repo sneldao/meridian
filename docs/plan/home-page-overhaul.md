@@ -1,7 +1,7 @@
 # Home page overhaul — accuracy, one flow, honest claims
 
 2026-10-16, updated same day after PR 0 merged, then again by lane 2 alongside
-PR #2 so the status notes and `file:line` citations match the code on
+PR #2 and PR #4 so the status notes and `file:line` citations match the code on
 `overhaul/main`. Derived from a critical
 review of `/` against
 [next-steps.md](next-steps.md), [consolidation.md](consolidation.md),
@@ -10,19 +10,22 @@ review of `/` against
 developers. **Phase A items merge first (target: 17 Oct EOD, ahead of the
 18 Oct Graph Hacks deadline)**; B and C follow in the same lanes.
 
-**Branch state (updated 16 Oct, after the three-lane integration):** `overhaul/main`
+**Branch state (updated 16 Oct, after lane 2's Phase B/C PR):** `overhaul/main`
 is the integration branch — every lane PRs into it, and merging it into `main`
 is the deploy step (Render auto-deploys `main`), which stays the orchestrator's
 call. All three lanes are integrated there (`ec0b64a`, `7bf0757`, `e7f4b41`,
-`42d3301`, tip `8ce0b80`): lane 1's Phase A (`48223a0` → `96fe3b1`, plus the
+`42d3301`, `8ce0b80`, `1de835c`): lane 1's Phase A (`48223a0` → `96fe3b1`, plus the
 scorer fixes `c548c9c`/`1d4c94c`), lane 3's 3.1–3.7 and 3.9–3.10 (`eac1a23`,
 `0d6d1f4`, `3aecb12`, `bb6a2d5`) and lane 2's 2.1–2.4 (`5f3cc83`, PR #2).
 `8ce0b80` fixed the last integration bug — the feed opened on `days[1]` rather
-than the day `todayDayIndex` says is today. `adherence` is passed at the call
+than the day `todayDayIndex` says is today. Dev 3's follow-up `1de835c` carries
+the final QA pass (`118a92e`) and the eval fail-fast fix (`414b587`).
+Lane 2's 2.5–2.8 are open as **PR #4** (`overhaul/dev2-today-b`).
+`adherence` is passed at the call
 site now (`page.tsx:645`), which closes 3.1 — but the prop **stays optional**,
 because `TripData.adherence` is itself optional (`page.tsx:43`); see "The React
 prop contract" below. **CSS lane blocks:** `lane: shell` landed with `eac1a23`
-and `lane: today` lands with lane 2's Phase B PR; Dev 1's `lane: engine` block
+and `lane: today` lands with PR #4; Dev 1's `lane: engine` block
 is still missing, so 3.10 still owes that reconciliation.
 
 ## Why
@@ -108,9 +111,8 @@ PR 0 was the only PR that landed before the others started (as
 `overhaul/dev1-contract` → `48223a0`). Each subsequent PR must name the contract
 items it consumes; a lane must not implement against a contract item that isn't
 on `overhaul/main` — if it's urgent, land the contract stubs as their own commit
-first. Current state: Dev 1's Phase A is on `overhaul/main` through `96fe3b1`;
-Dev 2's is open as PR #2 (`5f3cc83`); Dev 3's Phase A is still only in a local
-branch.
+first. Current state: all three Phase A lanes are on `overhaul/main` (see
+**Branch state** above); lane 2's 2.5–2.8 are open as PR #4.
 
 Merge order within a phase: **lane 1 → lane 3 → lane 2.** Lane 3 rewrites
 `page.tsx`, which is lane 2's only call site (re-grep `<NudgeFeedScreen` —
@@ -294,7 +296,7 @@ it).
 | 3.7 | B | Default departure = client-local today + 3 in `page.tsx` (was `page.tsx:57`) **and `src/app/crew/page.tsx:52`** — after 18 Oct a `/crew` visit would otherwise default to a past trip. `api/crew/run/route.ts:19` reads the query param and needs no change. Fixtures in `src/domain/fixtures.ts` + `src/state/fixture-events.json` stay frozen (test/replay inputs). URL `?date=` still wins. **Verify** `bun run replay:check`, `bun run eval` (`scripts/eval.ts:29-31` hardcodes `2026-10-18` in all three scenarios) and a replay-provider run still work for a non-`DEMO_DEPARTURE` date before merging; report if replay is pinned to the fixture date. (Replay's floor policy already landed — `replay.ts:172`, `replay-plan.ts:25` thread `adherence` — so a `replay:check` failure after your change is a new regression, not the old script.) | 🟢 **Landed (`f744b66`)** — today+3 local default on `/` and `/crew`, set in the mount effect (no hydration mismatch), fetch guarded on a non-empty date, `?date=` still wins. ⚠ **`bun run eval` hangs by default**: it runs `AGENT_PROVIDER=featherless` and blocks on the provider. Use `AGENT_PROVIDER=replay bun run eval` — then all 3 scenarios pass. Pre-existing, reproduced on the base commit. Worth defaulting eval to replay when no key is present. |
 | 3.8 | C | ✅ **Already satisfied** — cards render `badge` + `bestFor` + `departsLocal` → `arrivesDest` only (`TripSetupScreen.tsx`, unchanged by lane 3). |
 | 3.9 | C | Copy sweep of `page.tsx`, `TripSetupScreen`, menu, `RoutePicker`; remove orphan labels ("8 flexible", "biologically ready" → "3 movable events", "Pitch: ready"). | 🟢 **Landed (`3aecb12`)** — section numbers dropped, "Circadian guidance" reworded, "Personalize" → "Personalise", "N flexible" → "N movable", "biologically ready" → "meetings ready", menu items renamed; also collapsed a `hasSavedPlan` conditional whose branches were identical. |
-| 3.10 | C | 🟡 **Partial (`bb6a2d5`)** — `.titlebar` rules deleted (incl. the responsive override); README "Active" link landed in `6b7989f`. **Kept deliberately:** `.pill` (the nav still uses it for the Crew link) and the view-mode/filter styles (Dev 2 still renders that row until 2.5). Delete those after 2.5 merges. **2.5 is ready to merge now** (lane 2's Phase B PR), so the orphan list is: `.chips`, `.view`, `.deck` (+ its two `@media` rules), `.tile` and its children (`.ph`, `.ph0`, `.ph1`, `.ph2`, `.tb`, `.cat`, `.tk`, `.chk`, `.sleep-span`), `.arc`, `.flt`, `.acts`, `.city`. **Not orphans:** `.route` (`TripSummary.tsx:37` renders `className="route"` and inherits the bare rule at `globals.css:359` — the amber uppercase label, which is what the chip wants), `.meter`, `.mini`, `.drawer`, `.evrow`, `.evchip` (all still used by the rail and the hero). |
+| 3.10 | C | 🟡 **Partial (`bb6a2d5`)** — `.titlebar` rules deleted (incl. the responsive override); README "Active" link landed in `6b7989f`. **Kept deliberately:** `.pill` (the nav still uses it for the Crew link) and the view-mode/filter styles (Dev 2 still renders that row until 2.5). Delete those after 2.5 merges. **2.5 is up as PR #4**, so the orphan list is: `.chips`, `.view`, `.deck` (+ its two `@media` rules), `.tile` and its children (`.ph`, `.ph0`, `.ph1`, `.ph2`, `.tb`, `.cat`, `.tk`, `.chk`, `.sleep-span`), `.arc`, `.flt`, `.acts` (⚠ the new rail row uses `.tl-acts`, so match `className="acts"` or `.acts {` rather than a bare token grep), `.city`. **Not orphans:** `.route` (`TripSummary.tsx:37` renders `className="route"` and inherits the bare rule at `globals.css:359` — the amber uppercase label, which is what the chip wants), `.meter`, `.mini`, `.drawer`, `.evrow`, `.evchip` (all still used by the rail and the hero). |
 
 ## Sequencing
 
@@ -343,19 +345,19 @@ Lane 3 additionally: `bun run replay:check`, `bun run eval`, and
 
 ## Acceptance — the integrated `/` (final QA, Dev 3)
 
-- [ ] Fresh visit, replay provider, no keys: a populated Today in < 10 s for a trip starting today.
+- [ ] Fresh visit, replay provider, no keys: a populated Today in < 10 s for a trip starting today. *(left open: Chrome hydrates and populates, but the timing itself is unverified — CDP `ws.send` no-ops under this Bun/Chrome pair, so there's no reliable client-side timer here.)*
 - [ ] `previewPlan` over the demo trip < 50 ms client-side (**test still owed — 1.4 remainder**); the feed's memo recomputes only when trip/calendar/adherence/baseline change — landed in `5f3cc83` (`NudgeFeedScreen.tsx` memo deps), no re-solve on unrelated state.
-- [ ] No preview step before 07:00 London when a later legal slot exists; no step overlaps a fixed calendar event; every preview day passes the gate. *(lane 1: asserted at `tests/nudges.test.ts:50`, `tests/solver.test.ts:208-219`)*
-- [x] "Your next step" is never a passed window; passed ones sit under "Missed". *(landed `5f3cc83`; re-verified in Chrome on this PR: hero "in 45m · 23:40 London", "Missed (3)" expands to "08:30 London · Get outside light" etc.)*
-- [x] One progress number; no 6%; eastbound readiness shows "of shift locked" after a run. *(landed `5f3cc83`; 2.6 makes it structural — the hero-left stat renders only when readiness > 0 (`NudgeFeedScreen.tsx:283`), so the done count exists exactly once. Verified with a replay run: left panel "19% of shift locked", meter "0 of 4 done".)*
+- [x] No preview step before 07:00 London when a later legal slot exists; no step overlaps a fixed calendar event; every preview day passes the gate. *(lane 1: asserted at `tests/nudges.test.ts:50`, `tests/solver.test.ts:208-219`. Re-verified on the integrated build: earliest ask is 08:30; the lone 06:30 is the sleep-window wake — "lights out 23:40, up 06:30" — which the Decisions table exempts. No 04:50/05:20 asks.)*
+- [x] "Your next step" is never a passed window; passed ones sit under "Missed". *(landed `5f3cc83`; re-verified in Chrome on both the integrated build ("in 59m") and this PR — hero "in 32m · 23:40 London", and "Missed (3)" expands to "08:30 London · Get outside light" etc.)*
+- [x] One progress number; no 6%; eastbound readiness shows "of shift locked" after a run. *(no 6% confirmed by Dev 3 on the integrated build: the feed reads "0 of 4 done today". 2.6 makes it structural — the hero-left stat renders only when readiness > 0 (`NudgeFeedScreen.tsx:283`), so the done count exists exactly once. Verified with a completed replay run: left panel "19% of shift locked", meter "0 of 4 done".)*
 - [x] No invented values anywhere — assert on rendered values, not source shape (see the grep note below); demo data is tagged "Demo profile". *(feed-side strings deleted in `5f3cc83`; the "Demo profile" tag is 3.2 — lane 3 verified in Chrome on both rungs: `62 ms`, `52 bpm`, `2/2`, `23:30` all absent)*
-- [x] No ".ics" button without a real plan. *(landed `5f3cc83`; 2.6 went further — the feed has no `.ics` affordance at all, so the only one is the post-run handoff banner (`HandoffBanner.tsx:141`) plus the guided deep-dive)*
+- [x] No ".ics" button without a real plan. *(landed `5f3cc83`, no "Add .ics" in the pre-run DOM; 2.6 went further — the feed has no `.ics` affordance at all, so the only ones left sit behind a completed run: `BriefingCard.tsx:167`, the guided deep-dive that embeds it, and `HandoffBanner.tsx:141`)*
 - [x] No "Trip & Flight Setup" title, no section numbers, no Guide/Setup pills; setup lives in the trip-summary sheet. *(landed `0d6d1f4`, `3aecb12` — verified in rendered DOM on `/`)*
 - [x] Flight windows show Best / Workable / Hardest, no percentages. *(landed `48223a0`; cards render badge + bestFor + times only)*
-- [x] Every time is labelled with its city; the flight day shows a date. *(2.7 — `fmtMin` + `dayPlace().city` at `NudgeFeedScreen.tsx:144`, and `friendlyDayLabel` (`:58`) puts the date on the flight chip. Chrome: "07:00 London" on D-2/D-3, "07:00 Tokyo" on D+1, chip "✈ Mon 19 Oct".)*
+- [x] Every time is labelled with its city; the flight day shows a date. *(was still unlabelled on the integrated build — that is 2.7, landed here: `fmtMin` + `dayPlace().city` at `NudgeFeedScreen.tsx:144`, and `friendlyDayLabel` (`:58`) puts the date on the flight chip. Chrome: "07:00 London" on D-2/D-3, "07:00 Tokyo" on D+1, chip "✈ Mon 19 Oct".)*
 - [x] Screen reader pass: no "Evening linen"-style alt text; DOM order = visual order. *(2.5 deleted the deck, so the component has no `<img>` left and the hero art is `aria-hidden`; the a11y tree reads hero → day pills → ribbon → check-in → rail rows in visual order. A voice-over listen is still worth a human pass.)*
 - [x] `/crew` and `?depth=guided` still work (evidence drawers open, deep-dive visuals visible). *(checked in headless Chrome: deep-dive tabs absent on Calm, present at `?depth=guided`; `/crew` renders with the today+3 default `2026-10-19` and no runtime errors. Evidence-drawer *open/close* itself still needs a human click-through.)*
-- [x] `page.tsx` is the only `NudgeFeedScreen` caller and typechecks against the exported props type. *(props type exported in `5f3cc83`; caller is unique — `grep -rn "<NudgeFeedScreen" src/` → `page.tsx:16` + `:630`; `adherence` passed at `:645` since `42d3301`; 2.6's three-prop deletion is applied at that same call site in this PR)*
+- [x] `page.tsx` is the only `NudgeFeedScreen` caller and typechecks against the exported props type. *(`NudgeFeedScreenProps` exported at `NudgeFeedScreen.tsx:26`; caller is unique — `grep -rn "<NudgeFeedScreen" src/` → `page.tsx:16` + `:630`. `adherence` is passed at `:645` since `42d3301`, so lane 3 task 3.1 is complete; 2.6's three-prop deletion is applied at that same call site in this PR.)*
 
 **Grep note.** The obvious single-line greps silently pass — `Math.max(6` is
 split across lines, as are several of the others. Assert on rendered values, not

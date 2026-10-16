@@ -8,8 +8,16 @@
 // real connected Google Calendar.
 //
 // Usage:
-//   bun run eval            # run the scenario matrix, persist + print
-//   bun run eval --report   # print the trend from persisted history, no run
+//   bun run eval                        # run the scenario matrix, persist + print
+//   bun run eval -- --report            # print the trend from persisted history, no run
+//   AGENT_PROVIDER=replay bun run eval  # free + offline; the default provider spends tokens
+//   EVAL_TIMEOUT_MS=60000 bun run eval  # fail fast on a stalled provider (default 180000)
+//
+// Honours AGENT_PROVIDER so the trend line compares like with like. Note that
+// .env.local ships AGENT_PROVIDER=featherless with a real key, so a bare
+// `bun run eval` makes paid network calls — and if that provider is
+// unreachable it used to stall silently with no output. Each scenario now
+// runs under a timeout and says which provider stalled.
 
 import { buildTrip, calendarFor } from "../src/domain/fixtures";
 import { runCrew } from "../src/agents/runtime";
@@ -31,6 +39,28 @@ const SCENARIOS: { name: string; trip: ReturnType<typeof buildTrip> }[] = [
   { name: "LHR→MEX westward (Valentina)", trip: buildTrip("LHR", "MEX", "2026-10-18") },
 ];
 
+/** Rejects with a named error if `work` hasn't settled in time. An in-loop
+ *  deadline can't help here: the stall happens inside a single provider HTTP
+ *  call, so the generator never yields an event to check against. */
+async function withTimeout<T>(work: Promise<T>, ms: number, what: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      work,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error(`${what} did not finish within ${ms / 1000}s`)),
+          ms,
+        );
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+const SCENARIO_TIMEOUT_MS = Number(process.env.EVAL_TIMEOUT_MS ?? 180_000);
+
 async function runScenario(name: string, trip: ReturnType<typeof buildTrip>): Promise<EvalPayload> {
   const started = Date.now();
   let provider = providerKind();
@@ -44,6 +74,7 @@ async function runScenario(name: string, trip: ReturnType<typeof buildTrip>): Pr
   const violations: Record<string, number> = {};
 
   const stream = runCrew({ trip, calendar: calendarFor(trip), calendarSource: "fixture" }) as AsyncGenerator<CrewEvent>;
+  const consume = (async () => {
   for await (const e of stream) {
     if (e.type === "run_start") provider = e.provider as typeof provider;
     if (e.type === "error") fallback = true;
@@ -61,6 +92,9 @@ async function runScenario(name: string, trip: ReturnType<typeof buildTrip>): Pr
       residualMin = e.coverage.residualMin;
     }
   }
+  })();
+
+  await withTimeout(consume, SCENARIO_TIMEOUT_MS, `Scenario "${name}" on provider ${providerKind()}`);
 
   return {
     savedAt: new Date().toISOString(),
@@ -154,10 +188,30 @@ async function main() {
     return;
   }
 
-  console.log(`Running eval matrix on AGENT_PROVIDER=${providerKind()}${supabaseEnabled() ? " · persisting to Supabase" : " · persisting to artifacts/evals.json"}\n`);
+  const provider = providerKind();
+  console.log(`Running eval matrix on AGENT_PROVIDER=${provider}${supabaseEnabled() ? " · persisting to Supabase" : " · persisting to artifacts/evals.json"}\n`);
+  if (provider !== "replay") {
+    console.warn(
+      `⚠  ${provider} is a live provider: this makes real network calls and may spend tokens.\n` +
+      `   Run free and offline with: AGENT_PROVIDER=replay bun run eval\n` +
+      `   Each scenario times out after ${SCENARIO_TIMEOUT_MS / 1000}s (EVAL_TIMEOUT_MS to change).\n`,
+    );
+  }
   for (const { name, trip } of SCENARIOS) {
     process.stdout.write(`${name} ... `);
-    const row = await runScenario(name, trip);
+    let row: EvalPayload;
+    try {
+      row = await runScenario(name, trip);
+    } catch (err) {
+      // Don't march on to the next scenario — a stalled provider stalls all
+      // of them, and three silent five-minute hangs look like a broken harness.
+      console.log("failed");
+      console.error(`\n✗ ${err instanceof Error ? err.message : String(err)}`);
+      console.error(`  Provider: ${providerKind()}`);
+      console.error(`  This is usually an unreachable or slow provider, not a scoring bug.`);
+      console.error(`  To confirm the harness itself is healthy: AGENT_PROVIDER=replay bun run eval`);
+      process.exit(1);
+    }
     console.log("done");
     printRow(row);
     const persisted = await persistEval(row);
