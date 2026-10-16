@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { fmtMin } from "@/domain/circadian";
 import { summarizeCheckIn } from "@/domain/adherence";
 import type {
@@ -13,6 +13,8 @@ import type {
 } from "@/domain/types";
 import { type LogEntry } from "@/components/CrewFeed";
 import { NudgeFeedScreen } from "@/components/NudgeFeedScreen";
+import { TripSummary } from "@/components/TripSummary";
+import { DeepDiveVisuals } from "@/components/DeepDiveVisuals";
 import { TripSetupScreen } from "@/components/TripSetupScreen";
 import { HandoffBanner } from "@/components/HandoffBanner";
 import { AgentDrawer } from "@/components/AgentDrawer";
@@ -73,7 +75,7 @@ const MEMORY_TOOL_NAMES = new Set([
 ]);
 
 export default function Home() {
-  const [activeScreen, setActiveScreen] = useState<"guide" | "setup">("guide");
+  const [setupOpen, setSetupOpen] = useState(false);
   const [origin, setOrigin] = useState("LHR");
   const [dest, setDest] = useState("HND");
   const [departureDate, setDepartureDate] = useState("");
@@ -126,7 +128,7 @@ export default function Home() {
         }
       })
       .catch(() => {});
-  }, [tripQuery]);
+  }, [tripQuery, departureDate]);
 
   const hook = trip
     ? { body: clockAt(trip.origin.utcOffsetMin), dest: clockAt(trip.destination.utcOffsetMin) }
@@ -145,10 +147,12 @@ export default function Home() {
           const sp = new URLSearchParams(window.location.search);
           if (sp.get("origin")) setOrigin(sp.get("origin")!);
           if (sp.get("dest")) setDest(sp.get("dest")!);
-          if (sp.get("date")) setDepartureDate(sp.get("date")!);
+          const qDate = sp.get("date");
           // Otherwise default to today + 3 so a fresh visitor always lands on a
-          // trip that has a "today". An explicit ?date= still wins above.
-          else setDepartureDate(defaultDepartureDate());
+          // trip that has a "today". An explicit, well-formed ?date= still wins.
+          setDepartureDate(
+            qDate && isValidDate(qDate) ? qDate : defaultDepartureDate(),
+          );
           if (sp.get("checkins")) setCheckInsParam(sp.get("checkins")!);
           const sd = Number(sp.get("startDay"));
           if (!Number.isNaN(sd)) setStartDayParam(sd);
@@ -431,14 +435,12 @@ export default function Home() {
   }, [run.phase, startShift, cancelShift, agentDrawerOpen, menuOpen]);
 
   const goGuide = () => {
-    setActiveScreen("guide");
     guideRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  const goSetup = () => {
-    setActiveScreen("setup");
-    setupRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
+  // Setup is no longer a screen you navigate to — it's a sheet over Today.
+  const openSetup = () => setSetupOpen(true);
+  const closeSetup = () => setSetupOpen(false);
 
   const providerFallback = run.errors.length > 0;
   const baseline = run.baseline ?? data?.baseline;
@@ -472,10 +474,6 @@ export default function Home() {
     }
     const t = setTimeout(() => {
       setDepth(d);
-      if (q.get("screen") === "setup") {
-        setActiveScreen("setup");
-        setupRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
     }, 0);
     return () => clearTimeout(t);
   }, []);
@@ -491,33 +489,7 @@ export default function Home() {
             <span>Land at 100%</span>
           </button>
 
-          <div className="pill" role="navigation" aria-label="Primary screens">
-            <a
-              tabIndex={0}
-              className={activeScreen === "guide" ? "on" : ""}
-              onClick={goGuide}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  goGuide();
-                }
-              }}
-            >
-              Daily Guide
-            </a>
-            <a
-              tabIndex={0}
-              className={activeScreen === "setup" ? "on" : ""}
-              onClick={goSetup}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  goSetup();
-                }
-              }}
-            >
-              Trip Setup
-            </a>
+          <div className="pill" role="navigation" aria-label="Primary">
             <Link href="/crew">Crew</Link>
           </div>
 
@@ -526,26 +498,15 @@ export default function Home() {
               type="button"
               className="btn"
               onClick={() => {
-                voiceOnRef.current = true;
-                setVoiceOn(true);
-                setVoiceEnabled(true);
+                const next = !voiceOn;
+                voiceOnRef.current = next;
+                setVoiceOn(next);
+                setVoiceEnabled(next);
+                if (!next) stopVoice();
               }}
               aria-pressed={voiceOn}
             >
-              Voice
-            </button>
-            <button
-              type="button"
-              className="btn"
-              onClick={() => {
-                voiceOnRef.current = false;
-                setVoiceOn(false);
-                setVoiceEnabled(false);
-                stopVoice();
-              }}
-              aria-pressed={!voiceOn}
-            >
-              Muted
+              {voiceOn ? "Voice on" : "Voice off"}
             </button>
             <button
               type="button"
@@ -570,17 +531,17 @@ export default function Home() {
                 setMenuOpen(false);
               }}
             >
-              Daily Guide (Nudges)
+              Today
             </div>
             <div
               role="menuitem"
               tabIndex={0}
               onClick={() => {
-                goSetup();
+                openSetup();
                 setMenuOpen(false);
               }}
             >
-              Trip &amp; Flight Setup
+              Edit trip
             </div>
             {hasSavedPlan ? (
               <Link href="/review" className="m" onClick={() => setMenuOpen(false)}>
@@ -635,23 +596,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* Titlebar Header */}
-        <div
-          className="titlebar rise"
-          style={{ animationDelay: ".1s", marginTop: "70px" }}
-        >
-          <div>
-            <h1>Trip &amp; Flight Setup</h1>
-            <p>
-              Choose your route, pick the best flight window for zero jet lag,
-              and manage your wearable &amp; calendar sync.
-            </p>
-          </div>
-          <button type="button" className="p1" onClick={goGuide}>
-            Back to Daily Nudges
-          </button>
-        </div>
-
         {run.briefing && !briefingDismissed && (
           <div style={{ marginBottom: "18px" }}>
             <HandoffBanner
@@ -669,71 +613,138 @@ export default function Home() {
           </div>
         )}
 
-        {/* Daily Guide: Split-Horizon Hero + Bento Deck */}
-        <div ref={guideRef}>
-          <NudgeFeedScreen
-            trip={trip}
-            phase={run.phase}
-            selectedDayLabel={selectedDayLabel}
-            onSelectDay={setSelectedDayLabel}
-            locked={run.locked}
-            drafts={run.drafts}
-            verdicts={run.verdicts}
-            rejected={run.rejected}
-            memoryPath={memoryPath}
-            expandAllWhy={depth === "guided"}
-            baseline={baseline}
-            calendarEvents={currentEvents}
-            moves={run.moves}
-            citations={activeCitations}
-            ics={run.briefing?.ics}
-            selectedFlightId={selectedFlightId}
-            onOpenTripSetup={goSetup}
-            onStartCrewSync={startShift}
-            onCheckIn={(status) => beginStream({ checkins: status })}
-          />
-        </div>
+        {/* One flow: no trip → setup. Trip set → Today, with setup behind a sheet. */}
+        {trip ? (
+          <>
+            <div ref={setupRef}>
+              <TripSummary trip={trip} onEdit={openSetup} />
+            </div>
 
-        {/* Bottom-Sheet Flight Advisor + Route/Wearable + Deep-Dive Visuals */}
-        <div ref={setupRef}>
-          <TripSetupScreen
-            trip={trip}
-            origin={origin}
-            dest={dest}
-            departureDate={departureDate}
-            baselineSource={data?.baselineSource}
-            onChangeRoute={(next) => {
-              setOrigin(next.origin);
-              setDest(next.dest);
-              setDepartureDate(next.date);
-              reset();
-            }}
-            selectedFlightId={selectedFlightId}
-            onSelectFlightId={setSelectedFlightId}
-            baseline={baseline}
-            calendar={currentEvents}
-            calendarSource={data?.calendarSource}
-            readiness={currentReadiness}
-            hook={hook}
-            phase={run.phase}
-            lockedCount={run.locked.size}
-            totalDays={trip?.days.length ?? 5}
-            sessionStartedAt={run.sessionStartedAt}
-            locked={run.locked}
-            drafts={run.drafts}
-            verdicts={run.verdicts}
-            activeLabel={run.activeLabel}
-            activeAgent={run.activeAgent}
-            sunProgress={run.sunProgress}
-            ghostGap={ghostGapDeg(run)}
-            citations={activeCitations}
-            ics={run.briefing?.ics}
-            onStart={startShift}
-            onCancel={cancelShift}
-            onCheckIn={(extra) => beginStream(extra)}
-            onBackToGuide={goGuide}
-          />
-        </div>
+            <div ref={guideRef}>
+              <NudgeFeedScreen
+                trip={trip}
+                phase={run.phase}
+                selectedDayLabel={selectedDayLabel}
+                onSelectDay={setSelectedDayLabel}
+                locked={run.locked}
+                drafts={run.drafts}
+                verdicts={run.verdicts}
+                rejected={run.rejected}
+                memoryPath={memoryPath}
+                expandAllWhy={depth === "guided"}
+                baseline={baseline}
+                calendarEvents={currentEvents}
+                moves={run.moves}
+                citations={activeCitations}
+                ics={run.briefing?.ics}
+                selectedFlightId={selectedFlightId}
+                onOpenTripSetup={openSetup}
+                onStartCrewSync={startShift}
+                onCheckIn={(status) => beginStream({ checkins: status })}
+              />
+            </div>
+
+            {/* Mechanism lives one dial away, never on the Calm rung. */}
+            {depth === "guided" && (
+              <DeepDiveVisuals
+                trip={trip}
+                phase={run.phase}
+                sunProgress={run.sunProgress}
+                ghostGap={ghostGapDeg(run)}
+                locked={run.locked}
+                drafts={run.drafts}
+                verdicts={run.verdicts}
+                calendar={currentEvents}
+                readiness={currentReadiness}
+                citations={activeCitations}
+                activeLabel={run.activeLabel}
+                activeAgent={run.activeAgent}
+                ics={run.briefing?.ics}
+              />
+            )}
+          </>
+        ) : (
+          <div ref={setupRef}>
+            <TripSetupScreen
+              trip={trip}
+              origin={origin}
+              dest={dest}
+              departureDate={departureDate}
+              baselineSource={data?.baselineSource}
+              onChangeRoute={(next) => {
+                setOrigin(next.origin);
+                setDest(next.dest);
+                setDepartureDate(next.date);
+                reset();
+              }}
+              selectedFlightId={selectedFlightId}
+              onSelectFlightId={setSelectedFlightId}
+              baseline={baseline}
+              calendar={currentEvents}
+              calendarSource={data?.calendarSource}
+              readiness={currentReadiness}
+              hook={hook}
+              phase={run.phase}
+              lockedCount={run.locked.size}
+              totalDays={5}
+              sessionStartedAt={run.sessionStartedAt}
+              onStart={startShift}
+              onCancel={cancelShift}
+              onCheckIn={(extra) => beginStream(extra)}
+              onBackToGuide={goGuide}
+            />
+          </div>
+        )}
+
+        {/* The edit sheet: the same setup body, as an overlay on Today. */}
+        {setupOpen && trip && (
+          <div
+            className="sheet-backdrop"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Edit trip"
+            onClick={closeSetup}
+          >
+            <div className="sheet-panel" onClick={(e) => e.stopPropagation()}>
+              <button
+                type="button"
+                className="sheet-close"
+                onClick={closeSetup}
+                aria-label="Close"
+              >
+                ×
+              </button>
+              <TripSetupScreen
+                trip={trip}
+                origin={origin}
+                dest={dest}
+                departureDate={departureDate}
+                baselineSource={data?.baselineSource}
+                onChangeRoute={(next) => {
+                  setOrigin(next.origin);
+                  setDest(next.dest);
+                  setDepartureDate(next.date);
+                  reset();
+                }}
+                selectedFlightId={selectedFlightId}
+                onSelectFlightId={setSelectedFlightId}
+                baseline={baseline}
+                calendar={currentEvents}
+                calendarSource={data?.calendarSource}
+                readiness={currentReadiness}
+                hook={hook}
+                phase={run.phase}
+                lockedCount={run.locked.size}
+                totalDays={trip.days.length}
+                sessionStartedAt={run.sessionStartedAt}
+                onStart={startShift}
+                onCancel={cancelShift}
+                onCheckIn={(extra) => beginStream(extra)}
+                onBackToGuide={closeSetup}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       <AgentDrawer

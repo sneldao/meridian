@@ -4,21 +4,13 @@ import { useMemo, useState } from "react";
 import { fmtMin } from "@/domain/circadian";
 import { getFlightRecommendations } from "@/domain/nudges";
 import type {
-  AgentId,
   CalendarEvent,
-  Citation,
-  DayPlan,
-  EvalResult,
   Trip,
   WearableBaseline,
 } from "@/domain/types";
 import type { MeetingReadiness } from "@/domain/readiness";
-import type { ShiftDraft } from "@/state/run";
 import { RoutePicker } from "@/components/RoutePicker";
 import { MorningCheckin } from "@/components/MorningCheckin";
-import { WorldLens } from "@/components/lenses/WorldLens";
-import { ShiftBoard } from "@/components/lenses/ShiftBoard";
-import { CalendarLens } from "@/components/lenses/CalendarLens";
 
 interface TripSetupScreenProps {
   trip: Trip | null;
@@ -39,15 +31,6 @@ interface TripSetupScreenProps {
   lockedCount: number;
   totalDays: number;
   sessionStartedAt?: number;
-  locked: Map<string, DayPlan>;
-  drafts: Map<string, ShiftDraft>;
-  verdicts: Map<string, EvalResult[]>;
-  activeLabel?: string;
-  activeAgent?: AgentId;
-  sunProgress: number;
-  ghostGap: number;
-  citations: Citation[];
-  ics?: string;
   onStart: () => void;
   onCancel: () => void;
   onCheckIn: (extra: { checkins: string; startDay: number }) => void;
@@ -71,22 +54,10 @@ export function TripSetupScreen({
   lockedCount,
   totalDays,
   sessionStartedAt,
-  locked,
-  drafts,
-  verdicts,
-  activeLabel,
-  activeAgent,
-  sunProgress,
-  ghostGap,
-  citations,
-  ics,
   onStart,
   onCancel,
   onCheckIn,
 }: TripSetupScreenProps) {
-  const [visualExplorer, setVisualExplorer] = useState<
-    "none" | "globe" | "swimlane" | "calendar"
-  >("none");
   const [editingRoute, setEditingRoute] = useState(false);
 
   const flightOptions = useMemo(
@@ -257,71 +228,6 @@ export function TripSetupScreen({
             </div>
           </div>
         </div>
-      </div>
-
-      {/* 4. Optional Deep-Dive Visuals */}
-      <div
-        className="card rise"
-        style={{ marginTop: "16px", animationDelay: ".6s" }}
-      >
-        <h3>4. Optional Deep-Dive Visuals</h3>
-        <div className="ex">
-          {(
-            [
-              { id: "none", label: "Hidden" },
-              { id: "globe", label: "Globe & Daylight" },
-              { id: "swimlane", label: "24h Swimlane" },
-              { id: "calendar", label: "Week Calendar" },
-            ] as const
-          ).map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setVisualExplorer(tab.id)}
-              className={`chip ${visualExplorer === tab.id ? "on" : ""}`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {visualExplorer === "globe" && (
-          <div className="mt-4 h-[340px] overflow-hidden rounded-2xl border border-[#e3d5c3] bg-[#07090f]">
-            <WorldLens
-              trip={trip}
-              progress={sunProgress}
-              lockedLabels={new Set(locked.keys())}
-              activeLabel={activeLabel}
-              citationCount={citations.length}
-              running={phase === "running"}
-              ghostGap={ghostGap}
-            />
-          </div>
-        )}
-
-        {visualExplorer === "swimlane" && trip && (
-          <div className="mt-4 min-h-[360px] overflow-hidden rounded-2xl border border-[#e3d5c3] bg-[#07090f] p-2 text-[#e8eaf2]">
-            <ShiftBoard
-              days={trip.days}
-              drafts={drafts}
-              verdicts={verdicts}
-              locked={locked}
-              activeLabel={activeLabel}
-              activeAgent={activeAgent}
-            />
-          </div>
-        )}
-
-        {visualExplorer === "calendar" && trip && (
-          <div className="mt-4 h-[420px] overflow-hidden rounded-2xl border border-[#e3d5c3] bg-[#07090f] p-2 text-[#e8eaf2]">
-            <CalendarLens
-              days={trip.days}
-              events={calendar}
-              readiness={readiness}
-              ics={ics}
-            />
-          </div>
-        )}
       </div>
     </>
   );

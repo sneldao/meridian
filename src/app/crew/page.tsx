@@ -121,8 +121,12 @@ export default function Home() {
           const sp = new URLSearchParams(window.location.search);
           if (sp.get("origin")) setOrigin(sp.get("origin")!);
           if (sp.get("dest")) setDest(sp.get("dest")!);
-          if (sp.get("date")) setDepartureDate(sp.get("date")!);
-          else setDepartureDate(defaultDepartureDate());
+          const qDate = sp.get("date");
+          setDepartureDate(
+            qDate && /^\d{4}-\d{2}-\d{2}$/.test(qDate) && !Number.isNaN(Date.parse(qDate))
+              ? qDate
+              : defaultDepartureDate(),
+          );
           if (sp.get("checkins")) setCheckInsParam(sp.get("checkins")!);
           const sd = Number(sp.get("startDay"));
           if (!Number.isNaN(sd)) setStartDayParam(sd);
