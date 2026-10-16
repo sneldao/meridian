@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { coverageOf, fmtMin } from "@/domain/circadian";
-import { buildDailyNudgesForDay } from "@/domain/nudges";
+import { buildDailyNudgesForDay, stepImpactMin, type NudgeCategory } from "@/domain/nudges";
 import { previewPlan } from "@/domain/solver";
 import {
   dayPlace,
@@ -259,6 +259,19 @@ export function NudgeFeedScreen({
   const progressPct = totalSteps
     ? Math.round((completedCount / totalSteps) * 100)
     : 0;
+  // The plan behind the day's steps, for the impact copy below.
+  const activePlan = activeDaySpec
+    ? (locked.get(activeDaySpec.label) ??
+      drafts.get(activeDaySpec.label)?.plan ??
+      preview?.get(activeDaySpec.label)?.plan)
+    : undefined;
+  // Impact in arrival units. A hold day (or a step with no shift behind it)
+  // says what it does instead of "0 min".
+  const impactCopy = (category: NudgeCategory, verb: "done" | "missed") => {
+    const n = activePlan ? stepImpactMin(activePlan, category) : 0;
+    if (n <= 0) return "keeps the rhythm steady";
+    return verb === "done" ? `dawn moved ~${n} min closer` : `skip costs ~${n} min`;
+  };
   const doneWhere = isToday ? " today" : "";
   const countdown = (() => {
     if (!heroNudge || nowMin === null) return null;
@@ -375,6 +388,11 @@ export function NudgeFeedScreen({
               >
                 {completedIds.has(heroNudge.id) ? "Done ✓" : "Done"}
               </button>
+              {completedIds.has(heroNudge.id) && (
+                <p style={{ margin: 0, fontSize: "12px", color: "#7a6a5c" }}>
+                  Done — {impactCopy(heroNudge.category, "done")}.
+                </p>
+              )}
               {missedNudges.length > 0 && (
                 <div style={{ width: "100%" }}>
                   <button
@@ -411,6 +429,9 @@ export function NudgeFeedScreen({
                         >
                           <span>
                             {fmtMin(m.startMin)} {cityFor(m.dayIndex)} · {m.title}
+                            <span style={{ display: "block", fontSize: "11px" }}>
+                              {impactCopy(m.category, "missed")}
+                            </span>
                           </span>
                           <button
                             type="button"
@@ -596,6 +617,11 @@ export function NudgeFeedScreen({
                     </button>
                   )}
                 </div>
+                {isDone && (
+                  <p style={{ margin: "4px 0 0", fontSize: "12px", color: "#7a6a5c" }}>
+                    Done — {impactCopy(step.category, "done")}.
+                  </p>
+                )}
                 {isOpen && (
                   <div className="drawer tl-drawer">
                     <b>
