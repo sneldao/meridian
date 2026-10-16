@@ -284,6 +284,14 @@ export function previewPlan(input: {
   const lockedDays: DayPlan[] = [];
   const out = new Map<string, SolvedDay | null>();
   for (const spec of trip.days) {
+    // Post-landing days are planned with the wearer after touchdown, not
+    // previewed: the engine's sleep-window-as-body-clock proxy doesn't hold
+    // once residual lag remains after landing, so previewing them would show
+    // a plan we know is wrong.
+    if (spec.dayIndex > trip.departureDayIndex) {
+      out.set(spec.label, null);
+      continue;
+    }
     const solved = solveDay({ trip, spec, lockedDays, calendar, adherence, baseline });
     out.set(spec.label, solved);
     if (solved) lockedDays.push(solved.plan);

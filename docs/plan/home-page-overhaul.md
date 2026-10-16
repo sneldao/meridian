@@ -1,11 +1,26 @@
 # Home page overhaul — accuracy, one flow, honest claims
 
-2026-10-16. Derived from a critical review of `/` against
+2026-10-16, updated same day after PR 0 merged. Derived from a critical
+review of `/` against
 [next-steps.md](next-steps.md), [consolidation.md](consolidation.md),
 [consumer-appeal-implementation.md](consumer-appeal-implementation.md) and
 [icp.md](icp.md). All three phases run now, in parallel, across three
 developers. **Phase A items merge first (target: 17 Oct EOD, ahead of the
 18 Oct Graph Hacks deadline)**; B and C follow in the same lanes.
+
+**Branch state (`48223a0`, on `overhaul/dev1-contract`, clean):** the contract
+shipped with more than stubs — landed: `previewPlan` full body **and the
+solver's eastbound floor cap** (the "Cap the shift, don't chase 100%"
+decision — `LIGHT_START_MAX_OFFSET_MIN`, `solver.ts:55,238-255`), the
+solver-side destination-clock conversion for the first post-flight day
+(`solver.ts:123-126`), all `today.ts` helpers, `TravelerNudge.endMin`,
+`buildDailyNudgesForDay`'s `adherence` param (still ignored, not destructured —
+1.2 makes it operative), the qualitative flight shape, `baselineSource` in
+`/api/trip`, and tests for `today.ts` + `previewPlan`. **Not yet landed, all
+in PR 0's scope:** the `adherence` *sentinel* floor rule in nudges (1.2), the
+nudge-level floor test (1.4), `previewPlan`'s floor-candidate + budget tests
+(1.4), the props-type export (1.0), and the CSS lane blocks. Everything else
+below is the open work.
 
 ## Why
 
@@ -26,7 +41,9 @@ the *code* wins — update this doc in the same PR rather than picking silently.
    beside "0 of 5"); `TripSetupScreen.tsx` (invented HRV 62 / RHR 52, `|| 3`,
    `"2/2"`, a duplicate hardcoded flight array); `NudgeFeedScreen.tsx`
    `downloadIcs` (empty calendar pre-run); fixture Garmin data never labelled as
-   demo; `FlightOptionRecommendation.landingReadinessPct` hardcoded percentages.
+   demo; `FlightOptionRecommendation.landingReadinessPct` hardcoded percentages
+   *(the percentages are gone since `48223a0` — qualitative badges/`bestFor`
+   landed; the 6% floor, invented setup fallbacks and empty `.ics` remain)*.
 3. **"Your next move" is wrong.** The hero picks the first incomplete nudge by
    *category* order, not by time, and `NudgeFeedScreen.tsx:224` compares
    `activeDaySpec.date === new Date().toISOString().slice(0, 10)` — UTC, and
@@ -51,7 +68,7 @@ the *code* wins — update this doc in the same PR rather than picking silently.
 | Preview source | **Solver + scorer.** `previewPlan` runs `solveDay` over the trip, locking each day. A day the solver can't place shows "not placed yet — personalise", never invented times. |
 | Compliance floor | **Cap the shift, don't chase 100%.** Eastbound, the solver never picks a shift that puts the day's wake before `floor − 105 min` (so the light anchor can start at the floor); a hold day is always allowed. The rest of the shift happens after landing in destination daylight, and the UI shows the honest residual from `SolvedDay.result.coverage.residualMin` ("you'll land ~Nh short; the days after landing finish it"). The scorer is unchanged (floor stays a soft penalty there). The replay script is updated to the same policy. Within a placed day, no ask (light, run, calendar move) lands before the floor when a free slot at/after it exists; the sleep window is exempt. |
 | Clock frames | Days up to and including the flight day are origin-local; days after are destination-local (`dayPlace`). The solver converts its reference schedule into destination time for the first post-flight day (the scorer already drops the sleep reference there). |
-| No plan for a day | `buildDailyNudgesForDay` returns `[]` when there is no plan; the feed renders "not placed yet — personalise" when the day's `previewPlan` entry is null and there's no locked/draft plan. Flight day has no run step unless the plan includes an `exercise` intervention. |
+| No plan for a day | `buildDailyNudgesForDay` returns `[]` when there is no plan; the feed renders "not placed yet — personalise" when the day's `previewPlan` entry is null and there's no locked/draft plan. Flight day has no run step unless the plan includes an `exercise` intervention. Days after the flight are always null in `previewPlan` — the feed shows "Planned with you after you land" plus the residual, not "not placed yet". |
 | Flight windows | **Qualitative only:** `Best` / `Workable` / `Hardest` + a one-line "best for". No percentages, no "Zero Jet Lag", no flight numbers. |
 | Layout | **Full one-flow.** No trip → setup state. Trip set → **Today** (next step → timeline → readiness). Setup becomes a trip-summary chip + edit sheet. Guide/Setup pills and the "Trip & Flight Setup" title are removed; "Crew" stays as the depth link. |
 | Views | Timeline is the only Calm view. Focus/Cards modes, the default-view star and category filters are removed. Deep-dive visuals (globe, swimlane, week) render only at `?depth=guided`. |
@@ -78,11 +95,21 @@ Merge order within a phase: **lane 1 → lane 3 → lane 2.** Lane 3 rewrites
 `page.tsx`, which is lane 2's only call site (`page.tsx:646`); lane 2 rebases
 last.
 
+The contract currently sits on `overhaul/dev1-contract`, **not on `main`** —
+finish PR 0 there (exported props type, CSS lane blocks) and merge it to
+`main` before any lane branches, or the "don't implement against a contract
+that isn't on `main`" rule forces everyone to branch off the feature branch
+anyway.
+
 ## Shared contract — PR 0 (Dev 1, merge first, same day)
 
 Types and signatures only, with stub/minimal bodies that compile, so Dev 2
 and Dev 3 build against them immediately. Bodies + tests land in Dev 1's A
 PRs.
+
+**Status:** partially merged (`48223a0`) — the domain types/shapes below
+shipped with full bodies and tests. Outstanding for PR 0: the props type
+(see next subsection) and the CSS lane blocks.
 
 ```ts
 // src/domain/solver.ts
@@ -132,9 +159,10 @@ incomplete and `nowMin >= end` (end unwrapped: `endMin < startMin ⇒ endMin +
 1440`); `next` = first incomplete, non-missed step by `startMin`.
 
 `dayPlace`: days before `trip.departureDayIndex` → origin; after → destination;
-flight day → origin. **Dev 1 verifies** this matches how the solver, scorer
-and `readiness.ts` interpret flight-day minutes before merging; if it
-doesn't, flag it in the PR rather than picking silently.
+flight day → origin. **Verified before merge** (done — `tests/today.test.ts`
+asserts flight-day-is-origin-local, and `fixtures.ts` places `ev-flight`
+origin-local on the departure day; the solver's destination-clock conversion
+matches). Nothing further to flag.
 
 ### The React prop contract (also PR 0)
 
@@ -157,6 +185,10 @@ Dev 2 changes nothing about the prop *shape* after PR 0. If a task appears to
 need another prop, it is a contract amendment: propose it in a PR 0.1 that
 Dev 3 rebases onto before Dev 3 starts 3.3/3.4.
 
+**Status:** not landed. `NudgeFeedScreenProps` is still unexported and has no
+`adherence` (`NudgeFeedScreen.tsx:22`) — this export is PR 0's remaining
+must-have; nothing in lane 2 can compile against the contract until it exists.
+
 ## Lanes
 
 File ownership is exclusive — if you need a change in another lane's file,
@@ -169,18 +201,18 @@ classes, at the end.
 ### Dev 1 — Engine (domain + tests)
 
 **Owns:** `src/domain/solver.ts`, `src/domain/nudges.ts`, `src/domain/today.ts`
-(new), `tests/*` for those, `docs/plan/icp.md`.
+(landed in `48223a0`), `tests/*` for those, `docs/plan/icp.md`.
 
 | # | Phase | Task |
 |---|---|---|
-| 1.0 | A | **PR 0** — the shared contract above, including the props type and the CSS lane blocks. |
-| 1.1 | A | `previewPlan` body: loop `trip.days`, `solveDay({ trip, spec, lockedDays, calendar, adherence, baseline })`, push each solved plan into `lockedDays`; null days don't advance the chain. |
-| 1.2 | A | **Merges first, alone** — the live bug (Why #1). `buildDailyNudgesForDay`: delete the `wake − 65 × (i+1)` synthesis (`nudges.ts:193`). With no `plan`, emit only steps that don't need invented times (none, or a single "not placed yet" sentinel — Dev 2 renders it). With a plan: run = paired with the light block (same window) or the first slot ≥ floor with no blocking event; calendar suggestion only moves a `movable` event into a slot ≥ floor that overlaps no fixed event, else no calendar step. Populate `endMin` on every step. |
-| 1.3 | A | `today.ts` bodies (`dayPlace`, `todayDayIndex`, `nowMinOnDay`, `pickNextStep`, `shiftLockedPct` using `Math.abs` on both sides — see Why #4). |
-| 1.4 | A | Tests: every non-null `previewPlan` day passes `evaluatePlan`; no preview step overlaps a fixed event on its day; light starts ≥ floor whenever the floor is inside the solver's light-start candidates; `shiftLockedPct > 0` for an eastbound trip with locked days; `pickNextStep` cases — before all, mid-window, after a window (missed), crossing midnight, all done, `nowMin = null`; `todayDayIndex` returns null for a past trip. |
-| 1.5 | C | `getFlightRecommendations` → new shape; `bestFor` lines from existing headlines, no percentages. |
+| 1.0 | A | **PR 0** — the shared contract above, including the props type and the CSS lane blocks. **⚠ partially landed (`48223a0`)**: domain shapes + tests are in; the props-type export and the three CSS lane blocks are not. Finish those, then merge `overhaul/dev1-contract` → `main`. |
+| 1.1 | A | ✅ Landed (`48223a0`) — `previewPlan` body as specified, **plus** the eastbound shift cap from the Decisions table (`LIGHT_START_MAX_OFFSET_MIN`, `solver.ts:55,238-255`) and the destination-clock conversion for the first post-flight day (`solver.ts:123-126`). The replay side of that decision also landed (`replay.ts:172`, `replay-plan.ts:25`). Nothing left unless 1.2's sentinel tests contradict it. |
+| 1.2 | A | **Merges first, alone** — the live bug (Why #1). `buildDailyNudgesForDay`: delete the `wake − 65 × (i+1)` synthesis (`nudges.ts:193`). With no `plan`, emit only steps that don't need invented times (none, or a single "not placed yet" sentinel — Dev 2 renders it). With a plan: run = paired with the light block (same window) or the first slot ≥ floor with no blocking event; calendar suggestion only moves a `movable` event into a slot ≥ floor that overlaps no fixed event, else no calendar step. Populate `endMin` on every step. The `adherence` param exists but is never destructured (`nudges.ts:185`) — this task makes it operative. For slot placement **reuse the solver's overlap/floor helpers**; a second placement implementation in this function is the divergence bug waiting to happen. |
+| 1.3 | A | ✅ Landed (`48223a0`) — `today.ts` bodies, `shiftLockedPct` taking `Math.abs` on both sides (see Why #4). |
+| 1.4 | A | Mostly landed (`48223a0`): every non-null `previewPlan` day passes `evaluatePlan`; no preview step overlaps a fixed event on its day; all `pickNextStep` cases (before all, mid-window, after a window, crossing midnight, all done, `nowMin = null`); `shiftLockedPct > 0` eastbound, 0 with none locked, capped at 100; `todayDayIndex` null when no trip day is today. **Remaining:** light starts ≥ floor whenever the floor is inside the solver's light-start candidates; a 1.2-floor test — an eastbound no-plan day with floor 07:00 emits no step starting before 07:00 when a legal later slot exists (this fails until 1.2 makes `adherence` operative, which is the point); and the `previewPlan` budget test from Acceptance. |
+| 1.5 | C | ✅ Landed (`48223a0`) — `getFlightRecommendations` → new shape; `bestFor` lines, no percentages. |
 | 1.6 | C | Copy sweep of all strings in `nudges.ts` per the vocabulary rule (mechanism wording moves into `whyItHelps` only, plainly phrased). Drop unsupported precision ("~65–90 min", "~1.4x", "10x"). |
-| 1.7 | C | `icp.md`: demo trip is −8h on 18 Oct (London on BST), not +9h. |
+| 1.7 | C | `icp.md`: the demo trip is an **8h eastward advance** on 18 Oct (London still on BST; Tokyo +9), not "+9h" — the code's DST-aware `timezones.ts` already computes −8h in the east-negative convention, so keep the doc in human words. |
 
 ### Dev 2 — Today surface
 
@@ -213,7 +245,7 @@ it).
 | 3.4 | B | New compact `TripSummary` chip above Today ("LHR → HND · Sun 18 Oct · 8h east · Edit") opening a sheet whose body is the refactored `TripSetupScreen`: route, date, flight windows, wearable/calendar summary — no section numbers. Delete `TripPassport.tsx` (currently unimported — confirmed by grep on 16 Oct). |
 | 3.5 | B | Extract the deep-dive visuals (globe, swimlane, week) out of `TripSetupScreen` into `DeepDiveVisuals`; `page.tsx` renders it only when `depth === "guided"`. |
 | 3.6 | B | "Morning Check-in" only renders when `phase === "done"` (pre-run it was a second Start button). |
-| 3.7 | B | Default departure = client-local today + 3 in `page.tsx` (`page.tsx:57`) **and `src/app/crew/page.tsx:52`** — after 18 Oct a `/crew` visit would otherwise default to a past trip. `api/crew/run/route.ts:19` reads the query param and needs no change. Fixtures in `src/domain/fixtures.ts` + `src/state/fixture-events.json` stay frozen (test/replay inputs). URL `?date=` still wins. **Verify** `bun run replay:check`, `bun run eval` (`scripts/eval.ts:29-31` hardcodes `2026-10-18` in all three scenarios) and a replay-provider run still work for a non-`DEMO_DEPARTURE` date before merging; report if replay is pinned to the fixture date. |
+| 3.7 | B | Default departure = client-local today + 3 in `page.tsx` (`page.tsx:57`) **and `src/app/crew/page.tsx:52`** — after 18 Oct a `/crew` visit would otherwise default to a past trip. `api/crew/run/route.ts:19` reads the query param and needs no change. Fixtures in `src/domain/fixtures.ts` + `src/state/fixture-events.json` stay frozen (test/replay inputs). URL `?date=` still wins. **Verify** `bun run replay:check`, `bun run eval` (`scripts/eval.ts:29-31` hardcodes `2026-10-18` in all three scenarios) and a replay-provider run still work for a non-`DEMO_DEPARTURE` date before merging; report if replay is pinned to the fixture date. (Replay's floor policy already landed — `replay.ts:172`, `replay-plan.ts:25` thread `adherence` — so a `replay:check` failure after your change is a new regression, not the old script.) |
 | 3.8 | C | Flight-window cards render `badge` + `bestFor` + times only. |
 | 3.9 | C | Copy sweep of `page.tsx`, `TripSetupScreen`, menu, `RoutePicker`; remove orphan labels ("8 flexible", "biologically ready" → "3 movable events", "Pitch: ready"). |
 | 3.10 | C | Remove obsolete CSS (`.titlebar`, `.pill`, view-mode/filter styles) after lanes 1–2 merge; add this doc to README "Active". |
@@ -224,14 +256,17 @@ Task 1.2 merges **alone and first** — it is the only still-open user-visible
 correctness bug and the one the whole "honest claims" thesis rests on.
 
 ```
-Day 0   PR 0: contract + props type + CSS lane blocks        ← all three lanes
+Day 0   PR 0 finish (props-type export, CSS lane blocks) — the domain
+        half is already in `48223a0` — then merge `overhaul/dev1-contract`
+        → `main`; lanes branch from `main`                      ← all three lanes
         │
         ├─► 1.2 (kill the 65-min synthesis) ── live bug, merges alone
-        │   1.1 previewPlan · 1.3 today.ts · 1.4 tests · 3.1 · 3.2
-        │     (1.1/1.3/1.4/3.1/3.2 are drafted; commit behind 1.2)
+        │   1.4 remainder · 3.1 · 3.2
+        │   (previewPlan, today.ts, solver cap, flight shape are on `main`)
         │
-        └─► Day 1: 2.1–2.4 Dev 2 · 3.3–3.7 Dev 3 · 1.5–1.7 Dev 1
-Final   Dev 3: CSS cleanup + integration QA pass
+        └─► Day 1: 2.1–2.4 Dev 2 · 3.3–3.7 Dev 3 · 1.6–1.7 Dev 1
+Final   Dev 3: CSS cleanup + integration QA pass + re-check the stage path
+        in `docs/reference/demo.md` (the pre-run preview changes shape).
 ```
 
 **Merge all A by 17 Oct EOD — demo-safe checkpoint.** If 17 Oct slips, the
@@ -239,7 +274,8 @@ demo-safe subset is **1.2 + 2.2 + 2.3 + 3.1**: no fabricated times, a correct
 next step, one honest progress number, provenance tagged. Everything else is
 cosmetic and can move past 18 Oct.
 
-Dev 3's 3.8 depends on 1.5's type change — land 1.5 early in Dev 1's C work.
+3.8's dependency is gone — 1.5's type change is already merged; Dev 1's C
+work is 1.6–1.7 only.
 
 ## Verification (every PR)
 
@@ -256,6 +292,7 @@ Lane 3 additionally: `bun run replay:check`, `bun run eval`, and
 ## Acceptance — the integrated `/` (final QA, Dev 3)
 
 - [ ] Fresh visit, replay provider, no keys: a populated Today in < 10 s for a trip starting today.
+- [ ] `previewPlan` over the demo trip < 50 ms client-side (asserted in a 1.4 test); the feed's memo recomputes only when trip/calendar/adherence/baseline change — no re-solve on unrelated state.
 - [ ] No preview step before 07:00 London when a later legal slot exists; no step overlaps a fixed calendar event; every preview day passes the gate.
 - [ ] "Your next step" is never a passed window; passed ones sit under "Missed".
 - [ ] One progress number; no 6%; eastbound readiness shows "of shift locked" after a run.

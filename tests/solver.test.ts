@@ -148,6 +148,31 @@ describe("solveDay", () => {
     expect(solved).not.toBeNull();
     expect(Math.abs(solved!.plan.shiftMin)).toBeLessThanOrEqual(Math.abs(small.requiredShiftMin));
   });
+
+  test("converts the previous day's frame across the flight", () => {
+    // D+1 solves from the flight day in destination time: the locked 22:25
+    // London bedtime becomes 06:25 Tokyo (+480min), so a hold draft keeps it.
+    const flightPlan: DayPlan = {
+      dayIndex: 3,
+      label: "Flight",
+      shiftMin: 0,
+      targetBedtimeMin: 22 * 60 + 25,
+      targetWakeMin: 5 * 60 + 15,
+      interventions: [],
+    };
+    const solved = solveDay({
+      trip,
+      spec: trip.days[4],
+      lockedDays: [flightPlan],
+      calendar: CALENDAR,
+      adherence: ADHERENCE_PROFILE,
+      baseline: GARMIN_BASELINE,
+    });
+    expect(solved).not.toBeNull();
+    expect(solved!.plan.targetBedtimeMin).toBe((22 * 60 + 25 + 480) % 1440); // 06:25 Tokyo
+    expect(solved!.plan.targetWakeMin).toBe((5 * 60 + 15 + 480) % 1440); // 13:15 Tokyo
+    expect(Math.abs(solved!.plan.shiftMin)).toBe(0);
+  });
 });
 
 describe("previewPlan", () => {
@@ -214,12 +239,12 @@ describe("previewPlan", () => {
     }
   });
 
-  test("the day after the flight is destination-local", () => {
-    const d1 = preview.get("D+1");
-    expect(d1).not.toBeNull();
-    // Converted from the locked 05:15 London wake (+8h) — a plausible Tokyo
-    // late-morning, not ~00:45.
-    expect(d1!.plan.targetWakeMin).toBeGreaterThanOrEqual(7 * 60);
+  test("days after the flight are null — planned after touchdown, not previewed", () => {
+    for (const spec of trip.days) {
+      const solved = preview.get(spec.label);
+      if (spec.dayIndex > trip.departureDayIndex) expect(solved).toBeNull();
+    }
+    expect(preview.get("D+1")).toBeNull();
   });
 
   test("no light block overlaps a blocking calendar event on its day", () => {
