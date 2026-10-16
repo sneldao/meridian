@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { buildTrip, isKnownCity } from "@/domain/fixtures";
 import { fetchCalendar } from "@/tools/calendar";
 import { runCrew } from "@/agents/runtime";
+import { rateLimit, tooMany, RL_RUNS } from "@/lib/rateLimit";
 import type { CheckIn } from "@/domain/types";
 
 export const dynamic = "force-dynamic";
@@ -32,6 +33,10 @@ export async function GET(req: NextRequest) {
   if (!Number.isInteger(startDayIndex) || startDayIndex < 0 || startDayIndex > 4) {
     return new Response(JSON.stringify({ error: "invalid startDay" }), { status: 400 });
   }
+
+  // Bounded spend: one full crew run costs real tokens — cap runs per IP.
+  const rl = rateLimit(req, "crew-run", { limit: RL_RUNS, windowMs: 3_600_000 });
+  if (!rl.ok) return tooMany(rl.retryAfterSec);
 
   const trip = buildTrip(originRaw, destRaw, date);
   const { events: calendar, source: calendarSource } = await fetchCalendar(trip);

@@ -5,11 +5,14 @@ fit-to-effort. Researched 2026-10-15 via Tavily; verify rules pages before
 submitting — Devpost deadlines shift.
 
 **Already in flight:** Graph Hacks (FalkorDB × WeMakeDevs), deadline
-**2026-10-18** — see [graph-hackathon.md](graph-hackathon.md) and
-[graph-memory.md](../reference/graph-memory.md). Same-day deadline:
-**DEV Hacktoberfest Open-Source AI Challenge, Week 2 (Side Hustle)** —
-deliverable is a DEV post, not a Devpost package. Post draft:
-[dev-week2-post.md](dev-week2-post.md).
+**2026-10-18 23:59 IST (= 19:29 BST)** — see
+[graph-hackathon.md](graph-hackathon.md) and
+[graph-memory.md](../reference/graph-memory.md). Graph Hacks side prize:
+**best blog post wins AirPods 5** — "what you built, how it works, what you
+learned," submitted with the project. Same-day deadline: **DEV Hacktoberfest
+Open-Source AI Challenge, Week 2 (Side Hustle)**, 23:59 PDT. ONE post covers
+both: [dev-week2-post.md](dev-week2-post.md) — publish on DEV first, then
+link the live URL in the Graph Hacks submission.
 
 ## DEV Challenge — Hacktoberfest Week 2: Side Hustle
 
@@ -39,7 +42,9 @@ deliverable is a DEV post, not a Devpost package. Post draft:
 
 ### Meridian angle — post drafted, actions open
 
-- [ ] Publish `docs/plan/dev-week2-post.md` before Oct 18 11:59 PM PDT
+- [ ] Publish `docs/plan/dev-week2-post.md` before **19:29 BST Sun** (Graph
+      Hacks deadline is the binding one — the post doubles as its blog-prize
+      entry, so it must be live before that submission goes in)
 - [ ] Decide: keep public URL on `AGENT_PROVIDER=replay`, or add a second
       Render service on `featherless` so judges hit live open-model
       inference (strengthens the Render claim; ~pennies/run risk)
