@@ -14,7 +14,7 @@ passes(result) = result.feasible && result.score >= PASS_SCORE   // 0.75
 | Code | Rule |
 |---|---|
 | `SHIFT_TOO_FAST` | Phase shift > 90 min/day for a single day |
-| `SHIFT_DIRECTION_FLIP` | Plan shifts opposite to the most recent non-hold day (holds are pauses, not a direction) |
+| `SHIFT_DIRECTION_FLIP` | Plan shifts opposite to the most recent non-hold day — or to the trip direction when no day has shifted yet (holds are pauses, not a direction) |
 | `SLEEP_TOO_SHORT` | Sleep window under the 6 h floor |
 | `MISSING_LIGHT_ANCHOR` | Advance day with no timed-light intervention |
 | `LIGHT_WRONG_WINDOW` | Light exposure inside the wrong phase-response window |

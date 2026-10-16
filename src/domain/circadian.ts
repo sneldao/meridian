@@ -184,12 +184,19 @@ export function evaluatePlan(input: EvalInput): EvalResult {
     }
     // Direction flips are judged against the most recent day that actually
     // shifted — a hold day is a pause, not a direction, so 0 → −90 after
-    // holds is a resume, not a yo-yo.
+    // holds is a resume, not a yo-yo. When nothing has shifted yet the
+    // reference is the trip direction itself, so a first-day wrong-way
+    // shift is a violation too.
     const prevShift = input.days
       .slice(0, i)
       .reverse()
       .find((d) => d.shiftMin !== 0);
-    if (day.shiftMin !== 0 && prevShift && Math.sign(day.shiftMin) !== Math.sign(prevShift.shiftMin)) {
+    const referenceSign = prevShift
+      ? Math.sign(prevShift.shiftMin)
+      : input.trip.direction === "east"
+        ? -1
+        : 1;
+    if (day.shiftMin !== 0 && Math.sign(day.shiftMin) !== referenceSign) {
       violations.push({
         code: "SHIFT_DIRECTION_FLIP",
         dayIndex: day.dayIndex,
