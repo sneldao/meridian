@@ -474,3 +474,27 @@ export function buildDailyNudgesForDay(params: {
     }))
     .sort((a, b) => a.startMin - b.startMin);
 }
+
+/**
+ * Rough minutes of the day's scorer-verified shift that a given step
+ * carries. Honest attribution only: the scorer validates shiftMin for the
+ * whole day — light + sleep do the bulk of the work, the rest share the
+ * remainder. Returns 0 on hold days; Dev 2's feed copy ("~20 min closer")
+ * uses this so it never invents precision the model doesn't have.
+ */
+export function stepImpactMin(plan: DayPlan, category: NudgeCategory): number {
+  const shift = Math.abs(plan.shiftMin);
+  if (shift === 0) return 0;
+  const has = (kind: string) => plan.interventions.some((iv) => iv.kind === kind);
+  const W: [NudgeCategory, number][] = [
+    ["sunlight", has("light_exposure") ? 0.5 : 0],
+    ["sleep", has("sleep_window") ? 0.3 : 0],
+    ["run", has("exercise") ? 0.1 : 0],
+    ["nutrition", has("caffeine_cutoff") || has("meal_timing") ? 0.1 : 0],
+    ["calendar", 0],
+  ];
+  const w = W.find(([c]) => c === category)?.[1] ?? 0;
+  const total = W.reduce((s, [, x]) => s + x, 0);
+  if (total === 0 || w === 0) return 0;
+  return Math.round((shift * (w / total)) / 5) * 5;
+}

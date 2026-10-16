@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { buildDailyNudgesForDay } from "../src/domain/nudges";
+import { buildDailyNudgesForDay, stepImpactMin } from "../src/domain/nudges";
 import { previewPlan } from "../src/domain/solver";
 import type { DayPlan } from "../src/domain/types";
 import { ADHERENCE_PROFILE, CALENDAR, DEMO_TRIP, GARMIN_BASELINE } from "../src/domain/fixtures";
@@ -102,4 +102,12 @@ test("sunlight step only exists when the plan carries a light iv, and never at w
     calendarEvents: CALENDAR, moves: [], citations: [], adherence: ADHERENCE_PROFILE,
   });
   expect(out.find((n) => n.category === "sunlight")).toBeUndefined();
+});
+
+test("stepImpactMin distributes only the scored shift, honestly", () => {
+  const solved = preview.get("D-3")!.plan;   // shift −90
+  const hold = preview.get("D-2")!.plan;     // shift 0
+  expect(stepImpactMin(solved, "sunlight")).toBeGreaterThan(stepImpactMin(solved, "nutrition"));
+  expect(stepImpactMin(solved, "calendar")).toBe(0);
+  expect(stepImpactMin(hold, "sunlight")).toBe(0);
 });
