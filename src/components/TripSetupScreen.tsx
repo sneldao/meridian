@@ -217,11 +217,7 @@ export function TripSetupScreen({
                 sessionStartedAt={sessionStartedAt}
                 onCheckIn={onCheckIn}
               />
-            ) : (
-              <button type="button" className="p2" onClick={onStart}>
-                Morning Check-in
-              </button>
-            )}
+            ) : null}
           </div>
         </div>
 

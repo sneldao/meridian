@@ -45,11 +45,21 @@ function clockAt(offsetMin: number, now = new Date()): string {
   return fmtMin(now.getUTCHours() * 60 + now.getUTCMinutes() + offsetMin);
 }
 
+/** Same default as `/`: three days out in the viewer's local date, so a visit
+ *  after 18 Oct doesn't open on a trip that already happened. Derived in the
+ *  mount effect, not at render, to avoid a server/browser hydration mismatch. */
+function defaultDepartureDate(now = new Date()): string {
+  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 3);
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
+
 export default function Home() {
   const reduce = useReducedMotion();
   const [origin, setOrigin] = useState("LHR");
   const [dest, setDest] = useState("HND");
-  const [departureDate, setDepartureDate] = useState("2026-10-18");
+  const [departureDate, setDepartureDate] = useState("");
   const [checkInsParam, setCheckInsParam] = useState("");
   const [startDayParam, setStartDayParam] = useState(0);
   const tripQuery = `?origin=${origin}&dest=${dest}&date=${departureDate}`;
@@ -82,11 +92,12 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    if (!departureDate) return;
     fetch("/api/trip" + tripQuery)
       .then((r) => r.json())
       .then(setData)
       .catch(() => {});
-  }, [tripQuery]);
+  }, [tripQuery, departureDate]);
 
   // The opening hook — the wearer's body time against the destination's.
   // Derived during render (no setState in an effect) and only reachable once
@@ -111,6 +122,7 @@ export default function Home() {
           if (sp.get("origin")) setOrigin(sp.get("origin")!);
           if (sp.get("dest")) setDest(sp.get("dest")!);
           if (sp.get("date")) setDepartureDate(sp.get("date")!);
+          else setDepartureDate(defaultDepartureDate());
           if (sp.get("checkins")) setCheckInsParam(sp.get("checkins")!);
           const sd = Number(sp.get("startDay"));
           if (!Number.isNaN(sd)) setStartDayParam(sd);

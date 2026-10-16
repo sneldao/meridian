@@ -48,6 +48,21 @@ function clockAt(offsetMin: number, now = new Date()): string {
   return fmtMin(now.getUTCHours() * 60 + now.getUTCMinutes() + offsetMin);
 }
 
+function isValidDate(v: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v));
+}
+
+/** Consumer default departure: three days out, in the *viewer's* local date, so
+ *  the trip always has a "today" to act on. Deliberately not derived at render
+ *  time — the server and the browser can disagree on the calendar day, which
+ *  would be a hydration mismatch. Called from a mount effect instead. */
+function defaultDepartureDate(now = new Date()): string {
+  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 3);
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
+
 const MEMORY_TOOL_NAMES = new Set([
   "recallFindings",
   "priorFailures",
@@ -61,7 +76,7 @@ export default function Home() {
   const [activeScreen, setActiveScreen] = useState<"guide" | "setup">("guide");
   const [origin, setOrigin] = useState("LHR");
   const [dest, setDest] = useState("HND");
-  const [departureDate, setDepartureDate] = useState("2026-10-18");
+  const [departureDate, setDepartureDate] = useState("");
   const [selectedFlightId, setSelectedFlightId] = useState<string>("midday-afternoon");
   const [checkInsParam, setCheckInsParam] = useState("");
   const [startDayParam, setStartDayParam] = useState(0);
@@ -97,6 +112,9 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    // Set by the mount effect above (URL ?date= or today+3). Firing earlier
+    // would ask /api/trip for an empty date and 400.
+    if (!departureDate) return;
     fetch("/api/trip" + tripQuery)
       .then((r) => r.json())
       .then((d: TripData) => {
@@ -128,6 +146,9 @@ export default function Home() {
           if (sp.get("origin")) setOrigin(sp.get("origin")!);
           if (sp.get("dest")) setDest(sp.get("dest")!);
           if (sp.get("date")) setDepartureDate(sp.get("date")!);
+          // Otherwise default to today + 3 so a fresh visitor always lands on a
+          // trip that has a "today". An explicit ?date= still wins above.
+          else setDepartureDate(defaultDepartureDate());
           if (sp.get("checkins")) setCheckInsParam(sp.get("checkins")!);
           const sd = Number(sp.get("startDay"));
           if (!Number.isNaN(sd)) setStartDayParam(sd);
