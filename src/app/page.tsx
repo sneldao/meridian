@@ -436,12 +436,19 @@ export default function Home() {
   // paint isn't blocked reading location.
   const [depth, setDepth] = useState<string | null>(null);
   useEffect(() => {
-    const d = new URLSearchParams(window.location.search).get("depth");
+    const q = new URLSearchParams(window.location.search);
+    const d = q.get("depth");
     if (d === "operator") {
       window.location.replace("/crew");
       return;
     }
-    const t = setTimeout(() => setDepth(d), 0);
+    const t = setTimeout(() => {
+      setDepth(d);
+      if (q.get("screen") === "setup") {
+        setActiveScreen("setup");
+        setupRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }, 0);
     return () => clearTimeout(t);
   }, []);
 

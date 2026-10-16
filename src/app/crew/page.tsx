@@ -386,6 +386,31 @@ export default function Home() {
           </Link>
         </div>
 
+        {/* Same pill switcher as the traveller's nav — one chrome across the dial */}
+        <nav
+          aria-label="Primary screens"
+          className="inline-flex shrink-0 items-center rounded-full border border-line bg-ink-2 p-1"
+        >
+          <Link
+            href="/"
+            className="rounded-full px-3.5 py-1.5 text-xs font-semibold text-mist transition-all hover:text-paper"
+          >
+            Daily Guide
+          </Link>
+          <Link
+            href="/?screen=setup"
+            className="rounded-full px-3.5 py-1.5 text-xs font-semibold text-mist transition-all hover:text-paper"
+          >
+            Trip Setup
+          </Link>
+          <span
+            aria-current="page"
+            className="rounded-full bg-paper px-3.5 py-1.5 text-xs font-semibold text-ink shadow-sm"
+          >
+            Crew
+          </span>
+        </nav>
+
         {baseline && (
           <div
             className="hidden shrink-0 items-center gap-1.5 rounded-lg border border-line bg-ink-2 px-3 py-1.5 font-mono2 text-xs text-mist xl:flex"

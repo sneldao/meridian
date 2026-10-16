@@ -351,6 +351,23 @@ body {
     linear-gradient(180deg, #0b0e16 0%, #10141f 46%, #241a1c 66%, #3a2118 82%, #D96B43 120%);
   animation: dawnIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
+.dawnIn::after {
+  /* the line itself — a hair of ghost gold crossing the frame at the horizon */
+  content: "";
+  position: absolute;
+  left: -5%;
+  right: -5%;
+  top: 63%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--color-ghost) 30%, var(--color-ghost) 70%, transparent);
+  filter: drop-shadow(0 0 8px rgba(255, 217, 138, 0.7));
+  animation: tlineSweep 0.9s ease-out both;
+}
+@keyframes tlineSweep {
+  from { transform: translateY(24px); opacity: 0; }
+  35% { opacity: 1; }
+  to { transform: translateY(-6px); opacity: 0.9; }
+}
 @keyframes dawnIn {
   from { opacity: 1; }
   40% { opacity: 1; }
