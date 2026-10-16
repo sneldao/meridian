@@ -29,6 +29,8 @@ interface TripSetupScreenProps {
   selectedFlightId: string;
   onSelectFlightId: (id: string) => void;
   baseline?: WearableBaseline;
+  /** "fixture" = the demo Garmin numbers, not measured. Drives the Demo tag. */
+  baselineSource?: "fixture" | "garmin";
   calendar: CalendarEvent[];
   calendarSource?: "google" | "fixture";
   readiness: MeetingReadiness[];
@@ -61,7 +63,9 @@ export function TripSetupScreen({
   selectedFlightId,
   onSelectFlightId,
   baseline,
+  baselineSource,
   calendar,
+  calendarSource,
   readiness,
   phase,
   lockedCount,
@@ -95,10 +99,16 @@ export function TripSetupScreen({
     flightOptions[0]?.id ||
     "";
 
-  const movableCount = calendar.filter((e) => e.movable).length || 3;
+  // Honest counts: no invented fallbacks. An absent measurement reads "—",
+  // never a plausible-looking number (task 3.2 — "No invented values anywhere").
+  const movableCount = calendar.filter((e) => e.movable).length;
   const readyCount = readiness.filter((r) => r.status === "ready").length;
   const readinessLabel =
-    readiness.length > 0 ? `${readyCount}/${readiness.length}` : "2/2";
+    readiness.length > 0 ? `${readyCount}/${readiness.length}` : "—";
+
+  // Anything sourced from the demo fixture is labelled as such, so a number the
+  // app made up is never presented as something the traveller measured.
+  const isDemo = baselineSource === "fixture" || calendarSource === "fixture";
 
   return (
     <>
@@ -217,22 +227,27 @@ export function TripSetupScreen({
 
         <div className="card">
           <h3>3. Garmin Wearable &amp; Work Calendar</h3>
+          {isDemo && (
+            <p className="demo-tag">
+              Demo profile — these numbers are sample data, not your measurements.
+            </p>
+          )}
           <div className="m3">
             <div>
               Usual Sleep
               <b>
                 {baseline
                   ? `${fmtMin(baseline.avgBedtimeMin)}–${fmtMin(baseline.avgWakeMin)}`
-                  : "23:30–06:45"}
+                  : "—"}
               </b>
             </div>
             <div>
               HRV
-              <b>{baseline ? `${baseline.hrvMs} ms` : "62 ms"}</b>
+              <b>{baseline ? `${baseline.hrvMs} ms` : "—"}</b>
             </div>
             <div>
               Resting HR
-              <b>{baseline ? `${baseline.restingHr} bpm` : "52 bpm"}</b>
+              <b>{baseline ? `${baseline.restingHr} bpm` : "—"}</b>
             </div>
           </div>
           <div className="m3" style={{ gridTemplateColumns: "1fr 1fr" }}>

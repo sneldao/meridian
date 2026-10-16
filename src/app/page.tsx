@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { fmtMin } from "@/domain/circadian";
 import { summarizeCheckIn } from "@/domain/adherence";
 import type {
+  AdherenceProfile,
   CalendarEvent,
   CrewEvent,
   Trip,
@@ -31,6 +32,12 @@ import { takeChunks } from "@/lib/voice/split";
 interface TripData {
   trip: Trip;
   baseline: WearableBaseline;
+  /** Whether `baseline` is real wearable data or the demo fixture. Surfaced
+   *  so the UI can tag demo numbers instead of passing them off as measured. */
+  baselineSource?: "fixture" | "garmin";
+  /** Compliance hints (e.g. ignoresInterventionsBeforeMin) that keep asks
+   *  off the hours the traveller actually ignores them. */
+  adherence?: AdherenceProfile;
   calendar: CalendarEvent[];
   calendarSource?: "google" | "fixture";
   provider: string;
@@ -673,6 +680,7 @@ export default function Home() {
             origin={origin}
             dest={dest}
             departureDate={departureDate}
+            baselineSource={data?.baselineSource}
             onChangeRoute={(next) => {
               setOrigin(next.origin);
               setDest(next.dest);
