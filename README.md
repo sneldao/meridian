@@ -65,6 +65,7 @@ Active:
 - [Hackathon submissions](docs/plan/hackathon-submissions.md) — external hackathons Meridian is eligible for, ranked targets + per-sponsor deltas
 - [Consolidation](docs/plan/consolidation.md) — consumer face + depth dial spec (Calm/Guided/Operator)
 - [Next steps](docs/plan/next-steps.md) — consumer simplification direction, post-Oct-30
+- [Consumer appeal plan](docs/plan/consumer-appeal-implementation.md) — sequenced implementation plan from the design research
 
 Plan & pitch (frozen at the 2026-10-15 hackathon — history, not current state):
 

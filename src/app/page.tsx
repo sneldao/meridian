@@ -572,6 +572,27 @@ export default function Home() {
             <Link href="/crew" className="m" onClick={() => setMenuOpen(false)}>
               See the crew work →
             </Link>
+            {run.briefing && (
+              <button
+                type="button"
+                className="m"
+                style={{ width: "100%", textAlign: "left", background: "none", border: "none", cursor: "pointer" }}
+                onClick={async () => {
+                  const r = await fetch("/api/share", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ briefing: run.briefing, trip }),
+                  });
+                  const { url } = await r.json();
+                  const full = `${window.location.origin}${url}`;
+                  try { await navigator.clipboard.writeText(full); } catch { /* clipboard optional */ }
+                  setMenuOpen(false);
+                  window.open(url, "_blank");
+                }}
+              >
+                Share plan link →
+              </button>
+            )}
             <div
               role="menuitem"
               tabIndex={0}
@@ -641,6 +662,7 @@ export default function Home() {
             selectedFlightId={selectedFlightId}
             onOpenTripSetup={goSetup}
             onStartCrewSync={startShift}
+            onCheckIn={(status) => beginStream({ checkins: status })}
           />
         </div>
 

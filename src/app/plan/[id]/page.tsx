@@ -1,0 +1,47 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { loadSharedPlan } from "@/lib/share";
+
+export const dynamic = "force-dynamic";
+
+export default async function SharedPlan({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const data = loadSharedPlan(id);
+  if (!data) notFound();
+  const { briefing, trip } = data as {
+    briefing: { summary: string; score: number; days: { label: string; shiftMin: number; interventions: { kind: string; startMin: number; endMin: number }[] }[]; citations: { title: string }[] };
+    trip: { origin: { name: string }; destination: { name: string } } | null;
+  };
+  const totalShift = briefing.days.reduce((a, d) => a + d.shiftMin, 0);
+
+  return (
+    <main style={{ minHeight: "100vh", background: "#F5EFE6", color: "#5b4d41", fontFamily: '"Helvetica Neue", sans-serif', padding: "40px 20px" }}>
+      <div style={{ maxWidth: 560, margin: "0 auto" }}>
+        <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.18em", color: "#D96B43", textTransform: "uppercase" }}>
+          Meridian · shared plan
+        </div>
+        <h1 style={{ fontSize: 24, fontWeight: 800, margin: "10px 0 4px" }}>
+          {trip ? `${trip.origin.name} → ${trip.destination.name}` : "Shift plan"}
+        </h1>
+        <p style={{ fontSize: 13, color: "#7a6a5c", margin: "0 0 20px" }}>{briefing.summary}</p>
+
+        <div style={{ background: "#fff8ef", border: "1px solid #e3d5c3", borderRadius: 16, padding: 16 }}>
+          {briefing.days.map((d) => (
+            <div key={d.label} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, padding: "8px 0", borderTop: "1px solid #eee3d6" }}>
+              <b>{d.label}</b>
+              <span>{d.shiftMin} min shift · {d.interventions.length} steps</span>
+            </div>
+          ))}
+          <div style={{ fontSize: 12, color: "#7a6a5c", marginTop: 10 }}>
+            {Math.round(Math.abs(totalShift))} min shifted · score {briefing.score.toFixed(2)} · {briefing.citations.length} papers cited
+          </div>
+        </div>
+
+        <Link href="/" style={{ display: "inline-block", marginTop: 20, background: "linear-gradient(90deg,#D96B43,#e99a6f)", color: "#fff8ef", borderRadius: 999, padding: "10px 22px", fontSize: 13, fontWeight: 800, textDecoration: "none" }}>
+          Make your own plan →
+        </Link>
+        <p style={{ fontSize: 10, color: "#b7ab9d", marginTop: 16 }}>Built by the Meridian crew — agents that fly ahead of you.</p>
+      </div>
+    </main>
+  );
+}

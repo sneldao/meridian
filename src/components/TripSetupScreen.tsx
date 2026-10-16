@@ -105,8 +105,8 @@ export function TripSetupScreen({
       {/* 2. Best Flight Time Advisor Bottom-Sheet Drawer */}
       <div className="sheet rise" style={{ animationDelay: ".5s" }}>
         <div className="hand" />
-        <h2>2. Best Flight Time Advisor</h2>
-        <div className="sub">1. Route &amp; Timezone Shift</div>
+        <h2>2. Ideal Departure Windows</h2>
+        <div className="sub">Circadian guidance — pick a real flight inside the best window; these are windows, not bookable flights</div>
         <div className="fl">
           {(flightOptions.length > 0
             ? flightOptions

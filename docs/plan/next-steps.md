@@ -103,6 +103,9 @@ do now so you land fresh.**
 
 ## Order (when resumed)
 
+Full sequenced plan with file-level scope:
+[consumer-appeal-implementation.md](consumer-appeal-implementation.md)
+
 1. Next-action hero card on `/` (countdown-driven).
 2. Collapse Trip Setup into an edit state on the guide surface.
 3. Timeline view for the day (replaces nudge grid as default).

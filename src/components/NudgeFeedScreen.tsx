@@ -17,7 +17,7 @@ import type {
   WearableBaseline,
 } from "@/domain/types";
 
-export type GuideViewMode = "focus" | "cards";
+export type GuideViewMode = "focus" | "cards" | "timeline";
 
 interface NudgeFeedScreenProps {
   trip: Trip | null;
@@ -42,6 +42,21 @@ interface NudgeFeedScreenProps {
   selectedFlightId: string;
   onOpenTripSetup: () => void;
   onStartCrewSync: () => void;
+  /** D+1..D+4 daily touch: report how the selected day went — feeds replan. */
+  onCheckIn?: (status: string) => void;
+}
+
+/** Consumer-facing day names — domain labels ("D-3", "D+1") stay internal
+ *  keys; users see dates when we have them, or plain words otherwise. */
+function friendlyDayLabel(d: { label: string; dayIndex: number; date: string }, departureDayIndex?: number): string {
+  const dep = departureDayIndex ?? 3;
+  if (d.dayIndex === dep) return "✈ Flight day";
+  if (d.date) {
+    const dt = new Date(`${d.date}T12:00:00`);
+    if (!Number.isNaN(dt.getTime()))
+      return dt.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+  }
+  return d.dayIndex < dep ? `Prep day ${d.dayIndex + 1}` : `Recovery day ${d.dayIndex - dep}`;
 }
 
 const CANONICAL_ORDER: NudgeCategory[] = [
@@ -72,6 +87,7 @@ export function NudgeFeedScreen({
   selectedFlightId,
   onOpenTripSetup,
   onStartCrewSync,
+  onCheckIn,
 }: NudgeFeedScreenProps) {
   const [viewMode, setViewMode] = useState<GuideViewMode>("focus");
   const [defaultViewMode, setDefaultViewMode] = useState<GuideViewMode>("focus");
@@ -140,6 +156,9 @@ export function NudgeFeedScreen({
   );
   const activeDaySpec = days[activeDayIndex] ?? days[0];
   const currentLabel = activeDaySpec?.label ?? "D-2";
+  const currentDayName = activeDaySpec
+    ? friendlyDayLabel(activeDaySpec, trip?.departureDayIndex)
+    : "Prep day";
 
   const flightOptions = useMemo(
     () => (trip ? getFlightRecommendations(trip) : []),
@@ -182,7 +201,7 @@ export function NudgeFeedScreen({
     const nAttempts = Math.max(vs.length, drafts.get(activeDaySpec.label)?.attempt ?? 0);
     if (nAttempts) parts.push(`drafted ${nAttempts}×`);
     const fails = vs.filter((v) => !v.feasible).length;
-    if (fails) parts.push(`scorer rejected ${fails}×`);
+    if (fails) parts.push(`revised ${fails}×`);
     const latest = vs.at(-1);
     if (locked.has(activeDaySpec.label) && latest)
       parts.push(`locked at ${latest.score.toFixed(2)}`);
@@ -306,7 +325,7 @@ export function NudgeFeedScreen({
           </svg>
 
           <div className="flt">
-            <b>Target flight</b>
+            <b>Ideal flight window</b>
             <br />
             {chosenFlight
               ? `Departs ${chosenFlight.departsLocal} · Arrives ${chosenFlight.arrivesDest}`
@@ -339,12 +358,13 @@ export function NudgeFeedScreen({
               </svg>
             </div>
             <div>
-              <div className="mini">Next Nudge · {currentLabel}</div>
+              <div className="mini">Your next move · {currentDayName}</div>
             </div>
           </div>
 
-          <span className="tw" style={{ alignSelf: "flex-start" }}>
-            {countdown ? `${countdown} · ` : ""}
+          <span className="tw" style={{ alignSelf: "flex-start", fontSize: "15px", fontWeight: 800 }}>
+            {countdown ?? ""}
+            {countdown ? " · " : ""}
             {heroNudge ? heroNudge.timeWindow : "07:00 – 07:35"}
           </span>
 
@@ -417,10 +437,16 @@ export function NudgeFeedScreen({
               disabled={phase === "running"}
             >
               {phase === "running"
-                ? `Verifying (${locked.size}/${days.length || 5})…`
-                : "Run Live Crew Verification"}
+                ? `Checking your plan (${locked.size}/${days.length || 5})…`
+                : "Personalise with the crew"}
             </button>
           </div>
+          {phase === "idle" && (
+            <p style={{ marginTop: "8px", fontSize: "11px", color: "#7a6a5c" }}>
+              Showing a preview for this route — personalise it and the crew
+              tailors every step to your baseline and calendar.
+            </p>
+          )}
         </div>
       </div>
 
@@ -452,7 +478,7 @@ export function NudgeFeedScreen({
               aria-pressed={isSelected}
               className={`day ${isSelected ? "on" : ""}`}
             >
-              {isFlight ? "✈️ Fly" : d.label}
+              {isFlight ? "✈️ Fly" : friendlyDayLabel(d, trip?.departureDayIndex)}
             </button>
           );
         })}
@@ -471,6 +497,47 @@ export function NudgeFeedScreen({
           }}
         >
           {dayBeat}
+        </div>
+      )}
+
+      {/* Daily check-in — the thumb-sized touch that keeps the plan honest */}
+      {phase === "done" && onCheckIn && (
+        <div
+          className="card rise"
+          style={{
+            marginTop: "12px",
+            padding: "12px 16px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "10px",
+            flexWrap: "wrap",
+          }}
+        >
+          <span style={{ fontSize: "12px", fontWeight: 700, color: "#5b4d41" }}>
+            How did {currentDayName} go?
+          </span>
+          <span style={{ display: "flex", gap: 8 }}>
+            {(["done", "partial", "skipped"] as const).map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => onCheckIn(s)}
+                style={{
+                  border: "1px solid #e3d5c3",
+                  background: s === "done" ? "#D96B43" : "#fff8ef",
+                  color: s === "done" ? "#fff8ef" : "#5b4d41",
+                  borderRadius: 999,
+                  padding: "8px 14px",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                {s === "done" ? "Did it ✓" : s === "partial" ? "Partly" : "Skipped"}
+              </button>
+            ))}
+          </span>
         </div>
       )}
 
@@ -526,6 +593,20 @@ export function NudgeFeedScreen({
           }}
         >
           · Day-by-Day Cards{defaultViewMode === "cards" ? " ★" : ""}
+        </button>
+        <button
+          type="button"
+          onClick={() => setViewMode("timeline")}
+          className="mini"
+          style={{
+            background: "transparent",
+            border: "none",
+            padding: 0,
+            cursor: "pointer",
+            color: viewMode === "timeline" ? "#D96B43" : "#7a6a5c",
+          }}
+        >
+          · Timeline{defaultViewMode === "timeline" ? " ★" : ""}
         </button>
         <button
           type="button"
@@ -587,7 +668,50 @@ export function NudgeFeedScreen({
         </div>
       )}
 
+      {/* Timeline — one line per move, the day as a rail not a grid */}
+      {viewMode === "timeline" && (
+        <div className="card rise" style={{ animationDelay: ".4s", marginTop: "14px", padding: "18px 20px" }}>
+          {filteredNudges.map((nudge, i) => {
+            const isDone = completedIds.has(nudge.id);
+            return (
+              <button
+                key={nudge.id}
+                type="button"
+                onClick={() => toggleComplete(nudge.id)}
+                style={{
+                  display: "flex",
+                  alignItems: "baseline",
+                  gap: "12px",
+                  width: "100%",
+                  padding: "10px 0",
+                  border: "none",
+                  borderTop: i === 0 ? "none" : "1px solid #eee3d6",
+                  background: "transparent",
+                  cursor: "pointer",
+                  textAlign: "left",
+                  color: isDone ? "#b7ab9d" : "#5b4d41",
+                }}
+              >
+                <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 800, fontSize: "13px", minWidth: "72px", color: isDone ? "#b7ab9d" : "#D96B43" }}>
+                  {nudge.timeWindow.split("–")[0].trim()}
+                </span>
+                <span style={{ flex: 1, fontSize: "13px", fontWeight: 600, textDecoration: isDone ? "line-through" : "none" }}>
+                  {nudge.title}
+                </span>
+                <span style={{ fontSize: "11px", color: "#7a6a5c" }}>
+                  {isDone ? "done ✓" : nudge.durationLabel}
+                </span>
+              </button>
+            );
+          })}
+          {filteredNudges.length === 0 && (
+            <p style={{ fontSize: "12px", color: "#7a6a5c" }}>Nothing on this day yet.</p>
+          )}
+        </div>
+      )}
+
       {/* Two-Column Sunlit Horizon Bento Deck */}
+      {viewMode !== "timeline" && (
       <div className="deck rise" style={{ animationDelay: ".4s" }}>
         {filteredNudges.map((nudge) => {
           const isDone = completedIds.has(nudge.id);
@@ -716,13 +840,16 @@ export function NudgeFeedScreen({
                     <p>{nudge.whyItHelps}</p>
                     {nudge.evidence ? (
                       <div className="evrow">
+                        <span className="evchip" style={{ background: "transparent", border: "none", padding: "3px 0" }}>
+                          checked by Iris · planned by Otto
+                        </span>
                         {nudge.evidence.evalVerdict && (
                           <span className={`evchip ${nudge.evidence.evalVerdict.violations.length ? "warn" : "pass"}`}>
-                            gate {nudge.evidence.evalVerdict.score.toFixed(2)}
+                            check {nudge.evidence.evalVerdict.score.toFixed(2)}
                           </span>
                         )}
                         {nudge.evidence.draftRejected && (
-                          <span className="evchip warn">draft rejected → retried</span>
+                          <span className="evchip warn">revised once</span>
                         )}
                         {nudge.citation && (
                           <span className="evchip cite" title={nudge.citation.title}>
@@ -790,6 +917,7 @@ export function NudgeFeedScreen({
           );
         })}
       </div>
+      )}
     </>
   );
 }
