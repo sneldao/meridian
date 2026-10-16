@@ -5,6 +5,23 @@
 the page is honest and one-flow now, but the ghost terminator — the product's
 namesake — still isn't carrying meaning on the home page.
 
+## Status (updated 2026-10-17)
+
+| Item | Status | Where |
+|---|---|---|
+| P0 light step fix | Done — on `main` | `3986ff9` |
+| P1 hero ghost-terminator panel | Not in PR #5 — Dev 2 | — |
+| P2 "Land at 100%" | Decided: option (1). Hero/handoff copy owner: Dev 2 | — |
+| P2a voice ramp | Done in PR #5 | `src/app/page.tsx` |
+| P2b nudge→impact loop | Not started — domain half is Dev 1 | — |
+| P3 depth control | Done in PR #5 | `src/app/page.tsx`, `globals.css` |
+| P4 leftovers | Narrowed: `.view` deleted. Sheet chrome, extra orphans, accent: open (see below) | `globals.css` |
+
+PR: https://github.com/sneldao/meridian/pull/5 (branch `signature/home-pass`).
+
+The P0 fix lives on `main` and isn't in this PR. Voice never switches on from
+the depth dial; the traveller's own toggle is the only way to turn it on.
+
 ## P0 — bug first: light step showing wake time
 
 Observed on `main` (deployed): "Get outside light · 05:15 London — Outside by
@@ -75,8 +92,9 @@ voices over a full run is intense on first contact.
 
 - **Default: off on Calm.** The consumer surface ships silent; one "🔊 hear
   the crew" affordance in the hero/menu opts in.
-- **Guided: one narrator.** Single voice summarising beats (the dayBeat
-  line, the verdict, the handoff) — not per-agent token streaming.
+- **Guided: one narrator, available but never auto-on.** Single voice
+  summarising the handoff — not per-agent token streaming. Shipped this way
+  after review: depth changes never switch voice on.
 - **Operator (`/crew`): the full huddle** — current per-agent sentence
   streaming stays; it belongs there.
 - Tie the ramp to depth, not a separate setting: the dial already models
@@ -122,8 +140,63 @@ P0 → P1 → P3 → P2 (copy decision) → P4.
 | **2 — Today** | `src/components/NudgeFeedScreen.tsx` + components split out of it | **P1** hero panel — real terminator + ghost curve from `src/domain/sun.ts` (`geoCircle`/`geoOrthographic`, WorldLens §3a primitives; SVG, no new deps), two cities, the "dawn is Nh behind" line, next-step beam on the curve. Go straight to code — no mockup gate. **P2b UI** — Done/missed copy with the impact numbers from Dev 1's helper; causal-chain framing. **P2 copy** — the honest qualifier line on hero/handoff. |
 | **3 — Shell** | `src/app/page.tsx`, voice plumbing, `globals.css` | **P2a** voice ramp (Calm silent + "hear the crew" opt-in; Guided = one narrator; `/crew` = full huddle; persist last choice). **P3** depth control on `/` (Today · See why · Watch the crew → calm/guided/operator) + localStorage. **P4** visual leftovers (state accent discipline, sheet chrome, day-chip motif). |
 
-P0 lands alone, first — it's live on prod. Branch `signature/` off `main`
-this time (single deployable line; no integration branch needed for a
-one-bug + additive-pass). Verification unchanged: `bun run typecheck &&
+P0 landed alone, first — it's live on prod. Branch `signature/home-pass` off
+`main` (single deployable line; no integration branch needed). Verification unchanged: `bun run typecheck &&
 bun run lint && bun test`, plus a live check at 1280px and 390px — the hero
 panel is where visual regressions will land.
+
+## Open decisions
+
+1. **P4 sheet chrome.** `DeepDiveVisuals` has no backdrop blur, so the spec's
+   target doesn't exist. Options: match `AgentDrawer` (`bg-ink/70
+   backdrop-blur-sm`), or define one overlay token and use it for both.
+2. **P4 extra orphans.** `.deck`, `.tile`, `.chips` have no class usages in
+   `src/`. Delete in a follow-up if confirmed.
+3. **Accent.** Gold is only on focus rings (`Button.tsx`, `AgentChip.tsx`).
+   Left as an accessibility state. Confirm.
+4. **Depth rung names.** Spec says Today · See why · Watch the crew. The
+   review suggests outcome names for consumers (Today · Why this works ·
+   Advanced). Pick one before the consumer launch copy is written.
+
+## Consumer review (2026-10-17)
+
+Positioning as a consumer offer, not just a demo:
+
+**Working:** the promise is specific ("land ready for your 9am meeting"); the
+scorer's honesty is a real trust asset; the one-flow home is the right shape;
+progressive depth keeps the mechanism one click away.
+
+**Gaps, in priority order:**
+
+1. **Demo data on first run.** Baseline is a fixture until Garmin is wired;
+   calendar is a fixture unless Google is connected. The UI tags it, but a new
+   user's first plan is built on someone else's sleep. Either real connect or a
+   clearly labelled sample traveller on first run.
+2. **Headline vs. engine.** "Land at 100%" with a qualifier underneath gets
+   skimmed. Consider leading with "Land ready" or "Arrive ahead" and making the
+   honest residual the subhead. This is a tagline decision, not just copy, so
+   it needs an owner before any launch copy is written.
+3. **Voice is off by default.** Right for not overwhelming people, but it hides
+   the demo's emotional moment. Offer one explicit "hear your plan" action on
+   Guided, not a toggle labelled "Hear the crew".
+4. **Operator language on the consumer path.** Named agents, tool calls, and
+   graph memory are for builders. Keep them off Today; rename rungs for
+   outcomes (open item 4).
+5. **Medical-adjacent boundary.** Circadian timing sits near health advice.
+   State it is planning help, not medical guidance, before asking for sleep or
+   wearable data.
+6. **Visual consistency.** Sheet overlay and accent (open items 1 and 3).
+
+**Offer hypotheses (not decided):**
+
+- Buyer: frequent business travellers who lose a day to jet lag. The value
+  moment is before the trip, so the product is "plan my next trip", a repeat
+  habit.
+- Moat: check-ins and outcomes feed adherence and memory across trips. Show it
+  to the user ("last trip you skipped the morning walk; this plan moves it").
+- Pricing: per-trip or subscription with a free first plan. Don't price by
+  agent runs; users don't understand that unit.
+
+**Next, in order:** (1) first-run data honesty, (2) headline decision, (3) a
+"hear your plan" moment on Guided, (4) medical boundary copy, (5) rung naming.
+Re-open P1/P2b after (1) since they depend on the same first-run data.

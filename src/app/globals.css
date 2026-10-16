@@ -294,15 +294,6 @@ body {
     radial-gradient(120% 90% at 78% 74%, rgba(217, 107, 67, 0.55), transparent 55%),
     linear-gradient(180deg, #0b0e16 0%, #10141f 46%, #241a1c 66%, #3a2118 82%, #D96B43 120%);
 }
-.term .tstar { fill: rgba(245, 239, 230, 0.55); }
-.term .tline {
-  stroke: var(--color-ghost);
-  stroke-width: 1.8;
-  fill: none;
-  filter: drop-shadow(0 0 7px rgba(255, 217, 138, 0.55));
-}
-.term .tsun { fill: var(--color-sun-dest); filter: drop-shadow(0 0 8px rgba(255, 196, 107, 0.8)); }
-.term .thome { fill: var(--color-sun-home); }
 
 /* Evidence chips — the crew's gate output as badges, not prose. */
 .evrow { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
@@ -1087,6 +1078,78 @@ textarea:focus-visible,
 /* The hero's left panel keeps only the terminator and one honest number. */
 .hl-stats {
   margin-top: auto;
+}
+
+/* P1 — the dawn panel. The map takes the slack in the card; the caption gives
+   the same read in words, so reduced motion and Guided lose nothing. */
+.dawn-map {
+  flex: 1 1 auto;
+  align-self: center;
+  min-height: 200px;
+  width: 100%;
+  animation: dawnFade var(--duration-slow) var(--ease-smooth-out) both;
+}
+@keyframes dawnFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.dawn-cap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+}
+.dawn-cities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-mist);
+}
+.dawn-cities b {
+  margin-left: 6px;
+  font-weight: 800;
+  color: var(--color-paper);
+  font-variant-numeric: tabular-nums;
+}
+.dawn-gap {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--color-paper);
+}
+.dawn-gap b {
+  font-weight: 800;
+  white-space: nowrap;
+}
+.dawn-note {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--color-mist);
+}
+.dawn-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: 12px;
+  color: var(--color-mist);
+}
+.dawn-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.dawn-legend svg {
+  flex: none;
 }
 
 .tl {

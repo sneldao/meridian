@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { fmtMin } from "@/domain/circadian";
+import { coverageOf, fmtMin } from "@/domain/circadian";
 import { buildDailyNudgesForDay } from "@/domain/nudges";
 import { previewPlan } from "@/domain/solver";
 import {
@@ -12,6 +12,7 @@ import {
   todayDayIndex,
 } from "@/domain/today";
 import { ADHERENCE_PROFILE } from "@/domain/fixtures";
+import { HeroDawnPanel } from "@/components/HeroDawnPanel";
 import type {
   AdherenceProfile,
   CalendarEvent,
@@ -174,6 +175,16 @@ export function NudgeFeedScreen({
   const landedResidualHours =
     landedResidualMin !== null ? Math.round(landedResidualMin / 60) : null;
 
+  // What the body still owes the destination — the gap the hero draws. Before a
+  // run it is the preview chain's residual at landing; once the crew locks days
+  // it is measured from the real plan, so the ghost curve closes as you go.
+  const lockedDays = useMemo(() => [...locked.values()], [locked]);
+  const dawnOwedMin = useMemo(() => {
+    if (!trip) return 0;
+    if (lockedDays.length) return coverageOf(trip, lockedDays).residualMin;
+    return landedResidualMin ?? Math.abs(trip.requiredShiftMin);
+  }, [trip, lockedDays, landedResidualMin]);
+
   // One view: the day as a rail, in the order you live it.
   const steps = useMemo(() => {
     if (!trip || !activeDaySpec) return [];
@@ -230,6 +241,15 @@ export function NudgeFeedScreen({
     completedIds,
     nowMin,
   );
+  // Only a light step has a beam for the panel to place on the curve.
+  const heroBeam =
+    heroNudge?.category === "sunlight"
+      ? {
+          dayIndex: heroNudge.dayIndex,
+          startMin: heroNudge.startMin,
+          endMin: heroNudge.endMin,
+        }
+      : null;
   const completedCount = steps.filter((n) => completedIds.has(n.id)).length;
   const totalSteps = steps.length;
   const progressPct = totalSteps
@@ -258,36 +278,17 @@ export function NudgeFeedScreen({
 
   return (
     <>
-      {/* Split-Horizon Hero Card — the trip identity lives in the summary chip
-          above, so this panel is the day/night line and one honest number. */}
+      {/* Split-Horizon Hero Card — the left panel is the trip's real dawn line:
+          body clock against destination, with the next light window on it. */}
       <div className="hero rise" style={{ animationDelay: ".2s" }}>
-        <div className="hl">
-          <div className="bg term" aria-hidden="true">
-            <svg viewBox="0 0 320 470" preserveAspectRatio="xMidYMid slice" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
-              <circle className="tstar" cx="38" cy="42" r="1.1" />
-              <circle className="tstar" cx="92" cy="24" r="0.8" />
-              <circle className="tstar" cx="160" cy="52" r="1" />
-              <circle className="tstar" cx="230" cy="30" r="0.9" />
-              <circle className="tstar" cx="284" cy="66" r="1.2" />
-              <circle className="tstar" cx="64" cy="96" r="0.8" />
-              <circle className="tstar" cx="196" cy="88" r="0.7" />
-              {/* the terminator — the body's day/night line crossing the frame */}
-              <path className="tline" d="M-20 300 Q80 258 160 286 T340 250" />
-              <circle className="tsun" cx="272" cy="268" r="5.5" />
-              <circle className="thome" cx="52" cy="296" r="3.5" opacity="0.8" />
-            </svg>
-          </div>
-          <div className="sc" />
-          {/* One number, never two: the done count lives in the meter below, so
-              this panel only speaks once the crew has locked real days. */}
-          {readinessPct > 0 && (
-            <div className="stats hl-stats">
-              <div className="stat">
-                <em>{readinessPct}%</em>of shift locked
-              </div>
-            </div>
-          )}
-        </div>
+        {trip && (
+          <HeroDawnPanel
+            trip={trip}
+            owedMin={dawnOwedMin}
+            beam={heroBeam}
+            readinessPct={readinessPct}
+          />
+        )}
 
         <div className="hr">
           <div className="row">
