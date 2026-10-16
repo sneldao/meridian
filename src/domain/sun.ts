@@ -112,3 +112,63 @@ export function terminatorLat(lon: number, sub: SubsolarPoint): number {
   if (Math.abs(tanDec) < 1e-12) return cosH > 0 ? -90 : 90;
   return Math.atan(-cosH / tanDec) * DEG;
 }
+
+/** A point on the day/night line, with the solar clock it experiences. */
+export interface TerminatorCrossing {
+  lon: number;
+  lat: number;
+  /** Local *solar* time there, minutes since midnight — about 06:00 at dawn,
+   *  18:00 at dusk, pulled off those by latitude and season. */
+  clockMin: number;
+}
+
+const wrapMin = (m: number) => ((m % 1440) + 1440) % 1440;
+
+/**
+ * Where the day/night line crosses a latitude right now, as [dawn, dusk].
+ *
+ * The crossing is the hour angle H satisfying cos H = −tan φ · tan δ, so the
+ * place at longitude sub.lon + H has the sun on its horizon. Returns empty in
+ * polar day or polar night: the honest answer there is that the sun never
+ * crosses the horizon, not a sunrise invented from a NaN.
+ */
+export function terminatorCrossings(lat: number, sub: SubsolarPoint): TerminatorCrossing[] {
+  const cosH = -Math.tan(lat * RAD) * Math.tan(sub.lat * RAD);
+  if (Math.abs(cosH) > 1) return [];
+  const h = Math.acos(cosH) * DEG;
+  return [-h, h].map((hourAngle) => ({
+    lon: wrapLon(sub.lon + hourAngle),
+    lat,
+    clockMin: wrapMin(720 + hourAngle * 4),
+  }));
+}
+
+/** What the sun says the time is at a longitude — solar time, not the wall clock. */
+export function solarClockMin(lon: number, sub: SubsolarPoint): number {
+  return wrapMin(720 + wrapLon(lon - sub.lon) * 4);
+}
+
+/**
+ * The sub-solar point as the traveller's body reads it — the ghost terminator
+ * of design-vision.md §2, which the world lens and the home hero draw alike.
+ *
+ * `owedMin` is the shift the plan has not delivered. An eastward body starts
+ * *behind* the destination dawn, west of the real sun, and each scorer-locked
+ * day drags it east until the two lines fuse; a westward body leads and the
+ * drift runs the other way. `requiredShiftMin` carries that direction (signed
+ * minutes, negative = advance), `owedMin` the size — so the curve closes as
+ * the run locks days.
+ *
+ * The offset is capped at `requiredShiftMin`: coverageOf keeps residualMin
+ * inside requiredMin, so nothing upstream can ask for more, but the ghost
+ * curve is drawn straight from this number and never swings past the trip.
+ */
+export function bodySubsolarPoint(
+  sub: SubsolarPoint,
+  owedMin: number,
+  requiredShiftMin: number,
+): SubsolarPoint {
+  const owed = Math.min(Math.abs(owedMin), Math.abs(requiredShiftMin));
+  const driftDeg = (owed / 60) * 15 * Math.sign(requiredShiftMin);
+  return { lon: wrapLon(sub.lon + driftDeg), lat: sub.lat };
+}
