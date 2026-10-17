@@ -7,6 +7,8 @@ import { todayDayIndex } from "@/domain/today";
 import { summarizeCheckIn } from "@/domain/adherence";
 import type {
   AdherenceProfile,
+  CheckIn,
+  CheckInStatus,
   CalendarEvent,
   CrewEvent,
   Trip,
@@ -368,6 +370,28 @@ export default function Home() {
 
   const startShift = useCallback(() => beginStream(), [beginStream]);
 
+  // The day check-in ("How did X go?") becomes a real CheckIn for that day and
+  // replans from the next day, through the same checkins -> replan path the
+  // check-in intake uses. The route expects base64 JSON, not a bare status.
+  const sendDayCheckIn = useCallback(
+    (status: string) => {
+      if (!trip) return;
+      const day = trip.days.find((d) => d.label === selectedDayLabel);
+      if (!day) return;
+      const checkIn: CheckIn = {
+        id: `day-${day.dayIndex}-${Date.now()}`,
+        dayIndex: day.dayIndex,
+        status: status as CheckInStatus,
+        at: Date.now(),
+      };
+      beginStream({
+        checkins: btoa(JSON.stringify([checkIn])),
+        startDay: Math.min(day.dayIndex + 1, 4),
+      });
+    },
+    [trip, selectedDayLabel, beginStream],
+  );
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName;
@@ -628,7 +652,7 @@ export default function Home() {
                 adherence={data?.adherence}
                 baselineSource={data?.baselineSource}
                 onStartCrewSync={startShift}
-                onCheckIn={(status) => beginStream({ checkins: status })}
+                onCheckIn={sendDayCheckIn}
               />
             </div>
 
