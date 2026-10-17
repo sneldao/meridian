@@ -21,12 +21,12 @@ Everything behind those — `src/domain/`, `src/app/api/`, `/outcome`, a11y
 infrastructure — is genuinely disjoint and parallelises without merge pain.
 
 **Track A — the landing journey.** Owns `page.tsx` + `NudgeFeedScreen.tsx`.
-Items 1, 2, 4, 5, 9, 10 done; remaining 6 (surface half) and then 7.
+Items 1, 2, 4, 5, 6, 9, 10 done; **only 7 remains**.
 **7 is the headline**, because the product currently stops at the plan.
 
 **Track B — data honesty and the loop.** Owns `src/domain/`, `src/app/api/`,
 `/outcome`, a11y infrastructure. Items 3, 4 (domain half), 6 (domain half),
-8, 9 (domain half) all done, plus the Garmin upload path.
+8, 9 (domain half) all done, plus the Garmin upload path. B's board is clear.
 
 **The seam — items 4, 6 and 9 each cross the line with the same contract.**
 B owns the domain half, A owns the surface half, and **B lands first** because
@@ -37,11 +37,11 @@ its surface half is now unblocked.
 **Sequence.** Shipped so far: 1 + 2 (`4ba7b35`), 5 (`deee7d9`), 4 (`36563d0`
 on top of `c675c45`), 9 + 10 (`0a0c680`), and from the other lane 3 (`4933774`),
 6-domain (`9afa6c3`), 8 (`1be902c`), 9-domain (`RunAnnouncer` + `useFocusTrap`),
-the Garmin upload path (`92299c3`). **Remaining, in order: 6's surface half**
-(ask the wake question inline — its domain half is in, so this is unblocked),
-then **7**. **7 goes last on purpose**: an arrival screen that claims "the crew
-learned from your week" is worthless if the week belongs to whoever used the demo
-last, and 6 is what makes the first number on the page theirs.
+the Garmin upload path (`92299c3`). **Remaining: item 7**, the landing payoff —
+the arrival surface, plus routing to `/outcome` once the trip's last day passes.
+It is last on purpose: an arrival screen that claims "the crew learned from your
+week" is worthless if the week belongs to whoever used the demo last, and 6 is
+what made the first number on the page the traveller's own.
 
 **Coordination.** Only A edits `page.tsx` / `NudgeFeedScreen.tsx`; B files the
 change and A picks it up. Rebase on `main` daily — a second agent commits
@@ -126,15 +126,28 @@ merely looking untidy. Verified against `main` on 2026-10-17.
 
 ## Next — the product gaps
 
-6. **B → A** · **Ask the one personalisation question** — a cold visitor is auto-given
-   LHR → HND plus a fixture wearable (`/api/trip` hardcodes
-   `baselineSource: "fixture"`) and is never asked anything. ~~`resolveBaseline`
-   defaults to `GARMIN_BASELINE`~~ **B's half shipped `9afa6c3`**:
+6. ~~**B → A** · **Ask the one personalisation question**~~ — **B's half `9afa6c3`**:
    `resolveBaselineState` returns `{ baseline, kind }` — garmin / wake-band /
-   demo-default (a labelled state, not "absent"; replay needs the fixture).
-   `baselineKind` rides `run_start` → run state, and `/api/trip` exposes it.
-   **A's surface half remains**: ask the wake question inline the first time a
-   number depending on it is shown (vision Rule 1: keep the demo trip).
+   demo-default (a labelled state, not "absent"; replay needs the fixture);
+   `baselineKind` rides `run_start` → run state and `/api/trip` exposes it.
+   **A's half shipped `9da72cd`**: the question appears inline on Today, directly
+   under the demo tag that admits the numbers are invented, and retires once
+   answered (the Edit sheet still allows a change). `/api/trip` can't report a
+   `wake-band` kind because it never sees `wake`, so the band is applied
+   client-side via `resolveBaseline` and the preview re-plans instantly.
+
+   Asking it exposed a bug that made the feature *harmful*: **answering emptied
+   the day's plan.** `resolveBaseline` computed bedtime as `wake + sleep - 1440`
+   instead of `wake - sleep`, putting a 06:45 riser to bed at 13:35. Nothing
+   threw and every band produced a well-formed baseline — the only symptom was a
+   solver that couldn't place anything. The existing tests asserted wake time
+   and chronotype and **never the bedtime**, which is exactly how the sign
+   survived; `tests/baseline.test.ts` now pins the invariant (`wake - sleep ===
+   bedtime`, sleep duration preserved, never a daytime bedtime, and `6to8`
+   reproducing the fixture's own 23:55).
+
+   All three answers now keep the day intact and move the numbers correctly: the
+   caffeine cutoff lands at 14:25 / 14:55 / 16:10 for early / mid / late.
 7. **A** · **The landing payoff** — "Land at 100%" is promised in the nav and never
    cashed. Post-flight days now preview, so the maths for landing exists, but
    there is no arrival surface and nothing navigates to `/outcome` when a

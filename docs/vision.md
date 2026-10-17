@@ -92,7 +92,7 @@ cashed. The target loop:
 
 | Stage | Where | What must be true | |
 |---|---|---|---|
-| **Arrive** | `/` | Demo trip renders immediately. One question asked about *them*, not about the trip. | surface half to do |
+| **Arrive** | `/` | Demo trip renders immediately. One question asked about *them*, not about the trip. | ✅ |
 | **Orient** | `/` hero | The residual is legible: how far behind your dawn is, and how much is banked. | ✅ |
 | **Personalise** | `/` CTA | The crew run is watchable — progress is *announced*, not just animated, and a dropped stream never bricks the button. | ✅ |
 | **Live the shift** | `/` Today | One step, one tap. Taps persist and are attributable to the traveller. | ✅ |
@@ -101,16 +101,15 @@ cashed. The target loop:
 
 The engine side of most of this is now true: the residual is legible, taps
 persist and are attributable, a stalled run can't strand anyone, the run is
-announced as it works, and the self-report can't fabricate a score. What remains
-is **the arrival surface** and **the one question** — and the one question is
-what makes the first number on the page the traveller's own rather than the
-fixture's, which is why it goes before the payoff.
+announced as it works, the self-report can't fabricate a score, and the one
+question is asked and answered.
 
-**Stage 5 is the gap.** The engine now previews post-flight days (`c9eccd2`),
-so the maths for landing exists — but there is no arrival surface, nothing ever
-navigates to `/outcome`, and the vision's own Window Seat ending was never
-built. This is where the ghost-terminator work pays off, because landing is the
-one moment the residual is finally zero and the two lines have fused.
+**Stage 5 is the only one left.** The engine previews post-flight days
+(`c9eccd2`) and the traveller is scoped, so the maths for landing exists — but
+there is no arrival surface, nothing ever navigates to `/outcome`, and the
+vision's own Window Seat ending was never built. This is where the
+ghost-terminator work pays off, because landing is the one moment the residual
+is finally zero and the two lines have fused.
 
 ---
 
@@ -169,7 +168,26 @@ Still open in this family:
 A control that looks load-bearing and isn't is worse than a missing one: it
 spends trust.
 
-### Closed: the payoff surface was gated behind the wrong things
+### Closed: no question was ever asked
+
+A cold visitor was auto-given LHR → HND plus a fixture wearable and never asked
+anything, so a real user and a demo viewer were indistinguishable. The baseline
+now carries honest provenance (`garmin` / `wake-band` / `demo-default`), and the
+one question appears inline on Today — directly under the tag that admits the
+numbers are invented, where the numbers it affects actually appear. It retires
+once answered.
+
+Rule 1's sharpest lesson came from building it. The question *emptied the day's
+plan*, because `resolveBaseline` computed bedtime as `wake + sleep - 1440`
+instead of `wake - sleep` — a 06:45 riser was being sent to bed at 13:35.
+Nothing threw, every band produced a well-formed baseline, and the only symptom
+was a solver that couldn't place anything. The tests had asserted the wake time
+and the chronotype and **never the bedtime**, which is precisely how a 24-hour
+sign error lives indefinitely.
+
+So the rule earns its second clause: **assert the relationship between the
+numbers, not just the numbers.** `wake - sleep === bedtime` is now a test, and
+it is the kind of invariant that no single value can catch.
 
 `/outcome` rendered a full self-report with no trip and two sliders pre-set to
 the middle, so an accidental save recorded a fabricated neutral score, and it
