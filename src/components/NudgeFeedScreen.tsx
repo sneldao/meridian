@@ -1,8 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { coverageOf, fmtMin } from "@/domain/circadian";
-import { buildDailyNudgesForDay, stepImpactMin, type NudgeCategory } from "@/domain/nudges";
+import {
+  buildDailyNudgesForDay,
+  stepImpactMin,
+  type NudgeCategory,
+  type TravelerNudge,
+} from "@/domain/nudges";
 import { previewPlan } from "@/domain/solver";
 import {
   dayPlace,
@@ -17,9 +22,12 @@ import type {
   AdherenceProfile,
   CalendarEvent,
   CalendarMove,
+  CheckIn,
+  CheckInStatus,
   Citation,
   DayPlan,
   EvalResult,
+  InterventionKind,
   Trip,
   WearableBaseline,
 } from "@/domain/types";
@@ -51,9 +59,34 @@ export interface NudgeFeedScreenProps {
    *  the setup sheet, so a first-time visitor knows the plan is sample data. */
   baselineSource?: "fixture" | "garmin";
   onStartCrewSync: () => void;
-  /** D+1..D+4 daily touch: report how the selected day went — feeds replan. */
-  onCheckIn?: (status: string) => void;
+  /** Report what actually happened — per-step did/skip marks or one
+   *  day-level verdict. `lastMarkedDayIndex` lets the replan resume the day
+   *  after the checked day. */
+  onCheckIn?: (checkIns: CheckIn[], lastMarkedDayIndex: number) => void;
 }
+
+/** A one-tap mark waiting to be told to the crew — turns timeline taps into
+ *  structured check-ins (kind + startMin, so the early-skip floor learns). */
+type PendingMark = {
+  dayIndex: number;
+  kind?: InterventionKind;
+  startMin?: number;
+  status: "done" | "skipped";
+  /** Reads like what the wearer said — feeds the crew feed line and the
+   *  graph finding text ("skipped: Get outside light"). */
+  text: string;
+  at: number;
+};
+
+/** Nudge category → the intervention kind a did/skip mark refers to.
+ *  Calendar/flight nudges record status + time but carry no kind — moving a
+ *  meeting isn't a physiological ask. */
+const CATEGORY_KIND: Partial<Record<NudgeCategory, InterventionKind>> = {
+  sunlight: "light_exposure",
+  run: "exercise",
+  nutrition: "caffeine_cutoff",
+  sleep: "sleep_window",
+};
 
 /** Consumer-facing day names — domain labels ("D-3", "D+1") stay internal
  *  keys; users see dates when we have them, or plain words otherwise. The
@@ -125,7 +158,7 @@ export function NudgeFeedScreen({
     return () => clearTimeout(t);
   }, [completedKey]);
 
-  const toggleComplete = (id: string) => {
+  const toggleComplete = useCallback((id: string) => {
     setCompletedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
@@ -137,6 +170,111 @@ export function NudgeFeedScreen({
       }
       return next;
     });
+  }, [completedKey]);
+
+  // Pending did/skip marks — the check-in ledger, trip-scoped like the done
+  // state. Marks queue on tap and flush when the traveller checks in; until
+  // then they survive a refresh.
+  const [pendingMarks, setPendingMarks] = useState<Map<string, PendingMark>>(new Map());
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      try {
+        const saved = localStorage.getItem(`meridian:pendingCheckins:${completedKey}`);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) setPendingMarks(new Map(parsed));
+        }
+      } catch {
+        /* ignore */
+      }
+    }, 0);
+    return () => clearTimeout(t);
+  }, [completedKey]);
+
+  const savePending = useCallback((next: Map<string, PendingMark>) => {
+    try {
+      localStorage.setItem(
+        `meridian:pendingCheckins:${completedKey}`,
+        JSON.stringify([...next]),
+      );
+    } catch {
+      /* ignore */
+    }
+  }, [completedKey]);
+
+  /** One tap on Done — marks the step and queues a structured check-in.
+   *  Tapping again un-does both. */
+  const markDone = useCallback((s: TravelerNudge) => {
+    const wasDone = completedIds.has(s.id);
+    toggleComplete(s.id);
+    const next = new Map(pendingMarks);
+    if (wasDone) next.delete(s.id);
+    else
+      next.set(s.id, {
+        dayIndex: s.dayIndex,
+        kind: CATEGORY_KIND[s.category],
+        startMin: s.startMin,
+        status: "done",
+        text: `did: ${s.title}`,
+        at: Date.now(),
+      });
+    savePending(next);
+    setPendingMarks(next);
+  }, [pendingMarks, completedIds, toggleComplete, savePending]);
+
+  /** One tap on Skip — the adherence signal that matters most. Un-dones the
+   *  step if it was marked done; tapping again un-skips. */
+  const markSkipped = useCallback((s: TravelerNudge) => {
+    if (completedIds.has(s.id)) toggleComplete(s.id);
+    const wasSkipped = pendingMarks.get(s.id)?.status === "skipped";
+    const next = new Map(pendingMarks);
+    if (wasSkipped) next.delete(s.id);
+    else
+      next.set(s.id, {
+        dayIndex: s.dayIndex,
+        kind: CATEGORY_KIND[s.category],
+        startMin: s.startMin,
+        status: "skipped",
+        text: `skipped: ${s.title}`,
+        at: Date.now(),
+      });
+    savePending(next);
+    setPendingMarks(next);
+  }, [pendingMarks, completedIds, toggleComplete, savePending]);
+
+  const skippedIds = useMemo(
+    () =>
+      new Set(
+        [...pendingMarks.entries()]
+          .filter(([, m]) => m.status === "skipped")
+          .map(([id]) => id),
+      ),
+    [pendingMarks],
+  );
+
+  const isSkipped = (id: string) => skippedIds.has(id);
+
+  /** Send every queued mark to the crew — they become the replan's check-in
+   *  context. The ledger clears once it's handed over. */
+  const sendPendingMarks = () => {
+    if (!onCheckIn || pendingMarks.size === 0) return;
+    const marks = [...pendingMarks.values()];
+    const last = Math.max(...marks.map((m) => m.dayIndex));
+    const stamp = Date.now().toString(36);
+    const checkIns: CheckIn[] = marks.map((m, i) => ({
+      id: `ci-${stamp}-${i.toString(36)}`,
+      dayIndex: m.dayIndex,
+      kind: m.kind,
+      startMin: m.startMin,
+      status: m.status,
+      text: m.text,
+      at: m.at,
+    }));
+    const empty = new Map<string, PendingMark>();
+    setPendingMarks(empty);
+    savePending(empty);
+    onCheckIn(checkIns, last);
   };
 
   const days = trip?.days ?? [];
@@ -149,6 +287,28 @@ export function NudgeFeedScreen({
   const currentDayName = activeDaySpec
     ? friendlyDayLabel(activeDaySpec, trip?.departureDayIndex)
     : "Prep day";
+
+  /** No per-step marks? The day-level verdicts still fire a check-in in one
+   *  tap — "How did {day} go?" → did / partly / skipped. useCallback keeps the
+   *  compiler treating it as an event handler (Date.now is render-impure). */
+  const sendDayVerdict = useCallback(
+    (status: CheckInStatus) => {
+      if (!onCheckIn || !activeDaySpec) return;
+      const now = Date.now();
+      onCheckIn(
+        [
+          {
+            id: `ci-${now.toString(36)}-day`,
+            dayIndex: activeDaySpec.dayIndex,
+            status,
+            at: now,
+          },
+        ],
+        activeDaySpec.dayIndex,
+      );
+    },
+    [onCheckIn, activeDaySpec],
+  );
 
   // The city a step's time belongs to: origin-local through the flight day,
   // destination-local after it.
@@ -246,9 +406,15 @@ export function NudgeFeedScreen({
     trip && activeDaySpec && isToday
       ? nowMinOnDay(trip, activeDaySpec.dayIndex, new Date())
       : null;
+  // Skipped counts as resolved: "I'm not doing this" should drop the step out
+  // of the hero slot and the missed list, not keep nagging with it.
+  const resolvedIds = useMemo(
+    () => new Set([...completedIds, ...skippedIds]),
+    [completedIds, skippedIds],
+  );
   const { next: heroNudge, missed: missedNudges } = pickNextStep(
     steps,
-    completedIds,
+    resolvedIds,
     nowMin,
   );
   // Only a light step has a beam for the panel to place on the curve.
@@ -379,29 +545,55 @@ export function NudgeFeedScreen({
                 <b>Why this helps</b>
                 <p>{heroNudge.whyItHelps}</p>
               </div>
-              <button
-                type="button"
-                onClick={() => toggleComplete(heroNudge.id)}
-                aria-pressed={completedIds.has(heroNudge.id)}
-                style={{
-                  alignSelf: "flex-start",
-                  background: "linear-gradient(90deg, #D96B43, #e99a6f)",
-                  color: "#fff8ef",
-                  border: "none",
-                  borderRadius: "999px",
-                  padding: "10px 22px",
-                  fontSize: "13px",
-                  fontWeight: 800,
-                  letterSpacing: "0.04em",
-                  cursor: "pointer",
-                  marginTop: "2px",
-                }}
-              >
-                {completedIds.has(heroNudge.id) ? "Done ✓" : "Done"}
-              </button>
+              <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: "2px" }}>
+                <button
+                  type="button"
+                  onClick={() => markDone(heroNudge)}
+                  aria-pressed={completedIds.has(heroNudge.id)}
+                  style={{
+                    alignSelf: "flex-start",
+                    background: "linear-gradient(90deg, #D96B43, #e99a6f)",
+                    color: "#fff8ef",
+                    border: "none",
+                    borderRadius: "999px",
+                    padding: "10px 22px",
+                    fontSize: "13px",
+                    fontWeight: 800,
+                    letterSpacing: "0.04em",
+                    cursor: "pointer",
+                  }}
+                >
+                  {completedIds.has(heroNudge.id) ? "Done ✓" : "Done"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => markSkipped(heroNudge)}
+                  aria-pressed={isSkipped(heroNudge.id)}
+                  style={{
+                    background: "transparent",
+                    border: "1px solid #e3d5c3",
+                    color: "#7a6a5c",
+                    borderRadius: "999px",
+                    padding: "10px 18px",
+                    fontSize: "12px",
+                    fontWeight: 800,
+                    letterSpacing: "0.03em",
+                    cursor: "pointer",
+                  }}
+                >
+                  {isSkipped(heroNudge.id) ? "Skipped ✓" : "Skip"}
+                </button>
+              </div>
               {completedIds.has(heroNudge.id) && (
                 <p style={{ margin: 0, fontSize: "12px", color: "#7a6a5c" }}>
-                  Done — {impactCopy(heroNudge.category, "done")}.
+                  Done — {impactCopy(heroNudge.category, "done")}
+                  {pendingMarks.has(heroNudge.id) ? " · feeds your next check-in" : ""}.
+                </p>
+              )}
+              {isSkipped(heroNudge.id) && (
+                <p style={{ margin: 0, fontSize: "12px", color: "#b04523" }}>
+                  Skipped — {impactCopy(heroNudge.category, "missed")} · the crew
+                  replans around it at check-in.
                 </p>
               )}
               {missedNudges.length > 0 && (
@@ -444,22 +636,40 @@ export function NudgeFeedScreen({
                               {impactCopy(m.category, "missed")}
                             </span>
                           </span>
-                          <button
-                            type="button"
-                            onClick={() => toggleComplete(m.id)}
-                            style={{
-                              background: "transparent",
-                              border: "1px solid #e3d5c3",
-                              borderRadius: 999,
-                              padding: "3px 10px",
-                              fontSize: "11px",
-                              fontWeight: 700,
-                              color: "#5b4d41",
-                              cursor: "pointer",
-                            }}
-                          >
-                            Done
-                          </button>
+                          <span style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                            <button
+                              type="button"
+                              onClick={() => markDone(m)}
+                              style={{
+                                background: "transparent",
+                                border: "1px solid #e3d5c3",
+                                borderRadius: 999,
+                                padding: "3px 10px",
+                                fontSize: "11px",
+                                fontWeight: 700,
+                                color: "#5b4d41",
+                                cursor: "pointer",
+                              }}
+                            >
+                              Done
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => markSkipped(m)}
+                              style={{
+                                background: "transparent",
+                                border: "1px solid #e3d5c3",
+                                borderRadius: 999,
+                                padding: "3px 10px",
+                                fontSize: "11px",
+                                fontWeight: 700,
+                                color: "#7a6a5c",
+                                cursor: "pointer",
+                              }}
+                            >
+                              Skip
+                            </button>
+                          </span>
                         </li>
                       ))}
                     </ul>
@@ -552,7 +762,9 @@ export function NudgeFeedScreen({
         </div>
       )}
 
-      {/* Daily check-in — the thumb-sized touch that keeps the plan honest */}
+      {/* Check-in — the thumb-sized touch that keeps the plan honest. With
+          per-step marks queued it becomes the send surface; without them the
+          day-level verdicts still work in one tap. */}
       {phase === "done" && onCheckIn && (
         <div
           className="card rise"
@@ -566,30 +778,57 @@ export function NudgeFeedScreen({
             flexWrap: "wrap",
           }}
         >
-          <span style={{ fontSize: "12px", fontWeight: 700, color: "#5b4d41" }}>
-            How did {currentDayName} go?
-          </span>
-          <span style={{ display: "flex", gap: 8 }}>
-            {(["done", "partial", "skipped"] as const).map((s) => (
+          {pendingMarks.size > 0 ? (
+            <>
+              <span style={{ fontSize: "12px", fontWeight: 700, color: "#5b4d41" }}>
+                {pendingMarks.size} {pendingMarks.size === 1 ? "step" : "steps"} marked —
+                the crew replans the rest around what happened.
+              </span>
               <button
-                key={s}
                 type="button"
-                onClick={() => onCheckIn(s)}
+                onClick={sendPendingMarks}
                 style={{
-                  border: "1px solid #e3d5c3",
-                  background: s === "done" ? "#D96B43" : "#fff8ef",
-                  color: s === "done" ? "#fff8ef" : "#5b4d41",
+                  border: "1px solid #D96B43",
+                  background: "#D96B43",
+                  color: "#fff8ef",
                   borderRadius: 999,
-                  padding: "8px 14px",
+                  padding: "8px 16px",
                   fontSize: "12px",
-                  fontWeight: 700,
+                  fontWeight: 800,
                   cursor: "pointer",
                 }}
               >
-                {s === "done" ? "Did it ✓" : s === "partial" ? "Partly" : "Skipped"}
+                Check in →
               </button>
-            ))}
-          </span>
+            </>
+          ) : (
+            <>
+              <span style={{ fontSize: "12px", fontWeight: 700, color: "#5b4d41" }}>
+                How did {currentDayName} go?
+              </span>
+              <span style={{ display: "flex", gap: 8 }}>
+                {(["done", "partial", "skipped"] as const).map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => sendDayVerdict(s)}
+                    style={{
+                      border: "1px solid #e3d5c3",
+                      background: s === "done" ? "#D96B43" : "#fff8ef",
+                      color: s === "done" ? "#fff8ef" : "#5b4d41",
+                      borderRadius: 999,
+                      padding: "8px 14px",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {s === "done" ? "Did it ✓" : s === "partial" ? "Partly" : "Skipped"}
+                  </button>
+                ))}
+              </span>
+            </>
+          )}
         </div>
       )}
 
@@ -597,10 +836,11 @@ export function NudgeFeedScreen({
       <section className="tl rise" style={{ animationDelay: ".4s" }} aria-label={`${currentDayName} — steps`}>
         {steps.map((step) => {
           const isDone = completedIds.has(step.id);
+          const isSkip = isSkipped(step.id);
           const isOpen = !!expandAllWhy || expandedWhyId === step.id;
           const city = cityFor(step.dayIndex);
           return (
-            <div key={step.id} className={`tl-row${isDone ? " done" : ""}`}>
+            <div key={step.id} className={`tl-row${isDone ? " done" : ""}${isSkip ? " skipped" : ""}`}>
               <div className="tl-time">
                 <b>{fmtMin(step.startMin)}</b>
                 <span>{city}</span>
@@ -611,10 +851,18 @@ export function NudgeFeedScreen({
                   <button
                     type="button"
                     className="tl-done"
-                    onClick={() => toggleComplete(step.id)}
+                    onClick={() => markDone(step)}
                     aria-pressed={isDone}
                   >
                     {isDone ? "Done ✓" : "Done"}
+                  </button>
+                  <button
+                    type="button"
+                    className="tl-skip"
+                    onClick={() => markSkipped(step)}
+                    aria-pressed={isSkip}
+                  >
+                    {isSkip ? "Skipped ✓" : "Skip"}
                   </button>
                   {!expandAllWhy && (
                     <button
@@ -631,7 +879,14 @@ export function NudgeFeedScreen({
                 </div>
                 {isDone && (
                   <p style={{ margin: "4px 0 0", fontSize: "12px", color: "#7a6a5c" }}>
-                    Done — {impactCopy(step.category, "done")}.
+                    Done — {impactCopy(step.category, "done")}
+                    {pendingMarks.has(step.id) ? " · feeds your next check-in" : ""}.
+                  </p>
+                )}
+                {isSkip && (
+                  <p style={{ margin: "4px 0 0", fontSize: "12px", color: "#b04523" }}>
+                    Skipped — {impactCopy(step.category, "missed")} · the crew
+                    replans around it at check-in.
                   </p>
                 )}
                 {isOpen && (

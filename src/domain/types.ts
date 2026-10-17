@@ -243,6 +243,9 @@ export interface CheckInRequest {
   text?: string;
   dayIndex?: number;
   kind?: InterventionKind;
+  /** Intervention start (minutes since local midnight) when the check-in
+   *  refers to a placed ask — keeps the early-skip floor honest. */
+  startMin?: number;
   status?: CheckInStatus;
 }
 

@@ -9,7 +9,7 @@ import { summarizeCheckIn } from "@/domain/adherence";
 import type {
   AdherenceProfile,
   CheckIn,
-  CheckInStatus,
+  CheckInRequest,
   CalendarEvent,
   CrewEvent,
   Trip,
@@ -374,26 +374,59 @@ export default function Home() {
 
   const startShift = useCallback(() => beginStream(), [beginStream]);
 
-  // The day check-in ("How did X go?") becomes a real CheckIn for that day and
-  // replans from the next day, through the same checkins -> replan path the
-  // check-in intake uses. The route expects base64 JSON, not a bare status.
-  const sendDayCheckIn = useCallback(
-    (status: string) => {
-      if (!trip) return;
-      const day = trip.days.find((d) => d.label === selectedDayLabel);
-      if (!day) return;
-      const checkIn: CheckIn = {
-        id: `day-${day.dayIndex}-${Date.now()}`,
-        dayIndex: day.dayIndex,
-        status: status as CheckInStatus,
-        at: Date.now(),
+  // Every check-in surface ends in the same place: record the marks through
+  // the intake route — memory, Supabase, the graph write path — and then let
+  // the replan run consume them as context. Before this, check-ins reached
+  // the run but were never remembered.
+  const persistCheckIns = useCallback((checkIns: CheckIn[]) => {
+    for (const c of checkIns) {
+      const body: CheckInRequest = {
+        dayIndex: c.dayIndex,
+        kind: c.kind,
+        startMin: c.startMin,
+        status: c.status,
+        text: c.text,
       };
+      fetch("/api/crew/checkin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      }).catch(() => {
+        // Persistence is best-effort — the replan still gets the marks.
+      });
+    }
+  }, []);
+
+  // The feed's check-ins arrive as structured CheckIn[] — per-step did/skip
+  // marks or one day-level verdict. Replan resumes the day after the latest
+  // marked day.
+  const sendDayCheckIn = useCallback(
+    (checkIns: CheckIn[], lastMarkedDayIndex: number) => {
+      if (!trip || !checkIns.length) return;
+      persistCheckIns(checkIns);
       beginStream({
-        checkins: btoa(JSON.stringify([checkIn])),
-        startDay: Math.min(day.dayIndex + 1, 4),
+        checkins: btoa(JSON.stringify(checkIns)),
+        startDay: Math.min(lastMarkedDayIndex + 1, Math.max(trip.days.length - 1, 0)),
       });
     },
-    [trip, selectedDayLabel, beginStream],
+    [trip, beginStream, persistCheckIns],
+  );
+
+  // The MorningCheckin surface hands over base64 check-ins — decode, persist,
+  // then stream. One intake for every surface.
+  const checkInAndStream = useCallback(
+    (extra?: { checkins?: string; startDay?: number }) => {
+      if (extra?.checkins) {
+        try {
+          const parsed = JSON.parse(atob(extra.checkins));
+          if (Array.isArray(parsed)) persistCheckIns(parsed as CheckIn[]);
+        } catch {
+          /* a malformed param is the run route's problem */
+        }
+      }
+      beginStream(extra);
+    },
+    [persistCheckIns, beginStream],
   );
 
   useEffect(() => {
@@ -725,7 +758,7 @@ export default function Home() {
               sessionStartedAt={run.sessionStartedAt}
               onStart={startShift}
               onCancel={cancelShift}
-              onCheckIn={(extra) => beginStream(extra)}
+              onCheckIn={checkInAndStream}
               onBackToGuide={goGuide}
             />
           </div>
@@ -780,7 +813,7 @@ export default function Home() {
                 sessionStartedAt={run.sessionStartedAt}
                 onStart={startShift}
                 onCancel={cancelShift}
-                onCheckIn={(extra) => beginStream(extra)}
+                onCheckIn={checkInAndStream}
                 onBackToGuide={closeSetup}
               />
             </div>
