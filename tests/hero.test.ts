@@ -182,6 +182,41 @@ describe("heroMeeting (item 15)", () => {
     expect(out!.bodyWithoutPlanMin).toBe(6 * 60);
   });
 
+  test("pre-lock delight: with a preview the meeting reads ready, without it reads risk", () => {
+    // The demo pitch at 14:00 local is 06:00 body unbanked (inside the
+    // 23:10–07:30 sleep window → risk) and 09:00 with the preview's banked
+    // shift (outside the window → ready). The status must follow the
+    // with-plan half — the first impression is \"the crew already has you
+    // covered\", not a red badge before anything has run.
+    const withoutPreview = heroMeeting({
+      trip: DEMO_TRIP,
+      calendar: calendarFor(DEMO_TRIP),
+      locked: [],
+      baseline: GARMIN_BASELINE,
+    });
+    expect(withoutPreview).not.toBeNull();
+    expect(withoutPreview!.status).toBe("risk");
+    const plan = previewPlan({
+      trip: DEMO_TRIP,
+      calendar: calendarFor(DEMO_TRIP),
+      adherence: ADHERENCE_PROFILE,
+      baseline: GARMIN_BASELINE,
+    });
+    const previewLocked = [...plan.values()]
+      .filter((s) => s !== null)
+      .map((s) => s!.plan);
+    const withPreview = heroMeeting({
+      trip: DEMO_TRIP,
+      calendar: calendarFor(DEMO_TRIP),
+      locked: [],
+      previewLocked,
+      baseline: GARMIN_BASELINE,
+    });
+    expect(withPreview).not.toBeNull();
+    expect(withPreview!.bodyMin).toBe(9 * 60);
+    expect(withPreview!.status).toBe("ready");
+  });
+
   test("post-lock the preview is ignored — locked wins", () => {
     const plan = previewPlan({
       trip: DEMO_TRIP,

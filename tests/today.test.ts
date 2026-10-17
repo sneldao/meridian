@@ -130,4 +130,17 @@ describe("shiftLockedPct", () => {
   test("caps at 100", () => {
     expect(shiftLockedPct(trip, [lockedDay(-200), lockedDay(-200), lockedDay(-200)])).toBe(100);
   });
+
+  test("pre-lock with a preview shows the plan's promise, not 0", () => {
+    // Same rule as heroMeeting's previewLocked (Dev B, round 3): before
+    // anything is locked the first impression is what the crew would bank
+    // today. Demo preview banks −180 of −480 → 38%.
+    expect(shiftLockedPct(trip, [], [{ shiftMin: -90 }, { shiftMin: -90 }])).toBe(38);
+  });
+
+  test("post-lock the preview is ignored — locked wins", () => {
+    expect(
+      shiftLockedPct(trip, [lockedDay(-120)], [{ shiftMin: -480 }]),
+    ).toBe(25); // |−120| / 480, not the preview's 100
+  });
 });

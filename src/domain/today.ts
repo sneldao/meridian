@@ -70,10 +70,22 @@ export function pickNextStep(
 
 /** How much of the trip's required shift the locked days cover, 0–100.
  *  Sign-safe: east plans shift negative, so both sides take abs — the old
- *  signed division went negative for every eastbound trip. */
-export function shiftLockedPct(trip: Trip, locked: DayPlan[]): number {
+ *  signed division went negative for every eastbound trip.
+ *
+ *  Pre-lock expansion (Dev B, round 3): `previewLocked` is what the crew
+ *  *would* lock today (from `previewPlan`). When `locked` is empty the hero
+ *  uses the preview so the first impression shows the plan's promise
+ *  ("38% banked on preview") instead of 0%; once anything is really locked
+ *  the preview is ignored. Optional so existing callers keep the 0 shape. */
+export function shiftLockedPct(
+  trip: Trip,
+  locked: DayPlan[],
+  previewLocked?: Pick<DayPlan, "shiftMin">[],
+): number {
   const required = Math.abs(trip.requiredShiftMin);
   if (required === 0) return 0;
-  const covered = Math.abs(locked.reduce((acc, d) => acc + d.shiftMin, 0));
+  const effective =
+    locked.length > 0 ? locked : (previewLocked ?? locked);
+  const covered = Math.abs(effective.reduce((acc, d) => acc + d.shiftMin, 0));
   return Math.min(100, Math.round((covered / required) * 100));
 }
