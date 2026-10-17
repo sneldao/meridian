@@ -101,11 +101,10 @@ merely looking untidy. Verified against `main` on 2026-10-17.
    cashed. Post-flight days now preview, so the maths for landing exists, but
    there is no arrival surface and nothing navigates to `/outcome` when a
    trip's last day passes. This is the vision's Window Seat ending.
-8. **B** · **Gate `/outcome`, and stop lying in it** — it renders a full self-report
-   with no trip and two sliders pre-set to the middle, so an accidental save
-   records a fabricated neutral score; `setSaved(true)` fires regardless of
-   whether the POST succeeded (`src/app/outcome/page.tsx:16-17,53`). It never
-   reads the saved plan, so it grades nothing it displays.
+8. ~~**B** · **Gate `/outcome`, and stop lying in it**~~ — shipped `1be902c`:
+   no saved plan → "nothing to grade yet" card; sliders start unset and save
+   stays disabled until both are real answers; "saved" only fires when the
+   check-in POST lands, otherwise it admits the local-only record.
 9. **B** · **Announce the run** — exactly one `aria-live` region exists in `src/`
    (`CrewFeed.tsx:63`) and it renders only inside the closed-by-default
    `AgentDrawer`, so a screen-reader user gets silence through the longest
