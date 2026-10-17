@@ -853,6 +853,7 @@ export default function Home() {
               dest={dest}
               departureDate={departureDate}
               baselineSource={data?.baselineSource}
+              baselineKind={data?.baselineKind}
               wakeBand={wakeBand}
               onWakeBand={(b) => {
                 setWakeBand(b);
@@ -911,6 +912,7 @@ export default function Home() {
                 dest={dest}
                 departureDate={departureDate}
                 baselineSource={data?.baselineSource}
+                baselineKind={data?.baselineKind}
                 wakeBand={wakeBand}
                 onWakeBand={(b) => {
                   setWakeBand(b);

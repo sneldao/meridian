@@ -2,7 +2,11 @@
 
 # Product vision — land at 100%
 
-**Status:** proposal · **Companion:** [design-vision.md](archive/design-vision.md) (the visual primitives)
+**Status:** proposal · round 2 (items 11–16) shipped on `main` as `63e8861`;
+the §6 directions are now realised on the surface, with one item-12 surface
+half (B) and one item-15 pre-lock surfacing gap still open. See §7 and
+[docs/plan/backlog.md](plan/backlog.md).
+**Companion:** [design-vision.md](archive/design-vision.md) (the visual primitives)
 
 The archived vision won the interesting argument: **nothing is decorative** — the
 sun, the terminator, the ghost dawn and the residual are all real or modelled,
@@ -275,11 +279,14 @@ mount line belongs in the same PR.**
   test case, and it failed twice — see §3. If a control's choice cannot reach
   something that acts on it, it is not a control.
 - **Letting taps train on a preview.** A Done/Skip mark that persists into
-  check-ins, the replan path and graph memory is a control — see §6. Gated
-  the way `/outcome` already is.
+  check-ins, the replan path and graph memory is a control — see §6.
+  Gated by `tapBecomesCheckIn` in `domain/preview.ts`; same inputs as
+  `isPreview`, so the read rule and the write rule cannot drift
+  (`63e8861`, asserted in `tests/preview.test.ts`).
 - **Rendering fixture biometrics as biometrics.** HRV / resting HR from the
   sample profile read as measured even under a demo tag — see §6. Absent
-  data reads "—", never a plausible number.
+  data reads "—", never a plausible number. Contract in
+  `displayBiometrics()` (`63e8861`); `TripSetupScreen` half on B's board.
 
 ---
 
@@ -299,6 +306,14 @@ What holds: auto-trip in 5 seconds (no wizard), the residual in words
 ("your dawn is 6.6h behind"), one step / one tap, the inline wake question
 under the sample tag (Rule 1 as built).
 
+**Update 2026-10-17:** the §6 directions for items 11, 13, 14, 15, 16
+shipped in `63e8861` (A's render; B's contracts ride the same commit). Item
+12's contract ships in `63e8861`; its `TripSetupScreen` half — the `m3`
+grid replacement and the `Connect Garmin (CSV)` affordance — is in flight
+on B's board. The two carried findings (globe rate, route surfacing) stay
+open. The pre-lock hero meeting subhead (item 15 follow-on) is the next
+thing to surface — see `docs/plan/backlog.md`.
+
 What fails, as rules:
 
 ### Preview is not a promise
@@ -316,6 +331,14 @@ no Done/Skip, no `0 of 4`, no ledger writes — with the affordance reading
 `Preview from sample — answer 1 question to lock yours`. Same gate shape as
 `/outcome` (`1be902c`): no real input, nothing to grade, nothing to persist.
 
+**Shipped.** The gate is split across two functions in
+`domain/preview.ts` so the *display* rule (`isPreview`) and the *write*
+rule (`tapBecomesCheckIn`) cannot drift — both are asserted against the
+full truth table in `tests/preview.test.ts`. Hero button reads
+`Try this / Tried ✓`; meter says `Preview from the sample · N of M
+tried`; missed-list buttons say `Tried / Skip`. The wake question sits
+above the first dependent number; its copy is the floor promise (below).
+
 ### Calendar is the compliance surface
 
 Alex does what the calendar says and ignores what an app suggests — but the
@@ -331,6 +354,12 @@ Direction: the sticky primary is `Fit to me → to calendar`, not
 be sent, the `.ics` *is* the adherence path (`commercial.md`: "the `.ics` is
 the ad") — preview its shape pre-run, don't hide it post-run.
 
+**Shipped.** `domain/hero.ts::calendarSummary()` is the B-shape; A renders
+`N movable / M fixed / X/Y post-flight meetings ready` above the timeline,
+and the sticky CTA reads `Fit to me → to calendar`. The `.ics` itself is
+still inside the crew run, but the *adherence path* is now named before
+the traveller sees a step.
+
 ### Promise the floor
 
 Two `07:00` asks back-to-back read as a threat, not a promise: nothing says
@@ -342,6 +371,10 @@ Direction: the floor promise sits *with* the wake question —
 `Never before 07:00 unless you say so. Evenings do the heavy lifting.` —
 and every ask renders as a window (`07:00–07:30`), never an instant. A
 consultant lives in 30-minute blocks; the plan must look calendar-shaped.
+
+**Shipped.** Wake-question copy: `Nothing before your floor unless you say
+so. Evenings do the heavy lifting.` Rail reads `07:00–07:30` instead of
+`07:00`; every row carries a `movable` / `placed` tag.
 
 ### No invented biometrics
 
@@ -355,6 +388,14 @@ Direction: pre-personalisation the `m3` grid goes away. The slot reads
 "—". `TripSetupScreen.tsx:81` ("No invented values anywhere") is honoured on
 the surface, not just in the comment.
 
+**Contract shipped.** `domain/preview.ts::displayBiometrics()` returns
+`null` for every measured cell on preview / unknown / missing baseline, so
+`HRV 48 ms · Resting HR 58 bpm` cannot render as the traveller's numbers.
+`TripSetupScreen` half (B): the `m3` grid replacement and the
+`Connect Garmin (CSV)` affordance are in flight on B's board. The upload
+route has zero callers today — worth a manual pass with a real export file
+when B lands the affordance.
+
 ### The meeting is the product
 
 The landing sells `6.6h owed` and pilot clocks (`London 13:36 day / Tokyo
@@ -367,6 +408,14 @@ Direction: the hero subhead under the residual names one fixed event with
 attendees at destination time plus its readiness
 (`Tue 09:00 workshop in Tokyo = 01:00 body time · 38% → 82% if locked`).
 "Land at 100%" is cashed on this screen (§2), not just in the nav.
+
+**Shipped, with one gap.** `domain/hero.ts::heroMeeting()` is the B-shape;
+A renders the hero subhead under the dawn card. The block disappears when
+no real post-flight fixed event exists — no fixture title. The gap:
+pre-lock, `bodyWithoutPlanMin === bodyMin`, which means the "without the
+crew" half is empty. The sales line lives in that gap, and is the next
+thing to surface — render the unbanked figure unconditionally and label
+it `what you'd be without the plan`.
 
 ### The path to configuring your own trip is the thing missing above the fold
 
@@ -382,6 +431,11 @@ not mean a wizard — Rule 1 stands, and auto-trip in five seconds is genuinely
 right. It means the route and departure the user is actually flying are
 editable from the surface that displays them, with the demo trip as the
 *starting point* rather than the *only* option.
+
+**Carried.** Highest-priority remaining gap from §6. The fix is
+surfacing, not build — the input layer exists; what is missing is the
+route and departure as inline-editable on the first viewport, with the
+demo trip as the starting point rather than the only option.
 
 ### The globe is real, and reads as inert
 
@@ -400,6 +454,8 @@ you scrub toward should actually arrive. Rule 3 does not forbid this — it
 forbids motion that is neither caused by the traveller nor the reason the screen
 exists. A clock that ticks at the Earth's actual speed is both.
 
+**Carried.** A's file (`HeroDawnPanel.tsx`), no contract, either lane.
+
 ### The crew stays backstage on Calm
 
 `Hear the crew / Menu / Watch the crew / See why / Today / Personalise with
@@ -410,6 +466,11 @@ don't: `Today` means nothing as a depth, and named agents + voice belong to
 
 Direction: Calm defaults to words + one number + one CTA. Depth renames to
 `Plan / Why / Crew`; `Hear the crew` leaves the first viewport.
+
+**Shipped.** Depth dial reads `Plan / Why / Crew`; the voice toggle and
+`Hear the crew` leave the first viewport (their home is `/crew`, which
+already owns its voice control). Calm is closer to the spec; the trail
+to the Why / Crew surfaces is intact.
 ---
 
 ## 7. Where this lands
@@ -417,17 +478,18 @@ Direction: Calm defaults to words + one number + one CTA. Depth renames to
 Items 11–16 in [docs/plan/backlog.md](plan/backlog.md), with owners, contracts
 and a day-by-day sequence. The short version:
 
-| Item | Owner | Why |
-|---|---|---|
-| 11 Preview is not a promise | A | Surface gate; `baselineKind` already exists |
-| 12 No invented biometrics | B, whole | One file, one brief — splitting it would be a handoff for nothing |
-| 13 Calendar is compliance | B shape → A render | Data already exists; it needs surfacing |
-| 14 Promise the floor, window the asks | A | Copy only; the solver already holds the floor |
-| 15 The meeting is the product | B data → A hero | **Sequential, never simultaneous** |
-| 16 Crew backstage | A | Isolated; filler while B is on tests |
+| Item | Owner | Why | Status |
+|---|---|---|---|
+| 11 Preview is not a promise | A | Surface gate; `baselineKind` already exists | Shipped `63e8861` |
+| 12 No invented biometrics | B, whole | One file, one brief — splitting it would be a handoff for nothing | Contract shipped `63e8861`; `TripSetupScreen` half on B's board |
+| 13 Calendar is compliance | B shape → A render | Data already exists; it needs surfacing | Shipped `63e8861` |
+| 14 Promise the floor, window the asks | A | Copy only; the solver already holds the floor | Shipped `63e8861` |
+| 15 The meeting is the product | B data → A hero | **Sequential, never simultaneous** | Shipped `63e8861`; pre-lock gap is the next surfacing fix |
+| 16 Crew backstage | A | Isolated; filler while B is on tests | Shipped `63e8861` |
 
 The globe's rate and the route-picker surfacing are real and currently
-unassigned — either lane, once 11 and 16 are done.
+unassigned — either lane, once 11 and 16 are done. Both are the same
+disease as item 13: a capability present and not felt.
 
 Nothing in §6 requires a new dependency, a new provider, or a decision about
 notification infra. Every item is either a gate on state that already exists, a
@@ -435,3 +497,10 @@ piece of copy, or a surface decision about data that is already computed. That
 is the encouraging part of this read: the product is closer to the ICP than it
 looks, and the gap is mostly about what it shows first and what it lets you
 touch.
+
+**Update 2026-10-17:** the round is in. Items 11, 13, 14, 15, 16 are on
+`main`; 12's contract is on `main` and its surface half is the B-side
+follow-on. The two carried findings (globe rate, 1,145-airport surfacing)
+are the highest-leverage work for the next round, and the pre-lock hero
+meeting gap is item 15's own follow-on. See [docs/plan/backlog.md](plan/backlog.md)
+for the running record.

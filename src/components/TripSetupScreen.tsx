@@ -1,13 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { fmtMin } from "@/domain/circadian";
+import { useMemo, useRef, useState } from "react";
 import { getFlightRecommendations } from "@/domain/nudges";
+import { displayBiometrics } from "@/domain/preview";
 import type {
   CalendarEvent,
   Trip,
   WearableBaseline,
 } from "@/domain/types";
+import type { BaselineKind } from "@/domain/types";
 import type { WakeBand } from "@/domain/fixtures";
 import type { MeetingReadiness } from "@/domain/readiness";
 import { RoutePicker } from "@/components/RoutePicker";
@@ -25,6 +26,10 @@ interface TripSetupScreenProps {
   baseline?: WearableBaseline;
   /** "fixture" = the demo Garmin numbers, not measured. Drives the Demo tag. */
   baselineSource?: "fixture" | "garmin";
+  /** Provenance of the baseline — the preview gate (item 11/12). Optional so
+   *  older callers keep compiling; absent means "nothing fetched yet", which
+   *  previews by contract. */
+  baselineKind?: BaselineKind;
   /** Self-reported natural wake — the one personalisation question. */
   wakeBand?: WakeBand | null;
   onWakeBand?: (band: WakeBand | null) => void;
@@ -52,6 +57,7 @@ export function TripSetupScreen({
   onSelectFlightId,
   baseline,
   baselineSource,
+  baselineKind,
   wakeBand,
   onWakeBand,
   calendar,
@@ -66,6 +72,34 @@ export function TripSetupScreen({
   onCheckIn,
 }: TripSetupScreenProps) {
   const [editingRoute, setEditingRoute] = useState(false);
+  // Garmin CSV upload (item 12): the POST has existed since 92299c3 with zero
+  // callers. File → text → /api/wearable → reload so /api/trip answers garmin.
+  const [uploadState, setUploadState] = useState<"idle" | "sending" | "error">("idle");
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const onPickFile = async (file: File | undefined) => {
+    if (!file) return;
+    setUploadState("sending");
+    setUploadError(null);
+    try {
+      const text = await file.text();
+      const res = await fetch("/api/wearable", {
+        method: "POST",
+        headers: { "Content-Type": "text/plain" },
+        body: text,
+      });
+      const body = (await res.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
+      if (!res.ok || !body?.ok) {
+        throw new Error(body?.error ?? `upload failed (${res.status})`);
+      }
+      // The new baseline is per-tenant server-side; the page re-reads it.
+      window.location.reload();
+    } catch (e) {
+      setUploadState("error");
+      setUploadError(e instanceof Error ? e.message : "upload failed");
+    }
+  };
 
   const flightOptions = useMemo(
     () => (trip ? getFlightRecommendations(trip) : []),
@@ -79,6 +113,9 @@ export function TripSetupScreen({
 
   // Honest counts: no invented fallbacks. An absent measurement reads "—",
   // never a plausible-looking number (task 3.2 — "No invented values anywhere").
+  // Item 12 extends it: fixture HRV / resting HR are measurements, so on
+  // preview they read "—" too — via the contract, not an inline kind check.
+  const bio = displayBiometrics({ baselineKind, wakeBand, baseline });
   const movableCount = calendar.filter((e) => e.movable).length;
   const readyCount = readiness.filter((r) => r.status === "ready").length;
   const readinessLabel =
@@ -241,21 +278,52 @@ export function TripSetupScreen({
           <div className="m3">
             <div>
               Usual Sleep
-              <b>
-                {baseline
-                  ? `${fmtMin(baseline.avgBedtimeMin)}–${fmtMin(baseline.avgWakeMin)}`
-                  : "—"}
-              </b>
+              <b>{bio.sleep ?? "—"}</b>
             </div>
             <div>
               HRV
-              <b>{baseline ? `${baseline.hrvMs} ms` : "—"}</b>
+              <b>{bio.hrv ?? "—"}</b>
             </div>
             <div>
               Resting HR
-              <b>{baseline ? `${baseline.restingHr} bpm` : "—"}</b>
+              <b>{bio.restingHr ?? "—"}</b>
             </div>
           </div>
+          {/* Item 12: the unconnected slot. No fixture numbers above (they read
+              "—" via the contract); this is the honest alternative — a real
+              export or the one wake question. Garmin Health API is
+              partner-gated, so CSV export is the demo path by design. */}
+          {baselineSource !== "garmin" && (
+            <div className="f" style={{ marginTop: 8 }}>
+              <label>Connect your wearable</label>
+              <p style={{ fontSize: "11px", color: "#7a6a5c", margin: "0 0 6px" }}>
+                Connect Garmin (CSV export for now) or answer 1 question — your
+                wake answer above personalises the plan instantly.
+              </p>
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".csv,text/csv,text/plain"
+                hidden
+                aria-label="Upload Garmin sleep export (CSV)"
+                onChange={(e) => void onPickFile(e.target.files?.[0])}
+              />
+              <button
+                type="button"
+                className="chip"
+                disabled={phase === "running" || uploadState === "sending"}
+                onClick={() => fileRef.current?.click()}
+              >
+                {uploadState === "sending" ? "Reading export…" : "Upload Garmin CSV"}
+              </button>
+              {uploadState === "error" && (
+                <p role="alert" style={{ fontSize: "11px", color: "#b04523", margin: "6px 0 0" }}>
+                  {uploadError ?? "upload failed"} — needs a header row plus at
+                  least two nights with date, bedtime, wake and sleep duration.
+                </p>
+              )}
+            </div>
+          )}
           <div className="m3" style={{ gridTemplateColumns: "1fr 1fr" }}>
             <div>
               {movableCount} movable

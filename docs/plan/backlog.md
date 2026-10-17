@@ -83,6 +83,15 @@ renders second. Applied here as a day-by-day:
 - **Day 4 — harden, jointly.** `bun run replay:check`, `bun test`, typecheck, a
   phone-width and keyboard pass. B owns evals.
 
+**Sequence — round 2 ran and shipped.** Plan `68e83b6` (the ICP read with
+owners, contracts, day-by-day). A's render `63e8861` (items 11, 13, 14, 15, 16
+plus tests asserting B's contract for items 11, 12, 13, 15). B's contracts
+(`src/domain/preview.ts`, `src/domain/hero.ts`) ride in the same commit so the
+assertions have something to bind to. Item 12's `TripSetupScreen` half is in
+flight (B is wiring `baselineKind` forwarding — `page.tsx:856,915`) and stays
+on B's board; the rest of round 2 closes once that lands and the Garmin CSV
+affordance follows.
+
 **Coordination.** Only A edits `page.tsx` / `NudgeFeedScreen.tsx` /
 `HeroDawnPanel.tsx`. Only B edits `domain/*`, `api/*`, `TripSetupScreen.tsx`.
 Rebase on `main` daily; the second agent's drift last time was
@@ -255,6 +264,13 @@ two` so ownership stays clean.
     question moves *above* the first dependent number with the floor promise
     (`Never before 07:00 unless you say so`). Previews `21:30 / 22:30` bedtimes
     against a `23:55` late type are exactly the failure this gates.
+    **Shipped `63e8861`.** The rule is split across two functions in
+    `domain/preview.ts` so the *display* gate (`isPreview`) and the *write*
+    gate (`tapBecomesCheckIn`) cannot drift — `tests/preview.test.ts`
+    enumerates the truth table and pins the agreement. Hero button reads
+    `Try this / Tried ✓`; meter says `Preview from the sample · N of M
+    tried`; missed-list buttons say `Tried / Skip`. Wake-question copy
+    sits above the first dependent number (Rule 1's trust clause, §6).
 12. **B · No invented biometrics** — `/api/trip` already answers
     `baselineSource`/`baselineKind`; keep fixture HRV / resting HR out of the
     contract on `demo-default` (absent reads "—", per `TripSetupScreen.tsx:81`).
@@ -264,6 +280,14 @@ two` so ownership stays clean.
     (closes the carried `Real integrations` remainder). **Whole to B, not a
     handoff:** it is one file and one brief, so splitting it would create a
     dependency for no gain.
+    **Contract shipped `63e8861`.** `domain/preview.ts::displayBiometrics()`
+    returns `null` for every measured cell on preview / unknown / missing
+    baseline, so `HRV 48 ms · Resting HR 58 bpm` cannot render as the
+    traveller's numbers; `tests/preview.test.ts` pins the matrix.
+    **`TripSetupScreen` half in flight (B)** — `baselineKind` is now
+    forwarded through `page.tsx` so the setup sheet can read its own gate;
+    the `m3` grid replacement and the `Connect Garmin (CSV)` affordance
+    follow.
 13. **A render (B shape) · Calendar is the compliance surface** — B guarantees
     `N movable / M fixed` + `readinessLabel` + a previewable `.ics` shape
     pre-run, from data that already exists in `TripSetupScreen`. A changes the
@@ -271,11 +295,20 @@ two` so ownership stays clean.
     the timeline, instead of hiding the `.ics` behind a 45s run. No new
     notification infra — don't fake the control (stays deferred); sell the
     `.ics` as the adherence path.
+    **Shipped `63e8861`.** `domain/hero.ts::calendarSummary()` is the
+    B-shape; A renders `N movable / M fixed / X/Y post-flight meetings ready`
+    above the timeline and changes the CTA to `Fit to me → to calendar`.
+    `tests/hero.test.ts` pins the movable/fixed split, the empty case
+    (`—`, never invented), and the readinessLabel.
 14. **A · Promise the floor, window the asks** — every ask renders as a window
     (`07:00–07:30`), never an instant; light/coffee/wind-down rows carry end
     times + movable/fixed tags so the day looks calendar-shaped. Solver
     already holds `floor − 105min` and tries at/after-floor first
     (`architecture.md`) — surface it, don't re-derive it.
+    **Shipped `63e8861`.** Rail reads `07:00–07:30`, every row carries a
+    `movable`/`placed` tag. The wake question carries the floor promise
+    (`Nothing before your floor unless you say so. Evenings do the heavy
+    lifting.`).
 15. **B data → A hero · The meeting is the product** — B ensures
     `meetingReadiness` resolves pre-run for one real fixed event with attendees;
     A renders the hero subhead under the residual
@@ -283,10 +316,22 @@ two` so ownership stays clean.
     `commercial.md` red badge — `Land at 100%` cashed on Today (§2), not just
     in the nav. **Sequential: B's shape merges, then A renders. Never both at
     once** — the same rule that caught item 4's second bug.
+    **Shipped `63e8861`.** `domain/hero.ts::heroMeeting()` is the B-shape
+    (earliest post-flight non-movable non-flight event, with `bodyMin` and
+    `bodyWithoutPlanMin`); A renders the hero subhead under the dawn card.
+    `tests/hero.test.ts` pins: `null` when nothing post-flight is fixed; the
+    flight itself is never the meeting; agreement with `meetingReadiness`;
+    moved events follow their new slot. Pre-lock, the "without the crew"
+    half is empty (bodyWithoutPlanMin === bodyMin) — that gap is the
+    *sales* line and is the next thing to surface.
 16. **A · Crew backstage on Calm** — depth renames to `Plan / Why / Crew`;
     `Hear the crew`, named agents and voice leave the first viewport for
     `Why / Crew`. Calm defaults to words + one number + one CTA (Rule 3 +
     Rule 4, labels fixed).
+    **Shipped `63e8861`.** Depth dial reads `Plan / Why / Crew`; the voice
+    toggle and `Hear the crew` leave the first viewport (their home is
+    `/crew`, which already owns its voice control). Rule 4's mechanics hold;
+    its labels are fixed.
 
 ### Owners for round 2
 
@@ -320,12 +365,37 @@ build — and it belongs with item 13's "calendar is compliance" argument that t
 
 - **Real integrations** — **Garmin: upload path shipped `92299c3`** —
   `POST /api/wearable` takes a sleep CSV → per-tenant baseline →
-  `/api/trip` answers `baselineSource: "garmin"` + kind `garmin`. Remaining:
-  A's upload affordance in TripSetupScreen, and the answer to the spike's
-  real question — Garmin Health API is partner-gated, so file export is the
-  demo path either way. **Flight inventory**: windows are now real planning
-  inputs (`?flight=` threads through `c675c45`); live inventory remains
-  deferred by design.
+  `/api/trip` answers `baselineSource: "garmin"` + kind `garmin`. Item 12
+  ships the contract (`displayBiometrics` returns null on preview); the
+  `Connect Garmin (CSV)` affordance in `TripSetupScreen` and the `m3` grid
+  replacement are the B-side surface work to close the carried remainder.
+  Worth a manual pass with a real export file rather than trusting the happy
+  path — the upload route has zero callers today.
+  **Flight inventory**: windows are now real planning inputs
+  (`?flight=` threads through `c675c45`); live inventory remains deferred
+  by design.
+
+## Carried — the same disease, different symptom
+
+Two findings from the §6 ICP read that aren't ICP complaints but the same
+class as the calendar: a capability present and not felt.
+
+- **The globe is real and reads as inert.** `HeroDawnPanel.tsx` advances
+  the terminator at 0.25° of longitude per minute — about a quarter of a
+  pixel on the 320px hero disc. The live clock is correct and invisible;
+  the hero reads as a still image. The interval was the wrong call; rAF at
+  this scale is cheap, and a clock that ticks at the Earth's actual speed
+  is the reason the screen exists (Rule 3 doesn't forbid this — it forbids
+  motion that is neither traveller-caused nor the reason the screen
+  exists; the terminator is both). The shift lane should also animate the
+  ghost sliding onto the terminator *while dragging*, not only on release.
+  A's file, no contract, genuine either-lane opportunity.
+- **1,145 airports are wired into `searchAirports` and reachable only via
+  Edit → Edit trip** — the landing assumes LHR → HND. The input layer
+  exists; surfacing it above the fold is the same fix as item 13: the path
+  to configuring your own trip is the thing missing from the first
+  impression. Belongs with item 13's "calendar is compliance" argument.
+  A's file (`page.tsx`), B's data shape if it grows new fields.
 
 ## Later / deferred
 
