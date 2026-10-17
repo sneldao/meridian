@@ -555,8 +555,32 @@ remainder.
 **Round 4 (shipped 2026-10-17):** the 9/10 push, tracks closed. Track A
 (`50f786c`, `0451330`, `337d2e4`): cream surface, marks-waiting banner,
 scannable hero delta, arrival promise-vs-account split. Track B
-(`c95a5fe`, `a587376`, renders in `837b613`): `wakeAck`, B2 closed with
-no change (no storm exists), `secondTripProof` + hero lines. Ratings now
-design 8.5 / UX 7.5 — see [docs/plan/backlog.md](plan/backlog.md)
-§Round-4 ratings. Still open to a 9: provenance labels, parsing load,
-orphans, mobile.
+(`c95a5fe`, `a587376`, renders in `837b613`; then `51fd0e0` provenance
+labels, `07c666c` sheet ack, `679ae38` history proofs, `e2f3ace`
+prompt cross-trip line): `wakeAck`, B2 closed with no change (no storm
+exists), `secondTripProof` + hero/history lines. Ratings now design 8.5
+/ UX 7.5 — see [docs/plan/backlog.md](plan/backlog.md) §Round-4 ratings.
+
+**Round 5 (filed 2026-10-17):** external browser-session review, every
+item traced to source before filing. Six shipping-blocker visual bugs
+(missing `.tl-tag` / `.cal-summary` CSS, light-on-light headings,
+always-green history scores, cryptic zero-case, list-key warning) plus
+four structural UX frictions (CTA honesty, dial placement, disclaimer
+stacking, solver spacing). Priority: CSS first, headings/scores second,
+copy/keys third, structural calls last. See
+[docs/plan/backlog.md](plan/backlog.md) §Round 5. Lane: almost all A
+(`globals.css`, feed, history, review); B only if the 5B4 solver rule or
+the 5A5 filter rule needs a contract.
+
+**Round 6 (shipped 2026-10-17):** the four bets from the ranked shortlist,
+all committed. The globe graduated: the WebGL dawn globe is now the home
+hero behind one WebGL probe, drawing the hero's own inputs (scrubbed
+date, owed gap) with the route arc and brand pins; `?svg=1` or no-WebGL
+keeps the shipped SVG (`837c619`, `18b1a35`). The destination-taste
+surface went live on the arrival day of the feed (`35724ee`). The
+body-clock passport renders on the shared plan card *and* as the link's
+OG image, so Slack/iMessage preview the "my body thinks it's HH:MM" line
+(`5f8ea70`, `eb7f6a6`). The arrival page grew the trip debrief — gate
+score, adherence lesson, carried-in proof, next-trip CTA (`71ac8c5`).
+The Round-5 fixes are tracked separately; 368 tests green at `18b1a35`.
+See [docs/plan/backlog.md](plan/backlog.md) §Round 6.

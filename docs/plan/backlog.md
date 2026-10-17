@@ -510,6 +510,102 @@ is correctly scaffolded but mostly potential until Supabase-backed history
 exists. Still capping a 9: provenance labels (`heroReadiness` unadopted),
 first-viewport parsing load, orphaned routes, unverified mobile.
 
+## Round 5 — browser-session findings (verified 2026-10-17, all cited to source)
+
+External review across Home (desktop + mobile), `/arrival`, `/crew`,
+`/review`, `/history`, traced to source before filing. Every item below
+was verified in the tree: class cited → `grep` in `globals.css` →
+confirmed absent/present as claimed. Priority is the reviewer's, kept
+because it is right: cheapest visual wins first.
+
+### 5A. Shipping-blocker visual bugs (all verified — the classes are truly missing)
+
+- **5A1. `.tl-tag` undefined — "Get outside lightplaced" on every step.**
+  `NudgeFeedScreen.tsx:1303` applies `tl-tag placed|movable`; `grep`
+  finds zero `.tl-tag` rules in `globals.css` (the only stylesheet).
+  Intended pill renders as unstyled inline text jammed against the title.
+  Fix: define `.tl-tag` (+ `.placed` / `.movable` variants) in the cream
+  idiom. Sweep suggests siblings: `hero-meeting`, `marks-waiting`,
+  `cal-summary`, `cal-summary-num` also count zero in CSS — likely the
+  same dropped block. Audit: every `className="…"` literal in the feed
+  against `globals.css`; define or remove each miss.
+- **5A2. `.cal-summary` / `.cal-summary-num` undefined — "1movable" /
+  "1fixed".** `NudgeFeedScreen.tsx:1250–1267`, same verification: zero
+  rules. Number glued to label, no grid. Same fix, same sweep.
+- **5A3. Zero-case copy — "—post-flight meetings ready".**
+  `calendarSummary` returns `"—"` for `readinessLabel` when `total` is 0
+  (contract in `domain/hero.ts`, asserted in `tests/hero.test.ts`).
+  Honest but cryptic in the unstyled block. Fix at the render: "0 of N
+  meetings ready" or "No post-flight meetings today" — contract keeps
+  returning `"—"`, renderer translates. B's contract untouched; A's copy.
+- **5A4. Light-on-light headings — TRIP HISTORY / MERIDIAN / HANDOFF
+  REVIEW near-invisible.** `history/page.tsx:60`, `review/page.tsx:121,140`
+  use `text-paper` (#e8eaf2 cream) on `body` #F5EFE6 cream ground.
+  Verified: `body { background: #F5EFE6 }`, `--color-paper: #e8eaf2` —
+  near-zero contrast, as reported. Fix: dark ink token on light surfaces.
+  Note: `/history` + `/review` cards still use dark `Card` chrome
+  (`bg-ink-2/3`, `text-paper` inside) — correct on those surfaces; only
+  the page-level headings + back-links sit on cream and fail.
+- **5A5. History score always green, even 0.00.** `history/page.tsx:114`
+  renders `text-pass` unconditionally; three 0.00 "shift complete" runs
+  with no day-chips read as passing. Fix: threshold colour
+  (fail/warn/pass) + consider filtering zero-day 0.00 runs from the
+  user-facing log (failed runs leaking). B-side filter contract if the
+  rule needs asserting; A's colour otherwise.
+- **5A6. Key warning on /history.** `key={it.id}` (`history/page.tsx:82`);
+  localStorage entries use `id: Date.now()`, Supabase rows may lack `id`
+  → collision/undefined. Fix: composite key (`savedAt` + index fallback).
+  One line, A's file.
+
+### 5B. UX friction (structural — needs a decision each, not just CSS)
+
+- **5B1. CTA over-promises.** "Fit to me → to calendar" triggers a ~45s
+  crew run before any `.ics` exists (vision doc already flags: the `.ics`
+  is inside the run). Fix options: preview the `.ics` shape pre-run, or
+  relabel to the step it triggers ("Lock the plan →"). Product call.
+- **5B2. Depth dial is a footer.** Rule 4 calls the dial the interface;
+  it sits below the entire timeline. Consider surfacing near the hero.
+  Layout, A's file.
+- **5B3. Disclaimer stacking.** Sample-tag → "Preview from the sample" →
+  "Try this" × N → "banked on preview": four hedges before the fold.
+  The wake question answers all of it in one tap — frame as "answer one
+  question to make this yours" once, not a disclaimer per element. Copy,
+  A's file.
+- **5B4. Back-to-back 07:00 asks.** Light 07:00–08:00 + run 07:00–07:40
+  read as "a lot at once". Check whether the solver should space them —
+  B's domain if the rule changes, otherwise copy mitigation stands.
+
+### 5C. Priority (reviewer's order, verified sensible)
+
+1. 5A1 + 5A2 (CSS definitions — biggest win, smallest effort, main screen).
+2. 5A4 + 5A5 (headings + score colour).
+3. 5A3 + 5A6 (zero-case copy + key).
+4. 5B structural calls (CTA, dial, disclaimers, solver spacing).
+
+Lane note: 5A is almost entirely `globals.css` + `NudgeFeedScreen.tsx` /
+`history` / `review` (A's files) with one B-adjacent contract question
+(5A5 filter rule, 5A3 translation boundary). B picks up 5B4 only if the
+solver rule changes; otherwise allA.
+
+## Round 6 — the four bets (shipped 2026-10-17)
+
+The ranked shortlist — graduate the globe, destination-taste surface,
+shareable body-clock passport, arrival as re-engagement — all four now
+have committed code. Ship order below, not ranking; bet 2 landed first.
+
+| Bet | Commit | What shipped |
+|---|---|---|
+| 2 — destination taste | `35724ee` | "Spend your daylight here" strip in the feed, arrival day only, capped at five taste-ranked Qloo venues. No key / no places / thin source renders nothing; destination name falls back to the trip's. Notes only — never feeds scorer or timing. |
+| 4 — arrival debrief | `71ac8c5` | `tripDebrief` on `/arrival`: gate score, the single strongest adherence lesson (no done marks → no lesson, never generic praise), carried-in proof from a prior different-route trip, and the "plan your next trip" CTA. Hooks sit above the early returns so the section is null-safe pre-arrival. |
+| 3 — body-clock passport | `5f8ea70`, `eb7f6a6` | The share payload carries the hero meeting's body-time delta; `/plan/{id}` leads with "My body thinks it's HH:MM". `opengraph-image.tsx` renders the passport as the link preview (og + twitter cards), from the same share payload — never a figure the card doesn't show. Old shares fall back to the plan summary. |
+| 1 — globe graduation | `837c619`, `18b1a35` | The WebGL dawn globe is the home hero, behind one WebGL probe (`src/lib/webgl.ts`). It draws the hero's exact inputs — scrubbed-or-live date, real-or-overridden gap — with the route arc + brand pins (`RouteArc`) and the camera framed on the route through the port-tested `viewBasis` (`center`/`fitSpanDeg`); orbit is off so the canvas never steals page scroll. No WebGL or `?svg=1` → the shipped SVG hero. The sky model + Window Seat ride in the same layer (`tests/sky.test.ts`). `/spike/globe` stays the side-by-side proving ground and flight bench. |
+
+What the round does **not** do: reminder-channel infra (bet 4 ships the
+surface the reminder would land on — the channel is still deferred
+below), WebGL perf verification on genuinely low-end hardware, and the
+real Supabase-backed second trip that lights `carriedFrom` outside the
+demo. 368 tests green at `18b1a35`.
+
 ## Later / deferred
 
 - **Reminder channel** — no notification infra exists; don't fake a control.
