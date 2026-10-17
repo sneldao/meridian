@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { getFlightRecommendations } from "@/domain/nudges";
-import { displayBiometrics } from "@/domain/preview";
+import { displayBiometrics, wakeAck } from "@/domain/preview";
 import type {
   CalendarEvent,
   Trip,
@@ -269,6 +269,17 @@ export function TripSetupScreen({
                   </button>
                 )}
               </div>
+              {/* The answer re-plans the preview instantly; name it so the
+                  traveller learns it mattered. Null (garmin, cleared) renders
+                  nothing — same contract as the hero line. */}
+              {(() => {
+                const ack = wakeAck(baselineKind, wakeBand);
+                return ack ? (
+                  <p className="src-line" style={{ fontSize: "11px", color: "#4a7a5c", margin: "6px 0 0" }}>
+                    {ack}
+                  </p>
+                ) : null;
+              })()}
             </div>
           )}
           <p className="src-line" style={{ fontSize: "11px", color: "#7a6a5c", margin: "0 0 6px" }}>
