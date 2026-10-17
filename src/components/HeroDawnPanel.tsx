@@ -86,19 +86,51 @@ export function HeroDawnPanel({ trip, owedMin, beam, readinessPct }: HeroDawnPan
   const shiftH = Math.round(requiredMin / 60);
   const reduce = useReducedMotion();
 
-  // One minute hand, not a rAF loop: the live line only moves meaningfully
-  // every couple of minutes, and the first paint of the page should not wait on
-  // it. The globe only spins when the traveller drags it, so nothing here needs
-  // a continuous loop.
+  // One tick every 250ms, not one per minute: the terminator's 0.25°/min is
+  // invisible at 60s updates (a quarter-pixel jump per minute reads as a
+  // still image), and at 4Hz the disc moves continuously at the Earth's
+  // actual rate — sub-pixel per frame, which is the reason the screen exists
+  // (Rule 3). Reduced-motion travellers get the 60s tick instead, which
+  // costs nothing and still shows the right shape.
   const [tick, setTick] = useState(-1);
   useEffect(() => {
-    const init = setTimeout(() => setTick(0), 0);
-    const t = setInterval(() => setTick((v) => v + 1), 60_000);
+    if (reduce) {
+      // Honour reduced-motion: one minute per update is fine when nothing
+      // animates. The hour ticks at every visit, which is what was shipped.
+      const init = setTimeout(() => setTick(0), 0);
+      const t = setInterval(() => setTick((v) => v + 1), 60_000);
+      return () => {
+        clearTimeout(init);
+        clearInterval(t);
+      };
+    }
+    // rAF, but throttled to ~4Hz: the visual motion at Earth's rate is
+    // sub-pixel per frame regardless, and 60Hz React re-renders of the
+    // whole panel are wasted — `live = new Date()` only changes the second
+    // hand at most. 250ms keeps the clock continuous without taxing
+    // reconciliation.
+    let raf = 0;
+    let last = 0;
+    let alive = true;
+    const init = setTimeout(() => {
+      if (!alive) return;
+      setTick(0);
+      const loop = (now: number) => {
+        if (!alive) return;
+        if (now - last >= 250) {
+          setTick((v) => v + 1);
+          last = now;
+        }
+        raf = requestAnimationFrame(loop);
+      };
+      raf = requestAnimationFrame(loop);
+    }, 0);
     return () => {
+      alive = false;
       clearTimeout(init);
-      clearInterval(t);
+      cancelAnimationFrame(raf);
     };
-  }, []);
+  }, [reduce]);
   const hydrated = tick >= 0;
   const live = hydrated ? new Date() : new Date(0);
 
