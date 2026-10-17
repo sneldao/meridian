@@ -577,6 +577,9 @@ export default function Home() {
             >
               Behind the scenes
             </div>
+            <div style={{ padding: "8px 12px 4px", fontSize: "11px", color: "#7a6a5c" }}>
+              Timing guidance, not medical advice.
+            </div>
           </div>
         )}
 

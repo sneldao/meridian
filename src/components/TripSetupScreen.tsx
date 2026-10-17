@@ -229,6 +229,9 @@ export function TripSetupScreen({
           </div>
         </div>
       </div>
+      <p style={{ margin: "16px 0 0", fontSize: "11px", color: "var(--color-mist)" }}>
+        Timing guidance, not medical advice.
+      </p>
     </>
   );
 }
