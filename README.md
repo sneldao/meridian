@@ -51,6 +51,13 @@ run history server-side (project `vpeakvspljdoxbwfsdvw`, see
 
 ## Docs
 
+Design direction — where the product is going, and the rules every design
+decision is held to:
+
+- [Product vision](docs/vision.md) — the journey around the image: one question
+  at the right moment, caption-first interaction, the depth dial, and the
+  landing payoff that doesn't exist yet
+
 Reference (kept in sync with the code):
 
 - [Architecture](docs/reference/architecture.md) — pipeline, event stream, API surface, artifacts, adherence loop
@@ -58,6 +65,7 @@ Reference (kept in sync with the code):
 - [Providers](docs/reference/providers.md) — featherless / nebius / anthropic / replay, env vars, fallback chain
 - [Demo runbook](docs/reference/demo.md) — stage path, pacing, localStorage keys, troubleshooting
 - [Evals](docs/reference/evals.md) — the harness that tracks plan quality over time (`bun run eval`), not a hillclimb yet, the shape of one
+- [Backlog](docs/plan/backlog.md) — what's left, ranked
 - [Graph memory](docs/reference/graph-memory.md) — FalkorDB state + Graph Hacks sprint to the 2026-10-18 deadline
 
 - [Backlog](docs/plan/backlog.md) — open items after the 2026-10-15→17 home

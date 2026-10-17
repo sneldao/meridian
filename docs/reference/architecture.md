@@ -39,8 +39,12 @@ other.
      dodges fixed events by starting later rather than colliding; and the
      first post-flight day converts the previous day's bed/wake into
      destination time before shifting. `previewPlan` on the same module runs
-     this chain pre-run for the home page; days after the flight are `null`
-     — they're planned after you land.
+     this chain pre-run for the home page, post-flight days included: the
+     engine carries a phase chain through `evaluatePlan` (baseline + locked
+     shifts + one boundary conversion) so zeitgeber gates measure against
+     circadian phase rather than the schedule target, and `draftDay` has a
+     post-flight branch for local-night sleep. `null` is now the genuine
+     fallback for "the solver could not place this", not a post-flight rule.
    - Otto submits exactly one `DayPlan` via `submitDayPlan`.
    - The **deterministic scorer** (`src/domain/circadian.ts`) evaluates it —
     code, not judgment. It also re-derives the plausible shift from zeitgeber
@@ -92,13 +96,24 @@ early-ask time that still failed, skipped kinds join `weakAt`. The scorer then
 penalizes plans the wearer demonstrably won't follow.
 
 Intake endpoint `POST /api/crew/checkin` parses a free-text check-in via
-`parseCheckInText`. `GET /api/crew/run` takes `checkins` (base64 JSON array of
-`CheckIn`) and `startDay` (0–4); when either is set, `runCrew` folds the
+`parseCheckInText`, appends it to crew memory, and fans out to Supabase and the
+tenant graph (both optional). `GET /api/crew/run` takes `checkins` (base64 JSON
+array of `CheckIn`) and `startDay`; when either is set, `runCrew` folds the
 check-ins into the adherence profile and replans only the days from `startDay`
 onward. Each check-in streams as a `check_in` event, then a `replan` event
 drops the earlier days. In replay mode the morning beat runs
 `runMorningReplay` (`src/agents/morning-replay.ts`), which re-scores the
 scripted days under the folded profile with the same deterministic gate.
+
+On `/`, per-step did/skip marks queue a trip-scoped ledger and flush as
+structured `CheckIn`s on "Tell the crew", with `startDay` derived from the last
+marked day (not a fixed index).
+
+**Known scoping gap.** `recordCheckIn` (`src/domain/memory.ts`) appends to a
+single global `artifacts/crew-memory.json`, and the intake route folds *all* of
+it into one profile — so one traveller's compliance marks currently move the
+floor for every other traveller. The graph path already takes a `tenant`; the
+file path does not. Tracked in [../plan/backlog.md](../plan/backlog.md).
 
 ## Persistence
 
@@ -127,6 +142,8 @@ in [providers.md](providers.md#supabase-persistence-optional).
 ```
 src/domain/      types, circadian scorer + phase-response model, placement
                  solver + previewPlan, today (which day is now, next step),
+                 sun (subsolar point, terminator, body-clock ghost), dawn-layers
+                 (the shared day/night + ghost path builder both globes draw),
                  adherence, readiness, fixtures (trip horizon via horizonFor;
                  Alex fixture for the demo route, neutralCalendarFor elsewhere)
 src/tools/       science (SMR → Firecrawl → static), tavily, qloo,
@@ -134,10 +151,14 @@ src/tools/       science (SMR → Firecrawl → static), tavily, qloo,
 src/agents/      providers, crew prompts, runtime, night replay, morning replay
 src/components/  NudgeFeedScreen (the Calm `/` surface: next step, timeline,
                  readiness), TripSummary (trip chip + edit sheet),
-                 TripSetupScreen (setup body), DeepDiveVisuals (globe /
-                 swimlane / week, `?depth=guided` only), CrewFeed, DayStrip,
-                 BriefingCard, HandoffBanner, RoutePicker, MorningCheckin,
-                 DailyJourney, AgentDrawer, AnchoredPopover, lenses/, ui/
+                 HeroDawnPanel + DawnScrubber (the residual globe and its
+                 clock/shift scrubber — hover, fine-pointer drag, and two native
+                 range inputs, all layered on a caption that states the same
+                 read in words), TripSetupScreen (setup body), DeepDiveVisuals
+                 (globe / swimlane / week, `?depth=guided` only), CrewFeed,
+                 DayStrip, BriefingCard, HandoffBanner, RoutePicker,
+                 MorningCheckin, DailyJourney, AgentDrawer, AnchoredPopover,
+                 lenses/, ui/
 src/lib/         voice/ (engine, config, cache, split, align, huddle),
                  motion tokens, intervention icon vocabulary
 src/mcp/         MCP server: JSON-RPC dispatch + tool catalogue
