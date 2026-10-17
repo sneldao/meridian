@@ -94,12 +94,28 @@ export function calendarFor(trip: Trip): CalendarEvent[] {
 
 /** Applies a chosen flight window: the flight event keeps its duration and
  *  moves to the picked departure, so fixed asks route around the real slot
- *  instead of the fixture's 11:20. Returns the events unchanged with no
- *  flight to move (e.g. a Google calendar that never had one). */
+ *  instead of the fixture's 11:20. Returns the events unchanged when there is
+ *  no flight to move.
+ *
+ *  Ids alone are not enough. The fixture and the neutral calendar use
+ *  `ev-flight`/`n-flight`, but a connected Google calendar hands back hash ids
+ *  and a real carrier title ("BA005 LHR → HND"), so an id check silently
+ *  matched nothing and the picker became decorative again — while the API
+ *  still echoed the id back as valid. Recognise the event by shape as well:
+ *  a route pair between IATA codes, or the word "flight". */
 export function applyFlightChoice(events: CalendarEvent[], departMin: number): CalendarEvent[] {
-  const isFlight = (e: CalendarEvent) => e.id === "ev-flight" || e.id === "n-flight";
+  const isFlight = (e: CalendarEvent) =>
+    e.id === "ev-flight" ||
+    e.id === "n-flight" ||
+    /\b[A-Z]{3}\s*(?:→|->|-)\s*[A-Z]{3}\b/.test(e.title) ||
+    /\bflights?\b/i.test(e.title);
+  const flight = events.find(isFlight);
+  // Nothing that looks like a flight — leave the calendar alone rather than
+  // inventing a slot to move.
+  if (!flight) return events;
+  const duration = flight.endMin - flight.startMin;
   return events.map((e) =>
-    isFlight(e) ? { ...e, startMin: departMin, endMin: departMin + (e.endMin - e.startMin) } : e,
+    isFlight(e) ? { ...e, startMin: departMin, endMin: departMin + duration } : e,
   );
 }
 

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { fmtMin } from "@/domain/circadian";
 import { todayDayIndex } from "@/domain/today";
 import { resolveBaseline, type WakeBand } from "@/domain/fixtures";
+import { getFlightRecommendations } from "@/domain/nudges";
 import { summarizeCheckIn } from "@/domain/adherence";
 import type {
   AdherenceProfile,
@@ -85,10 +86,12 @@ export default function Home() {
   const [origin, setOrigin] = useState("LHR");
   const [dest, setDest] = useState("HND");
   const [departureDate, setDepartureDate] = useState("");
-  const [selectedFlightId, setSelectedFlightId] = useState<string>("midday-afternoon");
+  /** Null means "the window we'd recommend for this route". Deriving the
+   *  default from the trip (rather than hardcoding an id) is what makes the
+   *  picker correct on westbound routes, where the east ids don't exist. */
+  const [flightChoice, setFlightChoice] = useState<string | null>(null);
   const [checkInsParam, setCheckInsParam] = useState("");
   const [startDayParam, setStartDayParam] = useState(0);
-  const tripQuery = `?origin=${origin}&dest=${dest}&date=${departureDate}`;
   const { run, dispatch, reset } = useRunState();
   const [data, setData] = useState<TripData | null>(null);
   /** Self-reported natural wake — the one personalisation question. */
@@ -125,6 +128,17 @@ export default function Home() {
   const setupRef = useRef<HTMLDivElement | null>(null);
 
   const trip = (run.trip ?? data?.trip ?? null) as Trip | null;
+
+  // The departure window the crew should plan around. Deriving the default from
+  // the trip rather than hardcoding an id is what makes the picker correct on
+  // westbound routes, where the eastbound ids don't exist at all.
+  const recommendedFlightId = trip
+    ? (getFlightRecommendations(trip).find((f) => f.recommended)?.id ?? null)
+    : null;
+  const selectedFlightId = flightChoice ?? recommendedFlightId;
+  const tripQuery =
+    `?origin=${origin}&dest=${dest}&date=${departureDate}` +
+    (selectedFlightId ? `&flight=${selectedFlightId}` : "");
 
   const esRef = useRef<EventSource | null>(null);
   // Off until the traveller turns it on, on every depth rung. Guided makes the
@@ -376,6 +390,9 @@ export default function Home() {
       else if (checkInsParam) params.set("checkins", checkInsParam);
       if (extra?.startDay !== undefined) params.set("startDay", String(extra.startDay));
       else if (startDayParam) params.set("startDay", String(startDayParam));
+      // The flight window travels with the run, so fixed asks route around the
+      // real departure slot rather than the fixture's.
+      if (selectedFlightId) params.set("flight", selectedFlightId);
       const es = new EventSource("/api/crew/run?" + params.toString());
       esRef.current = es;
       lastEventAt.current = Date.now();
@@ -401,7 +418,7 @@ export default function Home() {
         reset();
       };
     },
-    [dispatch, handleSideEffects, push, reset, run.phase, tripQuery, checkInsParam, startDayParam, wakeBand],
+    [dispatch, handleSideEffects, push, reset, run.phase, tripQuery, checkInsParam, startDayParam, wakeBand, selectedFlightId],
   );
 
   const startShift = useCallback(() => beginStream(), [beginStream]);
@@ -825,10 +842,13 @@ export default function Home() {
                 setOrigin(next.origin);
                 setDest(next.dest);
                 setDepartureDate(next.date);
+                // A window id from the old direction is meaningless on the new
+                // one; fall back to the new route's recommended window.
+                setFlightChoice(null);
                 reset();
               }}
               selectedFlightId={selectedFlightId}
-              onSelectFlightId={setSelectedFlightId}
+              onSelectFlightId={setFlightChoice}
               baseline={baseline}
               calendar={currentEvents}
               calendarSource={data?.calendarSource}
@@ -883,7 +903,7 @@ export default function Home() {
                   reset();
                 }}
                 selectedFlightId={selectedFlightId}
-                onSelectFlightId={setSelectedFlightId}
+                onSelectFlightId={setFlightChoice}
                 baseline={baseline}
                 calendar={currentEvents}
                 calendarSource={data?.calendarSource}

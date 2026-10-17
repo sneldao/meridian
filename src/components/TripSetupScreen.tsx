@@ -19,7 +19,8 @@ interface TripSetupScreenProps {
   dest: string;
   departureDate: string;
   onChangeRoute: (next: { origin: string; dest: string; date: string }) => void;
-  selectedFlightId: string;
+  /** The chosen window, or null to mean "this route's recommended one". */
+  selectedFlightId: string | null;
   onSelectFlightId: (id: string) => void;
   baseline?: WearableBaseline;
   /** "fixture" = the demo Garmin numbers, not measured. Drives the Demo tag. */
