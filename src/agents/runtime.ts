@@ -158,7 +158,7 @@ interface RunState {
 
 async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[], calendarSource: "google" | "fixture" = "fixture", checkIns: CheckIn[] = [], startDayIndex: number = 0, kind: ProviderKind = providerKind(), tenant?: string, baseline: WearableBaseline = GARMIN_BASELINE) {
   const adherence = checkIns.length ? foldCheckIns(ADHERENCE_PROFILE, checkIns) : ADHERENCE_PROFILE;
-  const memory = await loadMemory();
+  const memory = await loadMemory(tenant);
   // Graph memory is offered as fixed tools, not prompt prose — the analyst
   // calls recallFindings/priorFailures and every answer carries the hop path.
   // Absent without FALKORDB_URL/HOST; a down DB returns "graph memory offline".
@@ -610,7 +610,7 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
     tripLabel: `${trip.origin.code}→${trip.destination.code}`,
     lockedDays: state.lockedDays.length,
     meanScore,
-  });
+  }, tenant);
   try {
     const gm = await import("@/domain/graph-memory");
     if (gm.graphEnabled()) {

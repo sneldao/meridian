@@ -7,7 +7,15 @@ import type { CheckIn, CrewMemory } from "./types";
 // Same shape as a file-based memory tool — the merge path swaps the store,
 // not the interface.
 
-const MEMORY_PATH = path.join(process.cwd(), "artifacts", "crew-memory.json");
+// One JSON file per traveller — the same tenant scoping the graph uses. No
+// tenant = the demo/shared traveller (the existing crew-memory.json).
+
+const MEMORY_DIR = path.join(process.cwd(), "artifacts");
+
+const memoryPath = (tenant?: string) => {
+  const safe = tenant?.replace(/[^a-z0-9_-]/gi, "").slice(0, 48);
+  return path.join(MEMORY_DIR, safe ? `crew-memory-${safe}.json` : "crew-memory.json");
+};
 
 const EMPTY: CrewMemory = {
   runs: [],
@@ -15,9 +23,9 @@ const EMPTY: CrewMemory = {
   learned: { skippedKinds: [], notes: [] },
 };
 
-export async function loadMemory(): Promise<CrewMemory> {
+export async function loadMemory(tenant?: string): Promise<CrewMemory> {
   try {
-    const raw = await readFile(MEMORY_PATH, "utf8");
+    const raw = await readFile(memoryPath(tenant), "utf8");
     const parsed = JSON.parse(raw) as Partial<CrewMemory>;
     return {
       runs: parsed.runs ?? [],
@@ -29,8 +37,8 @@ export async function loadMemory(): Promise<CrewMemory> {
   }
 }
 
-export async function recordCheckIn(checkIn: CheckIn): Promise<CrewMemory> {
-  const mem = await loadMemory();
+export async function recordCheckIn(checkIn: CheckIn, tenant?: string): Promise<CrewMemory> {
+  const mem = await loadMemory(tenant);
   mem.checkIns.push(checkIn);
   mem.checkIns = mem.checkIns.slice(-200);
   if (checkIn.status === "skipped" || checkIn.status === "harder") {
@@ -48,24 +56,25 @@ export async function recordCheckIn(checkIn: CheckIn): Promise<CrewMemory> {
         ? checkIn.startMin
         : Math.min(mem.learned.earliestDoneMin, checkIn.startMin);
   }
-  await save(mem);
+  await save(mem, tenant);
   return mem;
 }
 
-export async function recordRun(run: CrewMemory["runs"][number]): Promise<void> {
-  const mem = await loadMemory();
+export async function recordRun(run: CrewMemory["runs"][number], tenant?: string): Promise<void> {
+  const mem = await loadMemory(tenant);
   mem.runs.push(run);
   mem.runs = mem.runs.slice(-50);
-  await save(mem);
+  await save(mem, tenant);
 }
 
-export async function listCheckIns(): Promise<CheckIn[]> {
-  return (await loadMemory()).checkIns;
+export async function listCheckIns(tenant?: string): Promise<CheckIn[]> {
+  return (await loadMemory(tenant)).checkIns;
 }
 
-async function save(mem: CrewMemory) {
-  await mkdir(path.dirname(MEMORY_PATH), { recursive: true });
-  await writeFile(MEMORY_PATH, JSON.stringify(mem, null, 2));
+async function save(mem: CrewMemory, tenant?: string) {
+  const file = memoryPath(tenant);
+  await mkdir(path.dirname(file), { recursive: true });
+  await writeFile(file, JSON.stringify(mem, null, 2));
 }
 
 /** One-paragraph brief for the analyst's prompt — memory in prose, not JSON. */

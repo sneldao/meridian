@@ -3,6 +3,7 @@ import { buildTrip, horizonFor, isKnownCity, resolveBaseline, type WakeBand } fr
 import { fetchCalendar } from "@/tools/calendar";
 import { runCrew } from "@/agents/runtime";
 import { rateLimit, tooMany, RL_RUNS } from "@/lib/rateLimit";
+import { tenantOf } from "@/lib/tenant";
 import type { CheckIn } from "@/domain/types";
 
 export const dynamic = "force-dynamic";
@@ -64,7 +65,7 @@ export async function GET(req: NextRequest) {
   const stream = new ReadableStream({
     async start(controller) {
       try {
-        for await (const event of runCrew({ trip, calendar, calendarSource, baseline, checkIns, startDayIndex, tenant: sp.get("tenant") ?? undefined })) {
+        for await (const event of runCrew({ trip, calendar, calendarSource, baseline, checkIns, startDayIndex, tenant: tenantOf(req) })) {
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
         }
       } catch (err) {
