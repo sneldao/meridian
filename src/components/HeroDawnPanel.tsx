@@ -57,6 +57,9 @@ export interface HeroDawnPanelProps {
   /** The step to put on the curve — only a light step has a beam to land. */
   beam?: { dayIndex: number; startMin: number; endMin: number } | null;
   readinessPct: number;
+  /** Provenance for the stat: locked truth, preview promise, or nothing.
+   *  Optional so existing callers keep the locked label. */
+  readinessSource?: "locked" | "preview" | "none";
 }
 
 /** Hours the two dawns are apart, rounded to the half hour the plan works in:
@@ -78,9 +81,11 @@ function atOriginMinute(base: Date, utcOffsetMin: number, minOfDay: number): Dat
   return d;
 }
 
-export function HeroDawnPanel({ trip, owedMin, beam, readinessPct }: HeroDawnPanelProps) {
+export function HeroDawnPanel({ trip, owedMin, beam, readinessPct, readinessSource = "locked" }: HeroDawnPanelProps) {
   // Honest arrival headline: hours banked so far out of the whole shift, never
-  // a "100%" claim. readinessPct is the locked share of the required shift.
+  // a "100%" claim. readinessPct is the locked share once anything has run,
+  // the plan's promise before that; the label branches on source so pre-lock
+  // never says "locked" about a preview.
   const requiredMin = Math.abs(trip.requiredShiftMin);
   const bankedH = Math.round((requiredMin * readinessPct) / 100 / 60 * 10) / 10;
   const shiftH = Math.round(requiredMin / 60);
@@ -660,7 +665,11 @@ export function HeroDawnPanel({ trip, owedMin, beam, readinessPct }: HeroDawnPan
         </div>
         <div className="stat">
           <em>{readinessPct > 0 ? `${readinessPct}%` : `${bankedH}h`}</em>
-          {readinessPct > 0 ? "of shift locked" : "banked so far"}
+          {readinessPct > 0
+            ? readinessSource === "preview"
+              ? "banked on preview"
+              : "of shift locked"
+            : "banked so far"}
         </div>
       </div>
     </div>

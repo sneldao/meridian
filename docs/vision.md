@@ -552,10 +552,11 @@ five commits (A: `56965c1`, `6d62d56`, `3bb8e94`, `45a5918`; B: `7b6cc7d`,
 `9651585`). Item 12 (`49c6722`) closes the carried `Real integrations`
 remainder.
 
-**Round 4 (planned):** the 9/10 push — trust, craft, proof. Track A lands
-the in-flight craft (hero two-column, marks reminder, cream surface,
-arrival split) plus provenance labels via `heroReadiness`, the
-first-viewport parsing cut, and orphaned-route cleanup. Track B (untouched
-files, starting now): wake-answer acknowledgement, `/api/trip`
-refetch-storm guard, second-trip memory proof. See
-[docs/plan/backlog.md](plan/backlog.md) §Round 4.
+**Round 4 (shipped 2026-10-17):** the 9/10 push, tracks closed. Track A
+(`50f786c`, `0451330`, `337d2e4`): cream surface, marks-waiting banner,
+scannable hero delta, arrival promise-vs-account split. Track B
+(`c95a5fe`, `a587376`, renders in `837b613`): `wakeAck`, B2 closed with
+no change (no storm exists), `secondTripProof` + hero lines. Ratings now
+design 8.5 / UX 7.5 — see [docs/plan/backlog.md](plan/backlog.md)
+§Round-4 ratings. Still open to a 9: provenance labels, parsing load,
+orphans, mobile.

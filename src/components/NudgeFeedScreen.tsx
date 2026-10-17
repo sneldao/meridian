@@ -11,9 +11,10 @@ import {
 import { previewPlan } from "@/domain/solver";
 import {
   dayPlace,
+  heroReadiness,
   nowMinOnDay,
   pickNextStep,
-  shiftLockedPct,
+  previewLockedOf,
   todayDayIndex,
 } from "@/domain/today";
 import { ADHERENCE_PROFILE, type WakeBand } from "@/domain/fixtures";
@@ -562,20 +563,16 @@ export function NudgeFeedScreen({
   // Honest readiness: the share of the required shift the locked days cover
   // (sign-safe — eastbound shifts are negative). Pre-lock, the hero would
   // show 0% — which is wrong, because the solver has already drafted the
-  // plan. B added `previewLocked` (9651585) so the first impression is the
-  // plan's promise ("38% banked on preview") rather than a flat zero.
-  // Once anything is locked the preview is ignored.
-  const readinessPct = trip
-    ? shiftLockedPct(
-        trip,
-        [...locked.values()],
-        preview
-          ? [...preview.values()].flatMap((d) =>
-              d ? [{ shiftMin: d.plan.shiftMin }] : [],
-            )
-          : undefined,
-      )
-    : 0;
+  // plan. B's `previewLockedOf` + `heroReadiness` (4090d7c) give the single
+  // shared chain and its provenance: locked truth once anything has run,
+  // the plan's promise before that, honest none when there is no plan.
+  // The label branches on source so pre-lock never says "locked" about a
+  // preview — the one trust gap round 3 left open.
+  const previewLocked = useMemo(() => previewLockedOf(preview), [preview]);
+  const readiness = trip
+    ? heroReadiness(trip, [...locked.values()], previewLocked)
+    : { pct: 0, source: "none" as const };
+  const readinessPct = readiness.pct;
 
   // Item 13 — the calendar is the compliance surface. The summary block sits
   // above the timeline so a traveller sees the numbers they will lock before
@@ -604,13 +601,6 @@ export function NudgeFeedScreen({
   // is ignored, and the hero falls back to the equal-values shape.
   const heroMtg = useMemo(() => {
     if (!trip) return null;
-    // preview values can be null for solver-infeasible days; drop them so
-    // heroMeeting sees only the days that would actually lock.
-    const previewLocked = preview
-      ? [...preview.values()].flatMap((d) =>
-          d ? [{ shiftMin: d.plan.shiftMin }] : [],
-        )
-      : undefined;
     return heroMeeting({
       trip,
       calendar: calendarEvents,
@@ -618,7 +608,7 @@ export function NudgeFeedScreen({
       previewLocked,
       baseline,
     });
-  }, [trip, calendarEvents, locked, preview, baseline]);
+  }, [trip, calendarEvents, locked, previewLocked, baseline]);
 
   // B3 render — the retention loop made visible. `secondTripProof` reads the
   // persisted runs for the most recent prior trip on a different route;
@@ -644,6 +634,7 @@ export function NudgeFeedScreen({
             owedMin={dawnOwedMin}
             beam={heroBeam}
             readinessPct={readinessPct}
+            readinessSource={readiness.source}
           />
         )}
 
