@@ -94,16 +94,17 @@ cashed. The target loop:
 |---|---|---|---|
 | **Arrive** | `/` | Demo trip renders immediately. One question asked about *them*, not about the trip. | surface half to do |
 | **Orient** | `/` hero | The residual is legible: how far behind your dawn is, and how much is banked. | ✅ |
-| **Personalise** | `/` CTA | The crew run is watchable — progress is *announced*, not just animated, and a dropped stream never bricks the button. | announce to mount |
+| **Personalise** | `/` CTA | The crew run is watchable — progress is *announced*, not just animated, and a dropped stream never bricks the button. | ✅ |
 | **Live the shift** | `/` Today | One step, one tap. Taps persist and are attributable to the traveller. | ✅ |
 | **Land** | *missing* | **The payoff.** First morning in the destination, scored against what was promised at the gate. | **to build** |
 | **Reflect** | `/outcome` | Reached automatically when the trip's last day passes. Shows the plan it is grading. | gating ✅, routing to do |
 
 The engine side of most of this is now true: the residual is legible, taps
-persist and are attributable, a stalled run can't strand anyone, and the
-self-report can't fabricate a score. What remains is **the arrival surface**,
-**the one question**, and **announcing the run** — and an un-mounted announcer
-announces nothing, so the Personalise row is only half-true until it's wired.
+persist and are attributable, a stalled run can't strand anyone, the run is
+announced as it works, and the self-report can't fabricate a score. What remains
+is **the arrival surface** and **the one question** — and the one question is
+what makes the first number on the page the traveller's own rather than the
+fixture's, which is why it goes before the payoff.
 
 **Stage 5 is the gap.** The engine now previews post-flight days (`c9eccd2`),
 so the maths for landing exists — but there is no arrival surface, nothing ever
@@ -179,26 +180,31 @@ plan, with save disabled until both answers are real (`1be902c`).
 
 ## 4. Accessibility as product quality, not compliance
 
-One of the two concrete things here is fixed; the other, and the systemic gap,
-is half-closed:
+Both concrete items are now closed, and the systemic gap is closed too:
 
 - ~~**Space is captured globally.**~~ Fixed (`4ba7b35`). It `preventDefault()`ed
   Space on keydown and started a crew run; since buttons activate on keyup, no
   button on the page could be pressed with Space at all. The three menu items
   were also focusable divs with no activation behaviour — they took focus and
   did nothing.
-- **Colour-only verdicts.** `.evchip.pass` and `.evchip.warn` render
-  byte-identical text (`NudgeFeedScreen.tsx:905-907`); only colour separates a
-  passing check from a failing one. The pass/fail badge in `CrewFeed` gets this
-  right, which proves the pattern is known — it just isn't applied everywhere.
-  **Still open.**
+- ~~**Colour-only verdicts.**~~ Fixed (`0a0c680`). `.evchip.pass` and
+  `.evchip.warn` rendered byte-identical text and differed only in hue, so a
+  failed gate read as a passed one. The label now carries a glyph and the issue
+  count, the tooltip names the violations, and `tests/eval-chip.test.ts` fails if
+  the two states ever render the same text again.
 
-The systemic gap is half-addressed. `RunAnnouncer` now exists and diffs run
-state into polite sentences, and `useFocusTrap` exists in `@/lib/a11y` — but
-**neither is mounted**, so the behaviour is still absent: an un-mounted announcer
-announces nothing, and a defined-but-unused focus trap leaves the `aria-modal`
-Edit sheet still escaping focus and still not restoring it. Until both are
-wired, "the app is silent during its longest operation" remains true.
+The systemic gap is closed: the app had exactly one `aria-live` region and it
+rendered inside the closed-by-default `AgentDrawer`, so a blind traveller heard
+silence through the entire run — the longest operation in the product.
+`RunAnnouncer` is now mounted on the page itself, and the `aria-modal` Edit
+sheet honours its claim for the first time: initial focus, Tab containment, and
+restoration to the opener.
+
+What this cost is worth recording. Both halves of `RunAnnouncer` and
+`useFocusTrap` were written and merged while nothing imported them. Passing
+libraries are not features — the code was correct, tested, and invisible to
+every user until it was mounted. **If a PR adds an accessibility primitive, the
+mount line belongs in the same PR.**
 
 ---
 

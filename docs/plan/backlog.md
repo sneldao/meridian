@@ -21,13 +21,12 @@ Everything behind those — `src/domain/`, `src/app/api/`, `/outcome`, a11y
 infrastructure — is genuinely disjoint and parallelises without merge pain.
 
 **Track A — the landing journey.** Owns `page.tsx` + `NudgeFeedScreen.tsx`.
-Items 1, 2, 4, 5 done; remaining 9 (two mount lines), 10, 6 (surface half), 7.
+Items 1, 2, 4, 5, 9, 10 done; remaining 6 (surface half) and then 7.
 **7 is the headline**, because the product currently stops at the plan.
 
 **Track B — data honesty and the loop.** Owns `src/domain/`, `src/app/api/`,
 `/outcome`, a11y infrastructure. Items 3, 4 (domain half), 6 (domain half),
-8, 9 (domain half) all done, plus the Garmin upload path; remaining 9's mount
-lines are A's.
+8, 9 (domain half) all done, plus the Garmin upload path.
 
 **The seam — items 4, 6 and 9 each cross the line with the same contract.**
 B owns the domain half, A owns the surface half, and **B lands first** because
@@ -36,13 +35,13 @@ half has landed (`resolveBaselineState` → garmin / wake-band / demo-default), 
 its surface half is now unblocked.
 
 **Sequence.** Shipped so far: 1 + 2 (`4ba7b35`), 5 (`deee7d9`), 4 (`36563d0`
-on top of `c675c45`), and from the other lane 3 (`4933774`), 6-domain (`9afa6c3`),
-8 (`1be902c`), 9-domain (`RunAnnouncer` + `useFocusTrap`). **Remaining, in
-order:** 9's two mount lines, then 10, then **6's surface half** (ask the wake
-question inline — its domain half is in, so this is unblocked), then **7**.
-**7 goes last on purpose**: an arrival screen that claims "the crew learned from
-your week" is worthless if the week belongs to whoever used the demo last, and
-6 is what makes the first number on the page theirs.
+on top of `c675c45`), 9 + 10 (`0a0c680`), and from the other lane 3 (`4933774`),
+6-domain (`9afa6c3`), 8 (`1be902c`), 9-domain (`RunAnnouncer` + `useFocusTrap`),
+the Garmin upload path (`92299c3`). **Remaining, in order: 6's surface half**
+(ask the wake question inline — its domain half is in, so this is unblocked),
+then **7**. **7 goes last on purpose**: an arrival screen that claims "the crew
+learned from your week" is worthless if the week belongs to whoever used the demo
+last, and 6 is what makes the first number on the page theirs.
 
 **Coordination.** Only A edits `page.tsx` / `NudgeFeedScreen.tsx`; B files the
 change and A picks it up. Rebase on `main` daily — a second agent commits
@@ -144,17 +143,22 @@ merely looking untidy. Verified against `main` on 2026-10-17.
    no saved plan → "nothing to grade yet" card; sliders start unset and save
    stays disabled until both are real answers; "saved" only fires when the
    check-in POST lands, otherwise it admits the local-only record.
-9. **B → A** · **Announce the run** — **B's half shipped**:
-   `src/components/RunAnnouncer.tsx` diffs run state into polite `aria-live`
-   sentences (start, day locked, redraft, replan, error, plan ready) and
-   renders nothing visible; `src/lib/a11y.ts` exports `useFocusTrap` (initial
-   focus, Tab cycle, restore on close). **A's mount lines**: drop
-   `<RunAnnouncer run={run} />` anywhere `run` reaches on `/`, and attach
-   `useFocusTrap(panelRef, setupOpen)` to the `.sheet-panel` div (the
-   `aria-modal` Edit sheet) — `.sr-only` already exists in globals.css.
-10. **A** · **Colour-only verdicts** — `.evchip.pass` / `.evchip.warn` render
-    byte-identical text (`NudgeFeedScreen.tsx:905-907`); only colour
-    distinguishes them. `CrewFeed`'s PASS/FAIL badge already does it right.
+9. ~~**B → A** · **Announce the run**~~ — **shipped `0a0c680`**: B's half
+   (`RunAnnouncer` diffing run state into polite sentences, `useFocusTrap`)
+   existed and did nothing; A mounted both. `RunAnnouncer` now sits on the page
+   rather than in the drawer, which is closed by default — so the run was silent
+   to assistive tech for its whole duration. Verified speaking during a live run.
+   The Edit sheet honoured `aria-modal` for the first time: opening moves focus
+   to the close button, Tab from the last of nine focusables wraps to the first
+   and stays inside, Escape restores focus to the opener.
+10. ~~**A** · **Colour-only verdicts**~~ — shipped `0a0c680`:
+    `.evchip.pass` and `.evchip.warn` rendered byte-identical text and differed
+    only in hue, so a failed gate read as a passed one. The label now carries a
+    glyph and the issue count, and the tooltip names the violations. Pinned by
+    `tests/eval-chip.test.ts` — which needed the label extracted to
+    `src/components/ui/eval-chip.ts`, because evidence is *absent pre-run by
+    design*, so on a machine whose provider is failing the chip cannot be
+    rendered at all and only a test holds the line.
 
 ## Next steps (carried)
 
