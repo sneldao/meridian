@@ -8,5 +8,52 @@
   },
   "media": {
     "autoProxy": true
-  }
+  },
+  "registryItems": [
+    {
+      "name": "mk-callout-highlight",
+      "type": "hyperframes:block",
+      "target": "compositions/mk-callout-highlight.html"
+    },
+    {
+      "name": "mk-progress-stat",
+      "type": "hyperframes:block",
+      "target": "compositions/mk-progress-stat.html"
+    },
+    {
+      "name": "mk-specs-list",
+      "type": "hyperframes:block",
+      "target": "compositions/mk-specs-list.html"
+    },
+    {
+      "name": "beat-freeze-cut",
+      "type": "hyperframes:block",
+      "target": "compositions/beat-freeze-cut.html"
+    },
+    {
+      "name": "split-flap-board",
+      "type": "hyperframes:block",
+      "target": "compositions/split-flap-board.html"
+    },
+    {
+      "name": "lt-mask-reveal",
+      "type": "hyperframes:block",
+      "target": "compositions/lt-mask-reveal.html"
+    },
+    {
+      "name": "mk-line-graph",
+      "type": "hyperframes:block",
+      "target": "compositions/mk-line-graph.html"
+    },
+    {
+      "name": "code-typing",
+      "type": "hyperframes:block",
+      "target": "compositions/code-typing.html"
+    },
+    {
+      "name": "flowchart",
+      "type": "hyperframes:block",
+      "target": "compositions/flowchart.html"
+    }
+  ]
 }

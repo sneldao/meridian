@@ -141,3 +141,49 @@ fixes by replacing the static skeleton itself with named, seekable
 primitives. Sponsor callouts land at the beat each technology does its
 work, not as a logo-card fest. Two focal points per scene give the eye
 somewhere to travel at the 8s, 45s, and 1m40s drop cliffs.
+
+## Status — rev6 rendered (2026-10-17)
+
+`video/renders/video_2026-10-17_16-46-32.mp4` — 3m16s, check passed.
+
+**Wired as registry sub-comps (rendering):** `hook-callout` (s1, word-sweep
+on "1 a.m."), `gate-flow` (s5, draft→gate✗→revise→gate✓→lock diagram with
+traveling cursor), `dive-cut` (s6, fork of beat-freeze-cut — the freeze IS
+the gate), `gate-trace` (s7, score line synced to reject/pass chips),
+`memory-flow` (s8, skip→record→adherence→next trip), `flight-board` (s9,
+split-flap "HND 22:15 EVENING" on the click), `close-callout` (s13,
+tagline lands on "ahead").
+
+**Host ports (comp files render standalone + in clean mounts, but did not
+inflate inside this index.html — a runtime quirk worth a follow-up):**
+crew checklist (s2), depth-dial lower-third (s3), handoff receipt (s10),
+mcp terminal (s11), landing stats + LT (s12). Content is inline in
+index.html with main-timeline entrances — same design, guaranteed paint.
+The unused comp files remain in `compositions/` for investigation.
+
+**Sponsor beats:** qwen·nebius chip (s2), falkordb chip (s8), qloo chip
+(s10), streamable-http protocol chip (s11), qwen·nebius badge (s13);
+sponsor-named chips inline in the s2 roster and s10 receipt.
+
+**Known leftovers:** 9 contrast warnings (pre-existing, intentional
+decorative text on dark bgs at t≈10.9/54.4/98); music bed is 170s vs
+196s slot (trails off in close).
+
+### 2026-10-17 polish pass (post-review fixes)
+
+- **s3** depth-dial LT recolored to ink on paper (was white-on-paper, invisible)
+- **s4** loop-ledger: dropped `.slot` (built-in translate(-50%,-50%) pushed the
+  card half off-viewport top-left); now a plain absolute card at left:96 top:220
+- **s7** planrows narrowed to left-margin pills (250px, shortened copy) — the
+  crew-frame card had been covering their right two-thirds. gate-trace ported
+  from sub-comp to host SVG after the mount inflated inconsistently across
+  builds (same nondeterministic mount quirk that hit crew-specs, depth-dial-lt,
+  handoff-specs, mcp-typing, landing-stats, landing-lt)
+- **s13** close-sub URL line moved below the tagline (was overlapping it)
+- **s2** roster text bumped 36→44px for readability
+
+Remaining sub-comp mounts still in use: hook-callout (s1), gate-flow (s5),
+dive-cut (s6), memory-flow (s8), flight-board (s9), close-callout (s13).
+The sub-comp inflation quirk is worth a HyperFrames issue report — comp files
+render standalone and in a clean test project but skip inflation in this
+index.html, inconsistently per build.

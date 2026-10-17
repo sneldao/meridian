@@ -1,0 +1,22 @@
+<!-- Last-frame card · Graph Hacks. Drop this in at t=186 to replace the default close. -->
+<section class="clip paper grain" data-composition-id="last-frame-graph-hacks"
+  data-start="186" data-duration="10">
+  <div class="horizon" style="top:12%;opacity:.5"></div>
+  <div class="pad center">
+    <div class="dglobe"><i></i></div>
+    <div class="glowb" id="gb-lf" style="left:510px;top:-300px;opacity:0"></div>
+    <div class="close-tag grad-close depth-t">agents that fly ahead of you</div>
+    <div class="close-sub">meridian-afud.onrender.com · github.com/sneldao/meridian</div>
+    <div class="badge">graph memory · per traveller · never a shared pool</div>
+  </div>
+</section>
+<script>
+  // matched gradient sweep + globe draw, identical to the bundled close
+  const t = window.__timelines["main"] || gsap.timeline({ paused: true });
+  t.fromTo("#gb-lf", { opacity: 0, scale: .9 },
+    { opacity: .85, scale: 1.1, duration: 1.6, ease: "sine.out" }, 187.2);
+  t.fromTo(".dglobe", { scale: .85, opacity: 0 },
+    { scale: 1, opacity: .8, duration: 2, ease: "power2.out" }, 186.8);
+  t.fromTo(".close-tag", { backgroundPosition: "0% 0" },
+    { backgroundPosition: "120% 0", duration: 3.2, ease: "power2.inOut" }, 186.8);
+</script>
