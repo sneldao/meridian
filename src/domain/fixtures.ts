@@ -171,3 +171,27 @@ export function horizonFor(requiredShiftMin: number, daysUntilDeparture: number)
   const post = Math.min(5, Math.max(1, Math.ceil(owed / 60)));
   return { preFlightDays: pre, postFlightDays: post };
 }
+
+/** Neutral traveller calendar for any route — generic commitments, no
+ * demo names. The canonical `CALENDAR`/`calendarFor` stays Alex-flavoured
+ * for DEMO_TRIP, tests and replay; the consumer path gets this when the
+ * route isn't the demo's and no real calendar is connected. */
+export function neutralCalendarFor(trip: Trip): CalendarEvent[] {
+  const dep = trip.departureDayIndex;
+  const out: CalendarEvent[] = [];
+  trip.days.forEach((d, i) => {
+    if (i === dep) {
+      out.push({ id: "n-flight", title: `Flight ${trip.origin.code} → ${trip.destination.code}`, dayIndex: i, startMin: 11 * 60 + 20, endMin: 11 * 60 + 50, movable: false, blocksInterventions: false });
+      return;
+    }
+    if (i > dep) {
+      if (i === dep + 1) out.push({ id: "n-arrival-mtg", title: "Client meeting", dayIndex: i, startMin: 14 * 60, endMin: 15 * 60 + 30, movable: false });
+      return;
+    }
+    out.push({ id: `n-standup-${i}`, title: "Team standup", dayIndex: i, startMin: 9 * 60 + 30, endMin: 10 * 60, movable: true });
+    out.push({ id: `n-deep-${i}`, title: "Deep work", dayIndex: i, startMin: 14 * 60, endMin: 16 * 60, movable: true });
+    if (i === 0) out.push({ id: "n-review", title: "Weekly review", dayIndex: i, startMin: 9 * 60, endMin: 10 * 60 + 30, movable: false });
+    if (i === dep - 1) out.push({ id: "n-dinner", title: "Dinner", dayIndex: i, startMin: 19 * 60 + 30, endMin: 21 * 60 + 30, movable: false });
+  });
+  return out;
+}
