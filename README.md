@@ -60,24 +60,19 @@ Reference (kept in sync with the code):
 - [Evals](docs/reference/evals.md) — the harness that tracks plan quality over time (`bun run eval`), not a hillclimb yet, the shape of one
 - [Graph memory](docs/reference/graph-memory.md) — FalkorDB state + Graph Hacks sprint to the 2026-10-18 deadline
 
-Active:
+- [Backlog](docs/plan/backlog.md) — open items after the 2026-10-15→17 home
+  overhaul + any-route pass (shipped plans deleted; the commits on `main`
+  are the record)
+
+Archive (frozen 2026-10-15 hackathon material — history, not current state):
 
 - [Hackathon submissions](docs/plan/hackathon-submissions.md) — external hackathons Meridian is eligible for, ranked targets + per-sponsor deltas
-- [Consolidation](docs/plan/consolidation.md) — consumer face + depth dial spec (Calm/Guided/Operator)
-- [Next steps](docs/plan/next-steps.md) — consumer simplification direction, post-Oct-30
-- [Consumer appeal plan](docs/plan/consumer-appeal-implementation.md) — sequenced implementation plan from the design research
-- [Home page overhaul](docs/plan/home-page-overhaul.md) — shipped 2026-10-17 (accuracy fixes, one-flow layout, honest claims)
-- [Home signature pass](docs/plan/home-signature-pass.md) — shipped 2026-10-17 (hero meaning, voice ramp, nudge→impact loop)
-- [Any-route pass](docs/plan/any-route.md) — shipped 2026-10-17 (parameterized trip horizon, neutral default calendar, connect-state surfacing, picker UX)
-
-Plan & pitch (frozen at the 2026-10-15 hackathon — history, not current state):
-
-- [Hackathon plan](docs/plan/hackathon-plan.md) — the day's build: 4 lenses, any route, team split, demo script, business case (§11 still live)
-- [Design vision](docs/plan/design-vision.md) — the Ghost Terminator, immersive-world plan, build tiers
-- [Graph Hacks plan](docs/plan/graph-hackathon.md) — FalkorDB participation strategy, tracks, scope guardrails
-- [ICP](docs/plan/icp.md) — the two personas the fixtures are built from
-- [Commercial](docs/plan/commercial.md) — deployment + monetisation story behind the live URL
-- [Pitch narrative](docs/plan/pitch.md) — verified framing material for the stage
+- [Hackathon plan](docs/archive/hackathon-plan.md) — the day's build: 4 lenses, any route, team split, demo script, business case (§11 still live)
+- [Design vision](docs/archive/design-vision.md) — the Ghost Terminator, immersive-world plan, build tiers
+- [Graph Hacks plan](docs/archive/graph-hackathon.md) — FalkorDB participation strategy, tracks, scope guardrails
+- [ICP](docs/archive/icp.md) — the two personas the fixtures are built from
+- [Commercial](docs/archive/commercial.md) — deployment + monetisation story behind the live URL
+- [Pitch narrative](docs/archive/pitch.md) — verified framing material for the stage
 
 ## Checks
 

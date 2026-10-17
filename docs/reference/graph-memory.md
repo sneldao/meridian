@@ -4,7 +4,7 @@
 
 Track-2 (Agent Memory and Coordination) submission for Graph Hacks.
 Strategy, graph model, tool catalogue and guardrails are frozen in
-[docs/plan/graph-hackathon.md](../plan/graph-hackathon.md) — this doc tracks
+[do../archive/graph-hackathon.md](../plan/graph-hackathon.md) — this doc tracks
 current state and the build to the deadline.
 
 **Deadline: Sun 2026-10-18 23:59 IST = 19:29 BST.** Target submission ~15:00
