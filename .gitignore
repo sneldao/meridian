@@ -25,3 +25,4 @@ artifacts/video/
 video/SPEC.md
 video/assets/
 video/.hyperframes/
+video/audio/*.mp3
