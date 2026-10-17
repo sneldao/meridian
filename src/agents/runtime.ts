@@ -9,6 +9,7 @@ import { ADHERENCE_PROFILE, DEMO_TRIP, GARMIN_BASELINE } from "@/domain/fixtures
 import { foldCheckIns } from "@/domain/adherence";
 import { loadMemory, memoryBrief, recordRun } from "@/domain/memory";import type {
   AdherenceProfile,
+  BaselineKind,
   CalendarEvent,
   CalendarMove,
   CheckIn,
@@ -59,6 +60,9 @@ export function runCrew(opts?: {
   /** Wearable baseline — fixture unless the traveller answered the wake
    *  question. Replay transcripts stay pinned to the fixture either way. */
   baseline?: WearableBaseline;
+  /** Where the baseline came from — garmin / wake-band / demo-default —
+   *  carried through run_start so surfaces label numbers honestly. */
+  baselineKind?: BaselineKind;
 }): AsyncGenerator<CrewEvent> {
   const queue: CrewEvent[] = [];
   const notifier: { fn: (() => void) | null } = { fn: null };
@@ -89,6 +93,7 @@ export function runCrew(opts?: {
             kind,
             opts?.tenant,
             opts?.baseline,
+            opts?.baselineKind,
           );
         const primary = providerKind();
         try {
@@ -156,7 +161,7 @@ interface RunState {
   briefingText: string;
 }
 
-async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[], calendarSource: "google" | "fixture" = "fixture", checkIns: CheckIn[] = [], startDayIndex: number = 0, kind: ProviderKind = providerKind(), tenant?: string, baseline: WearableBaseline = GARMIN_BASELINE) {
+async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[], calendarSource: "google" | "fixture" = "fixture", checkIns: CheckIn[] = [], startDayIndex: number = 0, kind: ProviderKind = providerKind(), tenant?: string, baseline: WearableBaseline = GARMIN_BASELINE, baselineKind?: BaselineKind) {
   const adherence = checkIns.length ? foldCheckIns(ADHERENCE_PROFILE, checkIns) : ADHERENCE_PROFILE;
   const memory = await loadMemory(tenant);
   // Graph memory is offered as fixed tools, not prompt prose — the analyst
@@ -219,6 +224,7 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
     provider: kind,
     trip,
     baseline,
+    baselineKind,
     calendar: state.calendar,
   });
   for (const checkIn of checkIns) emit({ type: "check_in", checkIn });

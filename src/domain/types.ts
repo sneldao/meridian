@@ -174,6 +174,11 @@ export interface AdherenceProfile {
   weakAt: string[]; // e.g. ["early alarms", "self-directed naps"]
 }
 
+/** Where the baseline in play actually came from. "demo-default" is a real
+ *  state — the sample persona — never "absent": replay and the demo need the
+ *  fixture to function, so it is labelled rather than hidden. */
+export type BaselineKind = "garmin" | "wake-band" | "demo-default";
+
 // --- Crew event stream (SSE payload union) ----------------------------------
 
 export type AgentId = "analyst" | "researcher" | "planner" | "evaluator" | "negotiator";
@@ -186,7 +191,7 @@ export interface VoiceLine {
 }
 
 export type CrewEvent =
-  | { type: "run_start"; provider: string; trip: Trip; baseline: WearableBaseline; calendar: CalendarEvent[] }
+  | { type: "run_start"; provider: string; trip: Trip; baseline: WearableBaseline; baselineKind?: BaselineKind; calendar: CalendarEvent[] }
   | { type: "agent_start"; agent: AgentId; title: string }
   | { type: "agent_token"; agent: AgentId; text: string }
   | { type: "agent_end"; agent: AgentId }

@@ -11,6 +11,7 @@ import { useCallback, useReducer, useRef } from "react";
 import { passes, sunProgress } from "@/domain/circadian";
 import type {
   AgentId,
+  BaselineKind,
   CalendarEvent,
   CalendarMove,
   CheckIn,
@@ -54,6 +55,8 @@ export interface RunState {
   provider?: string;
   trip: Trip | null;
   baseline?: WearableBaseline;
+  /** Provenance of `baseline` — garmin / wake-band / demo-default. */
+  baselineKind?: BaselineKind;
   /** Calendar as it was at run_start (the "before"). */
   calendar: CalendarEvent[];
 
@@ -212,6 +215,7 @@ function applyEventInner(s: RunState, event: CrewEvent, t: number): RunState {
         provider: event.provider,
         trip: event.trip,
         baseline: event.baseline,
+        baselineKind: event.baselineKind,
         calendar: event.calendar,
         priorLocked: prior.size
           ? {

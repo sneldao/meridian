@@ -1,5 +1,6 @@
 import type {
   AdherenceProfile,
+  BaselineKind,
   CalendarEvent,
   City,
   CityCode,
@@ -159,6 +160,25 @@ export function resolveBaseline(band: WakeBand | null | undefined, base: Wearabl
     chronotype,
     source: `${base.source} + self-report`,
   };
+}
+
+/** The same resolution with provenance attached — the three states the UI
+ *  can honestly name: a connected wearable's numbers, a profile derived from
+ *  the traveller's own wake answer, or the sample persona. `source` mirrors
+ *  the trip payload's `baselineSource`; it defaults to the fixture, which is
+ *  what every caller passes until the wearable connector lands. */
+export function resolveBaselineState(
+  band: WakeBand | null | undefined,
+  base: WearableBaseline = GARMIN_BASELINE,
+  source: "garmin" | "fixture" = "fixture",
+): { baseline: WearableBaseline; kind: BaselineKind } {
+  if (source === "garmin") {
+    return { baseline: resolveBaseline(band, base), kind: "garmin" };
+  }
+  if (band && band in WAKE_BAND_ANCHORS) {
+    return { baseline: resolveBaseline(band, base), kind: "wake-band" };
+  }
+  return { baseline: base, kind: "demo-default" };
 }
 
 /** Horizon for a *live* trip: pre-flight capped by days actually left

@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { buildTrip, horizonFor, isKnownCity, resolveBaseline, type WakeBand } from "@/domain/fixtures";
+import { buildTrip, horizonFor, isKnownCity, resolveBaselineState, type WakeBand } from "@/domain/fixtures";
 import { fetchCalendar } from "@/tools/calendar";
 import { runCrew } from "@/agents/runtime";
 import { rateLimit, tooMany, RL_RUNS } from "@/lib/rateLimit";
@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
     return new Response(JSON.stringify({ error: "invalid startDay" }), { status: 400 });
   }
   const wake = sp.get("wake");
-  const baseline = resolveBaseline(
+  const { baseline, kind: baselineKind } = resolveBaselineState(
     wake === "before6" || wake === "6to8" || wake === "after8" ? (wake as WakeBand) : null,
   );
   const { events: calendar, source: calendarSource } = await fetchCalendar(trip);
@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
   const stream = new ReadableStream({
     async start(controller) {
       try {
-        for await (const event of runCrew({ trip, calendar, calendarSource, baseline, checkIns, startDayIndex, tenant: tenantOf(req) })) {
+        for await (const event of runCrew({ trip, calendar, calendarSource, baseline, baselineKind, checkIns, startDayIndex, tenant: tenantOf(req) })) {
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
         }
       } catch (err) {
