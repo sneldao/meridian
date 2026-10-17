@@ -130,9 +130,14 @@ merely looking untidy. Verified against `main` on 2026-10-17.
 
 ## Next steps (carried)
 
-- **Real integrations** — Garmin (fixture + wake band bridges today) and real
-  flight inventory (qualitative windows only, by design). The honest boundary
-  is already in the UI; these close it.
+- **Real integrations** — **Garmin: upload path shipped `92299c3`** —
+  `POST /api/wearable` takes a sleep CSV → per-tenant baseline →
+  `/api/trip` answers `baselineSource: "garmin"` + kind `garmin`. Remaining:
+  A's upload affordance in TripSetupScreen, and the answer to the spike's
+  real question — Garmin Health API is partner-gated, so file export is the
+  demo path either way. **Flight inventory**: windows are now real planning
+  inputs (`?flight=` threads through `c675c45`); live inventory remains
+  deferred by design.
 
 ## Later / deferred
 
