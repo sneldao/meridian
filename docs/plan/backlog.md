@@ -81,12 +81,15 @@ merely looking untidy. Verified against `main` on 2026-10-17.
    `4933774`: `meridian-tid` cookie → `x-meridian-tid` header via middleware;
    memory files, the fold, graph writes, run records, `/api/memory` all scope
    by it. `?tenant=` stays the explicit override.
-4. **B** · **Flight-window picker is decorative** — `selectedFlightId`
-   (`src/app/page.tsx:88`) never reaches `tripQuery`/`beginStream`, so it has
-   zero effect on any plan. And `getFlightRecommendations` returns `-west` ids
-   for westbound trips while the default is `"midday-afternoon"`, so nothing
-   renders as selected on a westbound route. Thread it through
-   `/api/crew/run` or delete the sheet.
+4. **B → A** · **Flight-window picker is decorative** — **B's half shipped**:
+   every recommendation now carries `departMin`/`arriveMin`;
+   `flightWindowFor` resolves ids direction-scoped (wrong-direction/stale ids
+   → null); `applyFlightChoice` moves the flight event on demo + neutral
+   calendars; `?flight=<id>` works on `/api/trip` and `/api/crew/run`, and the
+   trip payload echoes the applied `flightId`. **A's remaining bits**: send
+   `selectedFlightId` on both requests (their WIP already does) and fix the
+   direction-blind `"midday-afternoon"` default — `recommendedFlightId` =
+   `getFlightRecommendations(trip).find(r => r.recommended)?.id`.
 5. ~~**A** · **Route-level failure surfaces**~~ — shipped `deee7d9`:
    `src/app/error.tsx` for the page segment (inside the root layout, so the
    document and stylesheet survive) and `src/app/global-error.tsx` as the last
@@ -98,11 +101,13 @@ merely looking untidy. Verified against `main` on 2026-10-17.
 
 6. **B → A** · **Ask the one personalisation question** — a cold visitor is auto-given
    LHR → HND plus a fixture wearable (`/api/trip` hardcodes
-   `baselineSource: "fixture"`) and is never asked anything.
-   `resolveBaseline` defaults to `GARMIN_BASELINE`
-   (`src/domain/fixtures.ts:152`), so there is no absent-baseline path at all.
-   Per vision Rule 1: keep the demo trip, ask the wake question inline the
-   first time a number depending on it is shown.
+   `baselineSource: "fixture"`) and is never asked anything. ~~`resolveBaseline`
+   defaults to `GARMIN_BASELINE`~~ **B's half shipped `9afa6c3`**:
+   `resolveBaselineState` returns `{ baseline, kind }` — garmin / wake-band /
+   demo-default (a labelled state, not "absent"; replay needs the fixture).
+   `baselineKind` rides `run_start` → run state, and `/api/trip` exposes it.
+   **A's surface half remains**: ask the wake question inline the first time a
+   number depending on it is shown (vision Rule 1: keep the demo trip).
 7. **A** · **The landing payoff** — "Land at 100%" is promised in the nav and never
    cashed. Post-flight days now preview, so the maths for landing exists, but
    there is no arrival surface and nothing navigates to `/outcome` when a
@@ -111,12 +116,14 @@ merely looking untidy. Verified against `main` on 2026-10-17.
    no saved plan → "nothing to grade yet" card; sliders start unset and save
    stays disabled until both are real answers; "saved" only fires when the
    check-in POST lands, otherwise it admits the local-only record.
-9. **B** · **Announce the run** — exactly one `aria-live` region exists in `src/`
-   (`CrewFeed.tsx:63`) and it renders only inside the closed-by-default
-   `AgentDrawer`, so a screen-reader user gets silence through the longest
-   operation in the app. Related: no `.focus()` anywhere in the codebase, so
-   the `aria-modal="true"` Edit sheet has no focus trap, no initial focus, no
-   restoration, and no `inert` background.
+9. **B → A** · **Announce the run** — **B's half shipped**:
+   `src/components/RunAnnouncer.tsx` diffs run state into polite `aria-live`
+   sentences (start, day locked, redraft, replan, error, plan ready) and
+   renders nothing visible; `src/lib/a11y.ts` exports `useFocusTrap` (initial
+   focus, Tab cycle, restore on close). **A's mount lines**: drop
+   `<RunAnnouncer run={run} />` anywhere `run` reaches on `/`, and attach
+   `useFocusTrap(panelRef, setupOpen)` to the `.sheet-panel` div (the
+   `aria-modal` Edit sheet) — `.sr-only` already exists in globals.css.
 10. **A** · **Colour-only verdicts** — `.evchip.pass` / `.evchip.warn` render
     byte-identical text (`NudgeFeedScreen.tsx:905-907`); only colour
     distinguishes them. `CrewFeed`'s PASS/FAIL badge already does it right.
