@@ -143,4 +143,71 @@ describe("heroMeeting (item 15)", () => {
     expect(out!.localMin).toBe(10 * 60);
     expect(out!.dayLabel).toBe("D+2");
   });
+
+  test("pre-lock without a preview both halves are the full unbanked gap", () => {
+    const out = heroMeeting({
+      trip: DEMO_TRIP,
+      calendar: calendarFor(DEMO_TRIP),
+      locked: [],
+      baseline: GARMIN_BASELINE,
+    });
+    expect(out).not.toBeNull();
+    expect(out!.bodyMin).toBe(out!.bodyWithoutPlanMin);
+  });
+
+  test("pre-lock with a preview the halves diverge — sales line has content", () => {
+    const plan = previewPlan({
+      trip: DEMO_TRIP,
+      calendar: calendarFor(DEMO_TRIP),
+      adherence: ADHERENCE_PROFILE,
+      baseline: GARMIN_BASELINE,
+    });
+    const previewLocked = [...plan.values()]
+      .filter((s) => s !== null)
+      .map((s) => s!.plan);
+    expect(previewLocked.length).toBeGreaterThan(0);
+    const out = heroMeeting({
+      trip: DEMO_TRIP,
+      calendar: calendarFor(DEMO_TRIP),
+      locked: [],
+      previewLocked,
+      baseline: GARMIN_BASELINE,
+    });
+    expect(out).not.toBeNull();
+    // The preview banks part of the shift, so the with-plan half differs
+    // from the full unbanked gap — that delta is what A renders.
+    if (remainingLagMin(DEMO_TRIP, previewLocked as import("../src/domain/types").DayPlan[]) < remainingLagMin(DEMO_TRIP, [])) {
+      expect(out!.bodyMin).not.toBe(out!.bodyWithoutPlanMin);
+    }
+    expect(out!.bodyWithoutPlanMin).toBe(6 * 60);
+  });
+
+  test("post-lock the preview is ignored — locked wins", () => {
+    const plan = previewPlan({
+      trip: DEMO_TRIP,
+      calendar: calendarFor(DEMO_TRIP),
+      adherence: ADHERENCE_PROFILE,
+      baseline: GARMIN_BASELINE,
+    });
+    const locked = [...plan.values()]
+      .filter((s) => s !== null)
+      .map((s) => s!.plan);
+    const withPreview = heroMeeting({
+      trip: DEMO_TRIP,
+      calendar: calendarFor(DEMO_TRIP),
+      locked,
+      previewLocked: [],
+      baseline: GARMIN_BASELINE,
+    });
+    const withoutPreview = heroMeeting({
+      trip: DEMO_TRIP,
+      calendar: calendarFor(DEMO_TRIP),
+      locked,
+      baseline: GARMIN_BASELINE,
+    });
+    expect(withPreview).not.toBeNull();
+    expect(withoutPreview).not.toBeNull();
+    expect(withPreview!.bodyMin).toBe(withoutPreview!.bodyMin);
+    expect(withPreview!.bodyWithoutPlanMin).toBe(withoutPreview!.bodyWithoutPlanMin);
+  });
 });

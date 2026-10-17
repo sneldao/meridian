@@ -36,8 +36,11 @@ export function calendarSummary(
  *  proxy; a real Google event with attendees always wins the tiebreak by
  *  being the only fixed wall on its day.
  *
- *  `locked` is `[]` pre-run: body time is unadapted and the `→ locked`
- *  delta is the full honest gap (`bodyWithoutPlan` vs `bodyWithPlan`). */
+ *  `locked` is `[]` pre-run. Without a preview both halves are the full
+ *  unbanked gap; with `previewLocked` (what the crew would lock today) the
+ *  `bodyMin` half is the with-plan clock and `bodyWithoutPlanMin` stays the
+ *  full gap — that delta is the sales line. Post-lock the preview is ignored
+ *  and the delta is locked-vs-unbanked. */
 export interface HeroMeeting {
   eventId: string;
   title: string;
@@ -55,6 +58,12 @@ export function heroMeeting(input: {
   trip: Trip;
   calendar: CalendarEvent[];
   locked: { shiftMin: number }[];
+  /** Pre-run preview of what the crew would lock (from `previewPlan`). When
+   *  `locked` is empty the hero uses this for `bodyMin` so the pre-lock sales
+   *  line has an honest with-plan half; `bodyWithoutPlanMin` stays the full
+   *  unbanked gap. Ignored once anything is locked. Optional so existing
+   *  callers and tests without a preview keep the current equal-values shape. */
+  previewLocked?: { shiftMin: number }[];
   baseline?: WearableBaseline;
 }): HeroMeeting | null {
   const { trip, calendar, locked } = input;
@@ -75,9 +84,17 @@ export function heroMeeting(input: {
   )[0];
   const dayIndex = ev.movedTo?.dayIndex ?? ev.dayIndex;
   const localMin = ev.movedTo?.startMin ?? ev.startMin;
+  // Pre-lock the crew hasn't banked anything yet, so `locked` is [] and both
+  // halves would collapse to the full gap. The preview is what the crew would
+  // lock today — the honest with-plan half of the sales line. Once anything
+  // is really locked the preview is ignored.
+  const effectiveForPlan =
+    locked.length > 0
+      ? locked
+      : (input.previewLocked ?? locked);
   const lag = remainingLagMin(
     trip,
-    locked as import("./types").DayPlan[],
+    effectiveForPlan as import("./types").DayPlan[],
   );
   const fullLag = remainingLagMin(trip, []);
   const bodyMin = bodyClockMin(localMin, lag, trip.direction);
