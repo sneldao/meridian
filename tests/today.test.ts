@@ -1,8 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import {
   dayPlace,
+  heroReadiness,
   nowMinOnDay,
   pickNextStep,
+  previewLockedOf,
   shiftLockedPct,
   todayDayIndex,
 } from "../src/domain/today";
@@ -142,5 +144,60 @@ describe("shiftLockedPct", () => {
     expect(
       shiftLockedPct(trip, [lockedDay(-120)], [{ shiftMin: -480 }]),
     ).toBe(25); // |−120| / 480, not the preview's 100
+  });
+});
+
+describe("previewLockedOf", () => {
+  const solved = (shiftMin: number) => ({
+    plan: lockedDay(shiftMin),
+    result: {} as never,
+  });
+
+  test("drops null days so contracts see only what would lock", () => {
+    const preview = new Map([
+      ["D-3", solved(-90)],
+      ["D-2", null],
+      ["D-1", solved(-90)],
+    ]);
+    expect(previewLockedOf(preview)).toEqual([{ shiftMin: -90 }, { shiftMin: -90 }]);
+  });
+
+  test("null preview stays undefined — callers keep the equal-values shape", () => {
+    expect(previewLockedOf(null)).toBeUndefined();
+    expect(previewLockedOf(undefined)).toBeUndefined();
+  });
+
+  test("agrees with heroMeeting's inline extraction on the demo preview", async () => {
+    // Same chain A's render threads into heroMeeting — one extractor, one array.
+    const { previewPlan } = await import("../src/domain/solver");
+    const { ADHERENCE_PROFILE, GARMIN_BASELINE, calendarFor } = await import("../src/domain/fixtures");
+    const plan = previewPlan({
+      trip,
+      calendar: calendarFor(trip),
+      adherence: ADHERENCE_PROFILE,
+      baseline: GARMIN_BASELINE,
+    });
+    const extracted = previewLockedOf(plan);
+    expect(extracted!.length).toBeGreaterThan(0);
+    expect(extracted).toEqual(
+      [...plan.values()].flatMap((d) => (d ? [{ shiftMin: d.plan.shiftMin }] : [])),
+    );
+  });
+});
+
+describe("heroReadiness", () => {
+  test("pre-lock with a preview claims preview provenance, not locked", () => {
+    const r = heroReadiness(trip, [], [{ shiftMin: -90 }, { shiftMin: -90 }]);
+    expect(r).toEqual({ pct: 38, source: "preview" });
+  });
+
+  test("post-lock claims locked even when the preview promises more", () => {
+    const r = heroReadiness(trip, [lockedDay(-120)], [{ shiftMin: -480 }]);
+    expect(r).toEqual({ pct: 25, source: "locked" });
+  });
+
+  test("nothing locked and no preview is honestly none, not 0%-locked", () => {
+    expect(heroReadiness(trip, [])).toEqual({ pct: 0, source: "none" });
+    expect(heroReadiness(trip, [], [])).toEqual({ pct: 0, source: "none" });
   });
 });

@@ -1,5 +1,6 @@
 import type { TravelerNudge } from "./nudges";
 import type { DayPlan, Trip } from "./types";
+import type { SolvedDay } from "./solver";
 
 // "Today" helpers — which trip day is now, what time it is there, and which
 // step comes next. Pure functions: the feed calls them with `new Date()`;
@@ -88,4 +89,37 @@ export function shiftLockedPct(
     locked.length > 0 ? locked : (previewLocked ?? locked);
   const covered = Math.abs(effective.reduce((acc, d) => acc + d.shiftMin, 0));
   return Math.min(100, Math.round((covered / required) * 100));
+}
+
+/** The preview chain as the `{ shiftMin }[]` shape the pre-lock contracts
+ *  take (`heroMeeting`'s `previewLocked`, `shiftLockedPct`'s third arg).
+ *  Solver-infeasible days come back null in the preview map and are dropped,
+ *  so callers see only the days that would actually lock. One shared
+ *  extractor so the hero subhead and the dawn stat read the same chain —
+ *  and the feed allocates the array once instead of once per consumer. */
+export function previewLockedOf(
+  preview: Map<string, SolvedDay | null> | null | undefined,
+): { shiftMin: number }[] | undefined {
+  if (!preview) return undefined;
+  return [...preview.values()].flatMap((d) =>
+    d ? [{ shiftMin: d.plan.shiftMin }] : [],
+  );
+}
+
+/** What the hero stat may claim pre-lock. `locked` is the source of truth
+ *  once anything has run; the preview is the promise before that. Returns
+ *  the label's provenance alongside the number so the renderer never says
+ *  "locked" about a plan nobody locked. */
+export function heroReadiness(
+  trip: Trip,
+  locked: DayPlan[],
+  previewLocked?: Pick<DayPlan, "shiftMin">[],
+): { pct: number; source: "locked" | "preview" | "none" } {
+  if (locked.length > 0) {
+    return { pct: shiftLockedPct(trip, locked), source: "locked" };
+  }
+  if (previewLocked?.length) {
+    return { pct: shiftLockedPct(trip, [], previewLocked), source: "preview" };
+  }
+  return { pct: 0, source: "none" };
 }
