@@ -90,14 +90,20 @@ is theirs.
 The promise is "Land at 100%". Today that promise is made in the nav and never
 cashed. The target loop:
 
-| Stage | Where | What must be true |
-|---|---|---|
-| **Arrive** | `/` | Demo trip renders immediately. One question asked about *them*, not about the trip. |
-| **Orient** | `/` hero | The residual is legible: how far behind your dawn is, and how much is banked. |
-| **Personalise** | `/` CTA | The crew run is watchable — progress is *announced*, not just animated, and a dropped stream never bricks the button. |
-| **Live the shift** | `/` Today | One step, one tap. Taps persist and are attributable to the traveller. |
-| **Land** | *missing* | **The payoff.** First morning in the destination, scored against what was promised at the gate. |
-| **Reflect** | `/outcome` | Reached automatically when the trip's last day passes. Shows the plan it is grading. |
+| Stage | Where | What must be true | |
+|---|---|---|---|
+| **Arrive** | `/` | Demo trip renders immediately. One question asked about *them*, not about the trip. | surface half to do |
+| **Orient** | `/` hero | The residual is legible: how far behind your dawn is, and how much is banked. | ✅ |
+| **Personalise** | `/` CTA | The crew run is watchable — progress is *announced*, not just animated, and a dropped stream never bricks the button. | announce to mount |
+| **Live the shift** | `/` Today | One step, one tap. Taps persist and are attributable to the traveller. | ✅ |
+| **Land** | *missing* | **The payoff.** First morning in the destination, scored against what was promised at the gate. | **to build** |
+| **Reflect** | `/outcome` | Reached automatically when the trip's last day passes. Shows the plan it is grading. | gating ✅, routing to do |
+
+The engine side of most of this is now true: the residual is legible, taps
+persist and are attributable, a stalled run can't strand anyone, and the
+self-report can't fabricate a score. What remains is **the arrival surface**,
+**the one question**, and **announcing the run** — and an un-mounted announcer
+announces nothing, so the Personalise row is only half-true until it's wired.
 
 **Stage 5 is the gap.** The engine now previews post-flight days (`c9eccd2`),
 so the maths for landing exists — but there is no arrival surface, nothing ever
@@ -109,79 +115,90 @@ one moment the residual is finally zero and the two lines have fused.
 
 ## 3. Where the loop is open
 
-Honest inventory. These are **design consequences of implementation choices**,
-so they belong here rather than only in the backlog.
+Design consequences of implementation choices, so they belong here rather than
+only in the backlog. Several of the sharpest ones have since been closed — kept
+in place because the *shape* of the failure is the lesson.
 
-### The loop records everything, and cannot tell whose it was
+### Closed: the loop couldn't tell whose it was
 
-Per-step did/skip marks now flush as structured check-ins (`abc3683`) — the
-mechanism is right. But `recordCheckIn` appends to a **single global
-`artifacts/crew-memory.json`** (`src/domain/memory.ts:10,32`), and
-`foldCheckIns(ADHERENCE_PROFILE, memory.checkIns)` folds *every* visitor's
-check-ins into one adherence profile (`api/crew/checkin/route.ts:26`).
+Per-step did/skip marks flush as structured check-ins, but `recordCheckIn`
+appended to a **single global `artifacts/crew-memory.json`** and
+`foldCheckIns` folded *every* visitor's marks into one adherence profile. One
+traveller skipping a 6am light moved the compliance floor for everyone else.
+Now scoped by a `meridian-tid` cookie through the memory files, the fold, the
+graph writes and the run records (`4933774`).
 
-So one traveller skipping a 6am light moves the compliance floor for everyone
-else. The graph-memory path already takes a `tenant` (`route.ts:35`); the file
-path does not. Until the traveller is identified, "the crew learns" is a claim
-the architecture can't honour.
+The lesson generalises past check-ins: **"the crew learns" was a claim the
+architecture couldn't honour.** If any future feature says "remembers", the
+traveller identity has to be in the path that backs it.
 
-### Failure is invisible, and one failure is terminal
+### Closed: failure was invisible, and one failure was terminal
 
-- A dropped SSE stream calls `es.close()` but never `reset()`
-  (`src/app/page.tsx:367-370`), so `phase` stays `running` and the primary CTA
-  stays disabled. The only escape is Escape or a reload.
-- Stream errors are pushed into `AgentDrawer`, which is closed by default — so
-  they are invisible on the surface where the user is looking.
-- There is no `error.tsx`, `global-error.tsx`, or `loading.tsx` in `src/app`.
-  Any uncaught render throw takes the whole route down.
+A dropped stream never reset `phase`, so the CTA stayed disabled with Escape or
+a reload as the only escape — and errors only reached a drawer that was closed
+by default. Worse, **the cause was never the network**: the stream stays open
+while the server waits on an optional write, so `onerror` couldn't see it. With
+FalkorDB down, the run blocked after the briefing — no `done`, no artifacts, a
+disabled button and no message. Optional writes are now bounded, and the client
+treats *silence* as a failure in its own right (`4ba7b35`). Routes also have
+error boundaries now, so a render throw is recoverable rather than terminal
+(`deee7d9`).
 
-An adaptive product that forgets your week because a socket closed is not one
-you'd recommend to a friend.
+### Closed: the flight picker didn't control anything — twice
 
-### Controls that don't control
+`selectedFlightId` never reached the API, so the control had no effect on any
+plan, and its hardcoded default was an *eastbound* id, so nothing rendered as
+selected on a westbound route. Threading it through exposed a second, deeper
+instance of the same bug: the server moved only the *fixture's* flight event,
+so on a connected Google calendar — hash ids, a carrier title like
+`BA005 LHR → HND` — it moved nothing while still echoing the chosen id back as
+valid (`36563d0`).
 
-- **Flight-window picker.** `selectedFlightId` is collected and displayed but
-  never reaches the API — zero effect on any plan. Worse, on a westbound route
-  the ids don't match the default, so *nothing appears selected*.
-- **The wake question** is asked only in the Edit sheet, on a surface the
-  landing never sends you to.
+Worth keeping as a rule: **fixing a layer and trusting its success signal is how
+the next layer survives.** The first fix made the API look correct, which is
+exactly what hid the second bug.
+
+Still open in this family:
+
+- **The wake question** is asked only in the Edit sheet, on a surface the landing
+  never sends you to. Its domain half has landed; the surface half hasn't.
 - **`/dev` and `/team`** are complete routes with zero inbound links.
 - **`/crew`'s "Trip Setup"** links to `?screen=setup`; nothing reads `screen`.
 
 A control that looks load-bearing and isn't is worse than a missing one: it
 spends trust.
 
-### The payoff surface is gated behind the wrong things
+### Closed: the payoff surface was gated behind the wrong things
 
-`/outcome` renders a fully interactive self-report with no trip, no plan, and
-two sliders pre-set to the middle — so an accidental save records a fabricated
-neutral score. It reports "saved" regardless of whether the POST succeeded. And
-`/review` and `/history` on empty storage are one-line dead ends with a single
-"back" link.
+`/outcome` rendered a full self-report with no trip and two sliders pre-set to
+the middle, so an accidental save recorded a fabricated neutral score, and it
+reported "saved" regardless of whether the POST succeeded. Now gated on a saved
+plan, with save disabled until both answers are real (`1be902c`).
 
 ---
 
 ## 4. Accessibility as product quality, not compliance
 
-Two concrete things, then the systemic one:
+One of the two concrete things here is fixed; the other, and the systemic gap,
+is half-closed:
 
-- **Space is captured globally.** `page.tsx:436-438` `preventDefault()`s Space
-  on keydown and starts a crew run. Buttons activate on Space *keyup*, so this
-  suppresses the activation of every button on the page — Personalise, Done ✓,
-  a day pill, Menu, Edit. A keyboard user cannot use the buttons at all.
+- ~~**Space is captured globally.**~~ Fixed (`4ba7b35`). It `preventDefault()`ed
+  Space on keydown and started a crew run; since buttons activate on keyup, no
+  button on the page could be pressed with Space at all. The three menu items
+  were also focusable divs with no activation behaviour — they took focus and
+  did nothing.
 - **Colour-only verdicts.** `.evchip.pass` and `.evchip.warn` render
   byte-identical text (`NudgeFeedScreen.tsx:905-907`); only colour separates a
   passing check from a failing one. The pass/fail badge in `CrewFeed` gets this
   right, which proves the pattern is known — it just isn't applied everywhere.
+  **Still open.**
 
-The systemic gap: **the app is silent to assistive tech during its longest
-operation.** There is exactly one `aria-live` region in `src/`, and it lives in
-`CrewFeed` (`CrewFeed.tsx:63`), which only renders inside the closed-by-default
-`AgentDrawer`. A screen-reader user pressing "Personalise" gets *nothing* while
-five agents stream for potentially minutes. Related: no `.focus()` call exists
-anywhere in the codebase, so the `aria-modal` Edit sheet has no focus trap, no
-initial focus, no restoration, and a non-`inert` background — a claim it
-doesn't honour.
+The systemic gap is half-addressed. `RunAnnouncer` now exists and diffs run
+state into polite sentences, and `useFocusTrap` exists in `@/lib/a11y` — but
+**neither is mounted**, so the behaviour is still absent: an un-mounted announcer
+announces nothing, and a defined-but-unused focus trap leaves the `aria-modal`
+Edit sheet still escaping focus and still not restoring it. Until both are
+wired, "the app is silent during its longest operation" remains true.
 
 ---
 
@@ -196,5 +213,6 @@ doesn't honour.
 - **Porting the lens interaction wholesale.** `/crew`'s pan/zoom/rotate is right
   for a dedicated instrument and wrong for a card mid-page. Share the *math*
   (`@/domain/dawn-layers`); let each surface own its interaction.
-- **Shipping a control before it does something.** Fix or delete the flight
-  picker.
+- **Shipping a control before it does something.** The flight picker was the
+  test case, and it failed twice — see §3. If a control's choice cannot reach
+  something that acts on it, it is not a control.

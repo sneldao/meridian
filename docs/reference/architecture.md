@@ -129,9 +129,10 @@ in [providers.md](providers.md#supabase-persistence-optional).
 
 | Route | Purpose |
 |---|---|
-| `GET /api/crew/run` | SSE crew stream (`checkins`, `startDay`, `wake` query params — `wake` ∈ `before6`/`6to8`/`after8` resolves the baseline) |
+| `GET /api/crew/run` | SSE crew stream (`origin`, `dest`, `date`, `checkins`, `startDay`, `wake`, `flight` query params — `wake` ∈ `before6`/`6to8`/`after8` resolves the baseline; `flight` is a departure-window id) |
 | `POST /api/crew/checkin` | Free-text check-in → structured `CheckIn` |
-| `GET /api/trip` | Trip preview: schedule, `baseline` + `baselineSource` (`"fixture"` until real Garmin wiring lands), `adherence`, calendar + `calendarSource`, provider. Defaults `date` to `2026-10-18`; the client always sends an explicit date (today + 3 by default). Trip shape is `horizonFor`-sized: pre-flight capped by days left, post-flight bounded 1–5 |
+| `GET /api/trip` | Trip preview: `trip`, `baseline` + `baselineSource` (`"garmin"` after an upload, else `"fixture"`) + `baselineKind` (`garmin`/`wake-band`/`demo-default`), `adherence`, `calendar` + `calendarSource`, `flightId`, `provider`. `?flight=<id>` moves the flight event to that departure (`flightWindowFor` → `applyFlightChoice`); unknown or wrong-direction ids are ignored and `flightId` comes back `null`. Defaults `date` to `2026-10-18`; the client always sends an explicit date (today + 3 by default). Trip shape is `horizonFor`-sized: pre-flight capped by days left, post-flight bounded 1–5 |
+| `POST /api/wearable` | Garmin sleep-export CSV → a per-traveller `WearableBaseline`, which is what makes `baselineSource: "garmin"` possible. Garmin Health API is partner-gated, so the file export is the demo path |
 | `GET /api/team/run` | 12 parallel crews, one tagged SSE stream |
 | `GET /api/persistence/runs` | Supabase run history; `{"enabled":false}` without keys |
 | `GET /api/memory` · `GET /api/graph/health` | Learned cross-run memory; FalkorDB status (503 when unreachable); `?tenant=` selects the `meridian:{tenant}` graph |

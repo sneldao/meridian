@@ -14,47 +14,61 @@ item below, so each gets exactly one owner and nobody else opens them:
 
 | File | Items that touch it |
 |---|---|
-| `src/app/page.tsx` (860 lines) | 1, 2, 4, 6, 7, 9 |
+| `src/app/page.tsx` (962 lines) | 1, 2, 4, 6, 7, 9 |
 | `src/components/NudgeFeedScreen.tsx` (947 lines) | 6, 10 |
 
 Everything behind those — `src/domain/`, `src/app/api/`, `/outcome`, a11y
 infrastructure — is genuinely disjoint and parallelises without merge pain.
 
 **Track A — the landing journey.** Owns `page.tsx` + `NudgeFeedScreen.tsx`.
-Items 1, 2, 5, 10, 6 (surface half), 7. Mostly small; **7 is the headline**,
-because the product currently stops at the plan.
+Items 1, 2, 4, 5 done; remaining 9 (two mount lines), 10, 6 (surface half), 7.
+**7 is the headline**, because the product currently stops at the plan.
 
 **Track B — data honesty and the loop.** Owns `src/domain/`, `src/app/api/`,
-`/outcome`, a11y infrastructure. Items 3, 8, 4, 9, plus real integrations on
-the side. **3 is the headline**: one visitor's compliance marks currently move
-everyone else's floor.
+`/outcome`, a11y infrastructure. Items 3, 4 (domain half), 6 (domain half),
+8, 9 (domain half) all done, plus the Garmin upload path; remaining 9's mount
+lines are A's.
 
-**The seam — item 6 crosses the line and needs a contract.** B owns the domain
-half (stop `resolveBaseline` silently defaulting to `GARMIN_BASELINE`, make "no
-baseline" a real state); A owns the surface half (ask the question inline).
-**B lands first.** It is a breaking change that introduces new empty states, so
-building the UI against the fabricating default just means rebuilding it after.
+**The seam — items 4, 6 and 9 each cross the line with the same contract.**
+B owns the domain half, A owns the surface half, and **B lands first** because
+each domain change introduces states the UI has to render honestly. Item 6's
+half has landed (`resolveBaselineState` → garmin / wake-band / demo-default), so
+its surface half is now unblocked.
 
-**Sequence.** Day 1: items 1 + 2 (shipped `4ba7b35`). Items 3, 5 and 8 are
-also done — 3 as `4933774`, 5 as `deee7d9`, 8 as `1be902c`. Remaining: item 6
-(still blocked — its `resolveBaseline` domain half has not landed), then 4, 7,
-9, 10. **7 follows 3 and 6** — an arrival screen that claims "the crew learned
-from your week" is worthless if the week belongs to whoever used the demo last.
+**Sequence.** Shipped so far: 1 + 2 (`4ba7b35`), 5 (`deee7d9`), 4 (`36563d0`
+on top of `c675c45`), and from the other lane 3 (`4933774`), 6-domain (`9afa6c3`),
+8 (`1be902c`), 9-domain (`RunAnnouncer` + `useFocusTrap`). **Remaining, in
+order:** 9's two mount lines, then 10, then **6's surface half** (ask the wake
+question inline — its domain half is in, so this is unblocked), then **7**.
+**7 goes last on purpose**: an arrival screen that claims "the crew learned from
+your week" is worthless if the week belongs to whoever used the demo last, and
+6 is what makes the first number on the page theirs.
 
 **Coordination.** Only A edits `page.tsx` / `NudgeFeedScreen.tsx`; B files the
-change and A picks it up. One item straddles by necessity: **4** is B's (the
-API thread-through and `getFlightRecommendations` are domain work), but
-sending `selectedFlightId` needs a line in `page.tsx` — B drafts it in a branch
-and A lands it, or A takes that hunk on request. Rebase on `main` daily — a
-second agent has been committing concurrently and has already touched
-`api/crew/checkin/route.ts` and `tests/adherence.test.ts`, which is B's
-territory. B owns test additions; A owns visual checks.
+change and A picks it up. Rebase on `main` daily — a second agent commits
+concurrently and has touched `api/crew/checkin/route.ts`, `tests/adherence.test.ts`,
+`domain/fixtures.ts`, `domain/nudges.ts` and both API routes.
+
+**Check `git status` and `git log` before deciding an item's *direction*, not
+just before committing it.** On item 4 A read the code, concluded the picker
+couldn't be made real, and built a downgrade to advisory content — while the
+other agent was landing the engine support that made it real. The downgrade was
+reverted the moment the collision was noticed, but it was a full wasted pass and
+it nearly deleted a control. A straddling item is a handoff, not a solo item:
+read the domain half's state *first*, and if the other lane owns the decision,
+wait for it or ask.
+
+The deeper trap on item 4: the picker was decorative **twice** — once in the
+client, once in the server — and the second failure was invisible precisely
+because the first fix made the API echo a plausible-looking valid id. Fixing a
+layer and then trusting its success signal is how the second one survives.
 
 **Don't** split item 7 (one surface telling one story; shared authorship is
-mush), start with item 9 (fiddly, low-visibility — it's a filler task, not an
-opening move), or build the Garmin connector in tandem (timebox B's spike to a
-day: the real question is whether anyone connects one at all, not how to parse
-the file — if the answer is no, spend that day on item 4 instead).
+mush), or treat a straddling item as solo (see Coordination — it cost a full
+wasted pass on item 4). Item 9 used to be the "don't open with this" filler;
+that advice is retired, because its domain half has landed and all that remains
+is two mount lines — it is now the cheapest item on the board and a good place
+to start.
 
 ## Do first — small, load-bearing
 
@@ -81,15 +95,29 @@ merely looking untidy. Verified against `main` on 2026-10-17.
    `4933774`: `meridian-tid` cookie → `x-meridian-tid` header via middleware;
    memory files, the fold, graph writes, run records, `/api/memory` all scope
    by it. `?tenant=` stays the explicit override.
-4. **B → A** · **Flight-window picker is decorative** — **B's half shipped**:
-   every recommendation now carries `departMin`/`arriveMin`;
-   `flightWindowFor` resolves ids direction-scoped (wrong-direction/stale ids
-   → null); `applyFlightChoice` moves the flight event on demo + neutral
-   calendars; `?flight=<id>` works on `/api/trip` and `/api/crew/run`, and the
-   trip payload echoes the applied `flightId`. **A's remaining bits**: send
-   `selectedFlightId` on both requests (their WIP already does) and fix the
-   direction-blind `"midday-afternoon"` default — `recommendedFlightId` =
-   `getFlightRecommendations(trip).find(r => r.recommended)?.id`.
+4. ~~**B → A** · **Flight-window picker is decorative**~~ — **B's half `c675c45`**:
+   every recommendation now carries `departMin`/`arriveMin`; `flightWindowFor`
+   resolves ids direction-scoped (wrong-direction/stale ids → null);
+   `?flight=<id>` works on `/api/trip` and `/api/crew/run` and the payload
+   echoes the applied `flightId`. **A's half shipped `36563d0`**: the client
+   sends the choice on both requests, and the default derives from the trip via
+   `getFlightRecommendations(trip).find(r => r.recommended)?.id` — the old
+   hardcoded `"midday-afternoon"` is an *eastbound* id, which is why no card
+   rendered as selected for a westbound route.
+
+   Fixing it exposed a **second** instance of the same bug one layer down:
+   `applyFlightChoice` matched only the fixture ids `ev-flight`/`n-flight`, but a
+   connected Google calendar returns hash ids and a carrier title
+   (`BA005 LHR → HND`) — so it moved nothing while `/api/trip` still echoed the
+   picked id back as **valid**. It now matches by shape too (an IATA route pair,
+   or the word "flight"), and a calendar with no flight is returned untouched
+   rather than having a slot invented for it. Four tests cover that shape, the
+   route-less "Flight to Tokyo" title, and the no-flight calendar; the existing
+   tests only ever exercised the fixture id.
+
+   Worth remembering: the picker was decorative *twice* — once in the client and
+   once in the server — and the second failure was invisible precisely because
+   the first fix made the API echo a plausible-looking valid id.
 5. ~~**A** · **Route-level failure surfaces**~~ — shipped `deee7d9`:
    `src/app/error.tsx` for the page segment (inside the root layout, so the
    document and stylesheet survive) and `src/app/global-error.tsx` as the last
