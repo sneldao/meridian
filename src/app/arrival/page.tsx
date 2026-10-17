@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { fmtMin } from "@/domain/circadian";
-import { arrivalHeadline, arrivalRead } from "@/domain/arrival";
+import { arrivalHeadline, arrivalRead, tripDebrief } from "@/domain/arrival";
 import { dayPlace } from "@/domain/today";
 import type { CheckIn, Trip } from "@/domain/types";
 import { arrivalRows, destClockMin } from "@/domain/arrival-rows";
@@ -81,6 +81,38 @@ export default function ArrivalPage() {
     () => (state?.trip ? arrivalRead(state.trip, state.planRaw, state.checkIns, state.now) : null),
     [state],
   );
+
+  // Bet 4 — the debrief's prior runs. Hooks live above the early returns:
+  // without keys this stays empty and the carried-in line stays null.
+  const [priorRuns, setPriorRuns] = useState<
+    { trip?: { origin?: { code?: string }; destination?: { code?: string } } | null }[]
+  >([]);
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/persistence/runs")
+      .then((r) => r.json())
+      .then((d) => {
+        if (!cancelled && d?.enabled && Array.isArray(d.runs)) setPriorRuns(d.runs);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Bet 4 — the debrief: score, what worked, what the crew learned, and the
+  // next trip. Null-safe on missing state (read null → debrief null) so it
+  // can sit above both early returns; the section only renders post-arrival.
+  const debrief = useMemo(() => {
+    if (!state?.trip || !read) return null;
+    return tripDebrief(
+      read,
+      state.trip.destination.name,
+      state.checkIns,
+      { origin: state.trip.origin.code, destination: state.trip.destination.code },
+      priorRuns,
+    );
+  }, [state, read, priorRuns]);
 
   if (!state || !read || !state.trip) {
     return (
@@ -168,6 +200,41 @@ export default function ArrivalPage() {
             See the plan
           </Link>
         </div>
+
+        {/* Bet 4 — the debrief worth revisiting. Score at the gate, the one
+            adherence signal the marks support, and the carried-in proof when
+            a prior different-route trip exists. Null sections render nothing;
+            the "plan your next trip" line closes the loop back to Today. */}
+        {(debrief && (debrief.lesson || debrief.carriedFrom || debrief.gateScore !== null)) && (
+          <>
+            <span className="arr-section-label">What the crew learned</span>
+            <div className="arr-grid">
+              {debrief!.gateScore !== null && (
+                <div className="arr-cell" key="gate-score">
+                  <em>{debrief!.gateScore.toFixed(2)}</em>
+                  <span>plan quality at the gate</span>
+                </div>
+              )}
+              {debrief!.lesson && (
+                <div className="arr-cell" key="lesson">
+                  <em>{debrief!.lesson.label}</em>
+                  <span>{debrief!.lesson.detail}</span>
+                </div>
+              )}
+              {debrief!.carriedFrom && (
+                <div className="arr-cell" key="carried">
+                  <em>{debrief!.carriedFrom}</em>
+                  <span>carried in — the plan started from this trip, not zero</span>
+                </div>
+              )}
+            </div>
+            <p className="arr-lede">
+              <Link className="arr-btn ghost" href="/">
+                Plan your next trip →
+              </Link>
+            </p>
+          </>
+        )}
 
         <p className="arr-foot">
           Timing guidance, not medical advice.{" "}

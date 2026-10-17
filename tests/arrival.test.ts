@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { arrivalHeadline, arrivalRead, readGatePromise } from "../src/domain/arrival";
+import { arrivalHeadline, arrivalRead, readGatePromise, tripDebrief } from "../src/domain/arrival";
 import { buildTrip } from "../src/domain/fixtures";
 import type { CheckIn, ShiftCoverage } from "../src/domain/types";
 
@@ -153,5 +153,65 @@ describe("arrivalHeadline", () => {
     const read = arrivalRead(buildTrip("LHR", "HND", "2026-10-20"), null, [], new Date());
     const h = arrivalHeadline(read, "Tokyo");
     expect(h).toContain("wasn't saved");
+  });
+});
+
+describe("tripDebrief (bet 4 — retention made navigable)", () => {
+  const trip = buildTrip("LHR", "HND", "2026-10-20");
+  const done = (kind: CheckIn["kind"], dayIndex = 0): CheckIn => ({
+    id: `d-${kind}-${dayIndex}`,
+    dayIndex,
+    kind,
+    status: "done",
+    at: Date.parse("2026-10-22T09:00:00Z"),
+  });
+
+  const readFor = (checkIns: CheckIn[] = []) =>
+    arrivalRead(trip, planFor(coverage()), checkIns, new Date("2026-10-25T00:00:00Z"));
+
+  test("names the gate score, follow-through, and top lesson", () => {
+    const out = tripDebrief(
+      readFor([done("light_exposure", 0), done("light_exposure", 1), done("exercise", 2)]),
+      "Tokyo",
+      [done("light_exposure", 0), done("light_exposure", 1), done("exercise", 2)],
+      { origin: "LHR", destination: "HND" },
+      [],
+    );
+    expect(out.gateScore).toBe(0.8);
+    expect(out.lesson).not.toBeNull();
+    expect(out.lesson!.label).toBe("light exposure");
+    expect(out.carriedFrom).toBeNull();
+  });
+
+  test("no done marks means no lesson — never generic praise", () => {
+    const out = tripDebrief(readFor([]), "Tokyo", [], { origin: "LHR", destination: "HND" }, []);
+    expect(out.lesson).toBeNull();
+    expect(out.followRate).toBeNull();
+  });
+
+  test("names the prior different-route trip as carried-in proof", () => {
+    const out = tripDebrief(
+      readFor([]),
+      "Tokyo",
+      [],
+      { origin: "LHR", destination: "HND" },
+      [{ trip: { origin: { code: "JFK" }, destination: { code: "SFO" } } }],
+    );
+    expect(out.carriedFrom).toBe("JFK → SFO");
+  });
+
+  test("same-route and corrupt rows never become carried-in proof", () => {
+    const out = tripDebrief(
+      readFor([]),
+      "Tokyo",
+      [],
+      { origin: "LHR", destination: "HND" },
+      [
+        { trip: { origin: { code: "LHR" }, destination: { code: "HND" } } },
+        { trip: null },
+        {},
+      ],
+    );
+    expect(out.carriedFrom).toBeNull();
   });
 });

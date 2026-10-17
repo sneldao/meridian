@@ -132,6 +132,81 @@ export function arrivalRead(
   };
 }
 
+/** The trip debrief: score, what worked, what the crew learned, and the next
+ *  trip. Bet 4 — the retention story made navigable. Pure composition over
+ *  `arrivalRead` + `arrivalRows` + `secondTripProof`-shaped history: the
+ *  debrief names the gate score, the follow-through, the single strongest
+ *  adherence signal, and — when a prior different-route trip exists — what
+ *  the crew carried in. Null sections render nothing; the debrief never
+ *  invents a lesson the marks don't support. */
+export interface DebriefLesson {
+  /** "followed the light", "kept the run", "held the window" — grounded in
+   *  check-in statuses, never generic praise. */
+  label: string;
+  detail: string;
+}
+
+export interface TripDebrief {
+  headline: string;
+  gateScore: number | null;
+  followRate: number | null;
+  followed: number;
+  missed: number;
+  /** The one adherence signal worth carrying forward, or null when the
+   *  marks don't support one. */
+  lesson: DebriefLesson | null;
+  /** Route label of the prior different-route trip, if any — the proof the
+   *  loop is compounding, not restarting. */
+  carriedFrom: string | null;
+}
+
+/** Minimal shape for the prior-trip read — duck-typed onto the Supabase
+ *  `listRuns()` rows and the local history entries alike. */
+export interface DebriefRun {
+  savedAt?: string;
+  trip?: { origin?: { code?: string }; destination?: { code?: string } } | null;
+  score?: number;
+}
+
+export function tripDebrief(
+  read: ArrivalRead,
+  destName: string,
+  checkIns: CheckIn[],
+  currentRoute: { origin: string; destination: string },
+  priorRuns: DebriefRun[],
+): TripDebrief {
+  const headline = arrivalHeadline(read, destName);
+  const gateScore = read.promise?.score ?? null;
+  const kinds = checkIns.filter((c) => c.status === "done" && c.kind).map((c) => c.kind!);
+  const counts = new Map<string, number>();
+  for (const k of kinds) counts.set(k, (counts.get(k) ?? 0) + 1);
+  const top = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
+  const lesson: DebriefLesson | null = top
+    ? {
+        label: top[0].replace(/_/g, " "),
+        detail: `${top[1]} time${top[1] === 1 ? "" : "s"} followed — the crew weights this first next trip.`,
+      }
+    : null;
+  let carriedFrom: string | null = null;
+  for (let i = priorRuns.length - 1; i >= 0; i--) {
+    const o = priorRuns[i]?.trip?.origin?.code;
+    const d = priorRuns[i]?.trip?.destination?.code;
+    if (!o || !d) continue;
+    if (o === currentRoute.origin && d === currentRoute.destination) continue;
+    carriedFrom = `${o} → ${d}`;
+    break;
+  }
+  return {
+    headline,
+    gateScore,
+    followRate: read.followRate,
+    followed: read.followed,
+    missed: read.missed,
+    lesson,
+    carriedFrom,
+  };
+}
+
 /** One honest sentence for the arrival screen. Never rounds a shortfall up. */
 export function arrivalHeadline(read: ArrivalRead, destName: string): string {
   const { coverage } = read.promise ?? { coverage: null };
