@@ -839,6 +839,39 @@ export default function Home() {
               />
             </div>
 
+            {/* 5B2 — duplicate, don't move. Rule 4 calls the dial the
+                interface but it lived below the entire timeline as
+                .depth-foot. This compact pill sits directly under the hero
+                card (same chooseDepth handler, same state); the footer stays
+                as-is. Two entry points, zero state work — placement data
+                (which one gets tapped) decides the single home later. */}
+            {trip && (
+              <div
+                className="pill depth"
+                role="group"
+                aria-label="How much to see"
+                style={{ margin: "10px 4px 0", alignSelf: "flex-start" }}
+              >
+                <button
+                  type="button"
+                  className={depth !== "guided" ? "on" : undefined}
+                  aria-pressed={depth !== "guided"}
+                  onClick={() => chooseDepth("calm")}
+                >
+                  Plan
+                </button>
+                <button
+                  type="button"
+                  className={depth === "guided" ? "on" : undefined}
+                  aria-pressed={depth === "guided"}
+                  onClick={() => chooseDepth("guided")}
+                >
+                  Why
+                </button>
+                <Link href="/crew">Crew</Link>
+              </div>
+            )}
+
             <div ref={guideRef}>
               <NudgeFeedScreen
                 trip={trip}

@@ -318,6 +318,13 @@ export function buildDailyNudgesForDay(params: {
     }
   }
   if (runStart !== null) {
+    // 5B4 — the run pairs with light by design (outdoor run doubles as the
+    // light dose), so back-to-back 07:00 windows are intentional, not a
+    // placement bug. Name the pairing when it fires so simultaneity reads
+    // as deliberate: "Run + light together". No solver change — the
+    // physiology wants them together.
+    const pairedWithLight =
+      east && !isFlightDay && !isArrivalDay && lightIv && runStart === lightIv.startMin;
     nudges.push({
       id: `${spec.label}-run`,
       dayIndex,
@@ -327,9 +334,11 @@ export function buildDailyNudgesForDay(params: {
         ? "Pre-boarding walk"
         : isArrivalDay
           ? `Easy run outside in ${trip.destination.name}`
-          : east
-            ? "Easy run outside"
-            : "Afternoon run",
+          : pairedWithLight
+            ? "Run + light together"
+            : east
+              ? "Easy run outside"
+              : "Afternoon run",
       timeWindow: `${fmtMin(runStart)} – ${fmtMin(runEnd)}`,
       startMin: runStart,
       endMin: runEnd,

@@ -86,6 +86,19 @@ describe("buildDailyNudgesForDay", () => {
     expect(planFor(trip.departureDayIndex)?.interventions.some((iv) => iv.kind === "exercise")).toBeFalsy();
     expect(flight.some((n) => n.category === "run")).toBe(false);
   });
+
+  test("5B4: run paired with light is named as deliberate, not a duplicate 07:00", () => {
+    // The run doubles as the light dose by design (runStart === light start);
+    // the title says so instead of reading as two simultaneous asks. Pre-flight
+    // east days pair at the floor; the arrival day keeps its destination copy
+    // ("Easy run outside in Tokyo") — the pairing read matters where the
+    // complaint was (two 07:00 windows), not where the run is the payoff.
+    const paired = nudgesFor(0);
+    const run = paired.find((n) => n.category === "run");
+    const sun = paired.find((n) => n.category === "sunlight");
+    expect(run && sun && run.startMin === sun.startMin).toBe(true);
+    expect(run!.title).toBe("Run + light together");
+  });
 });
 
 test("sunlight step only exists when the plan carries a light iv, and never at wake", () => {

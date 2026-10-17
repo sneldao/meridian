@@ -643,12 +643,29 @@ export function NudgeFeedScreen({
             box — and "your next step" wrapped to (2,1), orphaned below the fold
             at half width. One wrapper, two grid children. */}
         <div className="hr-col">
-          {baselineSource === "fixture" && (
+          {/* 5B3 — one frame, not six hedges. When the wake question is live
+              (demo-default, unanswered), the sample tag folds into it: "Sample
+              data below — answer one question to make it yours." The
+              per-element hedges underneath ("Try this", "Preview from…",
+              "banked on preview") stay — they carry distinct signals — but
+              the single decision point sits at the top. When answered, the
+              ack replaces the frame and the other hedges already retire via
+              their own previewMode/source conditionals. Garmin never shows
+              the frame: the numbers were already theirs. */}
+          {baselineSource === "fixture" &&
+            baselineKind === "demo-default" &&
+            !wakeBand ? (
             <p className="demo-tag">
-              {baselineKind === "demo-default" && !wakeBand
-                ? "Sample traveller — these numbers are not your measurements."
-                : "Sample traveller — the wearable figures are sample data; your wake time is yours."}
+              Sample data below — answer one question to make it yours.
             </p>
+          ) : (
+            baselineSource === "fixture" && (
+              <p className="demo-tag">
+                {baselineKind === "demo-default" && !wakeBand
+                  ? "Sample traveller — these numbers are not your measurements."
+                  : "Sample traveller — the wearable figures are sample data; your wake time is yours."}
+              </p>
+            )
           )}
 
           {/* B1 render — the wake answer re-plans the preview instantly, and
@@ -995,12 +1012,15 @@ export function NudgeFeedScreen({
               disabled={phase === "running"}
             >
               {/* Item 13 — the calendar is the compliance surface, not the run
-                  button. "Fit to me → to calendar" names the path: every step
-                  the crew locks lands as a calendar event the traveller can
-                  accept, so adherence is one surface, not two. */}
+                  button. "Lock the plan →" names the step it triggers: the
+                  crew run that locks each day, whose output lands as calendar
+                  events the traveller can accept. The old "Fit to me → to
+                  calendar" promised the .ics up front while delivering a ~45s
+                  run first (5B1) — the sub-copy below carries the calendar
+                  promise instead. */}
               {phase === "running"
                 ? `Checking your plan (${locked.size}/${days.length})…`
-                : "Fit to me → to calendar"}
+                : "Lock the plan →"}
             </button>
           </div>
           {phase === "idle" && totalSteps > 0 && (
