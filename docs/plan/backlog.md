@@ -20,33 +20,75 @@ item below, so each gets exactly one owner and nobody else opens them:
 Everything behind those — `src/domain/`, `src/app/api/`, `/outcome`, a11y
 infrastructure — is genuinely disjoint and parallelises without merge pain.
 
-**Track A — the landing journey.** Owns `page.tsx` + `NudgeFeedScreen.tsx`.
-**Items 1–10 are all shipped.** The board is empty; what remains is the
-deferred list below.
+**Items 1–10 are all shipped.** What follows is the next round: the ICP read
+(§Next — ICP read, items 11–16) under the same rule, with
+`TripSetupScreen.tsx` moving to B.
 
-**Track B — data honesty and the loop.** Owns `src/domain/`, `src/app/api/`,
-`/outcome`, a11y infrastructure. Items 3, 4 (domain half), 6 (domain half),
-8, 9 (domain half) all done, plus the Garmin upload path. B's board is clear.
+**Track A — the landing journey.** Owns `page.tsx`, `NudgeFeedScreen.tsx`,
+`HeroDawnPanel.tsx`, the depth dial. Surface and journey.
 
-**The seam — items 4, 6 and 9 each cross the line with the same contract.**
-B owns the domain half, A owns the surface half, and **B lands first** because
-each domain change introduces states the UI has to render honestly. Item 6's
-half has landed (`resolveBaselineState` → garmin / wake-band / demo-default), so
-its surface half is now unblocked.
+**Track B — domain & honesty.** Owns `src/domain/*`, `src/app/api/*`,
+`TripSetupScreen.tsx`, readiness, the wearable upload. Shapes, contracts and
+every test.
 
-**Sequence.** Shipped so far: 1 + 2 (`4ba7b35`), 5 (`deee7d9`), 4 (`36563d0`
-on top of `c675c45`), 9 + 10 (`0a0c680`), and from the other lane 3 (`4933774`),
-6-domain (`9afa6c3`), 8 (`1be902c`), 9-domain (`RunAnnouncer` + `useFocusTrap`),
-the Garmin upload path (`92299c3`), and 7 (the arrival payoff). **Nothing is
-open on the board** — the sequence ran 1 → 10 and closed every item, 7 last as
-planned: an arrival screen that claims "the crew learned from your week" is
+**TripSetupScreen moves to B for this round.** Otherwise A owns all six renders
+and B idles — and it is the upload + biometrics surface, which is exactly B's
+"no invented numbers" brief. Moving it also clears the only remaining overlap
+between the lanes: with A on the feed and B on the setup body, the two file sets
+are disjoint, so a cross-lane change is always a PR from its owner rather than a
+drive-by edit.
+
+**The seam — items 4, 6, 9 established the pattern: B lands the domain half
+first, A renders second.** Item 4 is the cautionary tale: A decided the item's
+*direction* before checking B's in-flight work, built a downgrade, and reverted
+it. Read `git log` on `domain/fixtures.ts`, `domain/nudges.ts`, `api/trip` and
+`api/crew/run` before deciding what an item should do, not just before
+committing it.
+
+**Balance is deliberately ~60/40 to A**, because five of six are surface. B is
+paid back by owning **all tests and verification** — which is also the honest
+home for them, since these items are presentation gates rather than scorer
+changes, and `bun run eval` should not move.
+
+**Definition of done, per item** — the same three assertions every time:
+preview writes **zero** `CheckIns` (asserted, never eyeballed); absent
+biometrics render `—` (screenshot); the hero meeting traces to a **real** fixed
+calendar event, never a fixture title. Plus `bun run typecheck` and `bun test`
+green.
+
+**Sequence — round 1 shipped.** 1 + 2 (`4ba7b35`), 5 (`deee7d9`), 4 (`36563d0`
+on top of `c675c45`), 9 + 10 (`0a0c680`), 6 (`9da72cd` on top of `9afa6c3`), 7
+(`6ba74fc`), and from the other lane 3 (`4933774`), 8 (`1be902c`), the Garmin
+upload path (`92299c3`). The sequence ran 1 → 10 and closed every item, 7 last
+as planned: an arrival screen that claims "the crew learned from your week" is
 worthless if the week belongs to whoever used the demo last, and 6 is what made
 the first number on the page the traveller's own.
 
-**Coordination.** Only A edits `page.tsx` / `NudgeFeedScreen.tsx`; B files the
-change and A picks it up. Rebase on `main` daily — a second agent commits
-concurrently and has touched `api/crew/checkin/route.ts`, `tests/adherence.test.ts`,
-`domain/fixtures.ts`, `domain/nudges.ts` and both API routes.
+**Sequence — round 2 (items 11–16), which avoids the item-4 trap.** The lesson
+was that a straddling item is a handoff, not a solo: B lands domain first, A
+renders second. Applied here as a day-by-day:
+
+- **Day 1 morning — contracts (B), which unblocks everything.** Define
+  `isPreview = baselineKind === "demo-default"`, `DisplayBiometrics = null` on
+  preview, and
+  `HeroMeeting = { title, destTime, bodyTime, readiness } | null`.
+  A reviews the contract and **does not code against main drift** — reads
+  `git log` on `domain/fixtures.ts`, `domain/nudges.ts`, `api/trip` first.
+- **Day 1–2 — parallel, no dependency.** A: 11 and 16, both isolated to the feed
+  and the depth dial, behind `isPreview`. B: 12 whole, plus the data halves of 13
+  and 15. B extends `tests/baseline.test.ts` with the preview-never-writes-
+  ledger invariant and adds `tests/hero-meeting.test.ts`.
+- **Day 3 — join.** A renders 13 and 15 on top of B's shapes, then 14 **last**:
+  it touches every row, so it lands when the rows are stable.
+- **Day 4 — harden, jointly.** `bun run replay:check`, `bun test`, typecheck, a
+  phone-width and keyboard pass. B owns evals.
+
+**Coordination.** Only A edits `page.tsx` / `NudgeFeedScreen.tsx` /
+`HeroDawnPanel.tsx`. Only B edits `domain/*`, `api/*`, `TripSetupScreen.tsx`.
+Rebase on `main` daily; the second agent's drift last time was
+`api/crew/checkin`, `adherence.test`, `fixtures` and `nudges` — check those four
+first. **Do not split item 15 across both devs at once:** B's shape PR merges,
+then A renders. Same rule that caught the second half of item 4's bug.
 
 **Check `git status` and `git log` before deciding an item's *direction*, not
 just before committing it.** On item 4 A read the code, concluded the picker
@@ -64,10 +106,12 @@ layer and then trusting its success signal is how the second one survives.
 
 **Don't** split item 7 (one surface telling one story; shared authorship is
 mush), or treat a straddling item as solo (see Coordination — it cost a full
-wasted pass on item 4). Item 9 used to be the "don't open with this" filler;
-that advice is retired, because its domain half has landed and all that remains
-is two mount lines — it is now the cheapest item on the board and a good place
-to start.
+wasted pass on item 4), or split item 15 across both devs simultaneously (B's
+shape merges, *then* A renders).
+
+Item 9 used to be the "don't open with this" filler; that advice is retired, and
+in round 2 the filler is item 16 (a rename) — cheap, isolated, and a good place
+for B to start on tests while A waits on contracts.
 
 ## Do first — small, load-bearing
 
@@ -195,6 +239,82 @@ merely looking untidy. Verified against `main` on 2026-10-17.
     `src/components/ui/eval-chip.ts`, because evidence is *absent pre-run by
     design*, so on a machine whose provider is failing the chip cannot be
     rendered at all and only a test holds the line.
+
+## Next — ICP read (Alex, 2026-10-17)
+
+From `docs/vision.md §6`: the landing pasted 2026-10-17 shows sample science
+before it knows Alex, asks for work before earning calendar rights, and buries
+the two things he pays for — the meeting and the calendar. Ordered by bounce
+risk, not by file. Each states the A/B split from `How to split this between
+two` so ownership stays clean.
+
+11. **A · Preview is not a promise** — on `baselineKind === "demo-default"`,
+    Today renders preview: no Done/Skip, no `0 of 4`, no `PendingMark` /
+    ledger / `CheckIn` writes; affordance reads `Preview from sample — answer
+    1 question to lock yours`. Same gate shape as item 8 (`1be902c`). Wake
+    question moves *above* the first dependent number with the floor promise
+    (`Never before 07:00 unless you say so`). Previews `21:30 / 22:30` bedtimes
+    against a `23:55` late type are exactly the failure this gates.
+12. **B · No invented biometrics** — `/api/trip` already answers
+    `baselineSource`/`baselineKind`; keep fixture HRV / resting HR out of the
+    contract on `demo-default` (absent reads "—", per `TripSetupScreen.tsx:81`).
+    B replaces the `m3` grid pre-personalisation with
+    `Connect Garmin (CSV export for now) or answer 1 question` — the upload
+    path (`92299c3`) gets its affordance in `TripSetupScreen` at the same time
+    (closes the carried `Real integrations` remainder). **Whole to B, not a
+    handoff:** it is one file and one brief, so splitting it would create a
+    dependency for no gain.
+13. **A render (B shape) · Calendar is the compliance surface** — B guarantees
+    `N movable / M fixed` + `readinessLabel` + a previewable `.ics` shape
+    pre-run, from data that already exists in `TripSetupScreen`. A changes the
+    sticky primary to `Fit to me → to calendar` and surfaces those counts above
+    the timeline, instead of hiding the `.ics` behind a 45s run. No new
+    notification infra — don't fake the control (stays deferred); sell the
+    `.ics` as the adherence path.
+14. **A · Promise the floor, window the asks** — every ask renders as a window
+    (`07:00–07:30`), never an instant; light/coffee/wind-down rows carry end
+    times + movable/fixed tags so the day looks calendar-shaped. Solver
+    already holds `floor − 105min` and tries at/after-floor first
+    (`architecture.md`) — surface it, don't re-derive it.
+15. **B data → A hero · The meeting is the product** — B ensures
+    `meetingReadiness` resolves pre-run for one real fixed event with attendees;
+    A renders the hero subhead under the residual
+    (`Tue 09:00 workshop = 01:00 body time · 38% → 82% if locked`). This is the
+    `commercial.md` red badge — `Land at 100%` cashed on Today (§2), not just
+    in the nav. **Sequential: B's shape merges, then A renders. Never both at
+    once** — the same rule that caught item 4's second bug.
+16. **A · Crew backstage on Calm** — depth renames to `Plan / Why / Crew`;
+    `Hear the crew`, named agents and voice leave the first viewport for
+    `Why / Crew`. Calm defaults to words + one number + one CTA (Rule 3 +
+    Rule 4, labels fixed).
+
+### Owners for round 2
+
+| Item | Owner | Why this lane |
+|---|---|---|
+| 11 Preview is not a promise | **A** | Pure surface gate. `baselineKind` already rides run state and `/api/trip`, so no domain change is needed. |
+| 12 No invented biometrics | **B, whole** | Not a handoff. B strips fixture biometrics from the contract on `demo-default` **and** lands the `Connect Garmin (CSV)` affordance in `TripSetupScreen` — the same file, the same brief ("no invented numbers"), so splitting it across two lanes would just create a handoff for no gain. Closes the carried `Real integrations` remainder. |
+| 13 Calendar is compliance | **A** render, **B** shape | B guarantees movable/fixed counts + `readinessLabel` + a previewable `.ics` shape pre-run from data that already exists in `TripSetupScreen`. A surfaces them above the timeline and changes the sticky primary to `Fit to me → to calendar`. |
+| 14 Promise floor, window the asks | **A** | Formatting and copy only. The solver already holds `floor − 105min` and tries at/after-floor first (`architecture.md`) — surface it, do not re-derive it. |
+| 15 The meeting is the product | **B** data, then **A** hero | B ensures `meetingReadiness` resolves pre-run for one real fixed event with attendees; A renders the hero subhead on it. **Sequential, never simultaneous.** |
+| 16 Crew backstage | **A** | Isolated to the dial and the first viewport. Filler while B is on tests. |
+
+### Also in this round
+
+The globe is real but inert. The terminator moves **0.25° of longitude a minute**
+— about a quarter of a pixel on a 320px disc — so the 60s interval guarantees
+nothing appears to happen, and the hero reads as a still image. The clock should
+move continuously (a rAF at this scale is cheap; the interval was the wrong
+call), and the shift lane should animate the ghost sliding onto the terminator
+*while dragging*, not only on release. **Unassigned:** it is A's file
+(`HeroDawnPanel.tsx`) but touches no contract, so it is a genuine either-lane
+opportunity once 11 and 16 are done.
+
+Related and already real but buried: 1,145 airports are wired into
+`searchAirports` and reachable only via **Edit → Edit trip**, while the landing
+assumes LHR → HND. The input layer exists; it is a surfacing problem, not a
+build — and it belongs with item 13's "calendar is compliance" argument that the
+*path to configuring your own trip* is the thing missing above the fold.
 
 ## Next steps (carried)
 

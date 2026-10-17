@@ -257,13 +257,181 @@ mount line belongs in the same PR.**
 
 - **A wizard.** Auto-creating the trip is right. One inline question beats
   five gated ones.
-- **A rAF-animated landing globe.** See Rule 3.
+- **A globe that animates to fill silence.** Rule 3 stands — motion must be
+  caused by the traveller or be the reason the screen exists. But the inverse
+  failure is real and currently shipped: the live terminator ticks **0.25° of
+  longitude a minute**, roughly a quarter of a pixel, so the 60s interval means
+  the hero looks like a still image. That is Rule 3's *timing* half applied so
+  conservatively it reads as broken. The fix is not idle animation — it is the
+  clock moving at its true rate, so the sunrise you scrub toward actually
+  arrives.
 - **Hiding the crew.** The five named agents and the visible deliberation are
   the differentiator, not debug output. "Behind the scenes" should stay
-  reachable from Calm.
+  reachable from Calm — just not in the first viewport, which is item 16.
 - **Porting the lens interaction wholesale.** `/crew`'s pan/zoom/rotate is right
   for a dedicated instrument and wrong for a card mid-page. Share the *math*
   (`@/domain/dawn-layers`); let each surface own its interaction.
 - **Shipping a control before it does something.** The flight picker was the
   test case, and it failed twice — see §3. If a control's choice cannot reach
   something that acts on it, it is not a control.
+- **Letting taps train on a preview.** A Done/Skip mark that persists into
+  check-ins, the replan path and graph memory is a control — see §6. Gated
+  the way `/outcome` already is.
+- **Rendering fixture biometrics as biometrics.** HRV / resting HR from the
+  sample profile read as measured even under a demo tag — see §6. Absent
+  data reads "—", never a plausible number.
+
+---
+
+## 6. ICP read — Alex on the landing (2026-10-17)
+
+Source: `docs/archive/icp.md` ICP-1 (strategy consultant, LHR → HND quarterly,
+Garmin, late type 23:55 → 06:45, calendar-driven, 07:00 floor, pays if the trip
+is demonstrably saved) against the landing as pasted on 2026-10-17. Valentina
+remains the insight; Alex is the wedge, so his read governs ordering.
+
+The landing is a beautiful instrument with the wrong first impression: it shows
+sample science before it knows him, asks for work before earning calendar
+rights, and buries the two things he would pay for — *will I be sharp for the
+meeting?* and *put it in my calendar so I do it.*
+
+What holds: auto-trip in 5 seconds (no wizard), the residual in words
+("your dawn is 6.6h behind"), one step / one tap, the inline wake question
+under the sample tag (Rule 1 as built).
+
+What fails, as rules:
+
+### Preview is not a promise
+
+The pasted flow shows `07:00 Get outside light [Done] [Skip]` + `0 of 4 done`
+*above* the personalisation question, on `demo-default` numbers — including a
+`21:30 lights down / 22:30 bed` that is a 90-minute advance on Alex's real
+`23:55` bedtime. A tap persists (`meridian:completedNudges`, `CheckIn`s, the
+fold, graph memory) — so invented data becomes training data. Labelling it
+"sample" is not enough once it is actionable.
+
+Rule 1's trust clause therefore extends: **a number the app invented is never
+actionable.** Until `baselineKind != demo-default`, steps render as preview —
+no Done/Skip, no `0 of 4`, no ledger writes — with the affordance reading
+`Preview from sample — answer 1 question to lock yours`. Same gate shape as
+`/outcome` (`1be902c`): no real input, nothing to grade, nothing to persist.
+
+### Calendar is the compliance surface
+
+Alex does what the calendar says and ignores what an app suggests — but the
+landing offers no `Connect Google Calendar` above the fold (only `sample —
+connect yours` in the Edit sheet), no `.ics` until after a ~45s run, and no
+reminder channel (`backlog.md` admits none exists). Done/Skip is extra work at
+lowest capacity; Rex moving meetings is the wedge and is invisible unless he
+finds `Personalise with the crew` below four steps.
+
+Direction: the sticky primary is `Fit to me → to calendar`, not
+`See why / Watch the crew`. Today surfaces `N movable / M fixed` and
+`X/Y meetings ready` from `TripSetupScreen` onto the feed. Where push cannot
+be sent, the `.ics` *is* the adherence path (`commercial.md`: "the `.ics` is
+the ad") — preview its shape pre-run, don't hide it post-run.
+
+### Promise the floor
+
+Two `07:00` asks back-to-back read as a threat, not a promise: nothing says
+the solver holds `floor − 105min`, tries at/after-floor light first, or wins
+adherence in the evenings (`architecture.md`). Alex expects the 05:30 ask
+tomorrow — one strike and the app is uninstalled.
+
+Direction: the floor promise sits *with* the wake question —
+`Never before 07:00 unless you say so. Evenings do the heavy lifting.` —
+and every ask renders as a window (`07:00–07:30`), never an instant. A
+consultant lives in 30-minute blocks; the plan must look calendar-shaped.
+
+### No invented biometrics
+
+A Garmin wearer sees `Wearable: sample profile` plus a fixture HRV / resting
+HR grid, while the real upload (`POST /api/wearable`, `92299c3`) has no
+affordance in `TripSetupScreen`. Highest-trust data ignored, lowest-trust
+self-report asked, fake biometrics on top. Instant distrust.
+
+Direction: pre-personalisation the `m3` grid goes away. The slot reads
+`Connect Garmin (CSV export for now) or answer 1 question` — absent data is
+"—". `TripSetupScreen.tsx:81` ("No invented values anywhere") is honoured on
+the surface, not just in the comment.
+
+### The meeting is the product
+
+The landing sells `6.6h owed` and pilot clocks (`London 13:36 day / Tokyo
+21:36 night`) with no pitch, no workshop, no `readiness`. `commercial.md`
+defines the free tier as the red badge — *your body thinks it's 06:00 at your
+pitch* — and `meetingReadiness` already exists in code. Alex buys `sharp on
+Tue`, not `shift`.
+
+Direction: the hero subhead under the residual names one fixed event with
+attendees at destination time plus its readiness
+(`Tue 09:00 workshop in Tokyo = 01:00 body time · 38% → 82% if locked`).
+"Land at 100%" is cashed on this screen (§2), not just in the nav.
+
+### The path to configuring your own trip is the thing missing above the fold
+
+Alex's bounce is not only what the landing says — it is that the landing never
+offers him a way to make it *his*. 1,145 airports are wired into
+`searchAirports` and reachable only through **Edit → Edit trip**, while the
+landing silently assumes LHR → HND. The input layer already exists; it is a
+surfacing failure, not a build.
+
+This is the same class as the calendar: the product has the capability and
+hides it one layer too deep, so the first impression is a demo. Fixing it does
+not mean a wizard — Rule 1 stands, and auto-trip in five seconds is genuinely
+right. It means the route and departure the user is actually flying are
+editable from the surface that displays them, with the demo trip as the
+*starting point* rather than the *only* option.
+
+### The globe is real, and reads as inert
+
+Worth separating from everything above, because it is not an ICP complaint but
+the same disease: a capability present and not felt. The terminator advances
+**0.25° of longitude per minute** — roughly a quarter of a pixel on the 320px
+hero disc — so the live clock is correct and invisible, and the globe reads as a
+still image rather than an instrument.
+
+Nothing about the geometry needs fixing. The geometry was verified (and the
+curve labels were placed by sweeping for the nearest *visible* point, because
+both earlier anchors landed on the far hemisphere). What is missing is the rate:
+a rAF at this scale is cheap, the shift lane should animate the ghost sliding
+onto the terminator while dragging rather than only on release, and a sunrise
+you scrub toward should actually arrive. Rule 3 does not forbid this — it
+forbids motion that is neither caused by the traveller nor the reason the screen
+exists. A clock that ticks at the Earth's actual speed is both.
+
+### The crew stays backstage on Calm
+
+`Hear the crew / Menu / Watch the crew / See why / Today / Personalise with
+the crew` plus `the real dawn / your body's dawn / LHR HND London clock shift
+owed` is six concepts before one action. Rule 4's mechanics hold; its labels
+don't: `Today` means nothing as a depth, and named agents + voice belong to
+`See why / Watch`, not the first viewport.
+
+Direction: Calm defaults to words + one number + one CTA. Depth renames to
+`Plan / Why / Crew`; `Hear the crew` leaves the first viewport.
+---
+
+## 7. Where this lands
+
+Items 11–16 in [docs/plan/backlog.md](plan/backlog.md), with owners, contracts
+and a day-by-day sequence. The short version:
+
+| Item | Owner | Why |
+|---|---|---|
+| 11 Preview is not a promise | A | Surface gate; `baselineKind` already exists |
+| 12 No invented biometrics | B, whole | One file, one brief — splitting it would be a handoff for nothing |
+| 13 Calendar is compliance | B shape → A render | Data already exists; it needs surfacing |
+| 14 Promise the floor, window the asks | A | Copy only; the solver already holds the floor |
+| 15 The meeting is the product | B data → A hero | **Sequential, never simultaneous** |
+| 16 Crew backstage | A | Isolated; filler while B is on tests |
+
+The globe's rate and the route-picker surfacing are real and currently
+unassigned — either lane, once 11 and 16 are done.
+
+Nothing in §6 requires a new dependency, a new provider, or a decision about
+notification infra. Every item is either a gate on state that already exists, a
+piece of copy, or a surface decision about data that is already computed. That
+is the encouraging part of this read: the product is closer to the ICP than it
+looks, and the gap is mostly about what it shows first and what it lets you
+touch.
