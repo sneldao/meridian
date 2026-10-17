@@ -1,4 +1,6 @@
 import {
+  CBT_BEFORE_WAKE_MIN,
+  LIGHT_DELAY_HORIZON_MIN,
   CAFFEINE_CUTOFF_BEFORE_BED_MIN,
   MAX_SHIFT_MIN_PER_DAY,
   coverageOf,
@@ -112,20 +114,93 @@ function draftDay(
 ): DayPlan | null {
   const { trip, spec, calendar, adherence, lockedDays, baseline } = input;
   const prev = lockedDays[lockedDays.length - 1];
-  let ref = prev
+  const postFlight = spec.dayIndex > trip.departureDayIndex;
+
+  // Post-flight: the body's phase — baseline + every locked shift, converted
+  // to the destination frame once — decides where zeitgebers land, NOT the
+  // sleep window. The schedule it shifts from is still the phase (that's
+  // what the scorer now measures against), but the *targets* are local-night
+  // times: after landing you sleep when the city sleeps, and zeitgebers do
+  // the shifting.
+  if (postFlight) {
+    if (!baseline) return null;
+    const off = trip.destination.utcOffsetMin - trip.origin.utcOffsetMin;
+    let phaseBed = baseline.avgBedtimeMin + off;
+    let phaseWake = baseline.avgWakeMin + off;
+    for (const d of lockedDays) {
+      phaseBed = wrap(phaseBed + d.shiftMin);
+      phaseWake = wrap(phaseWake + d.shiftMin);
+    }
+    const east = trip.direction === "east";
+    const bed = baseline.avgBedtimeMin;
+    const wake = baseline.avgWakeMin;
+    const cbt = wrap(phaseWake - CBT_BEFORE_WAKE_MIN);
+    const interventions: Intervention[] = east
+      ? [
+          // A lagging body's CBT sits mid-morning local: keep it dark until
+          // then (that light delays), light right after it advances.
+          {
+            kind: "avoid_light",
+            startMin: wrap(cbt - LIGHT_DELAY_HORIZON_MIN / 2),
+            endMin: cbt,
+            note: `Shade and indoors until ${fmtMin(cbt)} — this light would push you back.`,
+          },
+          {
+            kind: "light_exposure",
+            startMin: wrap(cbt + 30),
+            endMin: wrap(cbt + 90),
+            note: `Bright light from ${fmtMin(wrap(cbt + 30))} — body's dawn zone, the advance lever.`,
+          },
+          {
+            kind: "caffeine_cutoff",
+            startMin: wrap(bed - CAFFEINE_CUTOFF_BEFORE_BED_MIN - 5),
+            note: `Last caffeine 8h before the ${fmtMin(bed)} bedtime.`,
+          },
+          {
+            kind: "melatonin",
+            startMin: wrap(bed - 270),
+            note: `Melatonin timing window ~4–5h before bed (timing only, no dose).`,
+          },
+          { kind: "sleep_window", startMin: bed, endMin: wake, note: `Bed ${fmtMin(bed)}, up ${fmtMin(wake)} — local night.` },
+        ]
+      : [
+          // Ahead body (westward): CBT sits early-morning local — dark until
+          // then, evening light delays.
+          {
+            kind: "avoid_light",
+            startMin: wake,
+            endMin: wrap(wake + 120),
+            note: `Dark glasses until ${fmtMin(wrap(wake + 120))} — morning light undoes the delay.`,
+          },
+          {
+            kind: "light_exposure",
+            startMin: wrap(bed - 210),
+            endMin: wrap(bed - 150),
+            note: `Evening light ~2h before bed — the delay lever.`,
+          },
+          {
+            kind: "caffeine_cutoff",
+            startMin: wrap(bed - CAFFEINE_CUTOFF_BEFORE_BED_MIN - 5),
+            note: `Last caffeine 8h before the ${fmtMin(bed)} bedtime.`,
+          },
+          { kind: "sleep_window", startMin: bed, endMin: wake, note: `Bed ${fmtMin(bed)}, up ${fmtMin(wake)} — local night.` },
+        ];
+    return {
+      dayIndex: spec.dayIndex,
+      label: spec.label,
+      shiftMin,
+      targetBedtimeMin: bed,
+      targetWakeMin: wake,
+      interventions,
+    };
+  }
+
+  const ref = prev
     ? { bed: prev.targetBedtimeMin, wake: prev.targetWakeMin }
     : baseline
       ? { bed: baseline.avgBedtimeMin, wake: baseline.avgWakeMin }
       : null;
   if (!ref) return null;
-  // Clock frame: the first day after the flight is destination-local, so the
-  // schedule it shifts from is the locked (origin-frame) day converted into
-  // destination time. The scorer drops the sleep reference across the same
-  // boundary, so only the placement math needs it.
-  if (prev && spec.dayIndex > trip.departureDayIndex && prev.dayIndex <= trip.departureDayIndex) {
-    const off = trip.destination.utcOffsetMin - trip.origin.utcOffsetMin;
-    ref = { bed: wrap(ref.bed + off), wake: wrap(ref.wake + off) };
-  }
   const bed = wrap(ref.bed + shiftMin);
   const wake = wrap(ref.wake + shiftMin);
   const east = trip.direction === "east";
@@ -284,14 +359,6 @@ export function previewPlan(input: {
   const lockedDays: DayPlan[] = [];
   const out = new Map<string, SolvedDay | null>();
   for (const spec of trip.days) {
-    // Post-landing days are planned with the wearer after touchdown, not
-    // previewed: the engine's sleep-window-as-body-clock proxy doesn't hold
-    // once residual lag remains after landing, so previewing them would show
-    // a plan we know is wrong.
-    if (spec.dayIndex > trip.departureDayIndex) {
-      out.set(spec.label, null);
-      continue;
-    }
     const solved = solveDay({ trip, spec, lockedDays, calendar, adherence, baseline });
     out.set(spec.label, solved);
     if (solved) lockedDays.push(solved.plan);

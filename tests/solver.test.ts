@@ -149,30 +149,33 @@ describe("solveDay", () => {
     expect(Math.abs(solved!.plan.shiftMin)).toBeLessThanOrEqual(Math.abs(small.requiredShiftMin));
   });
 
-  test("converts the previous day's frame across the flight", () => {
-    // D+1 solves from the flight day in destination time: the locked
-    // 22:25/05:15 London schedule becomes 06:25/13:15 Tokyo (+480min), and a
-    // −90 draft shifts it from there.
-    const flightPlan: DayPlan = {
-      dayIndex: 3,
-      label: "Flight",
-      shiftMin: 0,
-      targetBedtimeMin: 22 * 60 + 25,
-      targetWakeMin: 5 * 60 + 15,
-      interventions: [],
-    };
+  test("post-flight days sleep at local night, anchored on body phase", () => {
+    // After landing the schedule is local-night (baseline times), not the
+    // phase-converted flight schedule — the old draft produced unusable
+    // times like bed 04:55/wake 11:45 Tokyo. The phase still decides where
+    // the zeitgebers land: a lagging eastbound body's CBT sits mid-morning,
+    // so light goes in the advance zone after it.
+    const locked: DayPlan[] = [];
+    for (const spec of trip.days.slice(0, 4)) {
+      const s = solveDay({ trip, spec, lockedDays: locked, calendar: CALENDAR, adherence: ADHERENCE_PROFILE, baseline: GARMIN_BASELINE });
+      if (s) locked.push(s.plan);
+    }
     const solved = solveDay({
       trip,
       spec: trip.days[4],
-      lockedDays: [flightPlan],
+      lockedDays: locked,
       calendar: CALENDAR,
       adherence: ADHERENCE_PROFILE,
       baseline: GARMIN_BASELINE,
     });
     expect(solved).not.toBeNull();
-    expect(solved!.plan.targetBedtimeMin).toBe((22 * 60 + 25 + 480 - 90) % 1440); // 04:55 Tokyo
-    expect(solved!.plan.targetWakeMin).toBe((5 * 60 + 15 + 480 - 90) % 1440); // 11:45 Tokyo
-    expect(solved!.plan.shiftMin).toBe(-90); // a hold no longer blocks resuming
+    // Local-night targets — not the converted 06:25/13:15 Tokyo.
+    expect(solved!.plan.targetBedtimeMin).toBe(GARMIN_BASELINE.avgBedtimeMin);
+    expect(solved!.plan.targetWakeMin).toBe(GARMIN_BASELINE.avgWakeMin);
+    expect(passes(solved!.result)).toBe(true);
+    // The light anchor sits after the lagging body's CBT (~11:00 Tokyo).
+    const light = solved!.plan.interventions.find((iv) => iv.kind === "light_exposure");
+    expect(light!.startMin).toBeGreaterThanOrEqual(9 * 60);
   });
 });
 
@@ -240,12 +243,15 @@ describe("previewPlan", () => {
     }
   });
 
-  test("days after the flight are null — planned after touchdown, not previewed", () => {
+  test("post-flight days solve — phase-anchored, local-night sleep", () => {
     for (const spec of trip.days) {
-      const solved = preview.get(spec.label);
-      if (spec.dayIndex > trip.departureDayIndex) expect(solved).toBeNull();
+      if (spec.dayIndex > trip.departureDayIndex) {
+        const solved = preview.get(spec.label);
+        expect(solved).not.toBeNull();
+        expect(passes(solved!.result)).toBe(true);
+        expect(solved!.plan.targetWakeMin).toBe(GARMIN_BASELINE.avgWakeMin);
+      }
     }
-    expect(preview.get("D+1")).toBeNull();
   });
 
   test("no light block overlaps a blocking calendar event on its day", () => {
