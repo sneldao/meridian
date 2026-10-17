@@ -1,18 +1,19 @@
-<!-- DRAFT — DEV submission post for Hacktoberfest Open-Source AI Challenge: Week 2 (Side Hustle).
-     ALSO serves as the Graph Hacks (FalkorDB × WeMakeDevs) "best blog post" entry (AirPods 5) —
-     it covers what was built, how it works, and what was learned. One post, two prizes.
+<!-- DEV submission post — Hacktoberfest Open-Source AI Challenge: Week 2 (Side Hustle).
+     Structured to the official template. ALSO serves as the Graph Hacks "best blog post"
+     entry (AirPods 5): covers what was built, how it works, what was learned.
 
-     ORDERING: publish on DEV first; link the live URL in the Graph Hacks submission on Sunday
-     (their deadline 23:59 IST = 19:29 BST comes before DEV's 23:59 PDT). DEV posts stay
-     editable — video/session links can be added after publishing.
-
-     Required tags: devchallenge, hf26challenge. Optional adds marked [ADD when ready]. -->
+     ORDERING: publish on DEV first; link the live URL in the Graph Hacks submission Sunday
+     (their 23:59 IST = 19:29 BST deadline precedes DEV's 23:59 PDT). Posts stay editable —
+     video/session links can be added later. SOLO BUILD — no team credits needed.
+     Strip this comment block before pasting. -->
 
 ---
 title: "Meridian: an open-model agent crew that plans around your jet lag — and remembers what went wrong"
 published: false
 tags: devchallenge, hf26challenge, opensource, ai
 ---
+
+*This is a submission for the [Hacktoberfest Open-Source AI Challenge Week 2: Side Hustle](https://dev.to/challenges/hacktoberfest-week2-2026-10-12)*
 
 ## What I Built
 
@@ -62,14 +63,26 @@ the Render service.
      why-expansion → /crew feed → scorer rejection → hop path → .ics → MCP.
      Post publishes fine without it (live URL satisfies the demo rule). -->
 
-**Code:** https://github.com/sneldao/meridian (public; first commit 2026-10-15,
-built start-to-finish inside the challenge window)
+## Code
+
+https://github.com/sneldao/meridian — public; first commit 2026-10-15, built
+start-to-finish inside the challenge window.
+
+{% github sneldao/meridian %}
 
 ## How I Built It
 
-**Agents propose, code disposes.** Five agents, but none of them get to
-freestyle the plan — a deterministic placement solver drafts the skeleton and
-a circadian phase-response scorer gates every day before it commits:
+The open-weight core: the whole crew runs on **NVIDIA Nemotron 3 Ultra**
+(orchestrator) + **Nemotron 3 Super** (specialists) via Nebius Token Factory,
+or **Qwen3-32B** via Featherless as the dev default. One env var
+(`AGENT_PROVIDER`) swaps the whole crew between providers — Anthropic exists
+as a comparison provider, which turned out to be the most useful thing in the
+project.
+
+The design decision underneath: **agents propose, code disposes.** Five
+agents, but none get to freestyle the plan — a deterministic placement solver
+drafts the skeleton and a circadian phase-response scorer gates every day
+before it commits:
 
 - **Mara (Analyst)** — reads the traveller's baseline and adherence profile
 - **Jun (Researcher)** — pulls real papers via ScienceMadeReadable →
@@ -80,12 +93,6 @@ a circadian phase-response scorer gates every day before it commits:
   verdict, including rejections
 - **Rex (Negotiator)** — reschedules movable calendar events, commits the
   final plan as `.ics` (real Google Calendar writes via Composio MCP)
-
-The crew runs on open-weight models — **NVIDIA Nemotron 3 Ultra**
-(orchestrator) + **Nemotron 3 Super** (specialists) via Nebius Token Factory,
-or **Qwen3-32B** via Featherless as the dev default. One env var
-(`AGENT_PROVIDER`) swaps the whole crew; Anthropic exists as a comparison
-provider — which turned out to be the most useful thing in the project.
 
 **The part that remembers.** Each traveller gets a per-tenant FalkorDB graph
 (`meridian:{tenant}` — isolation is a graph, not a WHERE clause). Trips, days,
@@ -111,7 +118,7 @@ from `main`, ~$7/month. Render is the project's AI runtime: the long-lived
 Node process is what makes 300-second SSE crew streams work where a serverless
 timeout ceiling would kill them.
 
-## Why Open Innovation Matters
+## Why Does Open Innovation Matter?
 
 Open models aren't a nice-to-have here — they're what make the business case
 close.
@@ -129,8 +136,8 @@ on the architecture: a full crew run on Nemotron — 143 seconds, 18 tool calls,
 locked at 0.91 with 15 citations — landed on the exact same
 physiological-limit outcome as the identical run on Claude. The gate holds
 regardless of provider. You don't need the smartest model; you need a cheap
-model inside a loop that cannot ship a physiologically impossible plan.
-Open weights plus a deterministic verifier is a different architecture, not a
+model inside a loop that cannot ship a physiologically impossible plan. Open
+weights plus a deterministic verifier is a different architecture, not a
 downgrade.
 
 **No lock-in, by construction.** Provider-agnostic crew means an advisor's
@@ -147,27 +154,33 @@ surface — keeps every layer inspectable and replaceable.
   the prompt as a fallback, but the graph is the evidence: tool results carry
   rows, milliseconds, and the hop path, which is what lets the UI show
   *"answered from memory — here's the path"* instead of a vibes-based claim.
-- **Provenance is a product feature, not a debug view.** The consolidation
-  into Calm/Guided/Operator came from realising the evidence *is* the
-  differentiator — so every nudge carries score/rejection/citation/memory-path
-  chips rather than burying them in a dashboard. And the honest version
-  mattered: we deleted the fallback that attached index-picked citations to
-  nudges that hadn't earned one. A nudge with no citation says so.
+- **Provenance is a product feature, not a debug view.** The Calm/Guided/
+  Operator split came from realising the evidence *is* the differentiator —
+  so every nudge carries score/rejection/citation/memory-path chips rather
+  than burying them in a dashboard. And the honest version mattered: we
+  deleted the fallback that attached index-picked citations to nudges that
+  hadn't earned one. A nudge with no citation says so.
 - **Design for the demo failing.** Everything graph-related sits behind
   `FALKORDB_URL` and no-ops cleanly — FalkorDB's free cloud tier dropped its
   port mid-sprint while reporting "Healthy," and the app kept working; the
-  durable path is a private FalkorDB service in the same Render Blueprint.
-  A replay transcript covering both night and morning runs means the live URL
+  durable path is a private FalkorDB service in the same Render Blueprint. A
+  replay transcript covering both night and morning runs means the live URL
   can never burn tokens or die on stage.
 
-## First User
+## My Agent Session
 
-Honest answer: nobody has paid yet — this was built in the last week. What I
-can point to is that the willingness to pay is already proven by someone
-else's revenue (Timeshifter's $24.99/yr consumer plan), and the pricing
-hypothesis is set: free for one trip, ~£8–10/trip or ~£12/mo for travellers
-with replans and wearable sync, ~£20–30/seat/mo for a travel manager watching
-a fleet of crews. The first real user test is next.
+<!-- [ADD when ready] Save a session with DevRelay and embed:
+     {% agent_session <url> %} — also unlocks the Entire category below.
+     Built almost entirely by an agent, so this is an honest fit. -->
+
+## My First User
+
+Honest answer: nobody has paid yet — this was built inside the challenge
+window. What I can point to is that the willingness to pay is already proven
+by someone else's revenue (Timeshifter's $24.99/yr consumer plan), and the
+pricing hypothesis is set: free for one trip, ~£8–10/trip or ~£12/mo for
+travellers with replans and wearable sync, ~£20–30/seat/mo for a travel
+manager watching a fleet of crews. The first real user test is next.
 
 ## Prize Categories
 
@@ -177,11 +190,8 @@ a fleet of crews. The first real user test is next.
 - **Best Use of ElevenLabs** — per-agent voice layer (`src/lib/voice/`): five
   distinct voices streamed chunk-aligned over token generation, char-aligned
   karaoke highlighting, multi-voice dialogue mode for the plan handoff.
-<!-- [ADD when ready] - **Best Use of Entire** — built almost entirely by an
-     agent; session: <DevRelay link>. Uncomment once the link exists. -->
-
-*This post also serves as the project write-up for Graph Hacks (FalkorDB ×
-WeMakeDevs), Track 2 — Agent Memory and Coordination.*
+<!-- [ADD when ready] - **Best Use of Entire** — agent session embedded above.
+     Uncomment once the DevRelay link exists. -->
 
 ## What I'd Build Next
 
@@ -194,14 +204,14 @@ the ones with the biggest budgets — they'll be the ones whose tools remember.
 Open models are what make a five-agent crew with a graph behind it cheap
 enough to be a side hustle instead of an enterprise contract.
 
-<!-- PRE-PUBLISH CHECKLIST (publishing today)
-- [ ] Strip these comment blocks before pasting into the DEV editor
-- [ ] Use the challenge submission template (adds #devchallenge #hf26challenge)
-- [ ] List DEV handles of teammates if any (teams ≤4 — built at Accel with others?)
-- [ ] Repo is public ✓ · live URL up ✓ · graph seeded + health live ✓
+*This post also serves as the project write-up for Graph Hacks (FalkorDB ×
+WeMakeDevs), Track 2 — Agent Memory and Coordination.*
+
+<!-- PRE-PUBLISH CHECKLIST
+- [ ] Strip the comment blocks before pasting into the DEV editor
 - [ ] README note: commits after Oct 18 must be declared (rules requirement)
 - [ ] Sunday: paste the live DEV URL into the Graph Hacks submission (blog
       prize) — deadline 19:29 BST, earlier than DEV's
-- [ ] Optional later adds (post stays editable): demo video, DevRelay link →
+- [ ] Optional later adds (post stays editable): demo video, DevRelay →
       Entire category, first-user quote, .tech domain
 -->

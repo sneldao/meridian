@@ -1,5 +1,9 @@
 # Any-route pass — make "change my trip" fully real
 
+> **SHIPPED 2026-10-17** — horizon (`horizonFor`, `buildTrip` opts), neutral
+> calendar (`neutralCalendarFor`), connect-state line, picker confirmed
+> type-ahead. Commits `cabdae8`, `a62d8a5`, `45f50a0`.
+
 2026-10-17 · Follow-up to [home-signature-pass.md](home-signature-pass.md)
 (shipped). Route changes already work end-to-end for any of 1,145 airports:
 the picker, `/api/trip?origin&dest&date`, `buildTrip`, solver, scorer, dawn

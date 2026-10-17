@@ -17,8 +17,11 @@ GET /api/crew/run  ──SSE──▶  src/agents/runtime.ts  ──▶  provide
 Deterministic orchestration decides who acts when — agents never route to each
 other.
 
-1. **Analyst (Mara)** — reads `GARMIN_BASELINE` + `ADHERENCE_PROFILE` fixtures
-   via tools; extracts chronotype, habitual window, compliance floor.
+1. **Analyst (Mara)** — reads the wearable baseline via tools. That's
+   `GARMIN_BASELINE` by default, or `resolveBaseline(wakeBand)` when the
+   traveller answered the setup question (`?wake=` on the run route) — plus
+   `ADHERENCE_PROFILE` fixtures; extracts chronotype, habitual window,
+   compliance floor.
 2. **Researcher (Jun)** — calls `searchScience` ≥2 angles; each result becomes a
    first-class `citation` event pinned to later interventions.
 3. **Planner (Otto) × Evaluator (Iris)** — the core loop, one `DaySpec` at a
@@ -109,9 +112,9 @@ in [providers.md](providers.md#supabase-persistence-optional).
 
 | Route | Purpose |
 |---|---|
-| `GET /api/crew/run` | SSE crew stream (`checkins`, `startDay` query params) |
+| `GET /api/crew/run` | SSE crew stream (`checkins`, `startDay`, `wake` query params — `wake` ∈ `before6`/`6to8`/`after8` resolves the baseline) |
 | `POST /api/crew/checkin` | Free-text check-in → structured `CheckIn` |
-| `GET /api/trip` | Trip preview: schedule, `baseline` + `baselineSource` (`"fixture"` until real Garmin wiring lands), `adherence`, calendar + `calendarSource`, provider. Defaults `date` to `2026-10-18`; the client always sends an explicit date (today + 3 by default) |
+| `GET /api/trip` | Trip preview: schedule, `baseline` + `baselineSource` (`"fixture"` until real Garmin wiring lands), `adherence`, calendar + `calendarSource`, provider. Defaults `date` to `2026-10-18`; the client always sends an explicit date (today + 3 by default). Trip shape is `horizonFor`-sized: pre-flight capped by days left, post-flight bounded 1–5 |
 | `GET /api/team/run` | 12 parallel crews, one tagged SSE stream |
 | `GET /api/persistence/runs` | Supabase run history; `{"enabled":false}` without keys |
 | `GET /api/memory` · `GET /api/graph/health` | Learned cross-run memory; FalkorDB status (503 when unreachable); `?tenant=` selects the `meridian:{tenant}` graph |
@@ -124,7 +127,8 @@ in [providers.md](providers.md#supabase-persistence-optional).
 ```
 src/domain/      types, circadian scorer + phase-response model, placement
                  solver + previewPlan, today (which day is now, next step),
-                 adherence, readiness, fixtures
+                 adherence, readiness, fixtures (trip horizon via horizonFor;
+                 Alex fixture for the demo route, neutralCalendarFor elsewhere)
 src/tools/       science (SMR → Firecrawl → static), tavily, qloo,
                  calendar (ICS), wearable
 src/agents/      providers, crew prompts, runtime, night replay, morning replay

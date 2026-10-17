@@ -40,11 +40,15 @@ link the live URL in the Graph Hacks submission.
   Claude (verified run: 18 tool calls, 2 rejections, score 0.91, 15
   citations) — "cheap model + deterministic verifier" IS the pitch.
 
-### Meridian angle — post drafted, actions open
+### Meridian angle — **PUBLISHED 2026-10-16**
 
-- [ ] Publish `docs/plan/dev-week2-post.md` before **19:29 BST Sun** (Graph
-      Hacks deadline is the binding one — the post doubles as its blog-prize
-      entry, so it must be live before that submission goes in)
+- [x] Post live: https://dev.to/papajams/meridian-the-ai-travel-crew-that-learns-from-your-jet-lag-30o2
+      (tags ✓, repo embed ✓, Render + ElevenLabs categories declared,
+      Graph Hacks blog footer ✓ — doubles as its Track 2 blog entry.
+      NOTE: published text was rewritten in the author's voice; the local
+      draft `dev-week2-post.md` is the pre-edit version)
+- [ ] **Sunday:** paste the post URL into the Graph Hacks submission
+      (deadline 19:29 BST — binding, earlier than DEV's 23:59 PDT)
 - [ ] Decide: keep public URL on `AGENT_PROVIDER=replay`, or add a second
       Render service on `featherless` so judges hit live open-model
       inference (strengthens the Render claim; ~pennies/run risk)
