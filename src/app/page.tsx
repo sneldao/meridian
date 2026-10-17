@@ -748,10 +748,42 @@ export default function Home() {
                 type="button"
                 className="m"
                 onClick={async () => {
+                  // Bet 3 — the share payload carries the hero meeting's
+                  // body-time delta so the card leads with the passport line
+                  // ("my body thinks it's 06:00"). Post-run the locked plan
+                  // is the honest with-plan half, so no preview is passed;
+                  // same contract the feed renders.
+                  const { heroMeeting } = await import("@/domain/hero");
+                  const heroMtg = trip
+                    ? heroMeeting({
+                        trip,
+                        calendar: currentEvents,
+                        locked: [...run.locked.values()].map((d) => ({ shiftMin: d.shiftMin })),
+                        baseline,
+                      })
+                    : null;
                   const r = await fetch("/api/share", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ briefing: run.briefing, trip }),
+                    body: JSON.stringify({
+                      briefing: run.briefing,
+                      trip: trip
+                        ? {
+                            origin: { name: trip.origin.name },
+                            destination: { name: trip.destination.name },
+                            requiredShiftMin: trip.requiredShiftMin,
+                            direction: trip.direction,
+                            heroMeeting: heroMtg
+                              ? {
+                                  title: heroMtg.title,
+                                  localMin: heroMtg.localMin,
+                                  bodyMin: heroMtg.bodyMin,
+                                  bodyWithoutPlanMin: heroMtg.bodyWithoutPlanMin,
+                                }
+                              : null,
+                          }
+                        : null,
+                    }),
                   });
                   const { url } = await r.json();
                   const full = `${window.location.origin}${url}`;
