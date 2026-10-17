@@ -92,6 +92,20 @@ flight (B is wiring `baselineKind` forwarding — `page.tsx:856,915`) and stays
 on B's board; the rest of round 2 closes once that lands and the Garmin CSV
 affordance follows.
 
+**Sequence — round 3 ran and shipped.** Three carried items from §6, the
+follow-on to round-2's item 15, and item 12 closing on B's board. The split
+was clean: A picked the first-impression and the globe; B picked the pre-lock
+contracts. Plan: the proposal above (§Carried — the same disease, different
+symptom, and item 15's pre-lock gap).
+
+| Item | Owner | Commit | What shipped |
+|---|---|---|---|
+| 1,145-airport surfacing | A | `56965c1` | `RoutePicker` mounted on the first viewport; `TripSummary` removed. Demo trip is now the starting point, not the only option. The other setup-sheet settings stay behind Menu → Edit trip. |
+| Globe rate (`HeroDawnPanel`) | A | `6d62d56` | `setInterval(60_000)` swapped for a throttled rAF at 250ms (4Hz). Reduced-motion travellers keep the 60s tick. The terminator now reflects real time continuously; the visible motion at Earth's rate is sub-pixel per frame, but the data is fresh and any state change updates the disc immediately. |
+| Pre-lock hero meeting | B → A | `7b6cc7d`, `3bb8e94` | B added `previewLocked` to `heroMeeting`; A threaded the solver preview through. Pre-lock the hero subhead now reads e.g. `D+1 14:00 Client pitch = 06:00 body time · would have been 13:30 without the crew`. |
+| Pre-lock readiness | B → A | `9651585`, `45a5918` | B added `previewLocked` to `shiftLockedPct`; A threaded the preview. The dawn card and the rail's done-count show the plan's promise (`38% banked on preview`) rather than a flat zero on first impression. |
+| Item 12 (TripSetupScreen) | B | `49c6722` | The m3 grid replaced by `displayBiometrics()`; `Connect Garmin (CSV)` affordance + manual verification with a real export. The carried `Real integrations` remainder closes. |
+
 **Coordination.** Only A edits `page.tsx` / `NudgeFeedScreen.tsx` /
 `HeroDawnPanel.tsx`. Only B edits `domain/*`, `api/*`, `TripSetupScreen.tsx`.
 Rebase on `main` daily; the second agent's drift last time was
@@ -380,22 +394,36 @@ build — and it belongs with item 13's "calendar is compliance" argument that t
 Two findings from the §6 ICP read that aren't ICP complaints but the same
 class as the calendar: a capability present and not felt.
 
-- **The globe is real and reads as inert.** `HeroDawnPanel.tsx` advances
-  the terminator at 0.25° of longitude per minute — about a quarter of a
-  pixel on the 320px hero disc. The live clock is correct and invisible;
-  the hero reads as a still image. The interval was the wrong call; rAF at
-  this scale is cheap, and a clock that ticks at the Earth's actual speed
-  is the reason the screen exists (Rule 3 doesn't forbid this — it forbids
-  motion that is neither traveller-caused nor the reason the screen
-  exists; the terminator is both). The shift lane should also animate the
-  ghost sliding onto the terminator *while dragging*, not only on release.
-  A's file, no contract, genuine either-lane opportunity.
-- **1,145 airports are wired into `searchAirports` and reachable only via
-  Edit → Edit trip** — the landing assumes LHR → HND. The input layer
-  exists; surfacing it above the fold is the same fix as item 13: the path
-  to configuring your own trip is the thing missing from the first
-  impression. Belongs with item 13's "calendar is compliance" argument.
-  A's file (`page.tsx`), B's data shape if it grows new fields.
+- ~~**The globe is real and reads as inert.**~~ — shipped `6d62d56`. The
+  60s `setInterval` swapped for a throttled rAF at 250ms (4Hz); reduced-
+  motion travellers keep the 60s tick. The visible motion at Earth's rate
+  is sub-pixel per frame regardless of update rate — but the data is
+  fresh and the disc reflects state changes (slider, drag, lock) in real
+  time. The shift lane already animates the ghost onto the terminator
+  while dragging (native range input → React render → path recompute).
+- ~~**1,145 airports are wired into `searchAirports` and reachable only via
+  Edit → Edit trip.**~~ — shipped `56965c1`. `RoutePicker` is mounted on
+  the first viewport in place of `TripSummary`; the demo trip is the
+  *starting point*, not the only option. The other setup-sheet settings
+  (wearable, wake band, flight window) stay behind Menu → Edit trip,
+  since they aren't first-impression problems.
+
+## Round-3 follow-on — closed in the same round
+
+Two items from the round-2 ICP read surfaced in round 3 once contracts
+landed; both closed as a paired contract + render.
+
+- ~~**Item 15 — pre-lock hero meeting gap.**~~ — shipped `7b6cc7d`,
+  `3bb8e94`. B added `previewLocked` to `heroMeeting`; A threaded the
+  solver-backed preview through. Pre-lock the hero subhead now reads
+  `D+1 14:00 Client pitch = 06:00 body time · would have been 13:30
+  without the crew` on demo-default — the gap between `bodyMin` and
+  `bodyWithoutPlanMin` is the sales pitch.
+- ~~**Pre-lock readiness — hero shows promise not 0.**~~ — shipped
+  `9651585`, `45a5918`. B added `previewLocked` to `shiftLockedPct`;
+  A threaded the preview. The dawn card and the rail's done-count show
+  the plan's promise on first impression (`38% banked on preview`)
+  rather than a flat zero.
 
 ## Later / deferred
 

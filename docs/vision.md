@@ -2,9 +2,11 @@
 
 # Product vision — land at 100%
 
-**Status:** proposal · round 2 (items 11–16) shipped on `main` as `63e8861`;
-the §6 directions are now realised on the surface, with one item-12 surface
-half (B) and one item-15 pre-lock surfacing gap still open. See §7 and
+**Status:** proposal · round 2 (`63e8861`) and round 3 (`56965c1`,
+`6d62d56`, `7b6cc7d`/`3bb8e94`, `9651585`/`45a5918`) shipped on `main`.
+The §6 directions are all realised on the surface; the two carried
+findings (globe rate, 1,145-airport surfacing) and the two pre-lock
+follow-ons (hero meeting, readiness %) closed in round 3. See §7 and
 [docs/plan/backlog.md](plan/backlog.md).
 **Companion:** [design-vision.md](archive/design-vision.md) (the visual primitives)
 
@@ -314,6 +316,16 @@ on B's board. The two carried findings (globe rate, route surfacing) stay
 open. The pre-lock hero meeting subhead (item 15 follow-on) is the next
 thing to surface — see `docs/plan/backlog.md`.
 
+**Update 2026-10-17 (round 3):** the carried findings and the pre-lock
+follow-ons closed. `56965c1` mounts `RoutePicker` on the first viewport
+(demo as starting point, not only option); `6d62d56` swaps the 60s
+terminator interval for a throttled rAF at 4Hz. `7b6cc7d`+`3bb8e94` and
+`9651585`+`45a5918` are the paired contract + render for the pre-lock
+hero meeting and pre-lock readiness — the dawn card and the hero subhead
+both reflect the solver's promise on first visit, not on first crew
+run. Item 12 (`49c6722`) closes the carried `Real integrations`
+remainder with a manual Garmin export verification.
+
 What fails, as rules:
 
 ### Preview is not a promise
@@ -417,6 +429,15 @@ crew" half is empty. The sales line lives in that gap, and is the next
 thing to surface — render the unbanked figure unconditionally and label
 it `what you'd be without the plan`.
 
+**Gap closed round 3 — `7b6cc7d` + `3bb8e94`.** B added `previewLocked`
+to `heroMeeting`; A threaded the solver-backed preview through. Pre-lock
+the hero subhead now reads e.g.
+`D+1 14:00 Client pitch = 06:00 body time · would have been 13:30 without
+the crew`
+on demo-default — the gap between `bodyMin` and `bodyWithoutPlanMin` is
+the sales pitch, and it is visible on first impression, not on first crew
+run.
+
 ### The path to configuring your own trip is the thing missing above the fold
 
 Alex's bounce is not only what the landing says — it is that the landing never
@@ -437,6 +458,12 @@ surfacing, not build — the input layer exists; what is missing is the
 route and departure as inline-editable on the first viewport, with the
 demo trip as the starting point rather than the only option.
 
+**Shipped `56965c1`.** `RoutePicker` is mounted on the first viewport in
+place of `TripSummary`. The route and departure are inline-editable, the
+demo trip is the starting point, and the rest of the setup sheet
+(wearable, wake band, flight window) stays behind Menu → Edit trip
+because it is not the first-impression problem.
+
 ### The globe is real, and reads as inert
 
 Worth separating from everything above, because it is not an ICP complaint but
@@ -455,6 +482,15 @@ forbids motion that is neither caused by the traveller nor the reason the screen
 exists. A clock that ticks at the Earth's actual speed is both.
 
 **Carried.** A's file (`HeroDawnPanel.tsx`), no contract, either lane.
+
+**Shipped `6d62d56`.** The 60s `setInterval` swapped for a throttled rAF
+at 250ms (4Hz); reduced-motion travellers keep the 60s tick. The
+visible motion at Earth's rate is sub-pixel per frame regardless of
+update rate, so what changed is the data freshness and the disc's
+responsiveness to state changes (slider, drag, lock). The shift lane
+already animates the ghost onto the terminator while dragging — the
+slider is a native range input whose `onChange` triggers a render and a
+path recompute, so the ghost slides frame-by-frame.
 
 ### The crew stays backstage on Calm
 
@@ -484,12 +520,14 @@ and a day-by-day sequence. The short version:
 | 12 No invented biometrics | B, whole | One file, one brief — splitting it would be a handoff for nothing | Contract shipped `63e8861`; `TripSetupScreen` half on B's board |
 | 13 Calendar is compliance | B shape → A render | Data already exists; it needs surfacing | Shipped `63e8861` |
 | 14 Promise the floor, window the asks | A | Copy only; the solver already holds the floor | Shipped `63e8861` |
-| 15 The meeting is the product | B data → A hero | **Sequential, never simultaneous** | Shipped `63e8861`; pre-lock gap is the next surfacing fix |
+| 15 The meeting is the product | B data → A hero | **Sequential, never simultaneous** | Shipped `63e8861`; pre-lock gap closed round 3 — `7b6cc7d` + `3bb8e94` |
 | 16 Crew backstage | A | Isolated; filler while B is on tests | Shipped `63e8861` |
 
 The globe's rate and the route-picker surfacing are real and currently
 unassigned — either lane, once 11 and 16 are done. Both are the same
-disease as item 13: a capability present and not felt.
+disease as item 13: a capability present and not felt. **Both closed in
+round 3** (`56965c1`, `6d62d56`); the dawn card reflects real time and
+the route is editable above the fold.
 
 Nothing in §6 requires a new dependency, a new provider, or a decision about
 notification infra. Every item is either a gate on state that already exists, a
@@ -504,3 +542,12 @@ follow-on. The two carried findings (globe rate, 1,145-airport surfacing)
 are the highest-leverage work for the next round, and the pre-lock hero
 meeting gap is item 15's own follow-on. See [docs/plan/backlog.md](plan/backlog.md)
 for the running record.
+
+**Update 2026-10-17 (round 3):** the §6 directions are all realised. The
+carried findings and the pre-lock follow-ons both closed — the route is
+on the first viewport, the dawn card ticks at Earth's rate, the hero
+meeting names the sales pitch pre-lock, and the dawn card shows the
+plan's promise rather than a flat zero on first visit. Round 3 was
+five commits (A: `56965c1`, `6d62d56`, `3bb8e94`, `45a5918`; B: `7b6cc7d`,
+`9651585`). Item 12 (`49c6722`) closes the carried `Real integrations`
+remainder.
