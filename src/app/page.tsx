@@ -802,6 +802,7 @@ export default function Home() {
                 origin={origin}
                 dest={dest}
                 date={departureDate}
+                surface="cream"
                 onChange={(next) => {
                   setOrigin(next.origin);
                   setDest(next.dest);
