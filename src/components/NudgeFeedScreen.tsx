@@ -313,13 +313,18 @@ export function NudgeFeedScreen({
           />
         )}
 
-        {baselineSource === "fixture" && (
-          <p className="demo-tag">
-            Sample traveller — these numbers are not your measurements.
-          </p>
-        )}
+        {/* The card's right half. These two were siblings of HeroDawnPanel, so
+            in a two-column grid the demo tag took cell (1,2) — an empty cream
+            box — and "your next step" wrapped to (2,1), orphaned below the fold
+            at half width. One wrapper, two grid children. */}
+        <div className="hr-col">
+          {baselineSource === "fixture" && (
+            <p className="demo-tag">
+              Sample traveller — these numbers are not your measurements.
+            </p>
+          )}
 
-        <div className="hr">
+          <div className="hr">
           <div className="row">
             <div className="badge">
               <svg
@@ -502,6 +507,7 @@ export function NudgeFeedScreen({
               sleeping.
             </p>
           )}
+          </div>
         </div>
       </div>
 

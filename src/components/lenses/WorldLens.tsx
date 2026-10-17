@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
-  geoCircle,
   geoDistance,
   geoGraticule10,
   geoInterpolate,
@@ -17,7 +16,8 @@ import { Globe2, Map as MapIcon, Minus, Plus } from "lucide-react";
 import type { FeatureCollection, LineString, MultiPolygon, Polygon } from "geojson";
 import type { Topology } from "topojson-specification";
 import type { Trip } from "@/domain/types";
-import { solarZenithDeg, subsolarPoint, wrapLon } from "@/domain/sun";
+import { solarZenithDeg, subsolarPoint } from "@/domain/sun";
+import { dawnLayers, shiftDegToMin } from "@/domain/dawn-layers";
 import { utcOffsetMinOn } from "@/domain/timezones";
 import { AIRPORTS, findAirport } from "@/domain/airports";
 import { clusterAirports, shouldSplit } from "@/domain/city-lights";
@@ -186,28 +186,22 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
   };
 
   const sun = subsolarPoint(now);
-  const antipode: [number, number] = [wrapLon(sun.lon + 180), -sun.lat];
 
-  // Day/night: a 90° circle around the subsolar antipode. The 96° circle
-  // underneath shows through as the twilight band on the day side.
-  const nightPath = gen(geoCircle().center(antipode).radius(90).precision(1)());
-  const twilightPath = gen(geoCircle().center(antipode).radius(96).precision(1)());
-  const terminatorPath = gen(geoCircle().center(antipode).radius(90).precision(0.5)());
-
-  // Ghost: the body's own terminator — same circle, sun longitude shifted by
-  // the signed gap the plan still has to close. Eastward trips (negative
-  // requiredShiftMin) leave the body's dawn behind (west of) the real one;
-  // westbound trips put it ahead, so the sign matters.
-  const signedGap = -ghostGap * Math.sign(trip?.requiredShiftMin ?? -1);
-  const ghostPath = ghostGap
-    ? gen(
-        geoCircle()
-          .center([wrapLon(sun.lon - signedGap + 180), -sun.lat])
-          .radius(90)
-          .precision(1)(),
-      )
-    : null;
-  const ghostDawnXY = projectVis(wrapLon(sun.lon - 90 - signedGap), 0);
+  // Day/night and the body's ghost line — shared with the home hero so the two
+  // surfaces can never draw the dawn differently. The lens speaks degrees (its
+  // caption and the dev page both read `ghostGap` as a longitude offset), so
+  // convert once here. Ghost precision is 1° not 0.5° because this redraws
+  // every animation frame.
+  const {
+    nightPath,
+    twilightPath,
+    terminatorPath,
+    ghostPath,
+    ghostDawnLon,
+  } = dawnLayers(gen, sun, shiftDegToMin(ghostGap), trip?.requiredShiftMin ?? 0, {
+    ghostPrecision: 1,
+  });
+  const ghostDawnXY = ghostDawnLon === null ? null : projectVis(ghostDawnLon, 0);
 
   const graticulePath = gen(geoGraticule10());
   const spherePath = gen({ type: "Sphere" });

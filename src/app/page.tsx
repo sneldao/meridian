@@ -502,6 +502,9 @@ export default function Home() {
   return (
     <div className="root" ref={menuRef}>
       <div className="beam" />
+      {/* The terminator sweep the crew surface opens on, now the landing's first
+          paint: the brand's day/night line crossing the frame as you arrive. */}
+      <div className="dawnIn" aria-hidden="true" />
       <div className="in">
         {/* Top Sunlit Horizon Navigation */}
         <div className="nav rise">
