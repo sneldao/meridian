@@ -61,6 +61,11 @@ function gapPhrase(min: number): string {
 }
 
 export function HeroDawnPanel({ trip, owedMin, beam, readinessPct }: HeroDawnPanelProps) {
+  // Honest arrival headline: hours banked so far out of the whole shift, never
+  // a "100%" claim. readinessPct is the locked share of the required shift.
+  const requiredMin = Math.abs(trip.requiredShiftMin);
+  const bankedH = Math.round((requiredMin * readinessPct) / 100 / 60 * 10) / 10;
+  const shiftH = Math.round(requiredMin / 60);
   const reduce = useReducedMotion();
   // One minute hand, not a rAF loop: the line only moves meaningfully every
   // couple of minutes, and the first paint of the page should not wait on it.
@@ -314,8 +319,7 @@ export function HeroDawnPanel({ trip, owedMin, beam, readinessPct }: HeroDawnPan
         </p>
 
         <p className="dawn-note">
-          Land at 100% is the job: pre-flight banks what you&apos;ll actually do, and
-          the rest lands in {destName} daylight.
+          Banked ~{bankedH}h of the {shiftH}h shift; the rest lands in {destName} daylight.
         </p>
 
         <div className="dawn-legend">
