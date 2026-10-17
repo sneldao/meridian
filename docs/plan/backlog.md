@@ -35,12 +35,11 @@ baseline" a real state); A owns the surface half (ask the question inline).
 **B lands first.** It is a breaking change that introduces new empty states, so
 building the UI against the fabricating default just means rebuilding it after.
 
-**Sequence.** Day 1, before anything else: A lands 1 + 2 as one small PR —
-forty-five minutes, unblocks keyboard users, and is the cheapest possible
-branch-starter. Week 1: A → 5, then 6 once B's domain half is in; B → 3, 8,
-then 4. Week 2: A → 7; B → 9. **7 follows 3 and 6** — an arrival screen that
-claims "the crew learned from your week" is worthless if the week belongs to
-whoever used the demo last.
+**Sequence.** Day 1: items 1 + 2 (shipped `4ba7b35`). Items 3, 5 and 8 are
+also done — 3 as `4933774`, 5 as `deee7d9`, 8 as `1be902c`. Remaining: item 6
+(still blocked — its `resolveBaseline` domain half has not landed), then 4, 7,
+9, 10. **7 follows 3 and 6** — an arrival screen that claims "the crew learned
+from your week" is worthless if the week belongs to whoever used the demo last.
 
 **Coordination.** Only A edits `page.tsx` / `NudgeFeedScreen.tsx`; B files the
 change and A picks it up. One item straddles by necessity: **4** is B's (the
@@ -62,18 +61,22 @@ the file — if the answer is no, spend that day on item 4 instead).
 Cheap, mostly self-contained, and each one currently damages trust rather than
 merely looking untidy. Verified against `main` on 2026-10-17.
 
-1. **A** · **Space keydown hijack** — `src/app/page.tsx:436-438`. A global listener
-   `preventDefault()`s Space on *keydown* and fires `startShift()`. Buttons
-   activate on Space *keyup*, so this suppresses activation of every button on
-   the page (Personalise, Done ✓, day pills, Menu, Edit). Keyboard users cannot
-   press any of them. Skip when the target is a button/link/`SELECT`, or drop
-   the global handler.
-2. **A** · **Reset phase on stream failure** — `src/app/page.tsx:367-370`. `es.onerror`
-   closes the stream but never calls `reset()`, so `phase` stays `"running"`,
-   the CTA stays `disabled`, and `beginStream` early-returns. A mid-run network
-   drop leaves the only escape as Escape or a reload. Also surface the error on
-   the Today surface — it currently only reaches the closed-by-default
-   `AgentDrawer`.
+1. ~~**A** · **Space keydown hijack**~~ — shipped `4ba7b35`: chips, links,
+   buttons and contenteditable keep their own Space; Escape is handled first
+   and unconditionally (which also fixes Escape doing nothing inside the edit
+   sheet's fields). The three menu items were focusable divs with no
+   activation behaviour — they take focus and did nothing on Enter/Space — so
+   they are real buttons now, and `.menu button` joins the existing selectors
+   with no visual change.
+2. ~~**A** · **Reset phase on stream failure**~~ — shipped `4ba7b35`. The
+   cause was **not** the network: the stream stays open while the server waits
+   on an optional write, so `onerror` never fired. With FalkorDB down,
+   `runtime.ts` blocked on the unbounded graph write *after* the briefing — no
+   `done`, no artifacts, disabled button, no error. Every post-briefing write is
+   now bounded the way the check-in route already is, `onerror` resets, and the
+   client watches for silence as a failure in its own right (60s idle, 12s once
+   the briefing has landed). The error is on Today, not only in the
+   closed-by-default `AgentDrawer`.
 3. ~~**B** · **Identify the traveller before "the crew learns"**~~ — shipped
    `4933774`: `meridian-tid` cookie → `x-meridian-tid` header via middleware;
    memory files, the fold, graph writes, run records, `/api/memory` all scope
@@ -84,9 +87,12 @@ merely looking untidy. Verified against `main` on 2026-10-17.
    for westbound trips while the default is `"midday-afternoon"`, so nothing
    renders as selected on a westbound route. Thread it through
    `/api/crew/run` or delete the sheet.
-5. **A** · **Route-level failure surfaces** — no `error.tsx`, `global-error.tsx`, or
-   `loading.tsx` anywhere in `src/app`. Any uncaught render throw takes the
-   whole route down with no styled recovery.
+5. ~~**A** · **Route-level failure surfaces**~~ — shipped `deee7d9`:
+   `src/app/error.tsx` for the page segment (inside the root layout, so the
+   document and stylesheet survive) and `src/app/global-error.tsx` as the last
+   resort, styled inline because globals.css may be what failed. No root
+   `loading.tsx` on purpose — no page suspends here, so it would be dead code
+   that only flashes on navigation.
 
 ## Next — the product gaps
 
