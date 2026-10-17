@@ -182,20 +182,11 @@ export function evaluatePlan(input: EvalInput): EvalResult {
         message: `${day.label}: ${Math.abs(day.shiftMin)}min shift exceeds the ${MAX_SHIFT_MIN_PER_DAY}min/day physiological ceiling.`,
       });
     }
-    // Direction flips are judged against the most recent day that actually
-    // shifted — a hold day is a pause, not a direction, so 0 → −90 after
-    // holds is a resume, not a yo-yo. When nothing has shifted yet the
-    // reference is the trip direction itself, so a first-day wrong-way
-    // shift is a violation too.
-    const prevShift = input.days
-      .slice(0, i)
-      .reverse()
-      .find((d) => d.shiftMin !== 0);
-    const referenceSign = prevShift
-      ? Math.sign(prevShift.shiftMin)
-      : input.trip.direction === "east"
-        ? -1
-        : 1;
+    // A flip is a shift against the trip's direction — judged against the
+    // trip, not the previous shifted day: a day returning to the right
+    // direction after a flagged flip is the correction, not a second yo-yo.
+    // Holds are pauses and don't change the reference.
+    const referenceSign = input.trip.direction === "east" ? -1 : 1;
     if (day.shiftMin !== 0 && Math.sign(day.shiftMin) !== referenceSign) {
       violations.push({
         code: "SHIFT_DIRECTION_FLIP",

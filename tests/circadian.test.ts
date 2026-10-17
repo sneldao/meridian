@@ -116,6 +116,12 @@ describe("SHIFT_DIRECTION_FLIP", () => {
     expect(v[0].dayIndex).toBe(0);
   });
 
+  test("returning to the right direction is the correction, not a second flip", () => {
+    const v = flips([d(0, 0), d(1, 60), d(2, -30)]);
+    expect(v.length).toBe(1);
+    expect(v[0].dayIndex).toBe(1);
+  });
+
   test("a first-day with-direction shift does not flip", () => {
     const west = buildTrip("LHR", "JFK", "2026-10-18");
     const v = evaluatePlan({
