@@ -29,11 +29,8 @@ in the doc consolidation). These are the items that remain open.
 
 ## Debt
 
-- `meridian:completedNudges` — localStorage nudge ids persist across trips
-  (cross-trip id leak, flagged in lane 2's PR).
-- `TripSetupScreen` no-trip branch hardcodes `totalDays={5}` — harmless but
-  should derive from the trip's horizon.
-- `.qoder/` eslint warnings — `.gitignore`ed but the hook still lints it;
-  add `ignores` to `eslint.config.mjs` if it keeps firing.
+- ~~`meridian:completedNudges` cross-trip leak~~ — done: trip-scoped key.
+- ~~`totalDays={5}` hardcode~~ — done: derived from the trip payload.
+- ~~`.qoder/` lint warnings~~ — done: added to `globalIgnores`.
 - Video shot list / script — predates the overhauled layout; refresh before
   re-recording.
