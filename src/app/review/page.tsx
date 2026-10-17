@@ -120,7 +120,7 @@ export default function ReviewPage() {
       <main className="mx-auto max-w-2xl px-6 py-10 text-center">
         <h1 className="text-lg font-bold tracking-[0.3em] text-paper">MERIDIAN</h1>
         <p className="mt-4 text-sm text-mist">No saved handoff yet. Run a night shift first.</p>
-        <Link href="/" className="mt-6 inline-block rounded-lg bg-paper px-5 py-2 text-sm font-bold text-ink">Back to deck</Link>
+        <Link href="/" className="mt-6 inline-block rounded-lg bg-paper px-5 py-2 text-sm font-bold text-ink">Back to Today</Link>
       </main>
     );
   }
@@ -136,7 +136,7 @@ export default function ReviewPage() {
     <main className="mx-auto max-w-5xl px-6 py-8">
       <header className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <Link href="/" className="text-xs tracking-wide text-mist hover:text-paper">← deck</Link>
+          <Link href="/" className="text-xs tracking-wide text-mist hover:text-paper">← Today</Link>
           <h1 className="mt-2 text-lg font-bold tracking-[0.3em] text-paper">HANDOFF REVIEW</h1>
           {trip && (
             <div className="mt-1 font-mono2 text-xs text-mist">

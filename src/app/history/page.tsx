@@ -55,7 +55,7 @@ export default function HistoryPage() {
     <main className="mx-auto max-w-3xl px-6 py-8">
       <header className="mb-6 flex items-center justify-between">
         <div>
-          <Link href="/" className="text-xs text-mist hover:text-paper">← deck</Link>
+          <Link href="/" className="text-xs text-mist hover:text-paper">← Today</Link>
           <h1 className="mt-2 text-lg font-bold tracking-[0.3em] text-paper">TRIP HISTORY</h1>
         </div>
         <button onClick={clear} className="text-xs text-mist hover:text-fail">clear</button>

@@ -411,13 +411,13 @@ export default function Home() {
             href="/"
             className="rounded-full px-3.5 py-1.5 text-xs font-semibold text-mist transition-all hover:text-paper"
           >
-            Daily Guide
+            Today
           </Link>
           <Link
             href="/?depth=guided"
             className="rounded-full px-3.5 py-1.5 text-xs font-semibold text-mist transition-all hover:text-paper"
           >
-            Guided View
+            See why
           </Link>
           <span
             aria-current="page"

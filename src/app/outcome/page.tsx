@@ -71,7 +71,7 @@ export default function OutcomePage() {
   return (
     <main className="mx-auto max-w-2xl px-6 py-8">
       <header className="mb-6">
-        <Link href="/" className="text-xs text-mist hover:text-paper">← deck</Link>
+        <Link href="/" className="text-xs text-mist hover:text-paper">← Today</Link>
         <h1 className="mt-2 text-lg font-bold tracking-[0.3em] text-paper">POST-TRIP CHECK-IN</h1>
       </header>
 
