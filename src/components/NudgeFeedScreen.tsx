@@ -18,6 +18,7 @@ import {
 } from "@/domain/today";
 import { ADHERENCE_PROFILE } from "@/domain/fixtures";
 import { HeroDawnPanel } from "@/components/HeroDawnPanel";
+import { evalChipLabel, evalChipTitle } from "@/components/ui/eval-chip";
 import type {
   AdherenceProfile,
   CalendarEvent,
@@ -901,11 +902,17 @@ export function NudgeFeedScreen({
                         <span className="evchip" style={{ background: "transparent", border: "none", padding: "3px 0" }}>
                           checked by Iris · planned by Otto
                         </span>
-                        {step.evidence.evalVerdict && (
-                          <span className={`evchip ${step.evidence.evalVerdict.violations.length ? "warn" : "pass"}`}>
-                            check {step.evidence.evalVerdict.score.toFixed(2)}
-                          </span>
-                        )}
+                        {step.evidence.evalVerdict && (() => {
+                          const violations = step.evidence.evalVerdict.violations;
+                          return (
+                            <span
+                              className={`evchip ${violations.length ? "warn" : "pass"}`}
+                              title={evalChipTitle(violations)}
+                            >
+                              {evalChipLabel(step.evidence.evalVerdict.score, violations)}
+                            </span>
+                          );
+                        })()}
                         {step.evidence.draftRejected && (
                           <span className="evchip warn">revised once</span>
                         )}

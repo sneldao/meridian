@@ -185,34 +185,47 @@ the repo About**, text description.
 ## One video for all
 
 Record a single ~3-min demo (PayPal's cap; safe everywhere) where every
-sponsor integration appears in one shot list. Record after Graph Hacks lands —
-the memory hop-path answer is the strongest beat.
+sponsor integration appears in one shot list. **Record after item 7 (the
+arrival surface) lands** — "the crew learned from your week" is the payoff,
+and a cut without it undersells. The depth dial still carries the arc:
+product first, agent infra underneath.
 
-Post-consolidation arc — the app now has three depths (`docs/plan/
-consolidation.md`): `/` consumer face, per-nudge evidence (Guided), `/crew`
-operator surface. The video walks the dial — product first, agent infra
-underneath, which is a stronger submission than dashboard-first.
+Refreshed 2026-10-17 for the shipped product. The new beats vs the old cut:
+the check-in loop is now real (per-step did/skip → ledger → replan), the
+flight picker actually plans, and memory is per-traveller — "the crew learns
+*you*", not whoever used the demo last.
 
-1. **Cold open** — landing at `/` (calm face): pick LHR→HND, crew run
-   starts. (5s)
-2. **The face** — day nudges appear; Guided ribbon: "Crew: drafted 2× ·
-   scorer rejected 1× · locked at 0.91". (10s)
-3. **Show your work** — tap a nudge's "Why & details": the evidence row —
-   gate score, rejection-and-retry, backing citation, memory hop path.
-   *This is the consolidation arc's signature shot.* (15s)
-4. **Crew feed** — flip to `/crew` (`?depth=operator` URL): Mara reads the
-   baseline; Jun calls `searchScience` then `searchWeb` (Tavily hit in the
-   feed). (20s)
-5. **The gate** — Otto's draft rejected by the scorer, evaluator explains,
-   retry locks. "Agents propose, code disposes." (30s)
-6. **Memory** — `recall_findings` answer with hop path in the ledger. (15s)
-7. **Taste** — Otto calls `destinationTaste`; a plan note grounds a light
-   break in a real Tokyo venue category. (15s)
-8. **Handoff** — briefing card + `.ics` download + calendar moves. (15s)
-9. **The MCP surface** — terminal split: `tools/call plan_shift` against
-   the live Render URL. (15s)
-10. **Close** — "agents that fly ahead of you" + provider badge visible
-    (`nebius` in the run header for the NVIDIA cut). (5s)
+1. **Cold open** — `/` (calm face): the trip's already there, "Land at 100%"
+   in the nav. (5s)
+2. **The face** — day rail with the hero "your next step", provenance tag
+   visible ("sample profile" on baseline before connect). (10s)
+3. **The loop** — tap Skip on the 05:30 light ask; the rail mutes it, the
+   check-in card shows "1 step marked" → "Check in →" → replan event, the
+   rest of the day re-solves. *The signature shot* — the product learning in
+   real time. (25s)
+4. **Show your work** — `?depth=guided`, a step's "Why & details": gate
+   score, revised-once chip, citation, memory hop path. (15s)
+5. **Crew feed** — `/crew`: Mara reads the baseline, Jun's `searchScience`/
+   `searchWeb` (Tavily) hits in the feed. (20s)
+6. **The gate** — Otto's draft rejected by the scorer, retry locks.
+   "Agents propose, code disposes." (25s)
+7. **Memory** — `recall_findings`/`prior_failures` answer with hop path;
+   name the per-traveller scoping ("this is your traveller's graph,
+   `meridian:{tid}` — not a shared pool"). (15s)
+8. **Flight picker** — Personalise → pick `evening-redeye`: the flight event
+   moves and the day's asks re-solve around it. (15s)
+9. **Handoff** — briefing card + `.ics` + calendar moves. (15s)
+10. **The MCP surface** — terminal split: `tools/call plan_shift` against
+    the live Render URL. (15s)
+11. **[Item 7] Landing** — arrival surface cashing "land at 100%": what the
+    week looked like, what the crew learned, link to `/outcome`. (20s)
+12. **Close** — "agents that fly ahead of you" + provider badge (`nebius`
+    in the header for the NVIDIA cut). (5s)
+
+Honesty notes for the voiceover: the public URL runs replay (zero-cost) —
+say "the same run replays deterministically; live open-model is one env
+var". FalkorDB off by default; a down graph degrades gracefully, which is
+itself a beat ("agents get 'not in graph', not a made-up answer").
 
 Tailoring per submission is just the voiceover + the last 10s frame — the
 footage never changes.

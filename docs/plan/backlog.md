@@ -176,8 +176,10 @@ merely looking untidy. Verified against `main` on 2026-10-17.
 - **Orphaned routes** — `/dev` and `/team` are complete with zero inbound
   links; `/crew`'s "Trip Setup" pill links to `?screen=setup`, which nothing
   reads. Link or hide.
-- **Video shot list / script** — predates the overhauled layout; refresh before
-  re-recording.
+- **Video re-record** — shot list refreshed (hackathon-submissions.md §One
+  video for all): check-in loop is the signature shot, flight picker is real,
+  memory is per-traveller. Record after item 7 lands — the arrival surface is
+  the payoff.
 
 ## Closed (debt swept 2026-10-17)
 

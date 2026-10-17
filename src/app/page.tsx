@@ -23,6 +23,8 @@ import { DeepDiveVisuals } from "@/components/DeepDiveVisuals";
 import { TripSetupScreen } from "@/components/TripSetupScreen";
 import { HandoffBanner } from "@/components/HandoffBanner";
 import { AgentDrawer } from "@/components/AgentDrawer";
+import { RunAnnouncer } from "@/components/RunAnnouncer";
+import { useFocusTrap } from "@/lib/a11y";
 import { useRunState, calendarWithMoves, ledgerEvents, ghostGapDeg } from "@/state/run";
 import { meetingReadiness } from "@/domain/readiness";
 import {
@@ -146,6 +148,10 @@ export default function Home() {
   const [voiceOn, setVoiceOn] = useState(false);
   const [voiceAvail, setVoiceAvail] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
+  /** The Edit sheet's panel. `aria-modal` without a focus trap is a claim the
+   *  page doesn't honour, so Tab used to escape into the content behind it. */
+  const setupPanelRef = useRef<HTMLDivElement | null>(null);
+  useFocusTrap(setupPanelRef, setupOpen);
 
   const stopVoice = useCallback(() => {
     stopVoiceAll();
@@ -621,6 +627,11 @@ export default function Home() {
           paint: the brand's day/night line crossing the frame as you arrive. */}
       <div className="dawnIn" aria-hidden="true" />
       <div className="in">
+        {/* The one live region on the page. Mounted here rather than inside the
+            drawer, which is closed by default — a blind traveller was getting
+            silence through the entire run. */}
+        <RunAnnouncer run={run} />
+
         {/* Top Sunlit Horizon Navigation */}
         <div className="nav rise">
           <button type="button" className="brand" onClick={goGuide}>
@@ -875,7 +886,7 @@ export default function Home() {
             aria-label="Edit trip"
             onClick={closeSetup}
           >
-            <div className="sheet-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="sheet-panel" ref={setupPanelRef} onClick={(e) => e.stopPropagation()}>
               <button
                 type="button"
                 className="sheet-close"
