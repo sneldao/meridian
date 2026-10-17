@@ -1413,6 +1413,14 @@ textarea:focus-visible,
   width: 100%;
   animation: dawnFade var(--duration-slow) var(--ease-smooth-out) both;
 }
+/* The graduated WebGL globe occupies the same stage slot as the SVG disc.
+   The canvas fills the flexed box; the transparent clear colour lets the
+   panel's terminator gradient show through as space. */
+.dawn-globe {
+  position: relative;
+  overflow: hidden;
+  min-height: 260px;
+}
 /* Drag-to-recentre only binds on a fine pointer — see the component's gesture
    note. The cursor advertises that, and nothing else. */
 .dawn-map.grab {

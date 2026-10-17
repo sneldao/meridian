@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
+import { Line, OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 import {
   bodySubsolarPoint,
@@ -23,7 +23,7 @@ import {
   type GreatCircle,
 } from "@/lib/globe/great-circle";
 import { landGeometry, LAND_RADIUS, LAND_LIFT } from "@/lib/globe/land-geometry";
-import { lonLatToVec3, sunDirection } from "@/lib/globe/spherical";
+import { lonLatToVec3, sunDirection, viewBasis } from "@/lib/globe/spherical";
 
 /**
  * The WebGL dawn globe — Tier 1 spike.
@@ -220,6 +220,46 @@ function Land({ sub, body }: { sub: SubsolarPoint; body: SubsolarPoint | null })
         side={THREE.DoubleSide}
       />
     </mesh>
+  );
+}
+
+/** The trip's route and its two pins, drawn with the same geometry the SVG
+ *  hero draws: the `geoInterpolate` arc (via `greatCircle`) and one pin per
+ *  city in the brand colours — origin is `--color-sun-home`, destination
+ *  `--color-sun-dest`. Mounted whenever `trip` is given, so the hero and the
+ *  spike show the same journey the flat lens shows; a camera move on the
+ *  globe cannot contradict the arc on the map. */
+function RouteArc({ trip }: { trip: Trip }) {
+  const points = useMemo(() => greatCircle(trip, LAND_RADIUS + 0.006).points, [trip]);
+  const origin = useMemo(
+    () => lonLatToVec3(trip.origin.lon, trip.origin.lat, LAND_RADIUS + 0.012),
+    [trip],
+  );
+  const dest = useMemo(
+    () => lonLatToVec3(trip.destination.lon, trip.destination.lat, LAND_RADIUS + 0.012),
+    [trip],
+  );
+  return (
+    <>
+      <Line
+        points={points}
+        color="#8b93a7"
+        transparent
+        opacity={0.55}
+        lineWidth={1.2}
+        dashed
+        dashSize={0.045}
+        gapSize={0.035}
+      />
+      <mesh position={origin}>
+        <sphereGeometry args={[0.02, 16, 12]} />
+        <meshBasicMaterial color="#9db8ff" toneMapped={false} />
+      </mesh>
+      <mesh position={dest}>
+        <sphereGeometry args={[0.022, 16, 12]} />
+        <meshBasicMaterial color="#ffc46b" toneMapped={false} />
+      </mesh>
+    </>
   );
 }
 
@@ -559,6 +599,11 @@ export interface DawnGlobeSceneProps {
   flying?: boolean;
   onHover?: (h: CityHover | null) => void;
   onStats?: (s: FrameStats) => void;
+  /** Free orbit on the canvas. The hero mounts the globe with this off: the
+   *  scrubber drives the read, and a mid-page canvas that captures drags
+   *  steals the page scroll on touch — the same reason the SVG disc's drag is
+   *  fine-pointer-only. */
+  interact?: boolean;
 }
 
 export function DawnGlobeScene({
@@ -570,6 +615,7 @@ export function DawnGlobeScene({
   flying = false,
   onHover,
   onStats,
+  interact = true,
 }: DawnGlobeSceneProps) {
   const sub = useMemo(() => subsolarPoint(date), [date]);
   const body = useMemo(() => {
@@ -584,6 +630,7 @@ export function DawnGlobeScene({
       <Land sub={sub} body={body} />
       <Suns sub={sub} body={body} />
       <CityLights date={date} onHover={onHover} />
+      {trip && <RouteArc trip={trip} />}
       <Atmosphere />
       <OrbitControls
         makeDefault
@@ -594,7 +641,7 @@ export function DawnGlobeScene({
         zoomSpeed={0.7}
         minDistance={1.6}
         maxDistance={6.5}
-        enabled={!flying}
+        enabled={interact && !flying}
       />
       {gc && flightProgress && <FlightCamera gc={gc} progress={flightProgress} enabled={flying} />}
       {onStats && <FrameMeter onStats={onStats} />}
@@ -604,14 +651,52 @@ export function DawnGlobeScene({
 
 export interface DawnGlobeCanvasProps extends DawnGlobeSceneProps {
   className?: string;
+  /** Centre the initial camera on a geographic point, d3-orthographic style
+   *  (north up, east right — the same `viewBasis` the port test projects
+   *  through). Omitted, the camera parks on the spike's default framing. */
+  center?: { lon: number; lat: number };
+  /** Angular span to fit in frame, degrees. Given with `center`, the camera
+   *  pulls back exactly far enough for both ends of a route that wide to sit
+   *  inside the vertical fov, plus a 15% margin for pins and atmosphere. */
+  fitSpanDeg?: number;
 }
 
-export function DawnGlobeCanvas({ className, ...scene }: DawnGlobeCanvasProps) {
+const FIT_FOV = 38;
+
+/** Camera framing that puts `center` at the screen centre, north up, east
+ *  right — the same orientation `viewBasis` projects through, so the port
+ *  test's d3 comparison applies to this camera too. The rotation is computed
+ *  explicitly rather than left to R3F's implicit look-at, which does not
+ *  honour a custom `up`. */
+function cameraSetup(center?: { lon: number; lat: number }, fitSpanDeg?: number) {
+  if (!center) return { fov: FIT_FOV, position: [0, 0.75, 3.6] as const };
+  const { forward, up } = viewBasis(center.lon, center.lat);
+  let dist = 3.6;
+  if (fitSpanDeg && fitSpanDeg > 0) {
+    // A point `θ` from the view centre projects at atan(sinθ/(d−cosθ));
+    // solving for that to equal half the fov gives the minimum distance,
+    // plus a 15% margin for pins and atmosphere.
+    const half = (fitSpanDeg / 2) * (Math.PI / 180);
+    const min = Math.cos(half) + Math.sin(half) / Math.tan((FIT_FOV / 2) * (Math.PI / 180));
+    dist = Math.max(2.2, min * 1.15);
+  }
+  const pos = forward.clone().multiplyScalar(dist);
+  const m = new THREE.Matrix4().lookAt(pos, new THREE.Vector3(0, 0, 0), up);
+  const e = new THREE.Euler().setFromQuaternion(new THREE.Quaternion().setFromRotationMatrix(m));
+  return {
+    fov: FIT_FOV,
+    position: pos.toArray() as [number, number, number],
+    rotation: [e.x, e.y, e.z] as [number, number, number],
+  };
+}
+
+export function DawnGlobeCanvas({ className, center, fitSpanDeg, ...scene }: DawnGlobeCanvasProps) {
+  const camera = useMemo(() => cameraSetup(center, fitSpanDeg), [center, fitSpanDeg]);
   return (
     <div className={className} style={{ width: "100%", height: "100%" }}>
       <Canvas
         dpr={[1, 2]}
-        camera={{ position: [0, 0.75, 3.6], fov: 38 }}
+        camera={camera}
         gl={{ antialias: true, powerPreference: "high-performance", alpha: true }}
         onCreated={({ gl }) => {
           gl.setClearColor(0x000000, 0);

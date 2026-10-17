@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import dynamic from "next/dynamic";
 import { useReducedMotion } from "framer-motion";
 import {
   geoDistance,
@@ -19,6 +20,19 @@ import { dawnLayers } from "@/domain/dawn-layers";
 import { bodySubsolarPoint, isDaylight, subsolarPoint, terminatorCrossings, terminatorLat, wrapLon, type SubsolarPoint } from "@/domain/sun";
 import type { Trip } from "@/domain/types";
 import { DawnScrubber } from "@/components/DawnScrubber";
+import { useWebGLAvailable } from "@/lib/webgl";
+
+// The graduate's entrance: the WebGL dawn globe renders the same world this
+// panel draws in SVG — one solar model, one ghost rule, one route arc — as a
+// free sphere instead of a clamped disc. `ssr: false` is mandatory, not
+// stylistic: a WebGL context does not exist on the server, and rendering
+// <Canvas> there throws. The SVG stays the fallback for no-WebGL browsers,
+// reduced-GPU days, and `?svg=1` (the live-demo insurance policy the spike
+// established).
+const DawnGlobeCanvas = dynamic(
+  () => import("@/components/globe/DawnGlobeR3F").then((m) => m.DawnGlobeCanvas),
+  { ssr: false },
+);
 
 // The hero's left panel: the traveller's body-clock dawn against the
 // destination's, drawn from the shared §3a primitives (see @/domain/dawn-layers
@@ -139,6 +153,17 @@ export function HeroDawnPanel({ trip, owedMin, beam, readinessPct, readinessSour
   const hydrated = tick >= 0;
   const live = hydrated ? new Date() : new Date(0);
 
+  // --- graduation: the WebGL dawn globe --------------------------------------
+  // Same solar model, same ghost rule, same route arc — one world, two ways of
+  // drawing it, which is what tests/globe-port.test.ts pins. `?svg=1` keeps
+  // the spike's live-demo insurance policy: force the shipped SVG on any
+  // laptop whose GPU is having a bad day. Reading the query needs the client,
+  // so it rides on `hydrated` the same way `live` does.
+  const hasWebGL = useWebGLAvailable();
+  const svgForced =
+    hydrated && new URLSearchParams(window.location.search).has("svg");
+  const useGlobe = hydrated && hasWebGL && !svgForced;
+
   // --- interaction state ----------------------------------------------------
   // null means "live". The scrubbers only take over when actually moved, so an
   // untouched page is exactly the honest live read it was before.
@@ -179,6 +204,19 @@ export function HeroDawnPanel({ trip, owedMin, beam, readinessPct, readinessSour
       )(0.5) as [number, number],
     [trip],
   );
+  // The globe frames what the disc frames: both cities, the arc between them.
+  // Fit the route's span plus a 20° margin, clamped so a short hop
+  // (LHR → CDG, ~3°) still reads as a world and a long one never becomes a
+  // marble. The hemisphere the SVG shows is 180°; 100–150° keeps the same
+  // sense of scale with the journey filling the frame.
+  const spanDeg =
+    (geoDistance(
+      [trip.origin.lon, trip.origin.lat],
+      [trip.destination.lon, trip.destination.lat],
+    ) *
+      180) /
+    Math.PI;
+  const fitSpanDeg = Math.min(150, Math.max(100, spanDeg + 20));
   const projection = useMemo(
     () =>
       geoOrthographic()
@@ -430,7 +468,25 @@ export function HeroDawnPanel({ trip, owedMin, beam, readinessPct, readinessSour
       <div className="sc" />
 
       <div className="hl-stage">
-        {hydrated && (
+        {hydrated && useGlobe && (
+          /* The graduated globe. It is handed the exact inputs the SVG disc
+             below consumes — `displayDate` (live or scrubbed), `displayOwed`
+             (the real or overridden gap), the trip — so the scrubber drives
+             both surfaces and they cannot disagree. `interact` stays off:
+             the scrubber is the hero's interaction model, and a mid-page
+             canvas that captured drags would steal the page scroll on touch. */
+          <DawnGlobeCanvas
+            className="dawn-map dawn-globe"
+            date={displayDate}
+            owedMin={displayOwed}
+            requiredShiftMin={trip.requiredShiftMin}
+            trip={trip}
+            center={{ lon: centre[0], lat: centre[1] }}
+            fitSpanDeg={fitSpanDeg}
+            interact={false}
+          />
+        )}
+        {hydrated && !useGlobe && (
           <svg
             className={`dawn-map${canDrag ? " grab" : ""}`}
             viewBox={`0 0 ${W} ${H}`}
