@@ -19,8 +19,9 @@ import {
 import { ADHERENCE_PROFILE, type WakeBand } from "@/domain/fixtures";
 import { HeroDawnPanel } from "@/components/HeroDawnPanel";
 import { evalChipLabel, evalChipTitle } from "@/components/ui/eval-chip";
-import { isPreview, tapBecomesCheckIn } from "@/domain/preview";
+import { isPreview, tapBecomesCheckIn, wakeAck } from "@/domain/preview";
 import { calendarSummary, heroMeeting } from "@/domain/hero";
+import { secondTripCopy, secondTripProof } from "@/domain/second-trip";
 import { meetingReadiness } from "@/domain/readiness";
 import type {
   AdherenceProfile,
@@ -70,6 +71,10 @@ export interface NudgeFeedScreenProps {
    *  re-plans around it; the numbers are still sample data underneath. */
   wakeBand?: WakeBand | null;
   onWakeBand?: (band: WakeBand | null) => void;
+  /** Persisted prior runs for the B3 second-trip proof (Supabase-backed;
+   *  empty without keys — the proof stays null, the honest first-trip
+   *  state). Optional so callers without the read keep the current shape. */
+  pastRuns?: { savedAt: string; trip?: { origin?: { code?: string }; destination?: { code?: string }; requiredShiftMin?: number; direction?: "east" | "west" } | null; score: number }[];
   onStartCrewSync: () => void;
   /** Report what actually happened — per-step did/skip marks or one
    *  day-level verdict. `lastMarkedDayIndex` lets the replan resume the day
@@ -144,6 +149,7 @@ export function NudgeFeedScreen({
   baselineKind,
   wakeBand,
   onWakeBand,
+  pastRuns,
   onStartCrewSync,
   onCheckIn,
 }: NudgeFeedScreenProps) {
@@ -614,6 +620,19 @@ export function NudgeFeedScreen({
     });
   }, [trip, calendarEvents, locked, preview, baseline]);
 
+  // B3 render — the retention loop made visible. `secondTripProof` reads the
+  // persisted runs for the most recent prior trip on a different route;
+  // null (no keys, no history, same route only) renders nothing rather than
+  // an invented "crew remembers". Same-route rows are re-entries, not
+  // journeys; corrupt rows are skipped by the contract, not here.
+  const secondTrip = useMemo(() => {
+    if (!trip || !pastRuns?.length) return null;
+    return secondTripProof(pastRuns, {
+      origin: trip.origin.code,
+      destination: trip.destination.code,
+    });
+  }, [trip, pastRuns]);
+
   return (
     <>
       {/* Split-Horizon Hero Card — the left panel is the trip's real dawn line:
@@ -640,6 +659,27 @@ export function NudgeFeedScreen({
                 : "Sample traveller — the wearable figures are sample data; your wake time is yours."}
             </p>
           )}
+
+          {/* B1 render — the wake answer re-plans the preview instantly, and
+              `wakeAck` names it so the traveller learns the answer mattered.
+              Null when no answer is in play (garmin, unanswered) — renders
+              nothing rather than an invented line. */}
+          {(() => {
+            const ack = wakeAck(baselineKind, wakeBand);
+            return ack ? (
+              <p className="demo-tag" style={{ borderColor: "#cfe3d4" }}>
+                {ack}
+              </p>
+            ) : null;
+          })()}
+
+          {/* B3 — the crew remembers. One line under the wake answer, same
+              tag treatment; null proofs render nothing. */}
+          {secondTrip ? (
+            <p className="demo-tag" style={{ borderColor: "#d8cfc0" }}>
+              {secondTripCopy(secondTrip)}
+            </p>
+          ) : null}
 
           {/* Vision Rule 1: one question, at the moment it first matters. The
               demo trip still renders immediately — but the tag above admits the
