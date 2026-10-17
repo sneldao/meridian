@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { buildTrip, isKnownCity } from "@/domain/fixtures";
+import { buildTrip, isKnownCity, resolveBaseline, type WakeBand } from "@/domain/fixtures";
 import { fetchCalendar } from "@/tools/calendar";
 import { runCrew } from "@/agents/runtime";
 import { rateLimit, tooMany, RL_RUNS } from "@/lib/rateLimit";
@@ -39,6 +39,10 @@ export async function GET(req: NextRequest) {
   if (!rl.ok) return tooMany(rl.retryAfterSec);
 
   const trip = buildTrip(originRaw, destRaw, date);
+  const wake = sp.get("wake");
+  const baseline = resolveBaseline(
+    wake === "before6" || wake === "6to8" || wake === "after8" ? (wake as WakeBand) : null,
+  );
   const { events: calendar, source: calendarSource } = await fetchCalendar(trip);
 
   let checkIns: CheckIn[] = [];
@@ -58,7 +62,7 @@ export async function GET(req: NextRequest) {
   const stream = new ReadableStream({
     async start(controller) {
       try {
-        for await (const event of runCrew({ trip, calendar, calendarSource, checkIns, startDayIndex, tenant: sp.get("tenant") ?? undefined })) {
+        for await (const event of runCrew({ trip, calendar, calendarSource, baseline, checkIns, startDayIndex, tenant: sp.get("tenant") ?? undefined })) {
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
         }
       } catch (err) {

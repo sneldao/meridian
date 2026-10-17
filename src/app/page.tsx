@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fmtMin } from "@/domain/circadian";
 import { todayDayIndex } from "@/domain/today";
+import { resolveBaseline, type WakeBand } from "@/domain/fixtures";
 import { summarizeCheckIn } from "@/domain/adherence";
 import type {
   AdherenceProfile,
@@ -90,6 +91,8 @@ export default function Home() {
   const tripQuery = `?origin=${origin}&dest=${dest}&date=${departureDate}`;
   const { run, dispatch, reset } = useRunState();
   const [data, setData] = useState<TripData | null>(null);
+  /** Self-reported natural wake — the one personalisation question. */
+  const [wakeBand, setWakeBand] = useState<WakeBand | null>(null);
   /** Whether the first /api/trip fetch has settled — keeps the setup sheet
    *  (the no-trip branch) from flashing before the trip arrives. */
   const [tripResolved, setTripResolved] = useState(false);
@@ -349,6 +352,7 @@ export default function Home() {
       setEntries([]);
       setBriefingDismissed(false);
       const params = new URLSearchParams(tripQuery.replace(/^\?/, ""));
+      if (wakeBand) params.set("wake", wakeBand);
       if (extra?.checkins) params.set("checkins", extra.checkins);
       else if (checkInsParam) params.set("checkins", checkInsParam);
       if (extra?.startDay !== undefined) params.set("startDay", String(extra.startDay));
@@ -365,7 +369,7 @@ export default function Home() {
         es.close();
       };
     },
-    [dispatch, handleSideEffects, push, reset, run.phase, tripQuery, checkInsParam, startDayParam],
+    [dispatch, handleSideEffects, push, reset, run.phase, tripQuery, checkInsParam, startDayParam, wakeBand],
   );
 
   const startShift = useCallback(() => beginStream(), [beginStream]);
@@ -419,7 +423,7 @@ export default function Home() {
   const closeSetup = () => setSetupOpen(false);
 
   const providerFallback = run.errors.length > 0;
-  const baseline = run.baseline ?? data?.baseline;
+  const baseline = run.baseline ?? resolveBaseline(wakeBand, data?.baseline);
   const rawCalendar = run.calendar.length > 0 ? run.calendar : (data?.calendar ?? []);
   const currentEvents = run.calendar.length > 0 ? calendarWithMoves(run) : rawCalendar;
   const currentReadiness = trip
@@ -458,6 +462,14 @@ export default function Home() {
     const effective = d ?? (saved === "guided" ? "guided" : null);
     const t = setTimeout(() => {
       setDepth(effective);
+      try {
+        const savedWake = localStorage.getItem("meridian:wakeBand");
+        if (savedWake === "before6" || savedWake === "6to8" || savedWake === "after8") {
+          setWakeBand(savedWake);
+        }
+      } catch {
+        /* storage unavailable */
+      }
       let savedVoice: string | null = null;
       try {
         savedVoice = localStorage.getItem(VOICE_KEY);
@@ -685,6 +697,12 @@ export default function Home() {
               dest={dest}
               departureDate={departureDate}
               baselineSource={data?.baselineSource}
+              wakeBand={wakeBand}
+              onWakeBand={(b) => {
+                setWakeBand(b);
+                if (b) localStorage.setItem("meridian:wakeBand", b);
+                else localStorage.removeItem("meridian:wakeBand");
+              }}
               onChangeRoute={(next) => {
                 setOrigin(next.origin);
                 setDest(next.dest);
@@ -734,6 +752,12 @@ export default function Home() {
                 dest={dest}
                 departureDate={departureDate}
                 baselineSource={data?.baselineSource}
+                wakeBand={wakeBand}
+                onWakeBand={(b) => {
+                  setWakeBand(b);
+                  if (b) localStorage.setItem("meridian:wakeBand", b);
+                  else localStorage.removeItem("meridian:wakeBand");
+                }}
                 onChangeRoute={(next) => {
                   setOrigin(next.origin);
                   setDest(next.dest);

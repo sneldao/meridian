@@ -17,6 +17,7 @@ import { loadMemory, memoryBrief, recordRun } from "@/domain/memory";import type
   CrewEvent,
   DayPlan,
   EvalResult,
+  WearableBaseline,
 } from "@/domain/types";
 import { CREW, type CrewMember } from "./crew";
 import { handoffLines } from "./handoff";
@@ -28,7 +29,7 @@ import { createPlanEvents, patchGoogleEvent } from "@/tools/calendar-google";
 import { searchScience } from "@/tools/science";
 import { searchTavily, tavilyEnabled } from "@/tools/tavily";
 import { destinationTaste, qlooEnabled } from "@/tools/qloo";
-import { getAdherenceProfile, getRecentNights, getWearableBaseline } from "@/tools/wearable";
+import { getAdherenceProfile, getRecentNights } from "@/tools/wearable";
 
 const ARTIFACTS_DIR = path.join(process.cwd(), "artifacts");
 const MAX_ATTEMPTS_PER_DAY = 2;
@@ -55,6 +56,9 @@ export function runCrew(opts?: {
   startDayIndex?: number;
   /** Tenant for graph memory isolation — `meridian:{tenant}` graph. */
   tenant?: string;
+  /** Wearable baseline — fixture unless the traveller answered the wake
+   *  question. Replay transcripts stay pinned to the fixture either way. */
+  baseline?: WearableBaseline;
 }): AsyncGenerator<CrewEvent> {
   const queue: CrewEvent[] = [];
   const notifier: { fn: (() => void) | null } = { fn: null };
@@ -84,6 +88,7 @@ export function runCrew(opts?: {
             opts?.startDayIndex ?? 0,
             kind,
             opts?.tenant,
+            opts?.baseline,
           );
         const primary = providerKind();
         try {
@@ -151,7 +156,7 @@ interface RunState {
   briefingText: string;
 }
 
-async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[], calendarSource: "google" | "fixture" = "fixture", checkIns: CheckIn[] = [], startDayIndex: number = 0, kind: ProviderKind = providerKind(), tenant?: string) {
+async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[], calendarSource: "google" | "fixture" = "fixture", checkIns: CheckIn[] = [], startDayIndex: number = 0, kind: ProviderKind = providerKind(), tenant?: string, baseline: WearableBaseline = GARMIN_BASELINE) {
   const adherence = checkIns.length ? foldCheckIns(ADHERENCE_PROFILE, checkIns) : ADHERENCE_PROFILE;
   const memory = await loadMemory();
   // Graph memory is offered as fixed tools, not prompt prose — the analyst
@@ -213,7 +218,7 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
     type: "run_start",
     provider: kind,
     trip,
-    baseline: GARMIN_BASELINE,
+    baseline,
     calendar: state.calendar,
   });
   for (const checkIn of checkIns) emit({ type: "check_in", checkIn });
@@ -233,7 +238,7 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
       prompt:
         `Baseline + adherence profile are on your tools. Give the planner the constraints: chronotype, habitual window, and the compliance floor. Cross-run memory: ${memoryBrief(memory)}${Object.keys(graphTools).length ? " Before answering, you MUST consult the traveller's graph memory: call priorFailures('light_exposure') and priorFailures('caffeine_cutoff'), then recallFindings for any intervention or day you constrain. Cite what came from memory with its session. If a tool answers 'not in graph', say the graph doesn't know rather than guessing." : ""}`,
       tools: {
-        getWearableBaseline: bare("Read the wearer's wearable baseline", () => getWearableBaseline()),
+        getWearableBaseline: bare("Read the wearer's wearable baseline", () => baseline),
         getRecentNights: bare("Read recent sleep nights", () => getRecentNights()),
         getAdherenceProfile: bare("Read the adherence profile", () => getAdherenceProfile()),
         ...graphTools,
@@ -294,7 +299,7 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
       lockedDays: state.lockedDays,
       calendar: state.calendar,
       adherence,
-      baseline: GARMIN_BASELINE,
+      baseline,
     });
     logLine(
       solved
@@ -415,7 +420,7 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
         calendar: state.calendar,
         adherence,
         citations: state.citations,
-        baseline: GARMIN_BASELINE,
+        baseline,
       });
       state.evals.push(result);
       emit({ type: "eval_result", result, attempt });
@@ -547,7 +552,7 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
   // locked days with moves folded in — if the negotiator created a collision
   // the scorer would have rejected, the entire move set is reverted and the
   // wearer keeps their original calendar rather than a broken one.
-  const verdict = verifyCommittedCalendar(state.calendar, state.lockedDays, trip, state.citations, adherence);
+  const verdict = verifyCommittedCalendar(state.calendar, state.lockedDays, trip, state.citations, adherence, baseline);
   if (verdict.length) {
     for (const e of state.calendar) delete e.movedTo;
     state.calendar = preNegotiation.map((e) => ({ ...e }));
@@ -717,10 +722,11 @@ function verifyCommittedCalendar(
   trip: Trip,
   citations: Citation[],
   adherence: AdherenceProfile,
+  wearable: WearableBaseline,
 ): string[] {
   if (!lockedDays.length) return [];
   const baseline = new Set([
-    ...evaluatePlan({ trip, days: lockedDays, calendar, adherence, citations, baseline: GARMIN_BASELINE }).violations.map((v) => v.message),
+    ...evaluatePlan({ trip, days: lockedDays, calendar, adherence, citations, baseline: wearable }).violations.map((v) => v.message),
     ...scheduleClashes(calendar, lockedDays),
   ]);
   const committed = [
@@ -730,7 +736,7 @@ function verifyCommittedCalendar(
       calendar: effectiveCalendar(calendar),
       adherence,
       citations,
-      baseline: GARMIN_BASELINE,
+      baseline: wearable,
     }).violations.map((v) => v.message),
     ...scheduleClashes(effectiveCalendar(calendar), lockedDays),
   ];

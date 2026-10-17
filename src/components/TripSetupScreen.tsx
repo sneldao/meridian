@@ -8,6 +8,7 @@ import type {
   Trip,
   WearableBaseline,
 } from "@/domain/types";
+import type { WakeBand } from "@/domain/fixtures";
 import type { MeetingReadiness } from "@/domain/readiness";
 import { RoutePicker } from "@/components/RoutePicker";
 import { MorningCheckin } from "@/components/MorningCheckin";
@@ -23,6 +24,9 @@ interface TripSetupScreenProps {
   baseline?: WearableBaseline;
   /** "fixture" = the demo Garmin numbers, not measured. Drives the Demo tag. */
   baselineSource?: "fixture" | "garmin";
+  /** Self-reported natural wake — the one personalisation question. */
+  wakeBand?: WakeBand | null;
+  onWakeBand?: (band: WakeBand | null) => void;
   calendar: CalendarEvent[];
   calendarSource?: "google" | "fixture";
   readiness: MeetingReadiness[];
@@ -47,6 +51,8 @@ export function TripSetupScreen({
   onSelectFlightId,
   baseline,
   baselineSource,
+  wakeBand,
+  onWakeBand,
   calendar,
   calendarSource,
   readiness,
@@ -198,6 +204,34 @@ export function TripSetupScreen({
             <p className="demo-tag">
               Demo profile — these numbers are sample data, not your measurements.
             </p>
+          )}
+          {onWakeBand && (
+            <div className="f" role="group" aria-label="Your natural wake time">
+              <label>On a day with nothing early planned, when do you naturally wake?</label>
+              <div className="chips" style={{ display: "flex", gap: 6 }}>
+                {([
+                  ["before6", "Before 6"],
+                  ["6to8", "6–8"],
+                  ["after8", "After 8"],
+                ] as const).map(([band, label]) => (
+                  <button
+                    key={band}
+                    type="button"
+                    className={`chip ${wakeBand === band ? "on" : ""}`}
+                    aria-pressed={wakeBand === band}
+                    disabled={phase === "running"}
+                    onClick={() => onWakeBand(wakeBand === band ? null : band)}
+                  >
+                    {label}
+                  </button>
+                ))}
+                {wakeBand && (
+                  <button type="button" className="chip" onClick={() => onWakeBand(null)}>
+                    Clear
+                  </button>
+                )}
+              </div>
+            </div>
           )}
           <div className="m3">
             <div>

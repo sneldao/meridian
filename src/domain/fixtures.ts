@@ -112,3 +112,28 @@ export const CALENDAR: CalendarEvent[] = [
   { id: "ev-deep-1", title: "Deep work", dayIndex: 1, startMin: 14 * 60, endMin: 16 * 60, movable: true },
   { id: "ev-pack", title: "Pack + drop bags", dayIndex: 2, startMin: 16 * 60, endMin: 17 * 60 + 30, movable: true },
 ];
+
+/** The one consumer personalisation question (consumer-appeal): the wearer's
+ * natural wake anchor. Missing → the fixture profile, sample tag stays. */
+export type WakeBand = "before6" | "6to8" | "after8";
+
+export const WAKE_BAND_ANCHORS: Record<WakeBand, { wakeMin: number; chronotype: WearableBaseline["chronotype"] }> = {
+  before6: { wakeMin: 5 * 60 + 45, chronotype: "early" },
+  "6to8": { wakeMin: 6 * 60 + 45, chronotype: "neutral" },
+  after8: { wakeMin: 8 * 60, chronotype: "late" },
+};
+
+/** Merges a self-reported wake band over a baseline. Keeps the same sleep
+ * duration; bedtime follows the wake anchor. Returns `base` unchanged when
+ * the question was skipped — never invents a profile. */
+export function resolveBaseline(band: WakeBand | null | undefined, base: WearableBaseline = GARMIN_BASELINE): WearableBaseline {
+  if (!band || !(band in WAKE_BAND_ANCHORS)) return base;
+  const { wakeMin, chronotype } = WAKE_BAND_ANCHORS[band];
+  return {
+    ...base,
+    avgWakeMin: wakeMin,
+    avgBedtimeMin: (((wakeMin + base.avgSleepMin - 1440) % 1440) + 1440) % 1440,
+    chronotype,
+    source: `${base.source} + self-report`,
+  };
+}
