@@ -41,13 +41,13 @@ run history server-side (project `vpeakvspljdoxbwfsdvw`, see
 | Path | What |
 |---|---|
 | `/pitch` | *(removed — the deck retired with the pre-overhaul surface)* |
-| `/` | Today — the one step to do now, then the day timeline and readiness. No trip yet → setup; trip set → a trip chip with an Edit sheet. `?depth=guided` adds the deep-dive visuals |
+| `/` | Today — the one step to do now, then the day timeline and readiness. No trip yet → setup; trip set → a trip chip with an Edit sheet. Asks one personalisation question inline when the baseline is still the demo one, and takes a departure window that the solver plans around. `?depth=guided` adds the deep-dive visuals |
 | `/review` | Saved plan: days, citations, .ics download |
 | `/history` | Past runs (with provider + fallback provenance) |
-| `/outcome` | Post-trip self-report (adherence, jetlag, notes); learned cross-run memory |
+| `/outcome` | Post-trip self-report (adherence, jetlag, notes); learned cross-run memory. Gated on a saved plan — no plan, nothing to grade |
 | `/team` | Travel-manager view: 12 travellers, 12 crews in parallel (stretch) |
 | `/dev` | Lens workbench + recorded-event fixture playback (dev only) |
-| `/api/*` | Server surface — run SSE, check-in, trip, team, persistence, memory, graph health, voice ([reference](docs/reference/architecture.md#api-surface)) |
+| `/api/*` | Server surface — run SSE, check-in, trip, wearable upload, team, persistence, memory, graph health, voice ([reference](docs/reference/architecture.md#api-surface)) |
 
 ## Docs
 

@@ -6,7 +6,7 @@ submitting — Devpost deadlines shift.
 
 **Already in flight:** Graph Hacks (FalkorDB × WeMakeDevs), deadline
 **2026-10-18 23:59 IST (= 19:29 BST)** — see
-[graph-hackathon.md](graph-hackathon.md) and
+[graph-hackathon.md](../archive/graph-hackathon.md) and
 [graph-memory.md](../reference/graph-memory.md). Graph Hacks side prize:
 **best blog post wins AirPods 5** — "what you built, how it works, what you
 learned," submitted with the project. Same-day deadline: **DEV Hacktoberfest
