@@ -176,14 +176,22 @@ export const WAKE_BAND_ANCHORS: Record<WakeBand, { wakeMin: number; chronotype: 
 
 /** Merges a self-reported wake band over a baseline. Keeps the same sleep
  * duration; bedtime follows the wake anchor. Returns `base` unchanged when
- * the question was skipped — never invents a profile. */
+ * the question was skipped — never invents a profile. 
+ *
+ *  Bedtime is `wake - sleep`, wrapped into a day. It used to be
+ *  `wake + sleep - 1440`, which is 24 hours out: waking at 06:45 after a 410
+ *  minute night put bedtime at 13:35 in the afternoon instead of 23:55. Every
+ *  band produced a profile the solver could not place anything against, so
+ *  answering the wake question silently emptied that day's plan. The fixture's
+ *  own three numbers are mutually consistent (`wake - sleep === bedtime`) and
+ *  that is the invariant to preserve. */
 export function resolveBaseline(band: WakeBand | null | undefined, base: WearableBaseline = GARMIN_BASELINE): WearableBaseline {
   if (!band || !(band in WAKE_BAND_ANCHORS)) return base;
   const { wakeMin, chronotype } = WAKE_BAND_ANCHORS[band];
   return {
     ...base,
     avgWakeMin: wakeMin,
-    avgBedtimeMin: (((wakeMin + base.avgSleepMin - 1440) % 1440) + 1440) % 1440,
+    avgBedtimeMin: ((wakeMin - base.avgSleepMin) % 1440 + 1440) % 1440,
     chronotype,
     source: `${base.source} + self-report`,
   };

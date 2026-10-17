@@ -16,11 +16,12 @@ import {
   shiftLockedPct,
   todayDayIndex,
 } from "@/domain/today";
-import { ADHERENCE_PROFILE } from "@/domain/fixtures";
+import { ADHERENCE_PROFILE, type WakeBand } from "@/domain/fixtures";
 import { HeroDawnPanel } from "@/components/HeroDawnPanel";
 import { evalChipLabel, evalChipTitle } from "@/components/ui/eval-chip";
 import type {
   AdherenceProfile,
+  BaselineKind,
   CalendarEvent,
   CalendarMove,
   CheckIn,
@@ -59,6 +60,13 @@ export interface NudgeFeedScreenProps {
   /** "fixture" = the sample traveller's numbers. Shown on Today, not only in
    *  the setup sheet, so a first-time visitor knows the plan is sample data. */
   baselineSource?: "fixture" | "garmin";
+  /** Provenance of those numbers. `demo-default` means nothing has been told to
+   *  us yet, which is the one moment worth asking the wake question. */
+  baselineKind?: BaselineKind;
+  /** Self-reported natural wake. Set → the question retires and the preview
+   *  re-plans around it; the numbers are still sample data underneath. */
+  wakeBand?: WakeBand | null;
+  onWakeBand?: (band: WakeBand | null) => void;
   onStartCrewSync: () => void;
   /** Report what actually happened — per-step did/skip marks or one
    *  day-level verdict. `lastMarkedDayIndex` lets the replan resume the day
@@ -130,6 +138,9 @@ export function NudgeFeedScreen({
   citations,
   adherence,
   baselineSource,
+  baselineKind,
+  wakeBand,
+  onWakeBand,
   onStartCrewSync,
   onCheckIn,
 }: NudgeFeedScreenProps) {
@@ -487,8 +498,41 @@ export function NudgeFeedScreen({
         <div className="hr-col">
           {baselineSource === "fixture" && (
             <p className="demo-tag">
-              Sample traveller — these numbers are not your measurements.
+              {baselineKind === "demo-default" && !wakeBand
+                ? "Sample traveller — these numbers are not your measurements."
+                : "Sample traveller — the wearable figures are sample data; your wake time is yours."}
             </p>
+          )}
+
+          {/* Vision Rule 1: one question, at the moment it first matters. The
+              demo trip still renders immediately — but the tag above admits the
+              numbers are invented, so this is where the one real answer belongs.
+              `/api/trip` can't report a `wake-band` kind because it never sees
+              `wake`; the band is applied client-side via resolveBaseline, which
+              means answering re-plans the preview instantly with no refetch. */}
+          {baselineKind === "demo-default" && !wakeBand && onWakeBand && (
+            <div className="ask" role="group" aria-label="Your natural wake time">
+              <p>
+                On a day with nothing early planned, when do you naturally wake?
+                <span> One answer and the plan is fitted to you, not to the sample.</span>
+              </p>
+              <div className="ask-chips">
+                {([
+                  ["before6", "Before 6"],
+                  ["6to8", "6–8"],
+                  ["after8", "After 8"],
+                ] as const).map(([band, label]) => (
+                  <button
+                    key={band}
+                    type="button"
+                    className="ask-chip"
+                    onClick={() => onWakeBand(band)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
 
           <div className="hr">

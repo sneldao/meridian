@@ -11,6 +11,7 @@ import type {
   AdherenceProfile,
   CheckIn,
   CheckInRequest,
+  BaselineKind,
   CalendarEvent,
   CrewEvent,
   Trip,
@@ -41,6 +42,9 @@ interface TripData {
   /** Whether `baseline` is real wearable data or the demo fixture. Surfaced
    *  so the UI can tag demo numbers instead of passing them off as measured. */
   baselineSource?: "fixture" | "garmin";
+  /** Provenance of the baseline: `garmin` (uploaded), `wake-band` (the traveller
+   *  answered), `demo-default` (nothing known yet — the honest moment to ask). */
+  baselineKind?: BaselineKind;
   /** Compliance hints (e.g. ignoresInterventionsBeforeMin) that keep asks
    *  off the hours the traveller actually ignores them. */
   adherence?: AdherenceProfile;
@@ -809,6 +813,13 @@ export default function Home() {
                 citations={activeCitations}
                 adherence={data?.adherence}
                 baselineSource={data?.baselineSource}
+                baselineKind={data?.baselineKind}
+                wakeBand={wakeBand}
+                onWakeBand={(b) => {
+                  setWakeBand(b);
+                  if (b) localStorage.setItem("meridian:wakeBand", b);
+                  else localStorage.removeItem("meridian:wakeBand");
+                }}
                 onStartCrewSync={startShift}
                 onCheckIn={sendDayCheckIn}
               />
