@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { CheckIn, CrewMemory } from "./types";
+import { secondTripCopy, secondTripProof } from "./second-trip";
 
 // Cross-run memory, kept deliberately boring: one JSON file in artifacts/.
 // The analyst reads it before planning; each completed run appends to it.
@@ -97,3 +98,44 @@ export function memoryBrief(mem: CrewMemory): string {
   }
   return bits.length ? bits.join(" ") : "No history — first shift.";
 }
+
+/** The cross-trip line for the analyst's prompt: what the crew carried from
+ *  the traveller's last *different-route* trip into this one. CrewMemory
+ *  runs carry only `tripLabel` ("LHR→HND"), so the proof is honest but thin:
+ *  the route remembered, not the score. Null when there is no prior
+ *  different-route trip — the prompt then carries no cross-trip claim at
+ *  all, never an invented one. The Supabase-backed `secondTripProof` (with
+ *  scores) is the surface proof; this is the prompt-side echo from the
+ *  file-backed memory the analyst actually reads. */
+export function crossTripBrief(
+  mem: CrewMemory,
+  currentRoute: { origin: string; destination: string },
+): string | null {
+  const labels = mem.runs
+    .map((r) => r.tripLabel)
+    .filter((l): l is string => typeof l === "string" && l.includes("→"));
+  for (let i = labels.length - 1; i >= 0; i--) {
+    const [origin, destination] = labels[i].split("→");
+    if (!origin || !destination) continue;
+    if (origin === currentRoute.origin && destination === currentRoute.destination) continue;
+    return `Cross-trip: the crew remembers ${labels[i]} from a prior shift — not this route, so the plan starts from what that trip taught, not from zero.`;
+  }
+  return null;
+}
+
+/** `memoryBrief` plus the cross-trip line when one exists. The analyst
+ *  prompt calls this instead of `memoryBrief` directly; with no prior
+ *  different-route trip the output is exactly `memoryBrief` — no claim
+ *  added, none removed. */
+export function memoryBriefWithCrossTrip(
+  mem: CrewMemory,
+  currentRoute: { origin: string; destination: string },
+): string {
+  const base = memoryBrief(mem);
+  const cross = crossTripBrief(mem, currentRoute);
+  return cross ? `${base} ${cross}` : base;
+}
+
+// Re-exported so prompt call sites read one module for the memory brief
+// family; the proof itself stays owned by `./second-trip`.
+export { secondTripCopy, secondTripProof };

@@ -7,7 +7,7 @@ import { solveDay } from "@/domain/solver";
 import { ScopeGuard, scrub } from "@/domain/scope";
 import { ADHERENCE_PROFILE, DEMO_TRIP, GARMIN_BASELINE } from "@/domain/fixtures";
 import { foldCheckIns } from "@/domain/adherence";
-import { loadMemory, memoryBrief, recordRun } from "@/domain/memory";import type {
+import { loadMemory, memoryBriefWithCrossTrip, recordRun } from "@/domain/memory";import type {
   AdherenceProfile,
   BaselineKind,
   CalendarEvent,
@@ -242,7 +242,7 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
     CREW.analyst,
     {
       prompt:
-        `Baseline + adherence profile are on your tools. Give the planner the constraints: chronotype, habitual window, and the compliance floor. Cross-run memory: ${memoryBrief(memory)}${Object.keys(graphTools).length ? " Before answering, you MUST consult the traveller's graph memory: call priorFailures('light_exposure') and priorFailures('caffeine_cutoff'), then recallFindings for any intervention or day you constrain. Cite what came from memory with its session. If a tool answers 'not in graph', say the graph doesn't know rather than guessing." : ""}`,
+        `Baseline + adherence profile are on your tools. Give the planner the constraints: chronotype, habitual window, and the compliance floor. Cross-run memory: ${memoryBriefWithCrossTrip(memory, { origin: trip.origin.code, destination: trip.destination.code })}${Object.keys(graphTools).length ? " Before answering, you MUST consult the traveller's graph memory: call priorFailures('light_exposure') and priorFailures('caffeine_cutoff'), then recallFindings for any intervention or day you constrain. Cite what came from memory with its session. If a tool answers 'not in graph', say the graph doesn't know rather than guessing." : ""}`,
       tools: {
         getWearableBaseline: bare("Read the wearer's wearable baseline", () => baseline),
         getRecentNights: bare("Read recent sleep nights", () => getRecentNights()),
