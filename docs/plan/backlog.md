@@ -7,6 +7,11 @@ consolidation; commits are the record). These are the items that remain.
 Design direction lives in [docs/vision.md](../vision.md); current-state facts
 in [docs/reference/](../reference/).
 
+**Demo film:** rev5 rendered, rev6 plan at
+[video-rev6-plan.md](./video-rev6-plan.md) — registry primitives + sponsor
+callouts in flight; cut reads as static without them. Submission text and
+per-sponsor variants at [hackathon-text/](./hackathon-text/).
+
 ## How to split this between two
 
 The split follows **file ownership, not topic**. Two files absorb almost every
@@ -434,13 +439,11 @@ with a connected calendar). Three tracks, same file-ownership rule as
 round 3. B's contracts exist (`previewLockedOf`, `heroReadiness` in
 `4090d7c`); A adopts them.
 
-### Track A — craft + trust labels (A's files, in flight)
+### Track A — craft + trust labels (A's files, shipped)
 
-Already started in the tree (uncommitted): hero-meeting two-column split
-(`NudgeFeedScreen`), marks-waiting reminder (`NudgeFeedScreen`),
-`RoutePicker` cream surface (`RoutePicker` + `page.tsx` one-liner),
-arrival promise-vs-account split (`arrival/page.tsx` + `globals.css`).
-Land those first — they are the visible half of round 4.
+Shipped `50f786c` (RoutePicker cream surface), `0451330` (marks-waiting
+banner + scannable hero-meeting two-column split), `337d2e4` (arrival
+promise-vs-account split).
 
 Still open on this track:
 
@@ -488,11 +491,24 @@ Still open on this track:
 Sequence: B1 → B2 → B3 (each independent; B1 smallest, lands first).
 A's in-flight work never blocks B — disjoint files throughout.
 B1 shipped `c95a5fe` (`wakeAck` + tests). B2 closed with no change
-(RoutePicker only fires on committed picks — no storm exists). B3 ships
+(RoutePicker only fires on committed picks — no storm exists). B3 shipped
 as `src/domain/second-trip.ts` + `tests/second-trip.test.ts`
 (`secondTripProof` + `secondTripCopy`, 9 tests green) — pure, duck-typed
 onto the supabase `listRuns()` rows, skips same-route re-entries and
-corrupt rows, A renders one line or nothing.
+corrupt rows. Both renders landed in `837b613` (wakeAck line + proof line
+on the hero, `pastRuns` plumbed `page.tsx` → `NudgeFeedScreen` via the
+`/api/persistence/runs` read; without Supabase keys the proof stays null —
+the honest first-trip state).
+
+## Round-4 ratings (post-ship, 2026-10-17)
+
+Design 8.5 (was 8): cream surface kills the imported-chrome read; arrival
+reads in two passes; hero delta is glanceable. UX 7.5 (was 6.5):
+marks-waiting banner is the biggest win (the check-in loop was closed but
+invisible); wake acknowledgement closes a feedback hole; second-trip proof
+is correctly scaffolded but mostly potential until Supabase-backed history
+exists. Still capping a 9: provenance labels (`heroReadiness` unadopted),
+first-viewport parsing load, orphaned routes, unverified mobile.
 
 ## Later / deferred
 
