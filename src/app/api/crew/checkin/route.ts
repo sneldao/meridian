@@ -24,19 +24,23 @@ export async function POST(req: Request) {
   const checkIn = parseCheckInText(body);
   const memory = await recordCheckIn(checkIn);
   const adherence = foldCheckIns(ADHERENCE_PROFILE, memory.checkIns);
-  try {
-    const { persistCheckIn } = await import("@/tools/supabase");
-    await persistCheckIn(checkIn);
-  } catch {
-    // Supabase is optional.
-  }
-  try {
-    const { recordCheckInToGraph } = await import("@/domain/graph-memory");
-    const tenant = new URL(req.url).searchParams.get("tenant") ?? undefined;
-    await recordCheckInToGraph(checkIn, tenant);
-  } catch {
-    // FalkorDB is optional.
-  }
+  // Optional writes are bonus paths — bounded so a slow remote (a cold
+  // FalkorDB instance can take seconds) never holds the response hostage.
+  const bonusWrites: Promise<unknown>[] = [
+    (async () => {
+      const { persistCheckIn } = await import("@/tools/supabase");
+      await persistCheckIn(checkIn);
+    })(),
+    (async () => {
+      const { recordCheckInToGraph } = await import("@/domain/graph-memory");
+      const tenant = new URL(req.url).searchParams.get("tenant") ?? undefined;
+      await recordCheckInToGraph(checkIn, tenant);
+    })(),
+  ];
+  await Promise.race([
+    Promise.allSettled(bonusWrites),
+    new Promise((r) => setTimeout(r, 4000)),
+  ]);
 
   return NextResponse.json({ ok: true, checkIn, adherence, learned: memory.learned });
 }
