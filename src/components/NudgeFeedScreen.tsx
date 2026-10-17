@@ -944,7 +944,7 @@ export function NudgeFeedScreen({
                     {step.evidence ? (
                       <div className="evrow">
                         <span className="evchip" style={{ background: "transparent", border: "none", padding: "3px 0" }}>
-                          checked by Iris · planned by Otto
+                          checked by the scorer · planned by the crew
                         </span>
                         {step.evidence.evalVerdict && (() => {
                           const violations = step.evidence.evalVerdict.violations;

@@ -414,10 +414,10 @@ export default function Home() {
             Daily Guide
           </Link>
           <Link
-            href="/?screen=setup"
+            href="/?depth=guided"
             className="rounded-full px-3.5 py-1.5 text-xs font-semibold text-mist transition-all hover:text-paper"
           >
-            Trip Setup
+            Guided View
           </Link>
           <span
             aria-current="page"
