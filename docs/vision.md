@@ -551,3 +551,11 @@ plan's promise rather than a flat zero on first visit. Round 3 was
 five commits (A: `56965c1`, `6d62d56`, `3bb8e94`, `45a5918`; B: `7b6cc7d`,
 `9651585`). Item 12 (`49c6722`) closes the carried `Real integrations`
 remainder.
+
+**Round 4 (planned):** the 9/10 push — trust, craft, proof. Track A lands
+the in-flight craft (hero two-column, marks reminder, cream surface,
+arrival split) plus provenance labels via `heroReadiness`, the
+first-viewport parsing cut, and orphaned-route cleanup. Track B (untouched
+files, starting now): wake-answer acknowledgement, `/api/trip`
+refetch-storm guard, second-trip memory proof. See
+[docs/plan/backlog.md](plan/backlog.md) §Round 4.

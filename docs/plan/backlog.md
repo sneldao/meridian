@@ -425,6 +425,75 @@ landed; both closed as a paired contract + render.
   the plan's promise on first impression (`38% banked on preview`)
   rather than a flat zero.
 
+## Round 4 — the 9/10 plan (trust, craft, proof)
+
+Ratings after round 3: design 8, UX 6.5, proposition 7.5. The gap to 9/10
+is not new capability — it is trust (provenance labels), craft (dead ends,
+first-viewport parsing load), and proof (one traveller through trip two
+with a connected calendar). Three tracks, same file-ownership rule as
+round 3. B's contracts exist (`previewLockedOf`, `heroReadiness` in
+`4090d7c`); A adopts them.
+
+### Track A — craft + trust labels (A's files, in flight)
+
+Already started in the tree (uncommitted): hero-meeting two-column split
+(`NudgeFeedScreen`), marks-waiting reminder (`NudgeFeedScreen`),
+`RoutePicker` cream surface (`RoutePicker` + `page.tsx` one-liner),
+arrival promise-vs-account split (`arrival/page.tsx` + `globals.css`).
+Land those first — they are the visible half of round 4.
+
+Still open on this track:
+
+- **Provenance labels via `heroReadiness`.** `4090d7c` returns
+  `{ pct, source: "locked" | "preview" | "none" }` so the renderer never
+  says "locked" about a plan nobody locked. Adopt `previewLockedOf` for
+  the single shared extraction (replaces both inline `flatMap`s), drive
+  the dawn stat off `heroReadiness`, branch the label:
+  `"X% of shift locked"` / `"X% banked on preview"` / the zero copy.
+  Until this lands, pre-lock claims "locked" about a preview — the one
+  trust gap round 3 left open.
+- **First-viewport parsing load.** The vision doc's own critique (§6):
+  six concepts before one action. Calm defaults to words + one number +
+  one CTA; crew names and voice stay on `/crew`. Copy + layout, no
+  contract.
+- **Orphaned routes.** `/dev` and `/team` have zero inbound links;
+  `/crew`'s setup pill points at `?screen=setup`, which nothing reads.
+  Link or hide — dead ends in a product this small read as abandonment.
+
+### Track B — proof + performance (B's files, untouched — starting now)
+
+- **B1. Wake-answer acknowledgement (delight, contract-testable).**
+  `resolveBaseline` re-plans the preview instantly with no refetch, but
+  nothing on the hero says the numbers moved when the traveller answers.
+  Contract: a pure `wakeAck(baselineKind, wakeBand)` shape in
+  `domain/preview.ts` returning the acknowledgement copy (or null when no
+  answer is in play); A renders one line. Test: demo-default + band →
+  acknowledgement names the re-plan; garmin → null; demo-default alone →
+  null.
+- **B2. `/api/trip` refetch-storm guard (performance).** — closed
+  2026-10-17, no change needed. Verified: `RoutePicker`'s `onChange`
+  fires only on committed picks (list selection, swap, valid date);
+  keystrokes stay in `AirportField`'s local `query` state and never touch
+  `origin`/`dest`, so no fetch fires per keystroke. The storm this item
+  predicted does not exist. No gate, no debounce, no test — adding one
+  would be code against a phantom.
+- **B3. Second-trip memory proof (value proposition).**
+  Cross-trip summary needs a second real trip's data; #3 already scopes
+  memory per traveller. Contract: extend the memory read path with a
+  pure `secondTripProof(runs)` shape — "the crew remembers X from trip 1"
+  or honest null when there is no prior trip. Test both. This is the
+  Traveller-tier justification made visible; without it the retention
+  loop is claimed, not closed.
+
+Sequence: B1 → B2 → B3 (each independent; B1 smallest, lands first).
+A's in-flight work never blocks B — disjoint files throughout.
+B1 shipped `c95a5fe` (`wakeAck` + tests). B2 closed with no change
+(RoutePicker only fires on committed picks — no storm exists). B3 ships
+as `src/domain/second-trip.ts` + `tests/second-trip.test.ts`
+(`secondTripProof` + `secondTripCopy`, 9 tests green) — pure, duck-typed
+onto the supabase `listRuns()` rows, skips same-route re-entries and
+corrupt rows, A renders one line or nothing.
+
 ## Later / deferred
 
 - **Reminder channel** — no notification infra exists; don't fake a control.
