@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ADHERENCE_PROFILE, GARMIN_BASELINE, buildTrip, isKnownCity } from "@/domain/fixtures";
+import { ADHERENCE_PROFILE, GARMIN_BASELINE, buildTrip, horizonFor, isKnownCity } from "@/domain/fixtures";
 import { fetchCalendar } from "@/tools/calendar";
 import { providerKind } from "@/agents/providers";
 
@@ -25,7 +25,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "invalid date" }, { status: 400 });
   }
 
-  const trip = buildTrip(originRaw, destRaw, date);
+  const draft = buildTrip(originRaw, destRaw, date);
+  const daysUntil = Math.round((new Date(date + "T00:00:00Z").getTime() - Date.now()) / 86400000);
+  const trip = buildTrip(originRaw, destRaw, date, horizonFor(draft.requiredShiftMin, Math.max(0, daysUntil)));
   const cal = await fetchCalendar(trip);
   return NextResponse.json({
     trip,

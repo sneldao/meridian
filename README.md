@@ -67,7 +67,8 @@ Active:
 - [Next steps](docs/plan/next-steps.md) — consumer simplification direction, post-Oct-30
 - [Consumer appeal plan](docs/plan/consumer-appeal-implementation.md) — sequenced implementation plan from the design research
 - [Home page overhaul](docs/plan/home-page-overhaul.md) — shipped 2026-10-17 (accuracy fixes, one-flow layout, honest claims)
-- [Home signature pass](docs/plan/home-signature-pass.md) — active: hero meaning, voice ramp, nudge→impact loop; lane split inside
+- [Home signature pass](docs/plan/home-signature-pass.md) — shipped 2026-10-17 (hero meaning, voice ramp, nudge→impact loop)
+- [Any-route pass](docs/plan/any-route.md) — active: parameterized trip horizon, neutral default calendar, connect-state surfacing, picker UX
 
 Plan & pitch (frozen at the 2026-10-15 hackathon — history, not current state):
 

@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { buildTrip, isKnownCity, resolveBaseline, type WakeBand } from "@/domain/fixtures";
+import { buildTrip, horizonFor, isKnownCity, resolveBaseline, type WakeBand } from "@/domain/fixtures";
 import { fetchCalendar } from "@/tools/calendar";
 import { runCrew } from "@/agents/runtime";
 import { rateLimit, tooMany, RL_RUNS } from "@/lib/rateLimit";
@@ -30,15 +30,17 @@ export async function GET(req: NextRequest) {
 
   const startDayRaw = sp.get("startDay");
   const startDayIndex = startDayRaw === null ? 0 : Number(startDayRaw);
-  if (!Number.isInteger(startDayIndex) || startDayIndex < 0 || startDayIndex > 4) {
-    return new Response(JSON.stringify({ error: "invalid startDay" }), { status: 400 });
-  }
 
   // Bounded spend: one full crew run costs real tokens — cap runs per IP.
   const rl = rateLimit(req, "crew-run", { limit: RL_RUNS, windowMs: 3_600_000 });
   if (!rl.ok) return tooMany(rl.retryAfterSec);
 
-  const trip = buildTrip(originRaw, destRaw, date);
+  const draft = buildTrip(originRaw, destRaw, date);
+  const daysUntil = Math.round((new Date(date + "T00:00:00Z").getTime() - Date.now()) / 86400000);
+  const trip = buildTrip(originRaw, destRaw, date, horizonFor(draft.requiredShiftMin, Math.max(0, daysUntil)));
+  if (!Number.isInteger(startDayIndex) || startDayIndex < 0 || startDayIndex > trip.days.length - 1) {
+    return new Response(JSON.stringify({ error: "invalid startDay" }), { status: 400 });
+  }
   const wake = sp.get("wake");
   const baseline = resolveBaseline(
     wake === "before6" || wake === "6to8" || wake === "after8" ? (wake as WakeBand) : null,

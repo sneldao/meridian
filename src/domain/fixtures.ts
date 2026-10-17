@@ -38,22 +38,36 @@ export function isKnownCity(code: string | null | undefined): code is CityCode {
  * (home on D-3, destination on arrival), and the shift wraps into ±12 h so
  * SFO → SIN is an 8 h delay, not a 16 h advance.
  */
-export function buildTrip(originCode: CityCode, destCode: CityCode, departureDate: string): Trip {
+export interface TripHorizon {
+  /** Days shown before the flight — the consumer page defaults to
+   *  min(3, days remaining). 0 = departs today. */
+  preFlightDays?: number;
+  /** Days shown after the flight — sized to the residual shift, bounded. */
+  postFlightDays?: number;
+}
+
+export function buildTrip(originCode: CityCode, destCode: CityCode, departureDate: string, horizon: TripHorizon = {}): Trip {
+  const pre = horizon.preFlightDays ?? 3;
+  const post = horizon.postFlightDays ?? 1;
   const flight = new Date(departureDate + "T00:00:00Z");
-  const days = ["D-3", "D-2", "D-1", "Flight", "D+1"].map((label, i) => {
+  const labels: string[] = [];
+  for (let i = pre; i >= 1; i--) labels.push(`D-${i}`);
+  labels.push("Flight");
+  for (let i = 1; i <= post; i++) labels.push(`D+${i}`);
+  const days = labels.map((label, i) => {
     const d = new Date(flight);
-    d.setUTCDate(d.getUTCDate() + (i - 3));
+    d.setUTCDate(d.getUTCDate() + (i - pre));
     return { dayIndex: i, label, date: d.toISOString().slice(0, 10) };
   });
   const origin = cityOn(originCode, days[0].date);
-  const destination = cityOn(destCode, days[4].date);
+  const destination = cityOn(destCode, days[days.length - 1].date);
   const requiredShiftMin = wrapShiftMin(origin.utcOffsetMin - destination.utcOffsetMin); // negative = eastward advance
   const direction: Trip["direction"] = requiredShiftMin <= 0 ? "east" : "west";
   return {
     origin,
     destination,
     requiredShiftMin,
-    departureDayIndex: 3,
+    departureDayIndex: pre,
     direction,
     days,
   };
@@ -63,9 +77,18 @@ export const DEMO_TRIP: Trip = buildTrip("LHR", "HND", DEMO_DEPARTURE);
 
 /** The fixture calendar with the flight retitled for the trip's route. */
 export function calendarFor(trip: Trip): CalendarEvent[] {
-  return CALENDAR.map((e) =>
-    e.id === "ev-flight" ? { ...e, title: `Flight ${trip.origin.code} → ${trip.destination.code}` } : { ...e },
-  );
+  // Events are stored on the canonical 5-day shape (departureDayIndex 3);
+  // re-anchor them to this trip's flight day so pre-flight events stay
+  // relative to departure and the D+1 commitment lands the day after.
+  const shift = trip.departureDayIndex - 3;
+  return CALENDAR.map((e) => {
+    const dayIndex = e.dayIndex + shift;
+    if (dayIndex < 0 || dayIndex >= trip.days.length) return null;
+    const moved = { ...e, dayIndex };
+    return e.id === "ev-flight"
+      ? { ...moved, title: `Flight ${trip.origin.code} → ${trip.destination.code}` }
+      : moved;
+  }).filter((e): e is CalendarEvent => e !== null);
 }
 
 export const GARMIN_BASELINE: WearableBaseline = {
@@ -136,4 +159,15 @@ export function resolveBaseline(band: WakeBand | null | undefined, base: Wearabl
     chronotype,
     source: `${base.source} + self-report`,
   };
+}
+
+/** Horizon for a *live* trip: pre-flight capped by days actually left
+ * (depart tomorrow → 1 pre-flight day), post-flight sized to the shift
+ * owed after the ~90 min/day floor-capped bank, bounded 1–5. Callers that
+ * don't pass it (tests, replay, DEMO_TRIP) keep the canonical 5-day shape. */
+export function horizonFor(requiredShiftMin: number, daysUntilDeparture: number): Required<TripHorizon> {
+  const pre = Math.min(3, Math.max(0, daysUntilDeparture));
+  const owed = Math.max(0, Math.abs(requiredShiftMin) - 90);
+  const post = Math.min(5, Math.max(1, Math.ceil(owed / 60)));
+  return { preFlightDays: pre, postFlightDays: post };
 }
