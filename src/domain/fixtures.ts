@@ -92,6 +92,17 @@ export function calendarFor(trip: Trip): CalendarEvent[] {
   }).filter((e): e is CalendarEvent => e !== null);
 }
 
+/** Applies a chosen flight window: the flight event keeps its duration and
+ *  moves to the picked departure, so fixed asks route around the real slot
+ *  instead of the fixture's 11:20. Returns the events unchanged with no
+ *  flight to move (e.g. a Google calendar that never had one). */
+export function applyFlightChoice(events: CalendarEvent[], departMin: number): CalendarEvent[] {
+  const isFlight = (e: CalendarEvent) => e.id === "ev-flight" || e.id === "n-flight";
+  return events.map((e) =>
+    isFlight(e) ? { ...e, startMin: departMin, endMin: departMin + (e.endMin - e.startMin) } : e,
+  );
+}
+
 export const GARMIN_BASELINE: WearableBaseline = {
   wearer: "Alex Rivera",
   source: "Garmin Fenix 8",

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ADHERENCE_PROFILE, GARMIN_BASELINE, buildTrip, horizonFor, isKnownCity } from "@/domain/fixtures";
+import { ADHERENCE_PROFILE, GARMIN_BASELINE, applyFlightChoice, buildTrip, horizonFor, isKnownCity } from "@/domain/fixtures";
+import { flightWindowFor } from "@/domain/nudges";
 import { fetchCalendar } from "@/tools/calendar";
 import { providerKind } from "@/agents/providers";
 
@@ -29,14 +30,20 @@ export async function GET(req: NextRequest) {
   const daysUntil = Math.round((new Date(date + "T00:00:00Z").getTime() - Date.now()) / 86400000);
   const trip = buildTrip(originRaw, destRaw, date, horizonFor(draft.requiredShiftMin, Math.max(0, daysUntil)));
   const cal = await fetchCalendar(trip);
+  // A picked flight window moves the flight event; unknown ids (a stale
+  // default or a wrong-direction option) leave the fixture slot in place.
+  const flightId = sp.get("flight");
+  const flightWindow = flightWindowFor(trip, flightId);
+  const calendar = flightWindow ? applyFlightChoice(cal.events, flightWindow.departMin) : cal.events;
   return NextResponse.json({
     trip,
     baseline: GARMIN_BASELINE,
     baselineSource: "fixture" as const,
     baselineKind: "demo-default" as const,
     adherence: ADHERENCE_PROFILE,
-    calendar: cal.events,
+    calendar,
     calendarSource: cal.source,
+    flightId: flightWindow ? flightId : null,
     provider: providerKind(),
   });
 }

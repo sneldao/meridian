@@ -65,6 +65,9 @@ export interface FlightOptionRecommendation {
   recommended: boolean;
   departsLocal: string;
   arrivesDest: string;
+  /** The window as minutes — what the solver actually plans around. */
+  departMin: number;
+  arriveMin: number;
   /** One line — who this window suits, e.g. "Lands in morning daylight". */
   bestFor: string;
   cabinSleepWindow: string;
@@ -90,6 +93,8 @@ export function getFlightRecommendations(trip: Trip): FlightOptionRecommendation
         recommended: true,
         departsLocal: "11:20",
         arrivesDest: "07:50 (+1)",
+        departMin: 11 * 60 + 20,
+        arriveMin: 7 * 60 + 50,
         bestFor: "Lands in morning daylight — anchor day one outdoors",
         cabinSleepWindow: "Sleep hrs 2–7 of flight (13:00–18:00 body time)",
         whyChoose: `Going ${shiftHours}h east requires advancing your clock. A midday departure lets you dim the cabin early, sleep during ${trip.destination.name}'s night, and step straight into morning sunlight on arrival.`,
@@ -102,6 +107,8 @@ export function getFlightRecommendations(trip: Trip): FlightOptionRecommendation
         recommended: false,
         departsLocal: "19:15",
         arrivesDest: "15:45 (+1)",
+        departMin: 19 * 60 + 15,
+        arriveMin: 15 * 60 + 45,
         bestFor: "Easier to sleep on board; lands near dusk",
         cabinSleepWindow: "Sleep first 6h immediately after takeoff",
         whyChoose:
@@ -115,6 +122,8 @@ export function getFlightRecommendations(trip: Trip): FlightOptionRecommendation
         recommended: false,
         departsLocal: "06:30",
         arrivesDest: "02:50 (+1)",
+        departMin: 6 * 60 + 30,
+        arriveMin: 2 * 60 + 50,
         bestFor: "Pre-dawn airport start; lands in the middle of the night",
         cabinSleepWindow: "Hard to sleep — cabin aligns with peak daytime alertness",
         whyChoose:
@@ -133,6 +142,8 @@ export function getFlightRecommendations(trip: Trip): FlightOptionRecommendation
       recommended: true,
       departsLocal: "14:30",
       arrivesDest: "17:40 (same day)",
+      departMin: 14 * 60 + 30,
+      arriveMin: 17 * 60 + 40,
       bestFor: "Arrive for dinner and sleep through your first night",
       cabinSleepWindow: "Stay awake whole flight · 25m power nap only",
       whyChoose: `Going ${shiftHours}h west means delaying your clock. An afternoon flight lands you in ${trip.destination.name} early evening: your built-up sleep drive carries you to a 22:00 local bedtime without waking at 03:00.`,
@@ -145,6 +156,8 @@ export function getFlightRecommendations(trip: Trip): FlightOptionRecommendation
       recommended: false,
       departsLocal: "09:15",
       arrivesDest: "12:25 (same day)",
+      departMin: 9 * 60 + 15,
+      arriveMin: 12 * 60 + 25,
       bestFor: "Half a day at destination; watch the late-afternoon dip",
       cabinSleepWindow: "No cabin sleep — stay hydrated & active",
       whyChoose:
@@ -158,6 +171,8 @@ export function getFlightRecommendations(trip: Trip): FlightOptionRecommendation
       recommended: false,
       departsLocal: "20:45",
       arrivesDest: "23:55 (same day)",
+      departMin: 20 * 60 + 45,
+      arriveMin: 23 * 60 + 55,
       bestFor: "Boards near your bedtime; risks a 03:30 wake-up",
       cabinSleepWindow: "Avoid deep sleep — 45m nap max on board",
       whyChoose:
@@ -166,6 +181,15 @@ export function getFlightRecommendations(trip: Trip): FlightOptionRecommendation
         "Go straight to bed on arrival with a blackout mask, and avoid bright morning light before 08:30 local.",
     },
   ];
+}
+
+/** Resolves a picker id against this trip's options — direction-scoped, so a
+ *  west id on an eastbound trip (or a stale default like "midday-afternoon")
+ *  returns null rather than silently planning around the wrong direction. */
+export function flightWindowFor(trip: Trip, id: string | null | undefined): { departMin: number; arriveMin: number } | null {
+  if (!id) return null;
+  const rec = getFlightRecommendations(trip).find((r) => r.id === id);
+  return rec ? { departMin: rec.departMin, arriveMin: rec.arriveMin } : null;
 }
 
 /**

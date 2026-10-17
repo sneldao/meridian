@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
-import { buildTrip, horizonFor, isKnownCity, resolveBaselineState, type WakeBand } from "@/domain/fixtures";
+import { applyFlightChoice, buildTrip, horizonFor, isKnownCity, resolveBaselineState, type WakeBand } from "@/domain/fixtures";
+import { flightWindowFor } from "@/domain/nudges";
 import { fetchCalendar } from "@/tools/calendar";
 import { runCrew } from "@/agents/runtime";
 import { rateLimit, tooMany, RL_RUNS } from "@/lib/rateLimit";
@@ -46,7 +47,11 @@ export async function GET(req: NextRequest) {
   const { baseline, kind: baselineKind } = resolveBaselineState(
     wake === "before6" || wake === "6to8" || wake === "after8" ? (wake as WakeBand) : null,
   );
-  const { events: calendar, source: calendarSource } = await fetchCalendar(trip);
+  const fetched = await fetchCalendar(trip);
+  // The flight picker's choice plans around the real departure window.
+  const flightWindow = flightWindowFor(trip, sp.get("flight"));
+  const calendar = flightWindow ? applyFlightChoice(fetched.events, flightWindow.departMin) : fetched.events;
+  const calendarSource = fetched.source;
 
   let checkIns: CheckIn[] = [];
   const rawCI = sp.get("checkins");
