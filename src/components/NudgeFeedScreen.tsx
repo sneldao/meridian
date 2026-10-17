@@ -554,9 +554,22 @@ export function NudgeFeedScreen({
   })();
 
   // Honest readiness: the share of the required shift the locked days cover
-  // (sign-safe — eastbound shifts are negative). Before anything is locked,
-  // the hero shows just the done count.
-  const readinessPct = trip ? shiftLockedPct(trip, [...locked.values()]) : 0;
+  // (sign-safe — eastbound shifts are negative). Pre-lock, the hero would
+  // show 0% — which is wrong, because the solver has already drafted the
+  // plan. B added `previewLocked` (9651585) so the first impression is the
+  // plan's promise ("38% banked on preview") rather than a flat zero.
+  // Once anything is locked the preview is ignored.
+  const readinessPct = trip
+    ? shiftLockedPct(
+        trip,
+        [...locked.values()],
+        preview
+          ? [...preview.values()].flatMap((d) =>
+              d ? [{ shiftMin: d.plan.shiftMin }] : [],
+            )
+          : undefined,
+      )
+    : 0;
 
   // Item 13 — the calendar is the compliance surface. The summary block sits
   // above the timeline so a traveller sees the numbers they will lock before
