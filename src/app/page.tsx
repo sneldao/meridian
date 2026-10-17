@@ -76,7 +76,10 @@ function defaultDepartureDate(now = new Date()): string {
 /** Depth and voice choices persist per browser. Voice is only ever changed by
  *  the traveller's own toggle, never by the depth dial. */
 const DEPTH_KEY = "meridian:depth";
-const VOICE_KEY = "meridian:voice";
+// VOICE_KEY used to live here so the home page's "Hear the crew" button
+// could persist preference; the toggle moved to /crew (item 16), and the
+// /crew page owns its own storage key. Keep this comment in case a future
+// lane reintroduces voice on the home surface.
 
 const MEMORY_TOOL_NAMES = new Set([
   "recallFindings",
@@ -147,9 +150,10 @@ export default function Home() {
     (selectedFlightId ? `&flight=${selectedFlightId}` : "");
 
   const esRef = useRef<EventSource | null>(null);
-  // Off until the traveller turns it on, on every depth rung. Guided makes the
-  // narrator available; it does not start it. Restored from storage on mount.
-  const [voiceOn, setVoiceOn] = useState(false);
+  // Voice lives on /crew now; the first viewport no longer carries a voice
+  // toggle (item 16 — Calm is "words + one number + one CTA"). We still
+  // probe whether the deployment has a voice engine so the briefing can name
+  // the option; the narrator is /crew's, not ours.
   const [voiceAvail, setVoiceAvail] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   /** The Edit sheet's panel. `aria-modal` without a focus trap is a claim the
@@ -600,17 +604,10 @@ export default function Home() {
       } catch {
         /* storage unavailable */
       }
-      let savedVoice: string | null = null;
-      try {
-        savedVoice = localStorage.getItem(VOICE_KEY);
-      } catch {
-        /* storage unavailable */
-      }
-      // Voice is never switched on by depth: Guided only makes the narrator
-      // available. It plays when the traveller turns it on.
-      const voice = savedVoice === "1";
-      setVoiceOn(voice);
-      setVoiceEnabled(voice);
+      // Voice lives on /crew now (item 16). The home page only enables the
+      // engine so /crew's toggle has something to talk to; we no longer own
+      // the persisted preference here.
+      setVoiceEnabled(true);
     }, 0);
     return () => clearTimeout(t);
   }, []);
@@ -653,24 +650,12 @@ export default function Home() {
           </div>
 
           <div className="right">
-            <button
-              type="button"
-              className="btn"
-              onClick={() => {
-                const next = !voiceOn;
-                setVoiceOn(next);
-                setVoiceEnabled(next);
-                try {
-                  localStorage.setItem(VOICE_KEY, next ? "1" : "0");
-                } catch {
-                  /* storage unavailable */
-                }
-                if (!next) stopVoice();
-              }}
-              aria-pressed={voiceOn}
-            >
-              {voiceOn ? "Voice on" : "Hear the crew"}
-            </button>
+            {/* Item 16 — Calm (the Plan rung) is "words + one number + one CTA".
+                The voice toggle, named agents, and the narrator now live behind
+                the Crew rung on /crew, which has its own voice control. The
+                first viewport was already busy; the dial relabel is what the
+                teardown asked for, and removing this button is what makes the
+                surface calm. */}
             <button
               type="button"
               className="btn"
@@ -961,13 +946,19 @@ export default function Home() {
         {trip && (
           <div className="depth-foot">
             <div className="pill depth" role="group" aria-label="How much to see">
+              {/* Item 16 — depth relabels to Plan / Why / Crew. The Plan rung
+                  is the calm viewport (words + one number + one CTA); Why
+                  opens every evidence drawer; Crew is the dedicated surface
+                  where the narrator and named agents live. The first viewport
+                  no longer carries crew names or the voice toggle — those
+                  moved to /crew. */}
               <button
                 type="button"
                 className={depth !== "guided" ? "on" : undefined}
                 aria-pressed={depth !== "guided"}
                 onClick={() => chooseDepth("calm")}
               >
-                Today
+                Plan
               </button>
               <button
                 type="button"
@@ -975,9 +966,9 @@ export default function Home() {
                 aria-pressed={depth === "guided"}
                 onClick={() => chooseDepth("guided")}
               >
-                See why
+                Why
               </button>
-              <Link href="/crew">Watch the crew</Link>
+              <Link href="/crew">Crew</Link>
             </div>
           </div>
         )}

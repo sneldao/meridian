@@ -19,6 +19,9 @@ import {
 import { ADHERENCE_PROFILE, type WakeBand } from "@/domain/fixtures";
 import { HeroDawnPanel } from "@/components/HeroDawnPanel";
 import { evalChipLabel, evalChipTitle } from "@/components/ui/eval-chip";
+import { isPreview, tapBecomesCheckIn } from "@/domain/preview";
+import { calendarSummary, heroMeeting } from "@/domain/hero";
+import { meetingReadiness } from "@/domain/readiness";
 import type {
   AdherenceProfile,
   BaselineKind,
@@ -149,6 +152,17 @@ export function NudgeFeedScreen({
   const [expandedWhyId, setExpandedWhyId] = useState<string | null>(null);
   const [showMissed, setShowMissed] = useState(false);
 
+  // Item 11 — while the numbers are the sample persona's, steps are a preview
+  // rather than commitments. `isPreview` is B's contract (domain/preview.ts):
+  // demo-default with the wake question unanswered, and unknown-kind (nothing
+  // fetched yet) counts as preview so fixture numbers are never shown as
+  // measured before provenance is known.
+  const previewMode = isPreview(baselineKind, wakeBand);
+  // Same rule, but stated as the action the renderer is allowed to perform.
+  // Kept as a separate symbol so the contract — "no tap becomes a CheckIn
+  // on preview" — can be asserted on its own.
+  const tapsBecomeCheckIns = tapBecomesCheckIn(baselineKind, wakeBand);
+
   // Trip-scoped persistence — ids are day-label-keyed, so a different trip
   // must not inherit another trip's "done" state.
   const completedKey = trip
@@ -188,6 +202,10 @@ export function NudgeFeedScreen({
   // state. Marks queue on tap and flush when the traveller checks in; until
   // then they survive a refresh.
   const [pendingMarks, setPendingMarks] = useState<Map<string, PendingMark>>(new Map());
+  // Preview taps (item 11). Held in memory only — never persisted, never
+  // flushed to a CheckIn. Separate from `completedIds`/`pendingMarks` precisely
+  // so no code path can accidentally treat them as durable.
+  const [skippedPreview, setSkippedPreview] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -216,8 +234,24 @@ export function NudgeFeedScreen({
   }, [completedKey]);
 
   /** One tap on Done — marks the step and queues a structured check-in.
-   *  Tapping again un-does both. */
+   *  Tapping again un-does both.
+   *
+   *  On preview (item 11) this is a dry run: the tap still moves the UI, but
+   *  nothing is written to `meridian:completedNudges` or
+   *  `meridian:pendingCheckins`, and so nothing becomes a `CheckIn`. A tap on
+   *  numbers the app invented must never become training data — the planner
+   *  folds these into the compliance floor and graph memory, which is how a
+   *  stranger's fabricated night would train the scorer. */
   const markDone = useCallback((s: TravelerNudge) => {
+    if (!tapsBecomeCheckIns) {
+      setCompletedIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(s.id)) next.delete(s.id);
+        else next.add(s.id);
+        return next;
+      });
+      return;
+    }
     const wasDone = completedIds.has(s.id);
     toggleComplete(s.id);
     const next = new Map(pendingMarks);
@@ -233,11 +267,27 @@ export function NudgeFeedScreen({
       });
     savePending(next);
     setPendingMarks(next);
-  }, [pendingMarks, completedIds, toggleComplete, savePending]);
+  }, [pendingMarks, completedIds, toggleComplete, savePending, tapsBecomeCheckIns]);
 
   /** One tap on Skip — the adherence signal that matters most. Un-dones the
    *  step if it was marked done; tapping again un-skips. */
   const markSkipped = useCallback((s: TravelerNudge) => {
+    // Preview is a dry run here too — see markDone.
+    if (!tapsBecomeCheckIns) {
+      setSkippedPreview((prev) => {
+        const next = new Set(prev);
+        if (next.has(s.id)) next.delete(s.id);
+        else next.add(s.id);
+        return next;
+      });
+      setCompletedIds((prev) => {
+        if (!prev.has(s.id)) return prev;
+        const next = new Set(prev);
+        next.delete(s.id);
+        return next;
+      });
+      return;
+    }
     if (completedIds.has(s.id)) toggleComplete(s.id);
     const wasSkipped = pendingMarks.get(s.id)?.status === "skipped";
     const next = new Map(pendingMarks);
@@ -253,7 +303,7 @@ export function NudgeFeedScreen({
       });
     savePending(next);
     setPendingMarks(next);
-  }, [pendingMarks, completedIds, toggleComplete, savePending]);
+  }, [pendingMarks, completedIds, toggleComplete, savePending, tapsBecomeCheckIns]);
 
   const skippedIds = useMemo(
     () =>
@@ -265,7 +315,10 @@ export function NudgeFeedScreen({
     [pendingMarks],
   );
 
-  const isSkipped = (id: string) => skippedIds.has(id);
+  // On preview the "skipped" set is the in-memory one, so the step resolves out
+  // of the hero and the miss list without anything durable changing.
+  const isSkipped = (id: string) =>
+    previewMode ? skippedPreview.has(id) : skippedIds.has(id);
 
   /** Send every queued mark to the crew — they become the replan's check-in
    *  context. The ledger clears once it's handed over. */
@@ -449,8 +502,8 @@ export function NudgeFeedScreen({
   // Skipped counts as resolved: "I'm not doing this" should drop the step out
   // of the hero slot and the missed list, not keep nagging with it.
   const resolvedIds = useMemo(
-    () => new Set([...completedIds, ...skippedIds]),
-    [completedIds, skippedIds],
+    () => new Set([...completedIds, ...(previewMode ? skippedPreview : skippedIds)]),
+    [completedIds, skippedIds, skippedPreview, previewMode],
   );
   const { next: heroNudge, missed: missedNudges } = pickNextStep(
     steps,
@@ -504,6 +557,36 @@ export function NudgeFeedScreen({
   // (sign-safe — eastbound shifts are negative). Before anything is locked,
   // the hero shows just the done count.
   const readinessPct = trip ? shiftLockedPct(trip, [...locked.values()]) : 0;
+
+  // Item 13 — the calendar is the compliance surface. The summary block sits
+  // above the timeline so a traveller sees the numbers they will lock before
+  // they see the steps they will follow: N movable / M fixed / K ready. The
+  // readiness slice comes from the same `meetingReadiness` the hero names;
+  // here it is reduced to a label that the summary block carries.
+  const calSummary = useMemo(() => {
+    if (!trip) return null;
+    const readiness = meetingReadiness(
+      trip,
+      calendarEvents,
+      [...locked.values()],
+      baseline,
+    ).map((r) => ({ status: r.status }));
+    return calendarSummary(calendarEvents, readiness);
+  }, [trip, calendarEvents, locked, baseline]);
+
+  // Item 15 — the meeting is the product. The hero subhead names one real
+  // fixed event with attendees (the trip's reason) and the body-time delta.
+  // `null` when nothing post-flight is fixed; we render nothing rather than a
+  // fixture title. Sequential: B's shape merges, then A renders.
+  const heroMtg = useMemo(() => {
+    if (!trip) return null;
+    return heroMeeting({
+      trip,
+      calendar: calendarEvents,
+      locked: [...locked.values()],
+      baseline,
+    });
+  }, [trip, calendarEvents, locked, baseline]);
 
   return (
     <>
@@ -560,6 +643,16 @@ export function NudgeFeedScreen({
                   </button>
                 ))}
               </div>
+              {/* Item 14 — the solver holds a compliance floor (`floor - 105min`
+                  in circadian.ts) and tries at/after-floor light first, but
+                  nothing on the surface said so. An ask at exactly the floor
+                  reads as the run-up to a 05:30 request tomorrow; naming the
+                  promise is the difference between a promise and a threat.
+                  Evenings are where an eastward trip is actually won. */}
+              <p className="ask-promise">
+                Nothing before your floor unless you say so. Evenings do the heavy
+                lifting.
+              </p>
             </div>
           )}
 
@@ -658,8 +751,10 @@ export function NudgeFeedScreen({
                   aria-pressed={completedIds.has(heroNudge.id)}
                   style={{
                     alignSelf: "flex-start",
-                    background: "linear-gradient(90deg, #D96B43, #e99a6f)",
-                    color: "#fff8ef",
+                    background: previewMode
+                      ? "linear-gradient(90deg, #cfc4b4, #ddd3c5)"
+                      : "linear-gradient(90deg, #D96B43, #e99a6f)",
+                    color: previewMode ? "#5b4d41" : "#fff8ef",
                     border: "none",
                     borderRadius: "999px",
                     padding: "10px 22px",
@@ -669,7 +764,16 @@ export function NudgeFeedScreen({
                     cursor: "pointer",
                   }}
                 >
-                  {completedIds.has(heroNudge.id) ? "Done ✓" : "Done"}
+                  {/* Item 11 — on preview the tap is a try-it, not a record.
+                      "Done" next to a fabricated 07:00 read as a commitment,
+                      which is what made these taps training data. */}
+                  {previewMode
+                    ? completedIds.has(heroNudge.id)
+                      ? "Tried ✓"
+                      : "Try this"
+                    : completedIds.has(heroNudge.id)
+                      ? "Done ✓"
+                      : "Done"}
                 </button>
                 <button
                   type="button"
@@ -692,14 +796,29 @@ export function NudgeFeedScreen({
               </div>
               {completedIds.has(heroNudge.id) && (
                 <p style={{ margin: 0, fontSize: "12px", color: "#7a6a5c" }}>
-                  Done — {impactCopy(heroNudge.category, "done")}
-                  {pendingMarks.has(heroNudge.id) ? " · feeds your next check-in" : ""}.
+                  {previewMode ? (
+                    <>
+                      Tried — {impactCopy(heroNudge.category, "done")} Nothing
+                      saved; this is the sample profile, not your week.
+                    </>
+                  ) : (
+                    <>
+                      Done — {impactCopy(heroNudge.category, "done")}
+                      {pendingMarks.has(heroNudge.id) ? " · feeds your next check-in" : ""}.
+                    </>
+                  )}
                 </p>
               )}
               {isSkipped(heroNudge.id) && (
                 <p style={{ margin: 0, fontSize: "12px", color: "#b04523" }}>
-                  Skipped — {impactCopy(heroNudge.category, "missed")} · the crew
-                  replans around it at check-in.
+                  {previewMode ? (
+                    <>Skipped in the preview — nothing saved.</>
+                  ) : (
+                    <>
+                      Skipped — {impactCopy(heroNudge.category, "missed")} · the crew
+                      replans around it at check-in.
+                    </>
+                  )}
                 </p>
               )}
               {missedNudges.length > 0 && (
@@ -757,7 +876,7 @@ export function NudgeFeedScreen({
                                 cursor: "pointer",
                               }}
                             >
-                              Done
+                              {previewMode ? "Tried" : "Done"}
                             </button>
                             <button
                               type="button"
@@ -773,7 +892,7 @@ export function NudgeFeedScreen({
                                 cursor: "pointer",
                               }}
                             >
-                              Skip
+                              {previewMode ? "Skip" : "Skip"}
                             </button>
                           </span>
                         </li>
@@ -794,12 +913,19 @@ export function NudgeFeedScreen({
           )}
 
           {totalSteps > 0 && (
-            <div className="meter">
+            <div className={`meter${previewMode ? " preview" : ""}`}>
               <div className="t">
-                {completedCount} of {totalSteps} done{doneWhere}
+                {previewMode ? (
+                  // Item 11 — "0 of 4 done" is a promise about a real day. On
+                  // preview it is a demo of the mechanic, so it says so rather
+                  // than reporting a streak nobody is actually keeping.
+                  <>Preview from the sample · {completedCount} of {totalSteps} tried</>
+                ) : (
+                  <>{completedCount} of {totalSteps} done{doneWhere}</>
+                )}
               </div>
               <div className="bar">
-                <i style={{ width: `${progressPct}%` }} />
+                <i style={{ width: `${previewMode ? 0 : progressPct}%` }} />
               </div>
             </div>
           )}
@@ -811,21 +937,61 @@ export function NudgeFeedScreen({
               onClick={onStartCrewSync}
               disabled={phase === "running"}
             >
+              {/* Item 13 — the calendar is the compliance surface, not the run
+                  button. "Fit to me → to calendar" names the path: every step
+                  the crew locks lands as a calendar event the traveller can
+                  accept, so adherence is one surface, not two. */}
               {phase === "running"
                 ? `Checking your plan (${locked.size}/${days.length})…`
-                : "Personalise with the crew"}
+                : "Fit to me → to calendar"}
             </button>
           </div>
           {phase === "idle" && totalSteps > 0 && (
             <p style={{ marginTop: "8px", fontSize: "11px", color: "#7a6a5c" }}>
-              These are the times the crew would lock — personalise and every
-              step is fitted to your calendar and how you have actually been
-              sleeping.
+              The crew locks your plan as a calendar you can accept — the same
+              list you already live by. No notifications, just the asks where
+              your day already has room.
             </p>
           )}
           </div>
         </div>
       </div>
+
+      {/* Item 15 — the meeting is the product. The subhead sits under the
+          dawn card so the body-time gap is read against the event it will
+          decide. `null` from the contract renders nothing — a fixture
+          meeting with no real attendees would be the worst possible fake. */}
+      {heroMtg && (
+        <p
+          className="rise hero-meeting"
+          style={{
+            animationDelay: ".25s",
+            margin: "8px 4px 0",
+            fontSize: "13px",
+            color: "#5b4d41",
+            lineHeight: 1.45,
+          }}
+        >
+          <b style={{ color: "#3a2e23" }}>
+            {heroMtg.dayLabel} {fmtMin(heroMtg.localMin)} {heroMtg.title}
+          </b>
+          {" = "}
+          {fmtMin(heroMtg.bodyMin)} body time
+          {heroMtg.bodyWithoutPlanMin !== heroMtg.bodyMin && (
+            <>
+              {" · would have been "}
+              {fmtMin(heroMtg.bodyWithoutPlanMin)} without the crew
+            </>
+          )}
+          {heroMtg.status === "risk" && (
+            <>
+              {" · "}
+              <span style={{ color: "#b04523", fontWeight: 700 }}>at risk</span>
+              {" — lock the plan to clear it"}
+            </>
+          )}
+        </p>
+      )}
 
       {/* Day Selector Pills — real trip days only, never invented fixture dates */}
       {days.length > 0 && (
@@ -939,6 +1105,32 @@ export function NudgeFeedScreen({
       )}
 
       {/* The rail — one line per step, in the order the day happens */}
+      {calSummary && (
+        <div
+          className="cal-summary rise"
+          style={{ animationDelay: ".35s" }}
+          aria-label="Calendar fit"
+        >
+          {/* Item 13 — surface the numbers the run produces *before* the
+              timeline. Movable/fixed give the traveller the shape of the
+              negotiation; readinessLabel says how many post-flight meetings
+              already clear the sleep window. Nothing is invented — if there
+              are no events on the day the block disappears. */}
+          <div className="cal-summary-num">
+            <b>{calSummary.movable}</b>
+            <span>movable</span>
+          </div>
+          <div className="cal-summary-num">
+            <b>{calSummary.fixed}</b>
+            <span>fixed</span>
+          </div>
+          <div className="cal-summary-num">
+            <b>{calSummary.readinessLabel}</b>
+            <span>post-flight meetings ready</span>
+          </div>
+        </div>
+      )}
+
       <section className="tl rise" style={{ animationDelay: ".4s" }} aria-label={`${currentDayName} — steps`}>
         {steps.map((step) => {
           const isDone = completedIds.has(step.id);
@@ -948,11 +1140,31 @@ export function NudgeFeedScreen({
           return (
             <div key={step.id} className={`tl-row${isDone ? " done" : ""}${isSkip ? " skipped" : ""}`}>
               <div className="tl-time">
-                <b>{fmtMin(step.startMin)}</b>
+                {/* Item 14 — the rail renders the ask as a window, not an
+                    instant. The instant reads as a deadline; the window reads
+                    as "this is where on the day it fits". The solver already
+                    holds floor − 105min and tries at/after-floor light first
+                    — the surface now says so. */}
+                <b>
+                  {fmtMin(step.startMin)}–{fmtMin(step.endMin)}
+                </b>
                 <span>{city}</span>
               </div>
               <div className="tl-body">
-                <h3 className="tl-title">{step.title}</h3>
+                <h3 className="tl-title">
+                  {step.title}
+                  {/* Item 14 — the rail carries the same vocabulary as the
+                      calendar. A row about a real event is tagged `movable`
+                      when the crew can move it; otherwise `placed`, which is
+                      the solver's word for "I have chosen this slot against
+                      your floor and existing commitments". The day reads
+                      calendar-shaped rather than as a list of intentions. */}
+                  <span
+                    className={`tl-tag ${step.calendarMove ? "movable" : "placed"}`}
+                  >
+                    {step.calendarMove ? "movable" : "placed"}
+                  </span>
+                </h3>
                 <div className="tl-acts">
                   <button
                     type="button"
@@ -960,7 +1172,13 @@ export function NudgeFeedScreen({
                     onClick={() => markDone(step)}
                     aria-pressed={isDone}
                   >
-                    {isDone ? "Done ✓" : "Done"}
+                    {previewMode
+                      ? isDone
+                        ? "Tried ✓"
+                        : "Try this"
+                      : isDone
+                        ? "Done ✓"
+                        : "Done"}
                   </button>
                   <button
                     type="button"
