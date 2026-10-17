@@ -13,20 +13,33 @@ interface Outcome {
 }
 
 export default function OutcomePage() {
-  const [adherence, setAdherence] = useState(3);
-  const [jetlag, setJetlag] = useState(3);
+  // Sliders start unset — a saved report must be answers, not defaults.
+  const [adherence, setAdherence] = useState<number | null>(null);
+  const [jetlag, setJetlag] = useState<number | null>(null);
   const [notes, setNotes] = useState("");
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved] = useState<null | "crew" | "local">(null);
   const [memory, setMemory] = useState<CrewMemory | null>(null);
+  const [hasPlan, setHasPlan] = useState<boolean | null>(null);
 
   useEffect(() => {
     fetch("/api/memory")
       .then((r) => r.json())
       .then(setMemory)
       .catch(() => {});
+    // localStorage read deferred — keeps setState out of the effect body and
+    // the gate off the first paint (client-only state either way).
+    const t = setTimeout(() => {
+      try {
+        setHasPlan(Boolean(localStorage.getItem("meridian:lastPlan")));
+      } catch {
+        setHasPlan(false);
+      }
+    }, 0);
+    return () => clearTimeout(t);
   }, []);
 
   const save = async () => {
+    if (adherence === null || jetlag === null) return;
     const o: Outcome = { savedAt: new Date().toISOString(), adherence, jetlag, notes };
     try {
       const prev = JSON.parse(localStorage.getItem("meridian:outcomes") || "[]");
@@ -42,15 +55,17 @@ export default function OutcomePage() {
         body: JSON.stringify({ text: notes, status: adherence <= 1 ? "skipped" : adherence >= 4 ? "done" : "partial" }),
       });
       const data = (await res.json()) as { checkIn?: unknown };
-      if (data.checkIn) {
-        const prevCi = JSON.parse(localStorage.getItem("meridian:checkins") || "[]");
-        prevCi.unshift(data.checkIn);
-        localStorage.setItem("meridian:checkins", JSON.stringify(prevCi.slice(0, 100)));
+      if (!res.ok || !data.checkIn) {
+        setSaved("local"); // the traveller's record kept; the crew didn't get it
+        return;
       }
+      const prevCi = JSON.parse(localStorage.getItem("meridian:checkins") || "[]");
+      prevCi.unshift(data.checkIn);
+      localStorage.setItem("meridian:checkins", JSON.stringify(prevCi.slice(0, 100)));
+      setSaved("crew");
     } catch {
-      /* ignore — check-in is best-effort */
+      setSaved("local");
     }
-    setSaved(true);
   };
 
   return (
@@ -64,32 +79,53 @@ export default function OutcomePage() {
         Close the loop. These answers feed next run&apos;s adherence model.
       </p>
 
-      <label className="mt-6 block text-xs text-mist">
-        How much of the plan did you follow? ({adherence}/5)
-        <input type="range" min={0} max={5} value={adherence} onChange={(e) => setAdherence(Number(e.target.value))} className="mt-2 w-full" />
-      </label>
+      {hasPlan === false ? (
+        <Card className="mt-6 p-4">
+          <p className="text-xs leading-relaxed text-mist">
+            Nothing to grade yet — there&apos;s no trip on file. Run the crew
+            first, live the plan, then tell us how it went.
+          </p>
+          <Link href="/" className="mt-3 inline-block text-xs font-bold text-paper hover:text-white">
+            ← Back to today
+          </Link>
+        </Card>
+      ) : (
+        <>
+          <label className="mt-6 block text-xs text-mist">
+            How much of the plan did you follow? {adherence === null ? "(unset)" : `(${adherence}/5)`}
+            <input type="range" min={0} max={5} value={adherence ?? 0} onChange={(e) => setAdherence(Number(e.target.value))} className="mt-2 w-full" />
+          </label>
 
-      <label className="mt-6 block text-xs text-mist">
-        Jet lag severity on arrival day ({jetlag}/10)
-        <input type="range" min={0} max={10} value={jetlag} onChange={(e) => setJetlag(Number(e.target.value))} className="mt-2 w-full" />
-      </label>
+          <label className="mt-6 block text-xs text-mist">
+            Jet lag severity on arrival day {jetlag === null ? "(unset)" : `(${jetlag}/10)`}
+            <input type="range" min={0} max={10} value={jetlag ?? 0} onChange={(e) => setJetlag(Number(e.target.value))} className="mt-2 w-full" />
+          </label>
 
-      <label className="mt-6 block text-xs text-mist">
-        Notes
-        <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          rows={4}
-          className="mt-2 w-full rounded-lg border border-line bg-ink-2 p-2 text-xs text-paper"
-        />
-      </label>
+          <label className="mt-6 block text-xs text-mist">
+            Notes
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={4}
+              className="mt-2 w-full rounded-lg border border-line bg-ink-2 p-2 text-xs text-paper"
+            />
+          </label>
 
-      <div className="mt-6 flex items-center gap-3">
-        <button onClick={save} className="rounded-lg bg-paper px-4 py-2 text-xs font-bold text-ink hover:bg-white">
-          Save check-in
-        </button>
-        {saved && <span className="text-xs text-pass">saved</span>}
-      </div>
+          <div className="mt-6 flex items-center gap-3">
+            <button
+              onClick={save}
+              disabled={adherence === null || jetlag === null}
+              className="rounded-lg bg-paper px-4 py-2 text-xs font-bold text-ink hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Save check-in
+            </button>
+            {saved === "crew" && <span className="text-xs text-pass">saved — the crew knows</span>}
+            {saved === "local" && (
+              <span className="text-xs text-mist">saved locally — couldn&apos;t reach the crew</span>
+            )}
+          </div>
+        </>
+      )}
 
       {memory?.learned && (
         <Card className="mt-8 p-4">
