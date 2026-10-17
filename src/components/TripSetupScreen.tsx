@@ -233,6 +233,10 @@ export function TripSetupScreen({
               </div>
             </div>
           )}
+          <p className="src-line" style={{ fontSize: "11px", color: "#7a6a5c", margin: "0 0 6px" }}>
+            Wearable: {baselineSource === "garmin" ? "connected" : "sample profile"} · Calendar:{" "}
+            {calendarSource === "google" ? "connected" : "sample — connect yours"}
+          </p>
           <div className="m3">
             <div>
               Usual Sleep
