@@ -483,15 +483,15 @@ export default function Home() {
               <Card className="w-52 p-2 shadow-xl">
                 <div className="space-y-1">
                   {hasSavedPlan && (
-                    <Link href="/review" className="block rounded-lg px-3 py-1.5 text-xs text-paper hover:bg-line focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-dest focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
+                    <Link href="/review" className="block rounded-lg px-3 py-1.5 text-xs text-paper hover:bg-line focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-paper focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
                       view saved handoff →
                     </Link>
                   )}
-                  <Link href="/history" className="block rounded-lg px-3 py-1.5 text-xs text-mist hover:bg-line focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-dest focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
+                  <Link href="/history" className="block rounded-lg px-3 py-1.5 text-xs text-mist hover:bg-line focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-paper focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
                     history
                   </Link>
                   {runCount > 0 && (
-                    <Link href="/history" className="block rounded-lg px-3 py-1.5 text-xs text-mist hover:bg-line focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-dest focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
+                    <Link href="/history" className="block rounded-lg px-3 py-1.5 text-xs text-mist hover:bg-line focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-paper focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
                       {runCount} runs
                     </Link>
                   )}
@@ -507,7 +507,7 @@ export default function Home() {
                     }}
                     disabled={!voiceAvail}
                     title={voiceAvail ? undefined : "No ElevenLabs key on this deployment"}
-                    className="w-full rounded-lg px-3 py-1.5 text-left text-xs text-mist hover:bg-line hover:text-paper disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sun-dest focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
+                    className="w-full rounded-lg px-3 py-1.5 text-left text-xs text-mist hover:bg-line hover:text-paper disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-paper focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
                   >
                     voice {voiceAvail ? (voiceOn ? "on" : "off") : "unavailable"}
                   </button>
