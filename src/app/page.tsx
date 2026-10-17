@@ -353,31 +353,40 @@ export default function Home() {
                 savedAt: new Date().toISOString(),
               }),
             );
-            const entry = {
-              id: Date.now(),
-              savedAt: new Date().toISOString(),
-              trip: (() => {
+            // The ledger is the traveller's record of trips that happened, so
+            // only runs that locked days belong in it. Writing unconditionally
+            // put failed runs into the user-facing log: three `0.00` rows with
+            // no day chips, reading as "shift complete" — failed runs leaking
+            // into the one surface that is supposed to be trustworthy.
+            // `lastPlan` above still saves unconditionally, because /arrival
+            // scores against it and already handles a thin plan honestly.
+            if ((e.days?.length ?? 0) > 0) {
+              const entry = {
+                id: Date.now(),
+                savedAt: new Date().toISOString(),
+                trip: (() => {
+                  try {
+                    return JSON.parse(localStorage.getItem("meridian:lastTrip") || "null");
+                  } catch {
+                    return null;
+                  }
+                })(),
+                score: e.score,
+                summary: e.summary,
+                days: e.days,
+                provider: data?.provider,
+                fallback: run.errors.length > 0,
+              };
+              const prev = (() => {
                 try {
-                  return JSON.parse(localStorage.getItem("meridian:lastTrip") || "null");
+                  return JSON.parse(localStorage.getItem("meridian:history") || "[]");
                 } catch {
-                  return null;
+                  return [];
                 }
-              })(),
-              score: e.score,
-              summary: e.summary,
-              days: e.days,
-              provider: data?.provider,
-              fallback: run.errors.length > 0,
-            };
-            const prev = (() => {
-              try {
-                return JSON.parse(localStorage.getItem("meridian:history") || "[]");
-              } catch {
-                return [];
-              }
-            })();
-            prev.unshift(entry);
-            localStorage.setItem("meridian:history", JSON.stringify(prev.slice(0, 20)));
+              })();
+              prev.unshift(entry);
+              localStorage.setItem("meridian:history", JSON.stringify(prev.slice(0, 20)));
+            }
           } catch {
             /* ignore */
           }

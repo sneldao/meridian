@@ -25,8 +25,19 @@ export function calendarSummary(
     fixed,
     ready,
     total: readiness.length,
-    readinessLabel: readiness.length > 0 ? `${ready}/${readiness.length}` : "—",
+    readinessLabel: readinessPhrase(ready, readiness.length),
   };
+}
+
+/** The post-flight readiness cell. The em-dash that used to stand in for "no
+ *  post-flight meetings at all" read as a broken value rather than an honest
+ *  one. The label this sits above now reads "post-flight meetings" with no
+ *  trailing "ready", so the whole phrase is carried here and the two states
+ *  cannot be confused: "none scheduled post-flight meetings" (there are none)
+ *  is a different fact from "0/1 ready post-flight meetings" (there is one and
+ *  it does not clear the window). Collapsing both to a bare glyph lost that. */
+function readinessPhrase(ready: number, total: number): string {
+  return total === 0 ? "none scheduled" : `${ready}/${total} ready`;
 }
 
 /** The B-shape for item 15: the one fixed post-flight event with attendees

@@ -1266,7 +1266,7 @@ export function NudgeFeedScreen({
           </div>
           <div className="cal-summary-num">
             <b>{calSummary.readinessLabel}</b>
-            <span>post-flight meetings ready</span>
+            <span>post-flight meetings</span>
           </div>
         </div>
       )}
@@ -1292,7 +1292,7 @@ export function NudgeFeedScreen({
               </div>
               <div className="tl-body">
                 <h3 className="tl-title">
-                  {step.title}
+                  <span className="tl-title-text">{step.title}</span>
                   {/* Item 14 — the rail carries the same vocabulary as the
                       calendar. A row about a real event is tagged `movable`
                       when the crew can move it; otherwise `placed`, which is

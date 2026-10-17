@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import { getFlightRecommendations } from "@/domain/nudges";
 import { displayBiometrics, wakeAck } from "@/domain/preview";
+import { calendarSummary } from "@/domain/hero";
 import type {
   CalendarEvent,
   Trip,
@@ -117,9 +118,10 @@ export function TripSetupScreen({
   // preview they read "—" too — via the contract, not an inline kind check.
   const bio = displayBiometrics({ baselineKind, wakeBand, baseline });
   const movableCount = calendar.filter((e) => e.movable).length;
-  const readyCount = readiness.filter((r) => r.status === "ready").length;
-  const readinessLabel =
-    readiness.length > 0 ? `${readyCount}/${readiness.length}` : "—";
+  // Same helper the Today rail uses, so the two surfaces cannot drift into
+  // telling the traveller two different things about the same calendar. It
+  // used to be a second, hand-rolled copy of this arithmetic.
+  const readinessLabel = calendarSummary(calendar, readiness).readinessLabel;
 
   // Anything sourced from the demo fixture is labelled as such, so a number the
   // app made up is never presented as something the traveller measured.
@@ -342,7 +344,7 @@ export function TripSetupScreen({
             </div>
             <div>
               {readinessLabel}
-              <b>meetings ready</b>
+              <b>post-flight meetings</b>
             </div>
           </div>
         </div>

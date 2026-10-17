@@ -21,7 +21,7 @@ describe("calendarSummary (item 13)", () => {
     expect(summary.movable).toBe(8);
     expect(summary.fixed).toBe(5);
     expect(summary.total).toBe(0); // no readiness supplied
-    expect(summary.readinessLabel).toBe("—");
+    expect(summary.readinessLabel).toBe("none scheduled");
   });
 
   test("readinessLabel reads X/Y when readiness is supplied", () => {
@@ -30,7 +30,15 @@ describe("calendarSummary (item 13)", () => {
       { status: "ready" },
       { status: "risk" },
     ];
-    expect(calendarSummary([], readiness).readinessLabel).toBe("2/3");
+    expect(calendarSummary([], readiness).readinessLabel).toBe("2/3 ready");
+  });
+
+  test("zero-of-N is not the same fact as none-scheduled", () => {
+    // The distinction the em-dash used to flatten: a meeting exists and does
+    // not clear the sleep window, versus no meeting to clear.
+    const oneMissed = [{ status: "risk" }];
+    expect(calendarSummary([], oneMissed).readinessLabel).toBe("0/1 ready");
+    expect(calendarSummary([], []).readinessLabel).toBe("none scheduled");
   });
 
   test("the empty case is honest — never invent counts to fill the meter", () => {
@@ -38,7 +46,11 @@ describe("calendarSummary (item 13)", () => {
     expect(summary.movable).toBe(0);
     expect(summary.fixed).toBe(0);
     expect(summary.total).toBe(0);
-    expect(summary.readinessLabel).toBe("—");
+    // Not a glyph. "none scheduled" says there are no post-flight meetings,
+    // which is a different fact from "0/1 ready" — there is one, and it does
+    // not clear the window. The label it sits above reads "post-flight
+    // meetings" with no trailing "ready", so the phrase cannot be misread.
+    expect(summary.readinessLabel).toBe("none scheduled");
   });
 });
 

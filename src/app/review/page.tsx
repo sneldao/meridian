@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Card } from "@/components/ui";
 import { fmtMin } from "@/domain/circadian";
+import { scoreBand } from "@/domain/score";
 import type { Citation, DayPlan, DaySpec, EvalResult } from "@/domain/types";
 import { INTERVENTION_ICONS } from "@/lib/intervention-icons";
 import { ShiftBoard, type ShiftDraft } from "@/components/lenses/ShiftBoard";
@@ -112,14 +113,14 @@ export default function ReviewPage() {
   };
 
   if (!loaded) {
-    return <main className="flex min-h-screen items-center justify-center text-xs text-mist">loading…</main>;
+    return <main className="flex min-h-screen items-center justify-center text-xs text-clay-2">loading…</main>;
   }
 
   if (!plan) {
     return (
       <main className="mx-auto max-w-2xl px-6 py-10 text-center">
-        <h1 className="text-lg font-bold tracking-[0.3em] text-paper">MERIDIAN</h1>
-        <p className="mt-4 text-sm text-mist">No saved handoff yet. Run a night shift first.</p>
+        <h1 className="text-lg font-bold tracking-[0.3em] text-clay">MERIDIAN</h1>
+        <p className="mt-4 text-sm text-clay-2">No saved handoff yet. Run a night shift first.</p>
         <Link href="/" className="mt-6 inline-block rounded-lg bg-paper px-5 py-2 text-sm font-bold text-ink">Back to Today</Link>
       </main>
     );
@@ -131,39 +132,55 @@ export default function ReviewPage() {
     : plan.days.map((d) => ({ dayIndex: d.dayIndex, label: d.label, date: "" }));
   const locked = new Map(plan.days.map((d) => [d.label, d]));
   const shiftH = trip ? `${Math.abs(trip.requiredShiftMin / 60)}h ${trip.direction}` : "";
+  // The score wears its band. On cream a bare `text-pass` (lime, tuned for
+  // ink) washed out, and an unconditional green read a failed 0.00 plan as
+  // a healthy one. Bands come from the gate's own PASS_SCORE.
+  const scoreTone =
+    scoreBand(plan.score) === "pass"
+      ? "text-clay-pass"
+      : scoreBand(plan.score) === "warn"
+        ? "text-terracotta"
+        : "text-clay-fail";
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-8">
       <header className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <Link href="/" className="text-xs tracking-wide text-mist hover:text-paper">← Today</Link>
-          <h1 className="mt-2 text-lg font-bold tracking-[0.3em] text-paper">HANDOFF REVIEW</h1>
+          <Link href="/" className="text-xs tracking-wide text-clay-2 hover:text-clay">← Today</Link>
+          <h1 className="mt-2 text-lg font-bold tracking-[0.3em] text-clay">HANDOFF REVIEW</h1>
           {trip && (
-            <div className="mt-1 font-mono2 text-xs text-mist">
+            <div className="mt-1 font-mono2 text-xs text-clay-2">
               {trip.origin.code} <span className="text-sun-dest">→</span> {trip.destination.code} · {shiftH}
             </div>
           )}
         </div>
         <div className="text-right">
-          <div className="font-mono2 text-3xl font-bold text-pass">{plan.score.toFixed(2)}</div>
-          <div className="text-xs text-mist">plan score</div>
+          <div className={`font-mono2 text-3xl font-bold ${scoreTone}`}>{plan.score.toFixed(2)}</div>
+          <div className="text-xs text-clay-2">
+            plan score ·{" "}
+            {scoreBand(plan.score) === "pass"
+              ? "at or above the gate"
+              : scoreBand(plan.score) === "warn"
+                ? "under the gate"
+                : "failed the gate"}
+          </div>
         </div>
       </header>
 
-      <p className="font-voice max-w-3xl text-lg leading-relaxed text-paper">{plan.summary}</p>
+      <p className="font-voice max-w-3xl text-lg leading-relaxed text-clay">{plan.summary}</p>
 
       <div className="mt-5 flex flex-wrap gap-2">
         <button onClick={downloadIcs} className="rounded-lg bg-paper px-4 py-2 text-sm font-bold text-ink transition-colors hover:bg-white">Add to calendar (.ics)</button>
         <button onClick={downloadMarkdown} className="rounded-lg border border-line bg-ink-2 px-4 py-2 text-sm font-bold text-paper transition-colors hover:border-mist">Export markdown</button>
-        <button onClick={clearPlan} className="rounded-lg px-4 py-2 text-sm text-mist transition-colors hover:text-fail">Clear saved plan</button>
+        <button onClick={clearPlan} className="rounded-lg px-4 py-2 text-sm text-clay-2 transition-colors hover:text-clay-fail">Clear saved plan</button>
         <Link href="/outcome" className="rounded-lg border border-line bg-ink-2 px-4 py-2 text-sm text-mist transition-colors hover:text-paper">Log outcome</Link>
         <ReplanLink trip={trip} />
       </div>
 
       <section className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_260px]">
         <div className="min-w-0">
-          <h2 className="text-sm font-bold text-mist">The week, hour by hour</h2>
-          <p className="mt-1 text-xs leading-relaxed text-mist">
+          <h2 className="text-sm font-bold text-clay-2">The week, hour by hour</h2>
+          <p className="mt-1 text-xs leading-relaxed text-clay-2">
             Body-clock time across 24 hours. The sleep bar steps earlier day by day — that diagonal is the shift.
           </p>
           <Card className="mt-3 h-[380px] overflow-hidden">
@@ -209,20 +226,20 @@ export default function ReviewPage() {
         </div>
 
         <aside className="lg:sticky lg:top-6 lg:self-start">
-          <h2 className="text-sm font-bold text-sun-dest">Evidence</h2>
+          <h2 className="text-sm font-bold text-terracotta">Evidence</h2>
           {plan.citations.length === 0 ? (
-            <p className="mt-2 text-xs text-mist">No citations were required for this plan.</p>
+            <p className="mt-2 text-xs text-clay-2">No citations were required for this plan.</p>
           ) : (
             <ol className="mt-2 space-y-2">
               {plan.citations.map((c, i) => (
-                <li key={c.id} className="flex gap-2 text-xs leading-relaxed text-mist">
-                  <span className="font-mono2 text-paper">{i + 1}</span>
+                <li key={c.id} className="flex gap-2 text-xs leading-relaxed text-clay-2">
+                  <span className="font-mono2 text-clay">{i + 1}</span>
                   <span className="min-w-0">
                     <a
                       href={c.doi ? `https://doi.org/${c.doi}` : c.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-paper hover:underline"
+                      className="text-clay hover:underline"
                     >
                       {c.title}
                     </a>

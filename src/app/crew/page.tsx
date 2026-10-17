@@ -389,14 +389,14 @@ export default function Home() {
       <header className="mb-4 flex flex-wrap items-center gap-3">
         <div className="shrink-0">
           <div className="flex items-baseline gap-3">
-            <h1 className="text-lg font-bold tracking-[0.3em] text-paper">MERIDIAN</h1>
-            <span className="hidden text-xs tracking-wide text-mist sm:inline">
+            <h1 className="text-lg font-bold tracking-[0.3em] text-clay">MERIDIAN</h1>
+            <span className="hidden text-xs tracking-wide text-clay-2 sm:inline">
               agents that fly ahead of you
             </span>
           </div>
           <Link
             href="/"
-            className="mt-1 inline-block text-[11px] font-semibold tracking-wide text-mist underline-offset-2 transition-colors hover:text-ghost"
+            className="mt-1 inline-block text-[11px] font-semibold tracking-wide text-clay-2 underline-offset-2 transition-colors hover:text-terracotta"
           >
             ← the traveller&apos;s view
           </Link>

@@ -29,6 +29,26 @@
   --color-sleep: #b8a8ff;
   --color-dim: #4a5470;
 
+  /* The cream scale — the app's primary surface (html/body are #F5EFE6).
+     These are the tokens to reach for on any cream background.
+     The ink/paper set above belongs to the *dark* islands — .arr, Card,
+     the crew nav pills — where `text-paper` is correct. Reaching for
+     `text-paper` on bare cream renders near-white on cream and vanishes,
+     which is how TRIP HISTORY and HANDOFF REVIEW lost their headings.
+     Text on cream is `clay`; the dark set stays for dark panels. */
+  --color-clay: #1e1b18;        /* primary text on cream — body ink */
+  --color-clay-2: #7a6a5c;      /* secondary text on cream */
+  --color-clay-3: #b7ab9d;      /* tertiary / spent, e.g. a done row */
+  --color-clay-line: #eee3d6;   /* hairline on cream */
+  --color-cream: #f5efe6;       /* the page surface */
+  --color-cream-card: #fff8ef;  /* raised cream card */
+  --color-terracotta: #d96b43;  /* the accent, and time-of-day in the rail */
+  /* State on cream. The dark set's pass/fail are tuned for ink; on cream the
+     lime reads washed out and the salmon reads pink. These are the deep
+     values of the same two meanings, both >= 4.5:1 on #F5EFE6. */
+  --color-clay-pass: #2a6f4e;
+  --color-clay-fail: #b23a2e;
+
   /* Typography: a fluid ramp so the UI breathes across viewports. */
   --text-2xs: clamp(0.65rem, 0.7vw, 0.7rem);
   --text-xs: clamp(0.7rem, 0.85vw, 0.8rem);
@@ -1608,6 +1628,54 @@ textarea:focus-visible,
   border-radius: 22px;
   background: #fff8ef;
 }
+.cal-summary {
+  /* Three numbers the run produces before the rail: how much of the day the
+     crew could move, how much it had to keep, and how many post-flight
+     meetings already clear the sleep window. */
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 20px 0 2px;
+}
+.cal-summary-num {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 11px 13px;
+  border: 1px solid #eee3d6;
+  border-radius: 12px;
+  background: #fff8ef;
+}
+.cal-summary-num b {
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 1.1;
+  color: #D96B43;
+  font-variant-numeric: tabular-nums;
+}
+.cal-summary-num span {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  line-height: 1.35;
+  color: #7a6a5c;
+}
+@media (max-width: 420px) {
+  .cal-summary {
+    gap: 7px;
+  }
+  .cal-summary-num {
+    padding: 9px 9px;
+  }
+  .cal-summary-num b {
+    font-size: 16px;
+  }
+  .cal-summary-num span {
+    font-size: 10px;
+    letter-spacing: 0.04em;
+  }
+}
 .tl-row {
   display: grid;
   grid-template-columns: 78px 1fr;
@@ -1641,10 +1709,49 @@ textarea:focus-visible,
   font-weight: 700;
   line-height: 1.3;
   color: #1E1B18;
+  /* The title carries its calendar tag inline. Laying the row out as a
+     baseline-aligned flex line is what keeps "dinner by 19:25" and its
+     `placed` pill from running together as one word. */
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
 }
-.tl-row.done .tl-title {
+/* The strike on a spent row belongs to the title text only — text-decoration
+   propagates to descendants and cannot be undone by them, so the tag needs
+   its own element to stay clean. */
+.tl-row.done .tl-title-text {
   color: #b7ab9d;
   text-decoration: line-through;
+}
+/* `movable` / `placed` — the rail carrying the solver's own vocabulary.
+   Solid chip = the crew chose this slot against your floor. Dashed outline =
+   negotiable, the crew can move it. Differentiated by border treatment
+   rather than a second hue, so it survives at a glance on cream. */
+.tl-tag {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  line-height: 1.5;
+}
+.tl-tag.placed {
+  background: #f6e4d9;
+  color: #9c4a2a;
+}
+.tl-tag.movable {
+  background: transparent;
+  border: 1px dashed #d9c9b6;
+  color: #7a6a5c;
+}
+.tl-row.done .tl-tag {
+  opacity: 0.55;
 }
 .tl-row.done .tl-time b,
 .tl-row.done .tl-time span {
@@ -1690,7 +1797,7 @@ textarea:focus-visible,
 }
 /* Skipped is muted, not struck through — the step wasn't done, it was
    reported as missed. Distinct from .done on purpose. */
-.tl-row.skipped .tl-title {
+.tl-row.skipped .tl-title-text {
   color: #b7ab9d;
 }
 .tl-row.skipped .tl-time b,
