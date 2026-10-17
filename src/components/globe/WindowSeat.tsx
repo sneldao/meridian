@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { bodySubsolarPoint, solarZenithDeg, subsolarPoint, type SubsolarPoint } from "@/domain/sun";
-import { skyGradient, skyBand, type SkyBand } from "@/domain/sky";
+import { skyGradient, skyBand, SKY_BAND_LABEL, type SkyBand } from "@/domain/sky";
 import type { City, Trip } from "@/domain/types";
 
 /**
@@ -30,14 +30,7 @@ function altitudeAt(place: City, sub: SubsolarPoint): number {
   return 90 - solarZenithDeg(place.lat, place.lon, sub);
 }
 
-const BAND_COPY: Record<SkyBand, string> = {
-  day: "full daylight",
-  golden: "golden hour",
-  "blue-hour": "blue hour",
-  civil: "civil twilight",
-  nautical: "nautical twilight",
-  night: "night",
-};
+const BAND_COPY = SKY_BAND_LABEL;
 
 export interface WindowSeatProps {
   trip: Trip;
@@ -73,7 +66,11 @@ function Pane({
   caption: string;
 }) {
   return (
-    <figure className="m-0 flex-1">
+    <figure
+      className="m-0 flex-1"
+      role="img"
+      aria-label={`${label} — ${band === null || altitude === null ? "no reading yet" : `${BAND_COPY[band]}, sun ${altitude >= 0 ? "+" : "−"}${Math.abs(altitude).toFixed(1)}°`}`}
+    >
       <figcaption className="mb-1.5 flex items-baseline justify-between gap-2">
         <span className="font-mono2 text-[10px] font-bold uppercase tracking-[0.14em] text-clay-2">
           {label}

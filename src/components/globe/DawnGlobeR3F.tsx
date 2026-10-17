@@ -353,6 +353,43 @@ function FlightCamera({
   return null;
 }
 
+/** The pointer's target, drawn on the surface: a small ring that breathes once
+ *  per second-corner-tap, so the eye has something to find the tooltip's place
+ *  against. It cannot be confused with a city light — cities are round and
+ *  steady; this is a hollow gold ring, and there is at most one. */
+function HoverRing({ point }: { point: { lat: number; lon: number } }) {
+  const ref = useRef<THREE.Mesh>(null);
+  const position = useMemo(
+    () => lonLatToVec3(point.lon, point.lat, LAND_RADIUS + 0.03),
+    [point.lon, point.lat],
+  );
+  // RingGeometry lies flat in XY facing +Z; the normal through the point is its
+  // out-of-sphere direction.
+  const quaternion = useMemo(
+    () =>
+      new THREE.Quaternion().setFromUnitVectors(
+        new THREE.Vector3(0, 0, 1),
+        lonLatToVec3(point.lon, point.lat, 1).normalize(),
+      ),
+    [point.lon, point.lat],
+  );
+  useFrame(({ clock }) => {
+    ref.current?.scale.setScalar(1 + 0.13 * Math.sin(clock.elapsedTime * 4));
+  });
+  return (
+    <mesh ref={ref} position={position} quaternion={quaternion}>
+      <ringGeometry args={[0.02, 0.029, 40]} />
+      <meshBasicMaterial
+        color="#ffc46b"
+        transparent
+        opacity={0.9}
+        side={THREE.DoubleSide}
+        depthWrite={false}
+      />
+    </mesh>
+  );
+}
+
 /** The lights, via the lens's own clustering, gated by the lens's own curve.
  *
  *  These are the ~1,145 airports WorldLens draws as SVG circles, cut with the
@@ -487,6 +524,8 @@ function CityLights({ date, onHover }: { date: Date; onHover?: (h: CityHover | n
       lat: d.lat,
       lon: d.lon,
       daylight: isDaylight(d.lat, d.lon, date),
+      tz: "tz" in d && typeof d.tz === "string" ? d.tz : undefined,
+      count: "members" in d && Array.isArray(d.members) ? d.members.length : 1,
     });
   };
 
@@ -532,13 +571,21 @@ function CityLights({ date, onHover }: { date: Date; onHover?: (h: CityHover | n
 }
 
 /** What the globe reports on hover. `daylight` is computed, never guessed, so
- *  the tooltip cannot disagree with the terminator it is sitting next to. */
+ *  the tooltip cannot disagree with the terminator it is sitting next to. `tz`
+ *  is the airport's own IANA zone (held clusters have none — the centroid
+ *  belongs to nobody), and `count` explains a dot that is more than one place: the lens
+ *  merges a metro into one light whenever its members are under `EXPAND_PX` on
+ *  screen, and the pointer deserves to say so rather than print an em dash. */
 export interface CityHover {
   code: string;
   name: string;
   lat: number;
   lon: number;
   daylight: boolean;
+  /** Present when the dot resolved into a real airport. */
+  tz?: string;
+  /** Airports behind this light — 1, or the held cluster's member count. */
+  count?: number;
 }
 
 /** Frame cost, measured rather than guessed. `WorldLens` recomputes 177
@@ -590,6 +637,9 @@ export interface DawnGlobeSceneProps {
   /** Minutes of shift the plan still owes; null or 0 closes the ghost. */
   owedMin: number | null;
   requiredShiftMin: number;
+  /** Where the pointer last landed, mirrored back from the host — a ring is
+   *  drawn there so the tooltip has an anchor in the scene itself. */
+  hoverPoint?: { lat: number; lon: number } | null;
   /** The route to fly. Omit to leave the camera free. */
   trip?: Trip;
   /** 0..1 along the arc. A ref so the camera can read it every frame without
@@ -610,6 +660,7 @@ export function DawnGlobeScene({
   date,
   owedMin,
   requiredShiftMin,
+  hoverPoint,
   trip,
   flightProgress,
   flying = false,
@@ -630,6 +681,7 @@ export function DawnGlobeScene({
       <Land sub={sub} body={body} />
       <Suns sub={sub} body={body} />
       <CityLights date={date} onHover={onHover} />
+      {hoverPoint && <HoverRing point={hoverPoint} />}
       {trip && <RouteArc trip={trip} />}
       <Atmosphere />
       <OrbitControls

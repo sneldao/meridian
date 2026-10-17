@@ -6,7 +6,11 @@ import Link from "next/link";
 import { HeroDawnPanel } from "@/components/HeroDawnPanel";
 import { WindowSeat } from "@/components/globe/WindowSeat";
 import { DEMO_TRIP } from "@/domain/fixtures";
+import { solarZenithDeg, subsolarPoint } from "@/domain/sun";
+import { SKY_BAND_LABEL, skyBand } from "@/domain/sky";
+import { localClock } from "@/domain/timezones";
 import { easeInOut } from "@/lib/globe/great-circle";
+import { motion, MotionConfig } from "framer-motion";
 import type { CityHover, FrameStats } from "@/components/globe/DawnGlobeR3F";
 
 // Tier 1 spike host: the WebGL dawn globe beside the shipped SVG hero, on one
@@ -32,6 +36,20 @@ const DawnGlobeCanvas = dynamic(
   () => import("@/components/globe/DawnGlobeR3F").then((m) => m.DawnGlobeCanvas),
   { ssr: false, loading: () => <BootNote>compiling shaders…</BootNote> },
 );
+
+/** The flight, as a hairline along the frame's bottom edge: the route's
+ *  ground track, readable without looking away from the globe. Appears only
+ *  while the flight is in motion — a parked dial needs no chrome. */
+function PlanetHairline({ flightT, flying }: { flightT: number; flying: boolean }) {
+  const alive = flying || (flightT > 0 && flightT < 1);
+  return (
+    <div
+      aria-hidden
+      className="pointer-events-none absolute bottom-0 left-0 h-[3px] rounded-br-2xl bg-sun-dest transition-opacity duration-300"
+      style={{ width: `${flightT * 100}%`, opacity: alive ? 1 : 0 }}
+    />
+  );
+}
 
 function BootNote({ children }: { children: React.ReactNode }) {
   return (
@@ -119,6 +137,10 @@ export default function GlobeSpikePage() {
   const [hover, setHover] = useState<CityHover | null>(null);
   const [flightT, setFlightT] = useState(0);
   const [flying, setFlying] = useState(false);
+  // The “drag to spin” hint is for first contact only: it retires the moment the
+  // canvas sees a pointer-down, and never returns — a coach mark that keeps
+  // nagging is worse than none.
+  const [hintSeen, setHintSeen] = useState(false);
 
   // The camera reads progress from a ref every frame; state only mirrors it for
   // the read-out, so React is not re-rendering sixty times a second.
@@ -167,11 +189,20 @@ export default function GlobeSpikePage() {
       flightProgress: flightRef,
       flying,
       onHover: setHover,
+      hoverPoint: hover ? { lat: hover.lat, lon: hover.lon } : null,
     }),
-    [date, owedMin, flying],
+    [date, owedMin, flying, hover],
   );
 
+  // The tooltip's sun line, from the same solar model as the terminator. The
+  // band word comes from the shared `SKY_BAND_LABEL`, so the tooltip and the
+  // Window Seat's panes describe identical twilight with identical words.
+  const hoverSub = useMemo(() => (date ? subsolarPoint(date) : null), [date]);
+  const hoverSunAlt =
+    hover && hoverSub ? 90 - solarZenithDeg(hover.lat, hover.lon, hoverSub) : null;
+
   return (
+    <MotionConfig reducedMotion="user">
     <main className="mx-auto max-w-6xl px-6 py-10">
       <header className="mb-8">
         <Link href="/" className="text-xs text-clay-2 hover:text-clay">← Today</Link>
@@ -191,26 +222,73 @@ export default function GlobeSpikePage() {
           {!mounted || useSvg ? (
             <BootNote>{!mounted ? "probing webgl…" : svgForced ? "svg fallback forced via ?svg=1" : "no webgl on this device"}</BootNote>
           ) : (
-            <div className="relative h-[420px] overflow-hidden rounded-2xl border border-clay-line bg-ink">
+            <div
+              className="relative h-[420px] cursor-grab overflow-hidden rounded-2xl border border-clay-line bg-ink active:cursor-grabbing"
+              onPointerDownCapture={() => setHintSeen(true)}
+            >
               <DawnGlobeCanvas className="h-full w-full" {...scene} onStats={setStats} />
-              {/* Hover read-out. Every value here is computed — the daylight
-                  flag is `isDaylight`, the same call the terminator shader
-                  makes, so the tooltip can never contradict the picture. */}
+              {/* Flight hairline: the route's ground track, along the bottom edge
+                  of frame. Readable at arm's length while the eye stays on the
+                  globe, gone again when the dial parks. */}
+              <PlanetHairline flightT={flightT} flying={flying} />
+              {/* Hover read-out. Everything here is computed — the daylight
+                  flag is `isDaylight`, the sun line is `solarZenithDeg`, the
+                  same calls the terminator shader makes, so the tooltip can
+                  never contradict the picture. The little fade is keyed on the
+                  place itself, so each city arrives with its own bloom. */}
               {hover && (
-                <div className="pointer-events-none absolute left-3 top-3 rounded-lg border border-line bg-ink-2/95 px-3 py-2 backdrop-blur">
-                  <div className="font-mono2 text-sm font-bold text-paper">
-                    {hover.code || "—"}
-                  </div>
-                  {hover.name && (
-                    <div className="max-w-[15rem] truncate text-[11px] text-mist">{hover.name}</div>
-                  )}
-                  <div className="mt-1 font-mono2 text-[10px] uppercase tracking-[0.12em] text-mist">
-                    {hover.lat.toFixed(1)}, {hover.lon.toFixed(1)} ·{" "}
-                    <span className={hover.daylight ? "text-sun-dest" : "text-sleep"}>
-                      {hover.daylight ? "daylight" : "night"}
+                <motion.div
+                  key={`h-${hover.code || "cluster"}-${hover.lat.toFixed(2)}-${hover.lon.toFixed(2)}`}
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.15, ease: "easeOut" }}
+                  className="pointer-events-none absolute left-3 top-3 min-w-[11rem] rounded-lg border border-line bg-ink-2/95 px-3 py-2 backdrop-blur"
+                >
+                  <div className="flex items-baseline gap-2">
+                    <span className="font-mono2 text-sm font-bold text-paper">
+                      {hover.code || "one light"}
                     </span>
+                    {hover.code && hover.name && (
+                      <span className="max-w-[9rem] truncate text-[11px] font-normal text-mist">
+                        {hover.name}
+                      </span>
+                    )}
                   </div>
-                </div>
+                  <div className="mt-1 font-mono2 text-[10px] uppercase tracking-[0.12em] text-mist">
+                    {hover.tz && date && (
+                      <span className="text-paper">{localClock(hover.tz, date)}</span>
+                    )}
+                    {hover.tz && date && " · "}
+                    <span className={hover.daylight ? "text-sun-dest" : "text-sleep"}>
+                      {hoverSunAlt === null
+                        ? hover.daylight
+                          ? "daylight"
+                          : "night"
+                        : SKY_BAND_LABEL[skyBand(hoverSunAlt)]}
+                    </span>
+                    {hoverSunAlt !== null && (
+                      <span>
+                        {" · sun "}
+                        {hoverSunAlt >= 0 ? "+" : "−"}
+                        {Math.abs(hoverSunAlt).toFixed(1)}°
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-0.5 font-mono2 text-[10px] text-clay-3">
+                    {hover.lat.toFixed(1)}, {hover.lon.toFixed(1)}
+                    {(hover.count ?? 1) > 1 && ` · one light for ${hover.count} airports`}
+                  </div>
+                </motion.div>
+              )}
+              {!hintSeen && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.7, duration: 0.4 }}
+                  className="pointer-events-none absolute inset-x-0 bottom-5 mx-auto w-fit rounded-full border border-white/10 bg-ink-2/85 px-3 py-1 font-mono2 text-2xs text-mist backdrop-blur"
+                >
+                  drag to spin · scroll to zoom · fly the route below
+                </motion.div>
               )}
             </div>
           )}
@@ -348,5 +426,6 @@ export default function GlobeSpikePage() {
         <WindowSeat trip={DEMO_TRIP} date={date} owedMin={owedMin} />
       </section>
     </main>
+    </MotionConfig>
   );
 }

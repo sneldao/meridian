@@ -86,6 +86,18 @@ export function skyBand(sunAltDeg: number): SkyBand {
   return "night";
 }
 
+/** Human words for the bands, shared so the Window Seat and the globe's hover
+ *  read-out say the same thing in the same words. `band` is the model's answer;
+ *  this is how the model says it. */
+export const SKY_BAND_LABEL: Record<SkyBand, string> = {
+  day: "full daylight",
+  golden: "golden hour",
+  "blue-hour": "blue hour",
+  civil: "civil twilight",
+  nautical: "nautical twilight",
+  night: "night",
+};
+
 /**
  * Kasten-Young relative air mass for a solar altitude in degrees.
  *
