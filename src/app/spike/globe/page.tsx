@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { HeroDawnPanel } from "@/components/HeroDawnPanel";
 import { DEMO_TRIP } from "@/domain/fixtures";
-import type { FrameStats } from "@/components/globe/DawnGlobeR3F";
+import type { CityHover, FrameStats } from "@/components/globe/DawnGlobeR3F";
 
 // Tier 1 spike host: the WebGL dawn globe beside the shipped SVG hero, on one
 // screen, so the two can be compared by eye and by number.
@@ -70,6 +70,10 @@ const mountedStore = {
 };
 
 const OWED_STEPS = [480, 360, 240, 120, 60, 30, 15, 0];
+/** Seconds for the full great-circle flight. The archive script gives the Window
+ *  Seat 20s of an 85s cut; this is the same order of magnitude — long enough to
+ *  read the terminator sweeping past. */
+const FLIGHT_SECONDS = 20;
 
 export default function GlobeSpikePage() {
   const mounted = useSyncExternalStore(mountedStore.subscribe, mountedStore.getSnapshot, mountedStore.getServerSnapshot);
@@ -77,6 +81,13 @@ export default function GlobeSpikePage() {
   const [forcedSvg, setForcedSvg] = useState(false);
   const [owedIdx, setOwedIdx] = useState(0);
   const [stats, setStats] = useState<FrameStats | null>(null);
+  const [hover, setHover] = useState<CityHover | null>(null);
+  const [flightT, setFlightT] = useState(0);
+  const [flying, setFlying] = useState(false);
+
+  // The camera reads progress from a ref every frame; state only mirrors it for
+  // the read-out, so React is not re-rendering sixty times a second.
+  const flightRef = useRef(0);
 
   // A ticking clock so the terminator moves at the Earth's real rate, matching
   // the hero's 4Hz rule: sub-pixel per frame, continuous, cheap. The Canvas is
@@ -88,6 +99,32 @@ export default function GlobeSpikePage() {
     return () => clearInterval(id);
   }, []);
 
+  // The flight dial. Autoplay walks the ref and mirrors to state at ~10Hz,
+  // which is roughly the rate a person can read a number at.
+  useEffect(() => {
+    if (!flying) return;
+    let raf = 0;
+    let last = performance.now();
+    let mirror = 0;
+    const step = (now: number) => {
+      const dt = (now - last) / 1000;
+      last = now;
+      flightRef.current = Math.min(1, flightRef.current + dt / FLIGHT_SECONDS);
+      if (now - mirror > 100) {
+        mirror = now;
+        setFlightT(flightRef.current);
+      }
+      if (flightRef.current >= 1) {
+        setFlying(false);
+        setFlightT(1);
+        return;
+      }
+      raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [flying]);
+
   const svgForced = forcedSvg || (mounted && new URLSearchParams(window.location.search).has("svg"));
   const owedMin = OWED_STEPS[owedIdx] ?? 0;
   const useSvg = svgForced || !hasWebGL;
@@ -95,8 +132,16 @@ export default function GlobeSpikePage() {
   // Both surfaces are handed the same two inputs. If they disagree, it is the
   // rendering, never the data.
   const scene = useMemo(
-    () => ({ date, owedMin, requiredShiftMin: DEMO_TRIP.requiredShiftMin }),
-    [date, owedMin],
+    () => ({
+      date,
+      owedMin,
+      requiredShiftMin: DEMO_TRIP.requiredShiftMin,
+      trip: DEMO_TRIP,
+      flightProgress: flightRef,
+      flying,
+      onHover: setHover,
+    }),
+    [date, owedMin, flying],
   );
 
   return (
@@ -119,8 +164,27 @@ export default function GlobeSpikePage() {
           {!mounted || useSvg ? (
             <BootNote>{!mounted ? "probing webgl…" : svgForced ? "svg fallback forced via ?svg=1" : "no webgl on this device"}</BootNote>
           ) : (
-            <div className="h-[420px] overflow-hidden rounded-2xl border border-clay-line bg-ink">
+            <div className="relative h-[420px] overflow-hidden rounded-2xl border border-clay-line bg-ink">
               <DawnGlobeCanvas className="h-full w-full" {...scene} onStats={setStats} />
+              {/* Hover read-out. Every value here is computed — the daylight
+                  flag is `isDaylight`, the same call the terminator shader
+                  makes, so the tooltip can never contradict the picture. */}
+              {hover && (
+                <div className="pointer-events-none absolute left-3 top-3 rounded-lg border border-line bg-ink-2/95 px-3 py-2 backdrop-blur">
+                  <div className="font-mono2 text-sm font-bold text-paper">
+                    {hover.code || "—"}
+                  </div>
+                  {hover.name && (
+                    <div className="max-w-[15rem] truncate text-[11px] text-mist">{hover.name}</div>
+                  )}
+                  <div className="mt-1 font-mono2 text-[10px] uppercase tracking-[0.12em] text-mist">
+                    {hover.lat.toFixed(1)}, {hover.lon.toFixed(1)} ·{" "}
+                    <span className={hover.daylight ? "text-sun-dest" : "text-sleep"}>
+                      {hover.daylight ? "daylight" : "night"}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           )}
           {stats && (
@@ -191,6 +255,63 @@ export default function GlobeSpikePage() {
           minutes is <code className="font-mono2">GHOST_VISIBLE_MIN</code>, not a render
           setting — the WebGL version honours the same cutoff rather than drawing a
           line on top of itself.
+        </p>
+      </section>
+      <section className="mt-6 rounded-2xl border border-clay-line bg-cream-card p-4">
+        <div className="flex flex-wrap items-baseline justify-between gap-3">
+          <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-clay-2">
+            flight — the great circle
+          </h2>
+          <div className="font-mono2 text-xs text-clay">
+            {Math.round(flightT * 100)}% · {DEMO_TRIP.origin.code} → {DEMO_TRIP.destination.code}
+          </div>
+        </div>
+        <input
+          aria-label="Flight progress"
+          type="range"
+          min={0}
+          max={1000}
+          step={1}
+          value={Math.round(flightT * 1000)}
+          onChange={(e) => {
+            const v = Number(e.target.value) / 1000;
+            flightRef.current = v;
+            setFlightT(v);
+            setFlying(false);
+          }}
+          style={{ width: "100%", marginTop: 10 }}
+        />
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              if (flightRef.current >= 1) {
+                flightRef.current = 0;
+                setFlightT(0);
+              }
+              setFlying((f) => !f);
+            }}
+            className="rounded-lg border border-clay-line bg-paper px-4 py-2 text-sm font-bold text-ink"
+          >
+            {flying ? "pause" : flightT >= 1 ? "fly again" : "fly the route"}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              flightRef.current = 0;
+              setFlightT(0);
+              setFlying(false);
+            }}
+            className="rounded-lg border border-clay-line px-4 py-2 text-sm text-clay-2 hover:text-clay"
+          >
+            rewind
+          </button>
+        </div>
+        <p className="mt-3 text-xs leading-relaxed text-clay-2">
+          The camera rides the same <code className="font-mono2">geoInterpolate</code> arc the SVG
+          lens draws, and it eases from rest and arrives at rest. Orbiting is disabled while it
+          flies so the two never fight for the same camera. Hover any city light for its real
+          local daylight state.
         </p>
       </section>
     </main>

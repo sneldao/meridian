@@ -1,11 +1,27 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
-import { bodySubsolarPoint, subsolarPoint, type SubsolarPoint } from "@/domain/sun";
+import {
+  bodySubsolarPoint,
+  isDaylight,
+  solarZenithDeg,
+  subsolarPoint,
+  type SubsolarPoint,
+} from "@/domain/sun";
 import { GHOST_VISIBLE_MIN } from "@/domain/dawn-layers";
+import type { Trip } from "@/domain/types";
+import { clusterAirports, EXPAND_PX } from "@/domain/city-lights";
+import { AIRPORTS } from "@/domain/airports";
+import {
+  alongArc,
+  chasePosition,
+  easeInOut,
+  greatCircle,
+  type GreatCircle,
+} from "@/lib/globe/great-circle";
 import { landGeometry, LAND_RADIUS, LAND_LIFT } from "@/lib/globe/land-geometry";
 import { lonLatToVec3, sunDirection } from "@/lib/globe/spherical";
 
@@ -223,6 +239,160 @@ function Suns({ sub, body }: { sub: SubsolarPoint; body: SubsolarPoint | null })
   );
 }
 
+/** The flight camera — the 85-second payoff, on a scrubbable dial.
+ *
+ *  `progress` is a ref rather than state on purpose: this runs every frame,
+ *  and a React re-render per frame is the exact cost this migration exists to
+ *  remove. The host mirrors it to state at a human rate for the read-out.
+ *
+ *  The move is a chase, not a rail: the camera trails the tangent and lifts,
+ *  so the globe rolls away underneath the traveller. Driven by `greatCircle`,
+ *  which is the same `geoInterpolate` arc WorldLens already draws. */
+function FlightCamera({
+  gc,
+  progress,
+  enabled,
+  distance = 0.86,
+  lift = 0.3,
+}: {
+  gc: GreatCircle;
+  progress: React.RefObject<number>;
+  enabled: boolean;
+  distance?: number;
+  lift?: number;
+}) {
+  const controls = useThree((s) => s.controls) as { target: THREE.Vector3; update: () => void } | null;
+  const camera = useThree((s) => s.camera);
+  const pos = useRef(new THREE.Vector3());
+  const look = useRef(new THREE.Vector3());
+
+  useFrame(() => {
+    if (!enabled || !controls) return;
+    const t = easeInOut(progress.current);
+    const { point, tangent } = alongArc(gc, t);
+    const want = chasePosition(point, tangent, distance, lift);
+    // Lerp toward the goal rather than snapping to it, so a scrubbed dial
+    // glides instead of teleporting.
+    const k = 0.12;
+    pos.current.lerp(want, k);
+    look.current.lerp(point, k);
+    camera.position.copy(pos.current);
+    controls.target.copy(look.current);
+    controls.update();
+  });
+  return null;
+}
+
+/** City lights, as one THREE.Points.
+ *
+ *  These are the 1,145 airports WorldLens already draws as SVG circles, and
+ *  they use its own clustering: a group resolves into its members once it
+ *  covers more than `EXPAND_PX` on screen. Brightness is not invented — it is
+ *  `solarZenithDeg`, the same function the lens keys its SVG dots on, so a dot
+ *  is lit here exactly when it is lit there.
+ *
+ *  The win over the SVG version is that 700–1,150 nodes become ONE draw call,
+ *  and the split/cluster decision no longer costs a React reconciliation. */
+function CityLights({ date, onHover }: { date: Date; onHover?: (h: CityHover | null) => void }) {
+  const sub = useMemo(() => subsolarPoint(date), [date]);
+  const camera = useThree((s) => s.camera);
+  const size = useThree((s) => s.size);
+
+  // One buffer, rebuilt only when the split decision flips — not per frame.
+  const { geometry, members } = useMemo(() => {
+    const clusters = clusterAirports(AIRPORTS);
+    // Pixels per degree at the globe's surface, for EXPAND_PX's test. The
+    // camera pulls back as it flies, so this is recomputed as the geometry
+    // version is cheap enough to do every few frames rather than memoised hard.
+    const dist = camera.position.length() || 3;
+    const fov = ((camera as THREE.PerspectiveCamera).fov ?? 40) * (Math.PI / 180);
+    const pxPerDeg = (size.height / 2 / Math.tan(fov / 2) / dist) * (180 / Math.PI);
+    const split = pxPerDeg > EXPAND_PX / Math.max(1e-6, clusters[0]?.radiusDeg ?? 1);
+
+    const list = split ? clusters.flatMap((c) => c.members) : clusters;
+    const positions = new Float32Array(list.length * 3);
+    const brightness = new Float32Array(list.length);
+    list.forEach((d, i) => {
+      const v = lonLatToVec3(d.lon, d.lat, LAND_RADIUS + 0.004);
+      positions[i * 3] = v.x;
+      positions[i * 3 + 1] = v.y;
+      positions[i * 3 + 2] = v.z;
+      // Same curve WorldLens uses: dark in daylight, full at night.
+      const z = solarZenithDeg(d.lat, d.lon, sub);
+      brightness[i] = Math.min(1, Math.max(0, (z - 90) / 12));
+    });
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    g.setAttribute("aBright", new THREE.BufferAttribute(brightness, 1));
+    return { geometry: g, members: list };
+  }, [camera, size, sub]);
+
+  useEffect(() => () => geometry.dispose(), [geometry]);
+
+  // Hover: raycast against the points, then report the nearest airport. The
+  // screen picks the cluster; the members are then searched in the same cell so
+  // the read-out names a real airport rather than a grid centroid.
+  const handleMove = (e: { pointer: THREE.Vector3; stopPropagation: () => void }) => {
+    if (!onHover) return;
+    e.stopPropagation();
+    const obj = pointsRef.current;
+    if (!obj) return;
+    const hits = raycasterRef.current;
+    // `pointer` is NDC; `point` is world space, which setFromCamera will not take.
+    // R3F hands a Vector3 here (Vector2-compatible x/y); project to a fresh
+    // Vector2 so the raycaster type stays honest.
+    hits.setFromCamera(new THREE.Vector2(e.pointer.x, e.pointer.y), camera);
+    const hit = hits.intersectObject(obj, false)[0];
+    if (!hit || hit.index === undefined) {
+      onHover(null);
+      return;
+    }
+    const d = members[hit.index];
+    if (!d) {
+      onHover(null);
+      return;
+    }
+    onHover({
+      code: "code" in d ? String(d.code) : "",
+      name: "name" in d && d.name ? String(d.name) : "",
+      lat: d.lat,
+      lon: d.lon,
+      daylight: isDaylight(d.lat, d.lon, date),
+    });
+  };
+
+  const pointsRef = useRef<THREE.Points>(null);
+  const raycasterRef = useRef(new THREE.Raycaster());
+
+  return (
+    <points
+      ref={pointsRef}
+      geometry={geometry}
+      onPointerMove={handleMove}
+      onPointerOut={() => onHover?.(null)}
+    >
+      <pointsMaterial
+        size={0.011}
+        sizeAttenuation
+        color="#cfe0ff"
+        transparent
+        opacity={0.85}
+        depthWrite={false}
+      />
+    </points>
+  );
+}
+
+/** What the globe reports on hover. `daylight` is computed, never guessed, so
+ *  the tooltip cannot disagree with the terminator it is sitting next to. */
+export interface CityHover {
+  code: string;
+  name: string;
+  lat: number;
+  lon: number;
+  daylight: boolean;
+}
+
 /** Frame cost, measured rather than guessed. `WorldLens` recomputes 177
  *  country paths every frame in globe mode; the point of this spike is to
  *  show what the GPU path costs instead. */
@@ -272,21 +442,40 @@ export interface DawnGlobeSceneProps {
   /** Minutes of shift the plan still owes; null or 0 closes the ghost. */
   owedMin: number | null;
   requiredShiftMin: number;
+  /** The route to fly. Omit to leave the camera free. */
+  trip?: Trip;
+  /** 0..1 along the arc. A ref so the camera can read it every frame without
+   *  a React render; see FlightCamera. */
+  flightProgress?: React.RefObject<number>;
+  /** Set false to hand the camera back to the user mid-flight. */
+  flying?: boolean;
+  onHover?: (h: CityHover | null) => void;
   onStats?: (s: FrameStats) => void;
 }
 
-export function DawnGlobeScene({ date, owedMin, requiredShiftMin, onStats }: DawnGlobeSceneProps) {
+export function DawnGlobeScene({
+  date,
+  owedMin,
+  requiredShiftMin,
+  trip,
+  flightProgress,
+  flying = false,
+  onHover,
+  onStats,
+}: DawnGlobeSceneProps) {
   const sub = useMemo(() => subsolarPoint(date), [date]);
   const body = useMemo(() => {
     if (owedMin === null || Math.abs(owedMin) < GHOST_VISIBLE_MIN) return null;
     return bodySubsolarPoint(sub, owedMin, requiredShiftMin);
   }, [sub, owedMin, requiredShiftMin]);
+  const gc = useMemo(() => (trip ? greatCircle(trip) : null), [trip]);
 
   return (
     <>
       <DawnSphere sub={sub} body={body} />
       <Land sub={sub} body={body} />
       <Suns sub={sub} body={body} />
+      <CityLights date={date} onHover={onHover} />
       <Atmosphere />
       <OrbitControls
         enablePan={false}
@@ -296,7 +485,9 @@ export function DawnGlobeScene({ date, owedMin, requiredShiftMin, onStats }: Daw
         zoomSpeed={0.7}
         minDistance={1.6}
         maxDistance={6.5}
+        enabled={!flying}
       />
+      {gc && flightProgress && <FlightCamera gc={gc} progress={flightProgress} enabled={flying} />}
       {onStats && <FrameMeter onStats={onStats} />}
     </>
   );
