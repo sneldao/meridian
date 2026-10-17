@@ -988,35 +988,118 @@ export function NudgeFeedScreen({
           decide. `null` from the contract renders nothing — a fixture
           meeting with no real attendees would be the worst possible fake. */}
       {heroMtg && (
-        <p
+        <div
           className="rise hero-meeting"
           style={{
             animationDelay: ".25s",
             margin: "8px 4px 0",
+            padding: "10px 12px",
+            borderRadius: "10px",
+            border: "1px solid #e3d5c3",
+            background: "#fff8ef",
             fontSize: "13px",
             color: "#5b4d41",
             lineHeight: 1.45,
           }}
         >
+          {/* Item 15 — the meeting is the product. The block splits into the
+              event line on top and the body-time delta underneath. The delta
+              is the sales pitch — two scannable columns the user can read at
+              a glance, not a sentence that buries the gap inside clauses. */}
           <b style={{ color: "#3a2e23" }}>
             {heroMtg.dayLabel} {fmtMin(heroMtg.localMin)} {heroMtg.title}
           </b>
-          {" = "}
-          {fmtMin(heroMtg.bodyMin)} body time
-          {heroMtg.bodyWithoutPlanMin !== heroMtg.bodyMin && (
-            <>
-              {" · would have been "}
-              {fmtMin(heroMtg.bodyWithoutPlanMin)} without the crew
-            </>
-          )}
+          <div
+            style={{
+              marginTop: "6px",
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "8px",
+              fontSize: "12px",
+              color: "#7a6a5c",
+            }}
+          >
+            <div>
+              <span style={{ display: "block", fontWeight: 700, color: "#3a2e23", fontSize: "13px" }}>
+                {fmtMin(heroMtg.bodyMin)}
+              </span>
+              <span>with Meridian</span>
+            </div>
+            {heroMtg.bodyWithoutPlanMin !== heroMtg.bodyMin ? (
+              <div>
+                <span style={{ display: "block", fontWeight: 700, color: "#b04523", fontSize: "13px" }}>
+                  {fmtMin(heroMtg.bodyWithoutPlanMin)}
+                </span>
+                <span>without the plan</span>
+              </div>
+            ) : (
+              <div>
+                <span style={{ display: "block", fontWeight: 700, color: "#3a2e23", fontSize: "13px" }}>
+                  {fmtMin(heroMtg.bodyWithoutPlanMin)}
+                </span>
+                <span>body time</span>
+              </div>
+            )}
+          </div>
           {heroMtg.status === "risk" && (
-            <>
-              {" · "}
-              <span style={{ color: "#b04523", fontWeight: 700 }}>at risk</span>
-              {" — lock the plan to clear it"}
-            </>
+            <p
+              style={{
+                margin: "8px 0 0",
+                fontSize: "11px",
+                color: "#b04523",
+                fontWeight: 700,
+              }}
+            >
+              at risk — lock the plan to clear it
+            </p>
           )}
-        </p>
+        </div>
+      )}
+
+      {/* Marks waiting — surfaced at the top of the page so a traveller
+          who marked steps and scrolled away sees the queue the next visit.
+          The same "send to crew" affordance lives at the bottom of the
+          page; this copy is the reminder, not a new flow. */}
+      {pendingMarks.size > 0 && (
+        <div
+          className="rise marks-waiting"
+          style={{
+            animationDelay: ".2s",
+            marginTop: "12px",
+            padding: "10px 14px",
+            borderRadius: "12px",
+            border: "1px solid #e3d5c3",
+            background: "#fff8ef",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "10px",
+            flexWrap: "wrap",
+          }}
+        >
+          <span style={{ fontSize: "12px", fontWeight: 700, color: "#3a2e23" }}>
+            {pendingMarks.size} {pendingMarks.size === 1 ? "step" : "steps"} marked —
+            <span style={{ color: "#7a6a5c", fontWeight: 600 }}>
+              {" "}the crew replans the rest around what happened.
+            </span>
+          </span>
+          <button
+            type="button"
+            onClick={sendPendingMarks}
+            style={{
+              border: "1px solid #D96B43",
+              background: "#D96B43",
+              color: "#fff8ef",
+              borderRadius: 999,
+              padding: "6px 14px",
+              fontSize: "12px",
+              fontWeight: 800,
+              cursor: "pointer",
+            }}
+          >
+            Check in →
+          </button>
+        </div>
       )}
 
       {/* Day Selector Pills — real trip days only, never invented fixture dates */}
