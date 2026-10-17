@@ -632,6 +632,16 @@ What no headless check can prove: the ring pulse, hairline and fades
 render correctly. One visual pass at `/spike/globe` remains. 372 tests
 green at `6d43b41`.
 
+**Follow-up — the landing reads as desktop on desktop.** `.root` carried
+a phone-artboard export (`max-width: 868px; min-height: 1543px`), so the
+home page rendered as a narrow cream column with forced phone scroll on
+laptops — while `/crew` (full viewport, dark) felt right, and travellers
+noticed. The hero is already a two-column grid that collapses below
+720px; the artboard was strangling it. Released: `max-width: 1140px`,
+min-height dropped. Phones are unchanged (the root was 100% wide below
+868px anyway). The day-side cream / night-side ink split stays — the
+consistency fix is per surface, not one uniform chrome.
+
 ## Later / deferred
 
 - **Visual pass on `/spike/globe`** — the ring pulse, flight hairline and

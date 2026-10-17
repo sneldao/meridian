@@ -596,3 +596,9 @@ cursors; the hover gets a breathing ring; the fades honour
 `reducedMotion="user"`. 372 tests green; one visual pass at
 `/spike/globe` remains for the shader-driven effects. See
 [docs/plan/backlog.md](plan/backlog.md) §Round 7.
+
+**Round 7 follow-up (same day):** the landing's `.root` phone artboard
+(868×1543) is released to a 1140px desktop measure — the "why does the
+landing look like mobile, then /crew looks proper?" confusion is closed.
+Cream day-side, ink night-side; both now feel like desktop on desktop,
+and phones see no change.

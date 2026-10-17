@@ -98,11 +98,16 @@ body {
   margin: 0;
 }
 
-/* Sunlit Horizon Bento design system & behavior contract */
+/* Sunlit Horizon Bento design system & behavior contract.
+   The measure is a desktop one: the hero is a two-column grid that already
+   collapses below 720px, so the column's only job on desktop is to not
+   strangle it. The old 868×1543 was a phone-artboard export — it made the
+   landing read as a mobile site on laptops while /crew (full viewport) felt
+   right, and travellers noticed. Below the measure the root is 100% wide,
+   so phones are exactly where they were. */
 .root {
   width: 100%;
-  max-width: 868px;
-  min-height: 1543px;
+  max-width: 1140px;
   margin: 0 auto;
   position: relative;
   background: #F5EFE6;
