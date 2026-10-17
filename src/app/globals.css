@@ -66,7 +66,7 @@
   --opacity-80: 0.80;
 
   /* Focus ring colour. */
-  --color-focus: var(--color-sun-dest);
+  --color-focus: var(--color-paper);
 }
 
 html,
@@ -591,9 +591,6 @@ body {
   outline: 2px solid #1E1B18;
   outline-offset: 2px;
 }
-.chips {
-  margin-top: 14px;
-}
 .chip {
   font: inherit;
   font-size: 12px;
@@ -619,47 +616,6 @@ body {
   outline: 2px solid #D96B43;
   outline-offset: 2px;
 }
-.deck {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-top: 20px;
-}
-.tile {
-  background: #fff8ef;
-  border: 1px solid #e3d5c3;
-  border-radius: 22px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 14px 30px -18px rgba(120, 60, 30, 0.4);
-  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-.tile .ph {
-  height: 112px;
-  width: 100%;
-  object-fit: cover;
-  display: block;
-}
-.tile .tb {
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-  flex: 1;
-}
-.tile .ph0 {
-  height: 112px;
-  background: linear-gradient(135deg, #f3c9a8, #D96B43);
-}
-.tile .ph1 {
-  height: 112px;
-  background: linear-gradient(135deg, #2A6F4E, #9fc3a8);
-}
-.tile .ph2 {
-  height: 112px;
-  background: linear-gradient(135deg, #1E1B18, #5a4636);
-}
 .cat {
   display: flex;
   align-items: center;
@@ -672,16 +628,6 @@ body {
 }
 .cat.g {
   color: #2A6F4E;
-}
-.tile h3 {
-  font-size: 15px;
-  line-height: 1.25;
-  font-weight: 800;
-}
-.tile p {
-  font-size: 12px;
-  line-height: 1.5;
-  color: #5b4d41;
 }
 .meter {
   display: flex;
@@ -879,17 +825,6 @@ body {
   .hero {
     grid-template-columns: 1fr;
   }
-  .deck {
-    grid-template-columns: 1fr;
-  }
-  .deck .tile.sleep-span {
-    grid-column: span 1 !important;
-    flex-direction: column !important;
-  }
-  .deck .tile.sleep-span .ph {
-    width: 100% !important;
-    height: 140px !important;
-  }
   .fl {
     grid-template-columns: 1fr;
   }
@@ -1038,8 +973,8 @@ textarea:focus-visible,
   align-items: flex-start;
   justify-content: center;
   padding: 8vh 16px 16px;
-  background: color-mix(in srgb, var(--color-ink) 78%, transparent);
-  backdrop-filter: blur(3px);
+  background: color-mix(in srgb, var(--color-ink) 70%, transparent);
+  backdrop-filter: blur(4px);
   overflow-y: auto;
 }
 .sheet-panel {
