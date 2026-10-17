@@ -327,6 +327,11 @@ export default function Home() {
                 days: e.days,
                 ics: e.ics,
                 lines: e.lines,
+                // The gate's promise, kept so the arrival surface has something
+                // honest to score the trip against. Without it the only number
+                // available after landing is the traveller's own recollection.
+                coverage: e.coverage,
+                savedAt: new Date().toISOString(),
               }),
             );
             const entry = {
@@ -713,6 +718,15 @@ export default function Home() {
             </Link>
             <Link href="/history" className="m" onClick={() => setMenuOpen(false)}>
               Past trips{runCount > 0 ? ` (${runCount})` : ""}
+            </Link>
+            {/* Carries the trip being scored, so "Score the trip" opens the
+                journey you were actually on rather than the default one. */}
+            <Link
+              href={`/arrival?date=${departureDate}`}
+              className="m"
+              onClick={() => setMenuOpen(false)}
+            >
+              Score the trip
             </Link>
             <Link href="/outcome" className="m" onClick={() => setMenuOpen(false)}>
               How the trip went

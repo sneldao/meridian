@@ -300,6 +300,153 @@ body {
 
 /* The route error boundary (src/app/error.tsx). Same surface as the landing
    card so a crash reads as part of the product, not a browser error page. */
+/* The arrival surface — item 7, the payoff for "Land at 100%". Warmer and
+   calmer than Today, because there is nothing to do here: this is the screen
+   you land on when there is nothing left to do. Dark ink for the same reason
+   `/crew` is dark — it is the after-hours surface. */
+/* The trip-complete card on Today, in the hero's right column — the same
+   invitation as the arrival surface, one step earlier in the journey. */
+.arrival-nudge {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 16px;
+  border: 1px solid #e3d5c3;
+  border-left: 3px solid #D96B43;
+  border-radius: 14px;
+  background: #fdf6ee;
+}
+.arrival-nudge h2 {
+  font-size: 20px;
+}
+.arrival-nudge-btns {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.arrival-nudge-btns a {
+  text-decoration: none;
+}
+.arrival-nudge-btns .p2 {
+  display: inline-block;
+}
+
+.arr {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #07090f 0%, #0b1018 52%, #1c1512 100%);
+  color: #e8eaf2;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+.arr-in {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 72px 28px 64px;
+}
+.arr-kicker {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #ffc46b;
+}
+.arr h1 {
+  margin: 14px 0 0;
+  font-size: 27px;
+  line-height: 1.25;
+  font-weight: 800;
+  color: #f6f2ec;
+  max-width: 30ch;
+}
+.arr-lede {
+  margin: 14px 0 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #9aa3b5;
+  max-width: 56ch;
+}
+.arr-loading {
+  font-size: 13px;
+  color: #8b93a7;
+}
+.arr-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+  margin: 26px 0 8px;
+}
+.arr-cell {
+  padding: 14px 15px;
+  border: 1px solid #1e2637;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+}
+.arr-cell em {
+  display: block;
+  font-style: normal;
+  font-size: 25px;
+  font-weight: 800;
+  color: #ffd98a;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+.arr-cell span {
+  display: block;
+  margin-top: 6px;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #8b93a7;
+}
+.arr-cell small {
+  display: block;
+  margin-top: 5px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: #6f7789;
+}
+.arr-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 22px;
+}
+.arr-btn {
+  display: inline-block;
+  padding: 11px 20px;
+  border: 1px solid #ffd98a;
+  border-radius: 999px;
+  background: #ffd98a;
+  color: #1a1408;
+  font-size: 12.5px;
+  font-weight: 800;
+  text-decoration: none;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+.arr-btn:hover {
+  background: #fff0c2;
+  border-color: #fff0c2;
+}
+.arr-btn.ghost {
+  background: transparent;
+  color: #ffd98a;
+}
+.arr-btn.ghost:hover {
+  background: rgba(255, 217, 138, 0.12);
+}
+.arr-btn:focus-visible {
+  outline: 2px solid #ffd98a;
+  outline-offset: 3px;
+}
+.arr-foot {
+  margin: 34px 0 0;
+  font-size: 11px;
+  line-height: 1.6;
+  color: #6f7789;
+}
+
 .errpage {
   position: relative;
   min-height: 100vh;

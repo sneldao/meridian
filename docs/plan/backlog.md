@@ -21,8 +21,8 @@ Everything behind those — `src/domain/`, `src/app/api/`, `/outcome`, a11y
 infrastructure — is genuinely disjoint and parallelises without merge pain.
 
 **Track A — the landing journey.** Owns `page.tsx` + `NudgeFeedScreen.tsx`.
-Items 1, 2, 4, 5, 6, 9, 10 done; **only 7 remains**.
-**7 is the headline**, because the product currently stops at the plan.
+**Items 1–10 are all shipped.** The board is empty; what remains is the
+deferred list below.
 
 **Track B — data honesty and the loop.** Owns `src/domain/`, `src/app/api/`,
 `/outcome`, a11y infrastructure. Items 3, 4 (domain half), 6 (domain half),
@@ -37,11 +37,11 @@ its surface half is now unblocked.
 **Sequence.** Shipped so far: 1 + 2 (`4ba7b35`), 5 (`deee7d9`), 4 (`36563d0`
 on top of `c675c45`), 9 + 10 (`0a0c680`), and from the other lane 3 (`4933774`),
 6-domain (`9afa6c3`), 8 (`1be902c`), 9-domain (`RunAnnouncer` + `useFocusTrap`),
-the Garmin upload path (`92299c3`). **Remaining: item 7**, the landing payoff —
-the arrival surface, plus routing to `/outcome` once the trip's last day passes.
-It is last on purpose: an arrival screen that claims "the crew learned from your
-week" is worthless if the week belongs to whoever used the demo last, and 6 is
-what made the first number on the page the traveller's own.
+the Garmin upload path (`92299c3`), and 7 (the arrival payoff). **Nothing is
+open on the board** — the sequence ran 1 → 10 and closed every item, 7 last as
+planned: an arrival screen that claims "the crew learned from your week" is
+worthless if the week belongs to whoever used the demo last, and 6 is what made
+the first number on the page the traveller's own.
 
 **Coordination.** Only A edits `page.tsx` / `NudgeFeedScreen.tsx`; B files the
 change and A picks it up. Rebase on `main` daily — a second agent commits
@@ -148,10 +148,33 @@ merely looking untidy. Verified against `main` on 2026-10-17.
 
    All three answers now keep the day intact and move the numbers correctly: the
    caffeine cutoff lands at 14:25 / 14:55 / 16:10 for early / mid / late.
-7. **A** · **The landing payoff** — "Land at 100%" is promised in the nav and never
-   cashed. Post-flight days now preview, so the maths for landing exists, but
-   there is no arrival surface and nothing navigates to `/outcome` when a
-   trip's last day passes. This is the vision's Window Seat ending.
+7. ~~**A** · **The landing payoff**~~ — shipped `HEAD`: `/arrival` is the first
+   morning in the destination, scored against what the gate promised, and it is
+   reachable three ways — automatically from Today's hero once the last planned
+   day has passed, from the Menu, and by URL. The vision's Window Seat ending.
+
+   Scoring it needed the promise to exist: the briefing has always carried
+   `coverage`, but `meridian:lastPlan` dropped it, so after landing the only
+   number available was the traveller's own recollection. Both `coverage` and
+   `savedAt` are persisted now, and `arrivalRead` reads them back — degrading
+   honestly, since a plan saved before `coverage` existed reports *no promise*
+   rather than a zeroed one that would claim the crew promised nothing.
+
+   Today stops offering steps once the trip is over: the countdown, the step and
+   its Done button are all suppressed, because past the last day "your next step
+   is 07:00" is fiction.
+
+   Two off-by-ones found and fixed while building it. Arrival is judged at the
+   **destination's** clock, so a 21:00 Tokyo landing isn't still "D-1" because
+   it's lunchtime at home. And days-remaining counts **calendar dates** rather
+   than dividing elapsed minutes — the division drifts by one whenever the local
+   time isn't midnight, which made a finished trip claim "1 day left" while the
+   copy underneath it said "That's the trip". Both are now pinned by tests.
+
+   Kept out of the component so they can be asserted: `domain/arrival.ts` (the
+   read) and `domain/arrival-rows.ts` (the cells), because an arrival screen
+   that flatters is worse than not having one. `?arrived=1` pretends the trip is
+   over so the payoff can be looked at without waiting a week for it.
 8. ~~**B** · **Gate `/outcome`, and stop lying in it**~~ — shipped `1be902c`:
    no saved plan → "nothing to grade yet" card; sliders start unset and save
    stays disabled until both are real answers; "saved" only fires when the

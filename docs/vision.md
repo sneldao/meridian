@@ -96,20 +96,47 @@ cashed. The target loop:
 | **Orient** | `/` hero | The residual is legible: how far behind your dawn is, and how much is banked. | ✅ |
 | **Personalise** | `/` CTA | The crew run is watchable — progress is *announced*, not just animated, and a dropped stream never bricks the button. | ✅ |
 | **Live the shift** | `/` Today | One step, one tap. Taps persist and are attributable to the traveller. | ✅ |
-| **Land** | *missing* | **The payoff.** First morning in the destination, scored against what was promised at the gate. | **to build** |
-| **Reflect** | `/outcome` | Reached automatically when the trip's last day passes. Shows the plan it is grading. | gating ✅, routing to do |
+| **Land** | `/arrival` | **The payoff.** First morning in the destination, scored against what was promised at the gate. | ✅ |
+| **Reflect** | `/outcome` | Reached from the arrival screen, where arriving makes it meaningful. Shows the plan it is grading. | ✅ |
 
 The engine side of most of this is now true: the residual is legible, taps
 persist and are attributable, a stalled run can't strand anyone, the run is
 announced as it works, the self-report can't fabricate a score, and the one
 question is asked and answered.
 
-**Stage 5 is the only one left.** The engine previews post-flight days
-(`c9eccd2`) and the traveller is scoped, so the maths for landing exists — but
-there is no arrival surface, nothing ever navigates to `/outcome`, and the
-vision's own Window Seat ending was never built. This is where the
-ghost-terminator work pays off, because landing is the one moment the residual
-is finally zero and the two lines have fused.
+**Every stage is now built.** The journey runs Arrive → Orient → Personalise →
+Live the shift → Land → Reflect, and "Land at 100%" is finally a promise the
+product keeps rather than one it makes.
+
+`/arrival` is the moment the whole thing was built toward: the residual the hero
+counted down for days is settled, the two dawn lines have fused, and the score is
+stated against the gate's own promise. It opens automatically once the last
+planned day has passed — and importantly it stops *offering steps* on Today from
+then on, because past the last day "your next step is 07:00" is fiction. The
+surface that had something to do becomes a surface that has finished.
+
+### What landing cost, and what it found
+
+The arrival screen is the only place the product makes a claim about a
+traveller's trip after the fact, and building it turned up three things worth
+keeping:
+
+- **The promise had to be persisted to be honest about.** The briefing always
+  carried `coverage`; `meridian:lastPlan` dropped it. So the one number that
+  matters after landing existed only in memory. It is saved now, and a plan
+  predating it reports *no promise* rather than a zeroed one — because "the crew
+  promised nothing" is a different and wrong statement.
+- **Time is the destination's, not the viewer's.** A 21:00 Tokyo landing is not
+  still "D-1" because it is lunchtime in London. Judging at the wrong clock makes
+  the payoff arrive a day late, or not at all.
+- **Count dates, don't divide minutes.** Days-remaining by elapsed-minute
+  division drifts by one whenever the local time isn't midnight — which made a
+  finished trip claim "1 day left" directly above copy saying "That's the trip."
+
+Both off-by-ones were invisible in review and obvious in the browser. Worth
+remembering: for anything that reads as a date on a traveller's timeline, test
+the *boundaries* (the last day, the first morning, a non-midnight clock) rather
+than a single mid-trip date.
 
 ---
 

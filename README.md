@@ -42,6 +42,7 @@ run history server-side (project `vpeakvspljdoxbwfsdvw`, see
 |---|---|
 | `/pitch` | *(removed — the deck retired with the pre-overhaul surface)* |
 | `/` | Today — the one step to do now, then the day timeline and readiness. No trip yet → setup; trip set → a trip chip with an Edit sheet. Asks one personalisation question inline when the baseline is still the demo one, and takes a departure window that the solver plans around. `?depth=guided` adds the deep-dive visuals |
+| `/arrival` | The payoff — first morning in the destination, scored against what the gate promised. Reached from Today once the last planned day passes, or `?date=` to score any trip (`?arrived=1` to preview) |
 | `/review` | Saved plan: days, citations, .ics download |
 | `/history` | Past runs (with provider + fallback provenance) |
 | `/outcome` | Post-trip self-report (adherence, jetlag, notes); learned cross-run memory. Gated on a saved plan — no plan, nothing to grade |

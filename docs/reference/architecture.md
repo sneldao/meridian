@@ -147,8 +147,11 @@ src/domain/      types, circadian scorer + phase-response model, placement
                  solver + previewPlan, today (which day is now, next step),
                  sun (subsolar point, terminator, body-clock ghost), dawn-layers
                  (the shared day/night + ghost path builder both globes draw),
-                 adherence, readiness, fixtures (trip horizon via horizonFor;
-                 Alex fixture for the demo route, neutralCalendarFor elsewhere)
+                 adherence, readiness, arrival (the landing read + headline),
+                 arrival-rows (the `/arrival` cells, kept out of the component
+                 so the numbers can be asserted), fixtures (trip horizon via
+                 horizonFor; Alex fixture for the demo route,
+                 neutralCalendarFor elsewhere)
 src/tools/       science (SMR → Firecrawl → static), tavily, qloo,
                  calendar (ICS), wearable
 src/agents/      providers, crew prompts, runtime, night replay, morning replay
@@ -157,7 +160,8 @@ src/components/  NudgeFeedScreen (the Calm `/` surface: next step, timeline,
                  HeroDawnPanel + DawnScrubber (the residual globe and its
                  clock/shift scrubber — hover, fine-pointer drag, and two native
                  range inputs, all layered on a caption that states the same
-                 read in words), TripSetupScreen (setup body), DeepDiveVisuals
+                 read in words), RunAnnouncer (aria-live run narration),
+                  TripSetupScreen (setup body), DeepDiveVisuals
                  (globe / swimlane / week, `?depth=guided` only), CrewFeed,
                  DayStrip, BriefingCard, HandoffBanner, RoutePicker,
                  MorningCheckin, DailyJourney, AgentDrawer, AnchoredPopover,

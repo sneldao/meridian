@@ -347,6 +347,7 @@ export function NudgeFeedScreen({
   // after landing. What the pre-flight days banked shows as the residual.
   const isPostFlightDay =
     !!trip && !!activeDaySpec && activeDaySpec.dayIndex > trip.departureDayIndex;
+
   const landedResidualMin = useMemo(() => {
     let last: number | null = null;
     preview?.forEach((s) => {
@@ -410,14 +411,41 @@ export function NudgeFeedScreen({
   // "Your next step" — the first incomplete step by TIME, never by category
   // order. Windows whose end has passed collapse into "Missed". A day that
   // isn't today (at its own place — see dayPlace) has nothing missed.
+  const nowDate = new Date();
   const isToday =
     !!trip &&
     !!activeDaySpec &&
-    todayDayIndex(trip, new Date()) === activeDaySpec.dayIndex;
+    todayDayIndex(trip, nowDate) === activeDaySpec.dayIndex;
   const nowMin =
     trip && activeDaySpec && isToday
       ? nowMinOnDay(trip, activeDaySpec.dayIndex, new Date())
       : null;
+
+  // The trip is over once the last planned day has passed at the destination's
+  // clock. Judged there rather than in the viewer's timezone — a traveller whose
+  // trip ended at 21:00 Tokyo time shouldn't still be told there are days left
+  // because it's lunchtime at home.
+  // The trip is over once the last planned day has fully passed at the
+  // destination's clock — compared as calendar dates, not by dividing elapsed
+  // minutes, which drifts by one whenever the local time isn't midnight.
+  const tripFinished = (() => {
+    if (!trip) return false;
+    const last = trip.days[trip.days.length - 1];
+    if (!last?.date) return false;
+    // `nowDate` (captured once above) is the clock to judge with — not
+    // `nowMin`, which is null whenever the *selected* day isn't today, and
+    // that is exactly the state a finished trip is always in. Judging on it
+    // made the completion card unreachable.
+    const todayAtDest = new Date(
+      nowDate.getTime() + trip.destination.utcOffsetMin * 60000,
+    )
+      .toISOString()
+      .slice(0, 10);
+    return (
+      Date.parse(`${todayAtDest}T00:00:00Z`) >
+      Date.parse(`${last.date}T00:00:00Z`)
+    );
+  })();
   // Skipped counts as resolved: "I'm not doing this" should drop the step out
   // of the hero slot and the missed list, not keep nagging with it.
   const resolvedIds = useMemo(
@@ -579,18 +607,51 @@ export function NudgeFeedScreen({
             )
           ) : heroNudge ? (
             <>
-              <span className="tw" style={{ alignSelf: "flex-start", fontSize: "15px", fontWeight: 800 }}>
-                {countdown ?? ""}
-                {countdown ? " · " : ""}
-                {fmtMin(heroNudge.startMin)} {cityFor(heroNudge.dayIndex)}
-              </span>
-              <h2>{heroNudge.title}</h2>
-              <p className="s">{heroNudge.actionSummary}</p>
-              <div className="drawer">
-                <b>Why this helps</b>
-                <p>{heroNudge.whyItHelps}</p>
-              </div>
-              <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: "2px" }}>
+              {/* The trip is over: stop offering steps and point at the score.
+                  This is where "Land at 100%" actually gets cashed, and it is
+                  the one moment the journey was building toward. */}
+              {tripFinished && (
+                <div className="arrival-nudge">
+                  <span className="tw">Trip complete</span>
+                  <h2>See how the shift landed</h2>
+                  <p className="s">
+                    The plan ran out. Score the trip against what the crew
+                    promised at the gate, then tell it how it actually went — that
+                    is what the next trip plans from.
+                  </p>
+                  <div className="arrival-nudge-btns">
+                    <a className="p1" href={`/arrival?date=${trip?.days[0]?.date ?? ""}`}>
+                      Score the trip
+                    </a>
+                    <a className="p2" href="/outcome">
+                      How it went
+                    </a>
+                  </div>
+                </div>
+              )}
+              {/* Past the last planned day the step itself is wrong advice —
+                  there is no next step, so the countdown and the Done button
+                  would both be fiction. The completion card above replaces the
+                  lot. */}
+              {!tripFinished && (
+                <>
+                  <span
+                    className="tw"
+                    style={{ alignSelf: "flex-start", fontSize: "15px", fontWeight: 800 }}
+                  >
+                    {countdown ?? ""}
+                    {countdown ? " · " : ""}
+                    {fmtMin(heroNudge.startMin)} {cityFor(heroNudge.dayIndex)}
+                  </span>
+                  <h2>{heroNudge.title}</h2>
+                  <p className="s">{heroNudge.actionSummary}</p>
+                  <div className="drawer">
+                    <b>Why this helps</b>
+                    <p>{heroNudge.whyItHelps}</p>
+                  </div>
+                </>
+              )}
+              <div style={{ display: tripFinished ? "none" : "flex", gap: 10, alignItems: "center", marginTop: "2px" }}>
                 <button
                   type="button"
                   onClick={() => markDone(heroNudge)}

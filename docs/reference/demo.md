@@ -96,6 +96,7 @@ per day and may need tuning.
 | `meridian:outcomes` | `/outcome` submissions |
 | `meridian:checkins` | `/outcome` (structured via `/api/crew/checkin`) → read by replan runs |
 | `meridian:wakeBand` | the inline wake question on `/` → the wake-band baseline |
+| `meridian:lastPlan.coverage` | the gate's promise, read back by `/arrival` to score the trip |
 | `meridian:completedNudges:<origin>-<dest>-<date>` | per-step did/skip marks, trip-scoped |
 | `meridian:depth` | Calm / Guided depth dial |
 | `meridian:voice` | voice toggle |
@@ -113,6 +114,7 @@ records. Clearing localStorage does not reset a traveller's memory; see
 | Plan stuck locked at 0 | `bun run replay:check` — prints every eval verdict. If `.env.local` points at a provider with no key, every day fails this way; `AGENT_PROVIDER=replay` runs with zero keys |
 | CTA stuck on "Checking your plan" | The client watchdog resets after 60s idle (12s once a briefing lands). If it never clears, a post-briefing write is blocking `done` — all four are now bounded to 4s, so a slow FalkorDB can't do it |
 | No evidence chips in a step | By design — evidence only exists after a real crew run. On a machine whose provider is failing there is no plan, so there is nothing to show evidence about |
+| `/arrival` says "still London time" | It judges arrival at the **destination's** clock, which is correct. Pass a past `?date=` to see the payoff: `/arrival?date=YYYY-MM-DD`, and `&arrived=1` to pretend the trip is over |
 | Fresh clone, hooks silent | `git config core.hooksPath .githooks` |
 | Stage wifi dead | `replay` needs no network at all — that's the point |
 | Morning replan shows the night script | URL has no `startDay` or `checkins` — add them |
