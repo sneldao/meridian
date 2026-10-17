@@ -19,7 +19,7 @@ import type {
 } from "@/domain/types";
 import { type LogEntry } from "@/components/CrewFeed";
 import { NudgeFeedScreen } from "@/components/NudgeFeedScreen";
-import { TripSummary } from "@/components/TripSummary";
+import { RoutePicker } from "@/components/RoutePicker";
 import { DeepDiveVisuals } from "@/components/DeepDiveVisuals";
 import { TripSetupScreen } from "@/components/TripSetupScreen";
 import { HandoffBanner } from "@/components/HandoffBanner";
@@ -791,7 +791,27 @@ export default function Home() {
         {trip ? (
           <>
             <div ref={setupRef}>
-              <TripSummary trip={trip} onEdit={openSetup} />
+              {/* Item A.1 — the route picker is now the first thing the
+                  traveller sees, not buried behind Edit → Edit trip. The demo
+                  trip (LHR → HND) is the *starting point*, not the only option.
+                  Rule 1 stands — auto-trip in five seconds is right; what was
+                  missing was the path to make it theirs. The other settings
+                  (wearable, wake band, flight window) stay behind Edit trip
+                  in the Menu — they aren't the first-impression problem. */}
+              <RoutePicker
+                origin={origin}
+                dest={dest}
+                date={departureDate}
+                onChange={(next) => {
+                  setOrigin(next.origin);
+                  setDest(next.dest);
+                  setDepartureDate(next.date);
+                  // A window id from the old direction is meaningless on the
+                  // new one; fall back to the new route's recommended window.
+                  setFlightChoice(null);
+                  reset();
+                }}
+              />
             </div>
 
             <div ref={guideRef}>
