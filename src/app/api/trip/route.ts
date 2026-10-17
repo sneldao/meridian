@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { ADHERENCE_PROFILE, GARMIN_BASELINE, applyFlightChoice, buildTrip, horizonFor, isKnownCity } from "@/domain/fixtures";
 import { flightWindowFor } from "@/domain/nudges";
 import { fetchCalendar } from "@/tools/calendar";
+import { loadWearableBaseline } from "@/tools/wearable";
+import { tenantOf } from "@/lib/tenant";
 import { providerKind } from "@/agents/providers";
 
 export const dynamic = "force-dynamic";
@@ -35,11 +37,14 @@ export async function GET(req: NextRequest) {
   const flightId = sp.get("flight");
   const flightWindow = flightWindowFor(trip, flightId);
   const calendar = flightWindow ? applyFlightChoice(cal.events, flightWindow.departMin) : cal.events;
+  // A traveller who uploaded a wearable export gets their own numbers back,
+  // tagged as real. Everyone else gets the labelled sample profile.
+  const wearable = await loadWearableBaseline(tenantOf(req));
   return NextResponse.json({
     trip,
-    baseline: GARMIN_BASELINE,
-    baselineSource: "fixture" as const,
-    baselineKind: "demo-default" as const,
+    baseline: wearable ?? GARMIN_BASELINE,
+    baselineSource: wearable ? ("garmin" as const) : ("fixture" as const),
+    baselineKind: wearable ? ("garmin" as const) : ("demo-default" as const),
     adherence: ADHERENCE_PROFILE,
     calendar,
     calendarSource: cal.source,
