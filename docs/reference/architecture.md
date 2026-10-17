@@ -109,11 +109,13 @@ On `/`, per-step did/skip marks queue a trip-scoped ledger and flush as
 structured `CheckIn`s on "Tell the crew", with `startDay` derived from the last
 marked day (not a fixed index).
 
-**Known scoping gap.** `recordCheckIn` (`src/domain/memory.ts`) appends to a
-single global `artifacts/crew-memory.json`, and the intake route folds *all* of
-it into one profile — so one traveller's compliance marks currently move the
-floor for every other traveller. The graph path already takes a `tenant`; the
-file path does not. Tracked in [../plan/backlog.md](../plan/backlog.md).
+**Traveller scoping.** Middleware stamps a `meridian-tid` cookie per visitor
+and mirrors it as `x-meridian-tid` on `/api/*` requests (`src/middleware.ts`,
+`src/lib/tenant.ts` → `tenantOf`). Every memory surface scopes by it:
+`artifacts/crew-memory-{tid}.json` files, the adherence fold, graph writes,
+`recordRun`, `GET /api/memory`. `?tenant=` remains the explicit override
+(demos, seeded fixtures, MCP); absent both, the shared `crew-memory.json`
+serves the demo traveller.
 
 ## Persistence
 

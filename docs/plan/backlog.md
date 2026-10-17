@@ -74,14 +74,10 @@ merely looking untidy. Verified against `main` on 2026-10-17.
    drop leaves the only escape as Escape or a reload. Also surface the error on
    the Today surface — it currently only reaches the closed-by-default
    `AgentDrawer`.
-3. **B** · **Identify the traveller before "the crew learns"** — check-ins flush as
-   structured `CheckIn`s, but `recordCheckIn` appends every visitor's marks to
-   one global `artifacts/crew-memory.json` (`src/domain/memory.ts:10,32`) and
-   `foldCheckIns` folds them all into one adherence profile
-   (`api/crew/checkin/route.ts:26`). One traveller skipping a 6am light moves
-   the compliance floor for everyone. The graph path already takes a `tenant`
-   (`route.ts:35`); scope the file path the same way and seed `foldCheckIns`
-   per traveller.
+3. ~~**B** · **Identify the traveller before "the crew learns"**~~ — shipped
+   `4933774`: `meridian-tid` cookie → `x-meridian-tid` header via middleware;
+   memory files, the fold, graph writes, run records, `/api/memory` all scope
+   by it. `?tenant=` stays the explicit override.
 4. **B** · **Flight-window picker is decorative** — `selectedFlightId`
    (`src/app/page.tsx:88`) never reaches `tripQuery`/`beginStream`, so it has
    zero effect on any plan. And `getFlightRecommendations` returns `-west` ids
@@ -130,7 +126,8 @@ merely looking untidy. Verified against `main` on 2026-10-17.
 
 - **Reminder channel** — no notification infra exists; don't fake a control.
 - **Cross-trip summary** — only surface "the crew remembers" from real prior
-  runs in the graph; needs a second real trip's data. Blocked on #3.
+  runs in the graph; needs a second real trip's data. Unblocked now that #3
+  scopes memory per traveller — still needs the second trip.
 - **Orphaned routes** — `/dev` and `/team` are complete with zero inbound
   links; `/crew`'s "Trip Setup" pill links to `?screen=setup`, which nothing
   reads. Link or hide.
