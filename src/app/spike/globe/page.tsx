@@ -4,7 +4,9 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "reac
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { HeroDawnPanel } from "@/components/HeroDawnPanel";
+import { WindowSeat } from "@/components/globe/WindowSeat";
 import { DEMO_TRIP } from "@/domain/fixtures";
+import { easeInOut } from "@/lib/globe/great-circle";
 import type { CityHover, FrameStats } from "@/components/globe/DawnGlobeR3F";
 
 // Tier 1 spike host: the WebGL dawn globe beside the shipped SVG hero, on one
@@ -69,6 +71,39 @@ const mountedStore = {
   getServerSnapshot: () => false,
 };
 
+/**
+ * A 4Hz clock, shared by the globe and the window seat.
+ *
+ * Two constraints shape this. `useSyncExternalStore` because the server has no
+ * clock and the panes read real solar altitude — a lazy `new Date()` bakes the
+ * server's time into the first paint and React throws the tree away on
+ * hydration. And a *stable* snapshot reference between ticks, because
+ * `getSnapshot` returning a fresh `Date` every call would re-render forever.
+ * So `currentNow` is only reassigned inside the interval, and both the server
+ * snapshot and the first client render see `null`.
+ */
+let currentNow: Date | null = null;
+const nowListeners = new Set<() => void>();
+let nowTimer: ReturnType<typeof setInterval> | null = null;
+function subscribeNow(cb: () => void) {
+  nowListeners.add(cb);
+  if (nowTimer === null) {
+    nowTimer = setInterval(() => {
+      currentNow = new Date();
+      for (const l of nowListeners) l();
+    }, 250);
+  }
+  return () => {
+    nowListeners.delete(cb);
+    if (nowListeners.size === 0 && nowTimer !== null) {
+      clearInterval(nowTimer);
+      nowTimer = null;
+    }
+  };
+}
+const getNowSnapshot = () => currentNow;
+const getServerNow = () => null;
+
 const OWED_STEPS = [480, 360, 240, 120, 60, 30, 15, 0];
 /** Seconds for the full great-circle flight. The archive script gives the Window
  *  Seat 20s of an 85s cut; this is the same order of magnitude — long enough to
@@ -89,15 +124,7 @@ export default function GlobeSpikePage() {
   // the read-out, so React is not re-rendering sixty times a second.
   const flightRef = useRef(0);
 
-  // A ticking clock so the terminator moves at the Earth's real rate, matching
-  // the hero's 4Hz rule: sub-pixel per frame, continuous, cheap. The Canvas is
-  // `ssr: false` and HeroDawnPanel guards its own time-dependent render behind
-  // a hydration flag, so a lazy `new Date()` here cannot mismatch.
-  const [date, setDate] = useState<Date>(() => new Date());
-  useEffect(() => {
-    const id = setInterval(() => setDate(new Date()), 250);
-    return () => clearInterval(id);
-  }, []);
+  const date = useSyncExternalStore(subscribeNow, getNowSnapshot, getServerNow);
 
   // The flight dial. Autoplay walks the ref and mirrors to state at ~10Hz,
   // which is roughly the rate a person can read a number at.
@@ -133,7 +160,7 @@ export default function GlobeSpikePage() {
   // rendering, never the data.
   const scene = useMemo(
     () => ({
-      date,
+      date: date ?? new Date(0),
       owedMin,
       requiredShiftMin: DEMO_TRIP.requiredShiftMin,
       trip: DEMO_TRIP,
@@ -263,7 +290,8 @@ export default function GlobeSpikePage() {
             flight — the great circle
           </h2>
           <div className="font-mono2 text-xs text-clay">
-            {Math.round(flightT * 100)}% · {DEMO_TRIP.origin.code} → {DEMO_TRIP.destination.code}
+            route {Math.round(easeInOut(flightT) * 100)}% · {DEMO_TRIP.origin.code} →{" "}
+            {DEMO_TRIP.destination.code}
           </div>
         </div>
         <input
@@ -308,11 +336,16 @@ export default function GlobeSpikePage() {
           </button>
         </div>
         <p className="mt-3 text-xs leading-relaxed text-clay-2">
-          The camera rides the same <code className="font-mono2">geoInterpolate</code> arc the SVG
+          The dial is *time* through the 20s flight; the read-out above shows where on the route
+          the camera actually is (the same ease the camera runs). The camera rides the same{" "}
+          <code className="font-mono2">geoInterpolate</code> arc the SVG
           lens draws, and it eases from rest and arrives at rest. Orbiting is disabled while it
           flies so the two never fight for the same camera. Hover any city light for its real
           local daylight state.
         </p>
+      </section>
+      <section className="mt-6 rounded-2xl border border-clay-line bg-cream-card p-5">
+        <WindowSeat trip={DEMO_TRIP} date={date} owedMin={owedMin} />
       </section>
     </main>
   );

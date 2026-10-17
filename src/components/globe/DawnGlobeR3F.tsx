@@ -13,7 +13,7 @@ import {
 } from "@/domain/sun";
 import { GHOST_VISIBLE_MIN } from "@/domain/dawn-layers";
 import type { Trip } from "@/domain/types";
-import { clusterAirports, EXPAND_PX } from "@/domain/city-lights";
+import { clusterAirports, dotBrightness, resolveLightSet } from "@/domain/city-lights";
 import { AIRPORTS } from "@/domain/airports";
 import {
   alongArc,
@@ -60,11 +60,19 @@ const ATMO_R = 1.09;
  *  `uSunDir` and `uBodySunDir` are `sunDirection(subsolarPoint(date))` and the
  *  same for `bodySubsolarPoint(...)` — no geometry is generated here at all,
  *  which is the whole trick. The 90° cap `dawn-layers` tessellates is exactly
- *  the set of normals with `dot(n, sunDir) < 0`. */
+ *  the set of normals with `dot(n, sunDir) < 0`.
+ *
+ *  The normal is taken from the *position*, not the `normal` attribute, on
+ *  purpose: both surfaces this shader serves sit exactly on spheres centred at
+ *  the origin, so the position direction is the true analytic normal — and the
+ *  land geometry is unindexed with duplicated vertices, where `computeVertex-
+ *  Normals` would give flat per-facet normals and a stair-stepped terminator
+ *  over the continents while the ocean's stayed smooth. One dot product on the
+ *  position fixes both shares of the world to the same analytic curve. */
 const DAWN_VERT = /* glsl */ `
   varying vec3 vNrm;
   void main() {
-    vNrm = normalize(normal);
+    vNrm = normalize(position);
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
   }
 `;
@@ -247,7 +255,12 @@ function Suns({ sub, body }: { sub: SubsolarPoint; body: SubsolarPoint | null })
  *
  *  The move is a chase, not a rail: the camera trails the tangent and lifts,
  *  so the globe rolls away underneath the traveller. Driven by `greatCircle`,
- *  which is the same `geoInterpolate` arc WorldLens already draws. */
+ *  which is the same `geoInterpolate` arc WorldLens already draws.
+ *
+ *  This only runs when the controls are registered as the scene default
+ *  (`makeDefault`) — that is how the laptop-honest handoff works: orbit is
+ *  disabled for the flight, this camera takes the wheel, and when the ref
+ *  reaches 1 the dial hands control back exactly where the camera now is. */
 function FlightCamera({
   gc,
   progress,
@@ -265,15 +278,32 @@ function FlightCamera({
   const camera = useThree((s) => s.camera);
   const pos = useRef(new THREE.Vector3());
   const look = useRef(new THREE.Vector3());
+  // Set on the first frame of a flight, so the dive starts from whatever
+  // framing the user had parked the camera in — not from the origin, which
+  // is *inside* the sphere and would show the shell's dark back-face for the
+  // first few frames of every flight.
+  const started = useRef(false);
 
-  useFrame(() => {
+  // Handing control back resets this, so the *next* flight again starts wherever
+  // the user has since parked the camera.
+  useEffect(() => {
+    if (!enabled) started.current = false;
+  }, [enabled]);
+
+  useFrame((_, delta) => {
     if (!enabled || !controls) return;
+    if (!started.current) {
+      started.current = true;
+      pos.current.copy(camera.position);
+      look.current.copy(controls.target);
+    }
     const t = easeInOut(progress.current);
     const { point, tangent } = alongArc(gc, t);
     const want = chasePosition(point, tangent, distance, lift);
-    // Lerp toward the goal rather than snapping to it, so a scrubbed dial
-    // glides instead of teleporting.
-    const k = 0.12;
+    // Smooth toward the goal in *time*, not per frame — the ease-out as it
+    // approaches a scrubbed target reads identically at 30fps and 120fps,
+    // instead of gliding 4x slower between them.
+    const k = 1 - Math.exp(-delta / 0.15);
     pos.current.lerp(want, k);
     look.current.lerp(point, k);
     camera.position.copy(pos.current);
@@ -283,33 +313,82 @@ function FlightCamera({
   return null;
 }
 
-/** City lights, as one THREE.Points.
+/** The lights, via the lens's own clustering, gated by the lens's own curve.
  *
- *  These are the 1,145 airports WorldLens already draws as SVG circles, and
- *  they use its own clustering: a group resolves into its members once it
- *  covers more than `EXPAND_PX` on screen. Brightness is not invented — it is
- *  `solarZenithDeg`, the same function the lens keys its SVG dots on, so a dot
- *  is lit here exactly when it is lit there.
+ *  These are the ~1,145 airports WorldLens draws as SVG circles, cut with the
+ *  same clustering (`clusterAirports`) and the same per-cluster screen-size
+ *  decision (`resolveLightSet` → `shouldSplit`) — dense cells resolve into
+ *  their members once they cover `EXPAND_PX`, sparse ones stay one light.
+ *
+ *  Brightness is `dotBrightness(solarZenithDeg(...))` — the exact curve the
+ *  lens keys its SVG dots on, imported from the same place so the parity is
+ *  by construction, not by a matching constant. A light is bright here on the
+ *  same nights the lens makes it bright, because both read one curve of one
+ *  sun. Feeding 1,145 airports the same brightness through day would be the
+ *  continent-lit-through-the-night lie the land shader refuses to tell.
+ *
+ *  The shader exists because a per-vertex attribute cannot drive the stock
+ *  `pointsMaterial`: nothing reads `aBright` otherwise, and the dishonesty
+ *  would be silent. It also buys round, soft-edged sprites and a cheap
+ *  discard for dots the terminator has fully extinguished.
  *
  *  The win over the SVG version is that 700–1,150 nodes become ONE draw call,
  *  and the split/cluster decision no longer costs a React reconciliation. */
+
+const LIGHT_VERT = /* glsl */ `
+  attribute float aBright;
+  varying float vBright;
+  uniform float uSize;   // world-space sprite scale, as three's points use it
+  uniform float uScale;  // half the drawing-buffer height in device px
+  void main() {
+    vBright = aBright;
+    vec4 mv = modelViewMatrix * vec4(position, 1.0);
+    gl_PointSize = uSize * (uScale / max(0.01, -mv.z));
+    gl_Position = projectionMatrix * mv;
+  }
+`;
+const LIGHT_FRAG = /* glsl */ `
+  precision highp float;
+  varying float vBright;
+  uniform vec3  uColor;
+  uniform float uOpacity;
+  void main() {
+    float a = vBright * uOpacity;
+    // Fully dark where the sun has the dot in daylight.
+    if (a <= 0.015) discard;
+    // Round, soft-edged sprite: gl_PointCoord is 0..1 across the billboard.
+    float d = length(gl_PointCoord - 0.5);
+    if (d > 0.5) discard;
+    gl_FragColor = vec4(uColor, a);
+  }
+`;
+
+/** Hovering must stay on the visible face. The library's default Points
+ *  threshold is 1 *world unit* — a full globe radius — so an unconfigured
+ *  ray names a metro on the far side of the planet. 0.025 is ~1.4° of arc;
+ *  the hemisphere test below closes the graze-the-limb gap that even a tuned
+ *  threshold leaves open. */
+const PICK_THRESHOLD = 0.025;
 function CityLights({ date, onHover }: { date: Date; onHover?: (h: CityHover | null) => void }) {
   const sub = useMemo(() => subsolarPoint(date), [date]);
   const camera = useThree((s) => s.camera);
   const size = useThree((s) => s.size);
+  const gl = useThree((s) => s.gl);
 
   // One buffer, rebuilt only when the split decision flips — not per frame.
   const { geometry, members } = useMemo(() => {
     const clusters = clusterAirports(AIRPORTS);
-    // Pixels per degree at the globe's surface, for EXPAND_PX's test. The
-    // camera pulls back as it flies, so this is recomputed as the geometry
-    // version is cheap enough to do every few frames rather than memoised hard.
-    const dist = camera.position.length() || 3;
+    // Pixels per degree at the globe's surface, for EXPAND_PX's test. Measured
+    // to the *surface*, not the origin — what matters is how many pixels a
+    // metro covers, and it covers them up close. Recomputed on every clock
+    // tick (4Hz), which is human-speed for a clustering decision.
     const fov = ((camera as THREE.PerspectiveCamera).fov ?? 40) * (Math.PI / 180);
-    const pxPerDeg = (size.height / 2 / Math.tan(fov / 2) / dist) * (180 / Math.PI);
-    const split = pxPerDeg > EXPAND_PX / Math.max(1e-6, clusters[0]?.radiusDeg ?? 1);
-
-    const list = split ? clusters.flatMap((c) => c.members) : clusters;
+    const halfH = size.height / 2 / Math.tan(fov / 2);
+    const dist = Math.max(0.35, camera.position.length() - (1 + 0.004));
+    const pxPerDeg = (halfH / dist) * (180 / Math.PI);
+    // Per-cluster split, exactly as the lens decides — the global threshold
+    // keyed to `clusters[0]` was order-dependent and wrong.
+    const list = resolveLightSet(clusters, pxPerDeg);
     const positions = new Float32Array(list.length * 3);
     const brightness = new Float32Array(list.length);
     list.forEach((d, i) => {
@@ -317,9 +396,8 @@ function CityLights({ date, onHover }: { date: Date; onHover?: (h: CityHover | n
       positions[i * 3] = v.x;
       positions[i * 3 + 1] = v.y;
       positions[i * 3 + 2] = v.z;
-      // Same curve WorldLens uses: dark in daylight, full at night.
-      const z = solarZenithDeg(d.lat, d.lon, sub);
-      brightness[i] = Math.min(1, Math.max(0, (z - 90) / 12));
+      // Same curve WorldLens uses — `dotBrightness`, the shared one.
+      brightness[i] = dotBrightness(solarZenithDeg(d.lat, d.lon, sub));
     });
     const g = new THREE.BufferGeometry();
     g.setAttribute("position", new THREE.BufferAttribute(positions, 3));
@@ -329,9 +407,10 @@ function CityLights({ date, onHover }: { date: Date; onHover?: (h: CityHover | n
 
   useEffect(() => () => geometry.dispose(), [geometry]);
 
-  // Hover: raycast against the points, then report the nearest airport. The
-  // screen picks the cluster; the members are then searched in the same cell so
-  // the read-out names a real airport rather than a grid centroid.
+  // Hover: raycast against the points, then report the nearest airport — on
+  // the camera's side of the limb only. The screen picks the cluster; the
+  // members are then searched in the same cell so the read-out names a real
+  // airport rather than a grid centroid.
   const handleMove = (e: { pointer: THREE.Vector3; stopPropagation: () => void }) => {
     if (!onHover) return;
     e.stopPropagation();
@@ -342,7 +421,17 @@ function CityLights({ date, onHover }: { date: Date; onHover?: (h: CityHover | n
     // R3F hands a Vector3 here (Vector2-compatible x/y); project to a fresh
     // Vector2 so the raycaster type stays honest.
     hits.setFromCamera(new THREE.Vector2(e.pointer.x, e.pointer.y), camera);
-    const hit = hits.intersectObject(obj, false)[0];
+    const camDir = camera.position.clone().normalize();
+    let hit: THREE.Intersection | null = null;
+    for (const h of hits.intersectObject(obj, false)) {
+      if (h.index === undefined) continue;
+      // Reject candidates on the far hemisphere: the ray grazes a metro over
+      // ~12,000 km of rock well before the answer would be interesting.
+      if (h.point.clone().normalize().dot(camDir) > 0.08) {
+        hit = h;
+        break;
+      }
+    }
     if (!hit || hit.index === undefined) {
       onHover(null);
       return;
@@ -364,6 +453,26 @@ function CityLights({ date, onHover }: { date: Date; onHover?: (h: CityHover | n
   const pointsRef = useRef<THREE.Points>(null);
   const raycasterRef = useRef(new THREE.Raycaster());
 
+  // Set the pick radius once; the library default is one whole globe radius.
+  useEffect(() => {
+    raycasterRef.current.params.Points = { threshold: PICK_THRESHOLD };
+  }, []);
+
+  // Size-attenuated billboards: uScale is half the drawing-buffer height in
+  // device pixels, exactly the factor three's own points shader consumes.
+  // Recreated on resize the same way the dawn uniforms are recreated per tick
+  // — the lint rule forbids mutating a value already handed to a hook, and the
+  // cost is one color object on the rare resize, not per frame.
+  const uniforms = useMemo(
+    () => ({
+      uColor: { value: new THREE.Color("#cfe0ff") },
+      uOpacity: { value: 0.9 },
+      uSize: { value: 0.011 },
+      uScale: { value: (size.height / 2) * gl.getPixelRatio() },
+    }),
+    [size, gl],
+  );
+
   return (
     <points
       ref={pointsRef}
@@ -371,12 +480,11 @@ function CityLights({ date, onHover }: { date: Date; onHover?: (h: CityHover | n
       onPointerMove={handleMove}
       onPointerOut={() => onHover?.(null)}
     >
-      <pointsMaterial
-        size={0.011}
-        sizeAttenuation
-        color="#cfe0ff"
+      <shaderMaterial
+        vertexShader={LIGHT_VERT}
+        fragmentShader={LIGHT_FRAG}
+        uniforms={uniforms}
         transparent
-        opacity={0.85}
         depthWrite={false}
       />
     </points>
@@ -478,6 +586,7 @@ export function DawnGlobeScene({
       <CityLights date={date} onHover={onHover} />
       <Atmosphere />
       <OrbitControls
+        makeDefault
         enablePan={false}
         enableDamping
         dampingFactor={0.08}
@@ -508,7 +617,6 @@ export function DawnGlobeCanvas({ className, ...scene }: DawnGlobeCanvasProps) {
           gl.setClearColor(0x000000, 0);
         }}
       >
-        <ambientLight intensity={1} />
         <DawnGlobeScene {...scene} />
       </Canvas>
     </div>

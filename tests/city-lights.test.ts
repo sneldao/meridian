@@ -7,6 +7,8 @@ import {
   EXPAND_PX,
   angularDeg,
   clusterAirports,
+  dotBrightness,
+  resolveLightSet,
   shouldSplit,
 } from "../src/domain/city-lights";
 import { AIRPORTS } from "../src/domain/airports";
@@ -118,6 +120,91 @@ describe("shouldSplit", () => {
 
   test("a zero-radius (single-airport) group never splits", () => {
     expect(shouldSplit(0, 1000)).toBe(false);
+  });
+});
+
+describe("dotBrightness — the same curve the SVG lens keys its dots on", () => {
+  test("fully off in daylight", () => {
+    expect(dotBrightness(90)).toBe(0);
+    expect(dotBrightness(45)).toBe(0);
+    expect(dotBrightness(0)).toBe(0);
+  });
+
+  test("fully lit below the lens's 12° night ramp", () => {
+    expect(dotBrightness(102)).toBe(1);
+    expect(dotBrightness(180)).toBe(1);
+  });
+
+  test("is the lens's formula, not a lookalike every divergence would falsify", () => {
+    // Midpoint: (96 - 90) / 12 = 0.5.
+    expect(dotBrightness(96)).toBeCloseTo(0.5, 12);
+    // And monotone through the ramp — a dimming dot never brightens back.
+    let prev = -1;
+    for (let z = 90; z <= 102; z += 0.25) {
+      const b = dotBrightness(z);
+      expect(b).toBeGreaterThanOrEqual(prev);
+      prev = b;
+    }
+  });
+
+  test("arguments are zenith angle, 0 overhead to 180 underfoot", () => {
+    // Below the horizon the zenith keeps growing past 90 — 120° underfoot is
+    // deep night, right where city lights matter most.
+    expect(dotBrightness(120)).toBe(1);
+    expect(dotBrightness(180)).toBe(1);
+  });
+});
+
+describe("resolveLightSet — the split is per cluster, never per map-order accident", () => {
+  // Two airports across one 3° cell (corner to corner ~2°, centroid-to-far
+  // edge ~1.9°) → a dense cluster; two airports 0.2° apart → a sparse cluster
+  // the same resolution leaves merged. One global threshold would treat both
+  // identically.
+  const dense = [
+    { code: "A1", lat: 0, lon: 0 },
+    { code: "A2", lat: 2.7, lon: 2.7 },
+  ];
+  const sparse = [
+    { code: "S1", lat: 0, lon: 10.2 },
+    { code: "S2", lat: 0.2, lon: 10.3 },
+  ];
+
+  test("a dense group resolves into members while a sparse one stays one light", () => {
+    // pxPerDeg 6: dense covers ~11px (> 9), sparse ~1px (< 9).
+    const out = resolveLightSet([...clusterAirports(dense), ...clusterAirports(sparse)], 6);
+    expect(out).toHaveLength(3); // two members + one held centroid
+    // Exactly the dense pair plus the sparse centroid.
+    const lats = out.map((d) => +d.lat.toFixed(6)).sort((a, b) => a - b);
+    expect(lats).toEqual([0, 0.1, 2.7]);
+  });
+
+  test("at a tighter zoom the same sparse group also resolves", () => {
+    const out = resolveLightSet([...clusterAirports(dense), ...clusterAirports(sparse)], 100);
+    expect(out).toHaveLength(4);
+  });
+
+  test("agrees with shouldSplit per cluster, wherever the input was placed", () => {
+    const clusters = clusterAirports(AIRPORTS);
+    const expected = clusters.reduce(
+      (s, c) => s + (shouldSplit(c.radiusDeg, 6) ? c.members.length : 1),
+      0,
+    );
+    // Reversing the input must not change the count — the split decision is
+    // the cluster's own, not clusters[0]'s.
+    expect(resolveLightSet(clusters, 6)).toHaveLength(expected);
+    expect(resolveLightSet([...clusters].reverse(), 6)).toHaveLength(expected);
+  });
+
+  test("every emitted dot is placeable and no wider than the input set", () => {
+    const clusters = clusterAirports(AIRPORTS);
+    for (const px of [1.5, 4, 6, 8]) {
+      const out = resolveLightSet(clusters, px);
+      expect(out.length).toBeLessThanOrEqual(AIRPORTS.length);
+      for (const d of out) {
+        expect(Number.isFinite(d.lat)).toBe(true);
+        expect(Number.isFinite(d.lon)).toBe(true);
+      }
+    }
   });
 });
 

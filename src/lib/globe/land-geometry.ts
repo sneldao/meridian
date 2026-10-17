@@ -141,7 +141,11 @@ export function landGeometry(): LandGeometryResult {
 
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-  geometry.computeVertexNormals();
+  // No `computeVertexNormals`: the dawn shader takes its normal as the
+  // position direction (analytic, exact for vertices lying on a sphere).
+  // Computing them here would give this unindexed mesh only flat per-facet
+  // normals — which is what would have stair-stepped the terminator over the
+  // continents while the ocean's stayed smooth.
   cached = { geometry, rings, triangles, failedRings };
   return cached;
 }

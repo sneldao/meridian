@@ -20,7 +20,7 @@ import { solarZenithDeg, subsolarPoint } from "@/domain/sun";
 import { dawnLayers, shiftDegToMin } from "@/domain/dawn-layers";
 import { utcOffsetMinOn } from "@/domain/timezones";
 import { AIRPORTS, findAirport } from "@/domain/airports";
-import { clusterAirports, shouldSplit } from "@/domain/city-lights";
+import { clusterAirports, shouldSplit, dotBrightness } from "@/domain/city-lights";
 
 // World rendering follows the primitives in docs/plan/design-vision.md §3a:
 // real coastline polygons, the terminator as a geoCircle on the subsolar
@@ -218,8 +218,10 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
   // re-renders every frame anyway, so this stays a plain computation: a memo
   // keyed on time would never hit.
   const { lon: sunLon, lat: sunLat } = sun;
+  // The curve lives in domain/city-lights so the WebGL globe's light shader
+  // gates on the same numbers by construction, not by a matching constant.
   const lightAt = (lat: number, lon: number) =>
-    Math.min(1, Math.max(0, (solarZenithDeg(lat, lon, { lon: sunLon, lat: sunLat }) - 90) / 12));
+    dotBrightness(solarZenithDeg(lat, lon, { lon: sunLon, lat: sunLat }));
   const dotClusters = clusterAirports(AIRPORTS)
     .map((c) => ({
       radiusDeg: c.radiusDeg,
