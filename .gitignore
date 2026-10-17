@@ -15,3 +15,8 @@ artifacts/proof/
 *.mov
 artifacts/share/
 .qoder/
+
+# Recording stills are regenerable output, not source — and a `git add -A`
+# sweep kept dragging them in. The film itself (video/ scripts, audio,
+# index.html) stays tracked; only the captures are ignored.
+artifacts/video/
