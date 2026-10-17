@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { displayBiometrics, isPreview, tapBecomesCheckIn } from "../src/domain/preview";
+import { displayBiometrics, isPreview, tapBecomesCheckIn, wakeAck } from "../src/domain/preview";
 import { GARMIN_BASELINE } from "../src/domain/fixtures";
 
 // Item 11 — the gate lives in the contract, not in the component, so the
@@ -126,5 +126,35 @@ describe("tapBecomesCheckIn (item 11 follow-through)", () => {
     for (const [k, w] of cases) {
       expect(tapBecomesCheckIn(k, w)).toBe(!isPreview(k, w));
     }
+  });
+});
+
+// Round 4, B1 — the wake answer lands silently today; the acknowledgement
+// names the re-plan so the traveller learns the answer mattered. One line,
+// contract-owned copy, null when no answer is in play.
+
+describe("wakeAck (round 4 B1)", () => {
+  test("demo-default with each band acknowledges the re-plan", () => {
+    expect(wakeAck("demo-default", "6to8")).toBe(
+      "Re-planned around your mornings (6–8) — the plan below is yours now.",
+    );
+    expect(wakeAck("demo-default", "before6")).toContain("before 6");
+    expect(wakeAck("demo-default", "after8")).toContain("after 8");
+  });
+
+  test("wake-band kind with a band acknowledges too — same answer, same line", () => {
+    expect(wakeAck("wake-band", "6to8")).toBe(wakeAck("demo-default", "6to8"));
+  });
+
+  test("garmin needs no acknowledgement — the numbers were already theirs", () => {
+    expect(wakeAck("garmin", "6to8")).toBeNull();
+    expect(wakeAck("garmin", null)).toBeNull();
+  });
+
+  test("no answer means no acknowledgement — never invent one", () => {
+    expect(wakeAck("demo-default", null)).toBeNull();
+    expect(wakeAck("demo-default", undefined)).toBeNull();
+    expect(wakeAck(undefined, null)).toBeNull();
+    expect(wakeAck(null, "6to8")).toBeNull();
   });
 });
