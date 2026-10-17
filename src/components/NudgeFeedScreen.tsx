@@ -5,7 +5,9 @@ import { coverageOf, fmtMin } from "@/domain/circadian";
 import {
   buildDailyNudgesForDay,
   stepImpactMin,
+  tasteStrip,
   type NudgeCategory,
+  type TasteStrip,
   type TravelerNudge,
 } from "@/domain/nudges";
 import { previewPlan } from "@/domain/solver";
@@ -623,6 +625,31 @@ export function NudgeFeedScreen({
     });
   }, [trip, pastRuns]);
 
+  // Bet 2 — "spend your daylight here". Taste venues for the destination,
+  // fetched once per trip from /api/taste (Qloo-backed; `{ enabled: false }`
+  // without a key). Rendered only on the arrival day via `tasteStrip`;
+  // null (no key, no places) renders nothing. Notes only — never scorer.
+  const [taste, setTaste] = useState<{ destination?: string; places?: { name?: string; categories?: string[] }[] } | null>(null);
+  useEffect(() => {
+    if (!trip) return;
+    let cancelled = false;
+    fetch(
+      `/api/taste?city=${encodeURIComponent(trip.destination.name)}&lon=${trip.destination.lon}&lat=${trip.destination.lat}`,
+    )
+      .then((r) => r.json())
+      .then((d) => {
+        if (!cancelled && d?.enabled && Array.isArray(d.places)) setTaste(d);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [trip]);
+  const tasteStripData: TasteStrip | null = useMemo(() => {
+    if (!trip || !activeDaySpec) return null;
+    return tasteStrip(taste, activeDaySpec.dayIndex, trip.departureDayIndex, trip.destination.name);
+  }, [taste, trip, activeDaySpec]);
+
   return (
     <>
       {/* Split-Horizon Hero Card — the left panel is the trip's real dawn line:
@@ -1191,6 +1218,41 @@ export function NudgeFeedScreen({
           }}
         >
           {dayBeat}
+        </div>
+      )}
+
+      {/* Bet 2 — "spend your daylight here". Arrival day only, taste-ranked
+          venues inside the destination. Null (no key, no places, wrong day)
+          renders nothing — never filler. Notes only, never scorer/timing. */}
+      {tasteStripData && (
+        <div
+          className="card rise"
+          style={{ animationDelay: ".35s", marginTop: "12px" }}
+        >
+          <div
+            style={{
+              fontSize: "11px",
+              fontWeight: 800,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              color: "#7a6a5c",
+            }}
+          >
+            Spend your daylight in {tasteStripData.destination}
+          </div>
+          <ul style={{ margin: "8px 0 0", padding: 0, listStyle: "none" }}>
+            {tasteStripData.places.map((p) => (
+              <li
+                key={p.name}
+                style={{ fontSize: "13px", color: "#3a2e23", padding: "4px 0" }}
+              >
+                <b>{p.name}</b>
+                {p.categories.length > 0 && (
+                  <span style={{ color: "#7a6a5c" }}> · {p.categories.join(", ")}</span>
+                )}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 

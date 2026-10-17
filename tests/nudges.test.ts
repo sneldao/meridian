@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { buildDailyNudgesForDay, stepImpactMin } from "../src/domain/nudges";
+import { buildDailyNudgesForDay, stepImpactMin, tasteStrip } from "../src/domain/nudges";
 import { previewPlan } from "../src/domain/solver";
 import type { DayPlan } from "../src/domain/types";
 import { ADHERENCE_PROFILE, CALENDAR, DEMO_TRIP, GARMIN_BASELINE } from "../src/domain/fixtures";
@@ -123,4 +123,40 @@ test("stepImpactMin distributes only the scored shift, honestly", () => {
   expect(stepImpactMin(solved, "sunlight")).toBeGreaterThan(stepImpactMin(solved, "nutrition"));
   expect(stepImpactMin(solved, "calendar")).toBe(0);
   expect(stepImpactMin(hold, "sunlight")).toBe(0);
+});
+
+describe("tasteStrip (bet 2 — destination taste surface)", () => {
+  const src = {
+    destination: "Tokyo",
+    places: [
+      { name: "Yoyogi Park", categories: ["park", "outdoors"] },
+      { name: "Meiji Shrine", categories: ["shrine"] },
+      { name: "", categories: ["filler"] },
+    ],
+  };
+
+  test("arrival day with places returns the strip, capped at five", () => {
+    const out = tasteStrip(src, 4, 3, "Tokyo");
+    expect(out).not.toBeNull();
+    expect(out!.destination).toBe("Tokyo");
+    expect(out!.places).toHaveLength(2); // unnamed filler dropped
+    expect(out!.places[0].name).toBe("Yoyogi Park");
+  });
+
+  test("pre-flight and flight days return null — arrival only", () => {
+    expect(tasteStrip(src, 1, 3, "Tokyo")).toBeNull();
+    expect(tasteStrip(src, 3, 3, "Tokyo")).toBeNull();
+  });
+
+  test("no key, no places, or null source renders nothing", () => {
+    expect(tasteStrip(null, 4, 3, "Tokyo")).toBeNull();
+    expect(tasteStrip(undefined, 4, 3, "Tokyo")).toBeNull();
+    expect(tasteStrip({ destination: "Tokyo", places: [] }, 4, 3, "Tokyo")).toBeNull();
+    expect(tasteStrip({ destination: "Tokyo", note: "no places" }, 4, 3, "Tokyo")).toBeNull();
+  });
+
+  test("falls back to the trip destination name when the source is thin", () => {
+    const out = tasteStrip({ places: [{ name: "Park" }] }, 4, 3, "Tokyo");
+    expect(out!.destination).toBe("Tokyo");
+  });
 });

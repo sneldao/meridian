@@ -515,6 +515,49 @@ export function buildDailyNudgesForDay(params: {
  * remainder. Returns 0 on hold days; Dev 2's feed copy ("~20 min closer")
  * uses this so it never invents precision the model doesn't have.
  */
+// --- Taste strip ---------------------------------------------------------------
+// "Spend your daylight here": venues Qloo's taste graph ranks for the
+// destination, shown on the arrival day so the plan feels personal. Notes
+// only — never feeds the scorer or timing (same boundary as Otto's tool).
+// Null when there is nothing worth naming: no key, no places, or the wrong
+// day. The renderer shows nothing rather than a filler card.
+
+export interface TastePlace {
+  name: string;
+  categories: string[];
+}
+
+export interface TasteStrip {
+  destination: string;
+  places: TastePlace[];
+}
+
+/** Shape the surface needs — duck-typed so it composes with the Qloo
+ *  `destinationTaste()` rows without depending on the tools module. */
+export interface TasteSource {
+  destination?: string;
+  places?: { name?: string; categories?: string[] }[] | null;
+  note?: string;
+}
+
+/** Arrival day only, max five, named venues with at least a name. Anything
+ *  else is null — the strip never renders filler. */
+export function tasteStrip(
+  source: TasteSource | null | undefined,
+  dayIndex: number,
+  departureDayIndex: number,
+  destinationName: string,
+  limit = 5,
+): TasteStrip | null {
+  if (!source || dayIndex <= departureDayIndex) return null;
+  const places = (source.places ?? [])
+    .filter((p): p is TastePlace => typeof p?.name === "string" && p.name.length > 0)
+    .map((p) => ({ name: p.name, categories: (p.categories ?? []).filter(Boolean).slice(0, 3) }))
+    .slice(0, limit);
+  if (!places.length) return null;
+  return { destination: source.destination || destinationName, places };
+}
+
 export function stepImpactMin(plan: DayPlan, category: NudgeCategory): number {
   const shift = Math.abs(plan.shiftMin);
   if (shift === 0) return 0;
