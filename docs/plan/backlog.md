@@ -606,8 +606,37 @@ below), WebGL perf verification on genuinely low-end hardware, and the
 real Supabase-backed second trip that lights `carriedFrom` outside the
 demo. 368 tests green at `18b1a35`.
 
+## Round 7 — the delight and intuitiveness pass (shipped 2026-10-17, `6d43b41`)
+
+The globe's tooltip becomes an instrument, and the flight gets narration:
+
+- **`localClock` in `domain/timezones`** — a city's own wall clock via
+  `Intl` (half-hour zones, DST edges included), pinned by four tests
+  against London's real Oct 2026 clock change.
+- **Tooltip read-out** — local time, twilight band word + sun altitude
+  from the shared solar model, and "one light for N airports" for merged
+  metros instead of an em dash. Band vocabulary is unified:
+  `SKY_BAND_LABEL` (`domain/sky`) is the single source the tooltip and
+  the Window Seat both read.
+- **`HoverRing`** — one breathing gold ring anchored at the hovered dot;
+  cities stay round and steady, the ring is the only hollow thing.
+- **Flight feedback** — hairline along the frame bottom, first-contact
+  drag hint that retires on pointer-down and never returns, grab cursors.
+- **Window Seat a11y** — panes are labelled figures carrying the computed
+  band and altitude.
+- **Reduced motion** — the page sits inside `MotionConfig
+  reducedMotion="user"`, matching the hero's standard. The WebGL ring
+  pulse rides with the globe itself, which is inherently motion.
+
+What no headless check can prove: the ring pulse, hairline and fades
+render correctly. One visual pass at `/spike/globe` remains. 372 tests
+green at `6d43b41`.
+
 ## Later / deferred
 
+- **Visual pass on `/spike/globe`** — the ring pulse, flight hairline and
+  tooltip fades are shader/DOM effects this host cannot render headlessly;
+  one human look confirms they read right (round 7).
 - **Reminder channel** — no notification infra exists; don't fake a control.
 - **Cross-trip summary** — only surface "the crew remembers" from real prior
   runs in the graph; needs a second real trip's data. Unblocked now that #3

@@ -584,3 +584,15 @@ OG image, so Slack/iMessage preview the "my body thinks it's HH:MM" line
 score, adherence lesson, carried-in proof, next-trip CTA (`71ac8c5`).
 The Round-5 fixes are tracked separately; 368 tests green at `18b1a35`.
 See [docs/plan/backlog.md](plan/backlog.md) §Round 6.
+
+**Round 7 (shipped 2026-10-17):** the delight and intuitiveness pass
+(`6d43b41`). The globe's hover tooltip is now an instrument — the city's
+own wall clock (`localClock`, Intl, DST-honest), the twilight band and
+sun altitude from the shared solar model, and merged metros explained as
+"one light for N airports". Band words are unified (`SKY_BAND_LABEL`) so
+the tooltip and the Window Seat describe identical twilight identically.
+The flight gets a ground-track hairline, a one-time drag hint, grab
+cursors; the hover gets a breathing ring; the fades honour
+`reducedMotion="user"`. 372 tests green; one visual pass at
+`/spike/globe` remains for the shader-driven effects. See
+[docs/plan/backlog.md](plan/backlog.md) §Round 7.
