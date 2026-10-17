@@ -1,5 +1,17 @@
 # Consumer appeal — implementation plan
 
+> **Status 2026-10-17 — mostly shipped; read items against `main`.**
+> Shipped: instant-value preview (solver-backed `previewPlan`), depth dial
+> (Calm/Guided/Operator control on `/`), ghost-terminator hero panel,
+> honest numbers everywhere, `.ics` gated on a real plan, voice ramp
+> (Calm silent → Guided narrator → Operator huddle), the wake-band personal
+> question + `resolveBaseline`, check-in carry-over through the replan path,
+> medical boundary line, neutral calendar + parameterized horizon for any
+> route (`docs/plan/any-route.md`). **Still open:** phone-first check-in card
+> (P2), reminder channel (deferred — no notification infra), cross-trip
+> summary (deferred until a second real trip exists). Don't implement items
+> already marked here against the shipped list — the code is the record.
+
 2026-10-15. Full plan derived from `next-steps.md` (diagnosis + research
 synthesis + Calacanis lens). Sequenced against the submission cluster:
 P0 items are video-visible and cheap; P1 post-video; P2 post-Oct-30.

@@ -1,5 +1,11 @@
 # Consolidation spec — consumer face, agent depth dial
 
+> **Status 2026-10-17 — shipped.** The Calm/Guided/Operator depth model this
+> spec sets out is live: `/` is Calm (Today surface), `?depth=guided` adds
+> evidence + deep-dive visuals, `/crew` is the Operator rung. The depth
+> control on the home page is the dial this doc describes — persisted in
+> `meridian:depth`.
+
 Decided 2026-10-15. The Base44 redesign (PR #1, `base44/setup-c4ea0b8c`)
 becomes the face of the app; the crew/lens surface demotes to depth-3 rather
 than being deleted. Principle: **the nudge is the face, the evidence is

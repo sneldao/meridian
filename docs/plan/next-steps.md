@@ -1,5 +1,13 @@
 # Next steps — consumer simplification
 
+> **Status 2026-10-17 — direction shipped.** The "bad mobile app / bad web app"
+> diagnosis this doc captures was fixed by the home-page overhaul
+> (`docs/plan/home-page-overhaul.md`, merged via `overhaul/main`) and the
+> signature pass (`docs/plan/home-signature-pass.md`): one-flow Today,
+> solver-backed preview, ghost-terminator hero, honest numbers, depth dial.
+> Read this as the *why*; the shipped docs carry the *what*. Items below that
+> remain open are called out per-section where the code still doesn't do them.
+
 Captured 2026-10-15 from user feedback: "halfway between a bad mobile app
 and a bad web app." Diagnosis + direction below.
 
