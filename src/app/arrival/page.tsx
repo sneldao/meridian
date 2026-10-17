@@ -126,9 +126,25 @@ export default function ArrivalPage() {
         </span>
         <h1>{arrivalHeadline(read, dest.name)}</h1>
 
+        {/* Two sections — what was promised at the gate, and what actually
+            happened. Splitting them with a label makes the page read in two
+            passes (promise → account), so the traveller sees their own marks
+            in context rather than mixed into the gate's numbers. */}
+        <span className="arr-section-label">What the crew promised</span>
         <div className="arr-grid">
-          {rows.map((r) => (
+          {rows.slice(0, 3).map((r) => (
             <div className="arr-cell" key={r.label}>
+              <em>{r.value}</em>
+              <span>{r.label}</span>
+              {r.note ? <small>{r.note}</small> : null}
+            </div>
+          ))}
+        </div>
+
+        <span className="arr-section-label">What actually happened</span>
+        <div className="arr-grid">
+          {rows.slice(3).map((r) => (
+            <div className="arr-cell account" key={r.label}>
               <em>{r.value}</em>
               <span>{r.label}</span>
               {r.note ? <small>{r.note}</small> : null}
