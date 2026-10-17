@@ -605,13 +605,29 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
   });
   logLine(`briefing issued — score ${meanScore}, coverage ${Math.round(coverage.ratio * 100)}%`);
 
-  await recordRun({
-    at: Date.now(),
-    tripLabel: `${trip.origin.code}→${trip.destination.code}`,
-    lockedDays: state.lockedDays.length,
-    meanScore,
-  }, tenant);
-  try {
+  // Everything past the briefing is optional bookkeeping, and none of it may
+  // hold the stream open. An unreachable FalkorDB used to block here forever:
+  // the briefing was delivered, `done` never was, and the client sat on a
+  // disabled button with no error to show for it. Bounded the same way the
+  // check-in intake route is — see api/crew/checkin/route.ts.
+  const optionalWrite = async (label: string, work: () => Promise<unknown>) => {
+    try {
+      await Promise.race([work(), new Promise((r) => setTimeout(r, 4000))]);
+    } catch {
+      logLine(`${label} unavailable — optional, skipped`);
+    }
+  };
+
+  await optionalWrite("crew memory", () =>
+    recordRun({
+      at: Date.now(),
+      tripLabel: `${trip.origin.code}→${trip.destination.code}`,
+      lockedDays: state.lockedDays.length,
+      meanScore,
+    }, tenant),
+  );
+
+  await optionalWrite("graph memory", async () => {
     const gm = await import("@/domain/graph-memory");
     if (gm.graphEnabled()) {
       await gm.recordFinding(
@@ -621,10 +637,9 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
         tenant,
       );
     }
-  } catch {
-    // FalkorDB is optional.
-  }
-  try {
+  });
+
+  await optionalWrite("supabase", async () => {
     const { persistRun } = await import("@/tools/supabase");
     await persistRun({
       savedAt: new Date().toISOString(),
@@ -639,10 +654,9 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
       days: state.lockedDays.map((d) => ({ label: d.label, shiftMin: d.shiftMin })),
       provider: kind,
     });
-  } catch {
-    // Optional Supabase persistence; file memory remains source of truth.
-  }
-  await persistArtifacts(state, trip, calendarSource, kind);
+  });
+
+  await optionalWrite("artifacts", () => persistArtifacts(state, trip, calendarSource, kind));
   emit({ type: "done" });
 }
 

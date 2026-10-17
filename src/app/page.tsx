@@ -99,6 +99,23 @@ export default function Home() {
   const [selectedDayLabel, setSelectedDayLabel] = useState<string>("D-1");
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [briefingDismissed, setBriefingDismissed] = useState(false);
+  /** A crew run that died mid-stream. Rendered on the Today surface, not only
+   *  in the closed-by-default AgentDrawer, because that is where the user is. */
+  const [streamError, setStreamError] = useState<string | null>(null);
+  /** Wall-clock of the last event on the current stream, and whether the
+   *  briefing already landed. Together they let the watchdog tell "slow" from
+   *  "wedged" — see the effect below. */
+  const lastEventAt = useRef(0);
+  const briefingSeen = useRef(false);
+
+  // A run can wedge without the connection ever erroring: the stream stays open
+  // while the server waits on something optional. That is invisible to
+  // `onerror` and it strands the user on a disabled button, so treat silence as
+  // a failure in its own right. Generous while the crew is still talking (a real
+  // provider streams tokens continuously); tight once the briefing has landed,
+  // because `done` follows it immediately.
+  const STALL_IDLE_MS = 60_000;
+  const STALL_AFTER_BRIEFING_MS = 12_000;
   const [hasSavedPlan, setHasSavedPlan] = useState(false);
   const [runCount, setRunCount] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -323,6 +340,7 @@ export default function Home() {
           break;
         case "done":
           setEntries((prev) => [...prev, { kind: "system", text: "shift complete" }]);
+          setStreamError(null);
           esRef.current?.close();
           break;
       }
@@ -351,6 +369,7 @@ export default function Home() {
       reset();
       setEntries([]);
       setBriefingDismissed(false);
+      setStreamError(null);
       const params = new URLSearchParams(tripQuery.replace(/^\?/, ""));
       if (wakeBand) params.set("wake", wakeBand);
       if (extra?.checkins) params.set("checkins", extra.checkins);
@@ -359,14 +378,27 @@ export default function Home() {
       else if (startDayParam) params.set("startDay", String(startDayParam));
       const es = new EventSource("/api/crew/run?" + params.toString());
       esRef.current = es;
+      lastEventAt.current = Date.now();
+      briefingSeen.current = false;
       es.onmessage = (m) => {
+        lastEventAt.current = Date.now();
         const evt = JSON.parse(m.data) as CrewEvent;
+        if (evt.type === "briefing") briefingSeen.current = true;
         dispatch(evt);
         handleSideEffects(evt);
       };
       es.onerror = () => {
         push({ kind: "error", text: "stream interrupted" });
         es.close();
+        // A dropped stream used to strand the page: phase stayed "running", so
+        // the CTA stayed disabled and beginStream early-returned — the only
+        // ways out were Escape or a reload. reset() is the safe half of the
+        // fix: it carries any days already locked into priorLocked, so a
+        // partial run is preserved for the next one rather than discarded.
+        setStreamError(
+          "The crew's connection dropped mid-run. Days already verified are kept — run it again when you're ready.",
+        );
+        reset();
       };
     },
     [dispatch, handleSideEffects, push, reset, run.phase, tripQuery, checkInsParam, startDayParam, wakeBand],
@@ -429,23 +461,56 @@ export default function Home() {
     [persistCheckIns, beginStream],
   );
 
+  // Does this element consume Space itself? Buttons activate on key*up*, so a
+  // preventDefault() on keydown silently swallows their activation — which is
+  // why Space could not press any button on this page.
+  const consumesSpace = (target: EventTarget | null): boolean => {
+    const el = target as HTMLElement | null;
+    if (!el || typeof el.tagName !== "string") return false;
+    if (["INPUT", "TEXTAREA", "SELECT", "BUTTON", "A", "OPTION"].includes(el.tagName)) return true;
+    if (el.isContentEditable) return true;
+    const role = el.getAttribute("role");
+    return role === "button" || role === "link" || role === "menuitem" || role === "checkbox";
+  };
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      const tag = (e.target as HTMLElement)?.tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA") return;
-      if (e.code === "Space") {
-        e.preventDefault();
-        if (run.phase !== "running") startShift();
-      } else if (e.code === "Escape") {
+      // Escape first and unconditionally — closing the sheet or cancelling a run
+      // must work even from inside a text field. (It previously didn't: the old
+      // handler returned early for INPUT/TEXTAREA before reaching Escape.)
+      if (e.code === "Escape") {
         if (setupOpen) setSetupOpen(false);
         else if (agentDrawerOpen) setAgentDrawerOpen(false);
         else if (menuOpen) setMenuOpen(false);
         else if (run.phase === "running") cancelShift();
+        return;
       }
+      if (e.code !== "Space") return;
+      if (consumesSpace(e.target)) return;
+      e.preventDefault();
+      if (run.phase !== "running") startShift();
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [run.phase, startShift, cancelShift, agentDrawerOpen, menuOpen, setupOpen]);
+
+  // Wedge watchdog. Runs only while a run is live, and reports the same
+  // recoverable state `onerror` does — the CTA comes back either way.
+  useEffect(() => {
+    if (run.phase !== "running") return;
+    const id = setInterval(() => {
+      const silent = Date.now() - lastEventAt.current;
+      if (silent < (briefingSeen.current ? STALL_AFTER_BRIEFING_MS : STALL_IDLE_MS)) return;
+      esRef.current?.close();
+      setStreamError(
+        briefingSeen.current
+          ? "The crew delivered a plan but the run never finished — anything already verified is kept. Run it again to finish."
+          : "The crew stopped responding mid-run. Anything already verified is kept — run it again when you're ready.",
+      );
+      reset();
+    }, 4000);
+    return () => clearInterval(id);
+  }, [run.phase, reset]);
 
   const goGuide = () => {
     guideRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -584,26 +649,32 @@ export default function Home() {
         {/* Dropdown Menu */}
         {menuOpen && (
           <div className="menu rise" style={{ animationDelay: ".1s" }} role="menu">
-            <div
+            {/* Real buttons, not focusable divs: as divs these were in the tab
+                order but Enter and Space did nothing, because a div has no
+                activation behaviour. The <Link> siblings below are real
+                anchors, so this also makes the menu homogeneous. */}
+            <button
+              type="button"
+              className="m"
               role="menuitem"
-              tabIndex={0}
               onClick={() => {
                 goGuide();
                 setMenuOpen(false);
               }}
             >
               Today
-            </div>
-            <div
+            </button>
+            <button
+              type="button"
+              className="m"
               role="menuitem"
-              tabIndex={0}
               onClick={() => {
                 openSetup();
                 setMenuOpen(false);
               }}
             >
               Edit trip
-            </div>
+            </button>
             {/* Both branches were identical — a leftover conditional, collapsed. */}
             <Link href="/review" className="m" onClick={() => setMenuOpen(false)}>
               Your plan{hasSavedPlan ? " →" : ""}
@@ -621,7 +692,6 @@ export default function Home() {
               <button
                 type="button"
                 className="m"
-                style={{ width: "100%", textAlign: "left", background: "none", border: "none", cursor: "pointer" }}
                 onClick={async () => {
                   const r = await fetch("/api/share", {
                     method: "POST",
@@ -638,9 +708,9 @@ export default function Home() {
                 Share plan →
               </button>
             )}
-            <div
+            <button
+              type="button"
               role="menuitem"
-              tabIndex={0}
               className="m"
               onClick={() => {
                 setMenuOpen(false);
@@ -648,10 +718,22 @@ export default function Home() {
               }}
             >
               Behind the scenes
-            </div>
+            </button>
             <div style={{ padding: "8px 12px 4px", fontSize: "11px", color: "#7a6a5c" }}>
               Timing guidance, not medical advice.
             </div>
+          </div>
+        )}
+
+        {/* A failed run, on the surface the traveller is looking at. The AgentDrawer
+            entry for the same event is still recorded, but that drawer is closed
+            by default, so it was never a report. */}
+        {streamError && (
+          <div className="run-error" role="alert">
+            <span>{streamError}</span>
+            <button type="button" onClick={() => setStreamError(null)} aria-label="Dismiss">
+              ×
+            </button>
           </div>
         )}
 
