@@ -20,3 +20,8 @@ artifacts/share/
 # sweep kept dragging them in. The film itself (video/ scripts, audio,
 # index.html) stays tracked; only the captures are ignored.
 artifacts/video/
+
+# film work-in-progress — kept local, not committed
+video/SPEC.md
+video/assets/
+video/.hyperframes/
