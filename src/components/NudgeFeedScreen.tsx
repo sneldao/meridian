@@ -104,10 +104,16 @@ export function NudgeFeedScreen({
   const [expandedWhyId, setExpandedWhyId] = useState<string | null>(null);
   const [showMissed, setShowMissed] = useState(false);
 
+  // Trip-scoped persistence — ids are day-label-keyed, so a different trip
+  // must not inherit another trip's "done" state.
+  const completedKey = trip
+    ? `${trip.origin.code}-${trip.destination.code}-${trip.days[0]?.date ?? ""}`
+    : "none";
+
   useEffect(() => {
     const t = setTimeout(() => {
       try {
-        const saved = localStorage.getItem("meridian:completedNudges");
+        const saved = localStorage.getItem(`meridian:completedNudges:${completedKey}`);
         if (saved) {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed)) setCompletedIds(new Set(parsed));
@@ -117,7 +123,7 @@ export function NudgeFeedScreen({
       }
     }, 0);
     return () => clearTimeout(t);
-  }, []);
+  }, [completedKey]);
 
   const toggleComplete = (id: string) => {
     setCompletedIds((prev) => {
@@ -125,7 +131,7 @@ export function NudgeFeedScreen({
       if (next.has(id)) next.delete(id);
       else next.add(id);
       try {
-        localStorage.setItem("meridian:completedNudges", JSON.stringify([...next]));
+        localStorage.setItem(`meridian:completedNudges:${completedKey}`, JSON.stringify([...next]));
       } catch {
         /* ignore */
       }

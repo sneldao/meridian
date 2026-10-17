@@ -718,7 +718,7 @@ export default function Home() {
               hook={hook}
               phase={run.phase}
               lockedCount={run.locked.size}
-              totalDays={5}
+              totalDays={data?.trip?.days.length ?? 5}
               sessionStartedAt={run.sessionStartedAt}
               onStart={startShift}
               onCancel={cancelShift}
