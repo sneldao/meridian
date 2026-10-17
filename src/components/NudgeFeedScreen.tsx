@@ -578,15 +578,28 @@ export function NudgeFeedScreen({
   // fixed event with attendees (the trip's reason) and the body-time delta.
   // `null` when nothing post-flight is fixed; we render nothing rather than a
   // fixture title. Sequential: B's shape merges, then A renders.
+  //
+  // B added a `previewLocked` parameter to `heroMeeting` (7b6cc7d) so the
+  // pre-lock sales line has content. We pass the solver-backed preview's
+  // shiftMin chain as `previewLocked`; once anything is locked the preview
+  // is ignored, and the hero falls back to the equal-values shape.
   const heroMtg = useMemo(() => {
     if (!trip) return null;
+    // preview values can be null for solver-infeasible days; drop them so
+    // heroMeeting sees only the days that would actually lock.
+    const previewLocked = preview
+      ? [...preview.values()].flatMap((d) =>
+          d ? [{ shiftMin: d.plan.shiftMin }] : [],
+        )
+      : undefined;
     return heroMeeting({
       trip,
       calendar: calendarEvents,
       locked: [...locked.values()],
+      previewLocked,
       baseline,
     });
-  }, [trip, calendarEvents, locked, baseline]);
+  }, [trip, calendarEvents, locked, preview, baseline]);
 
   return (
     <>
