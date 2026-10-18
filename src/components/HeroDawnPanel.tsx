@@ -472,9 +472,11 @@ export function HeroDawnPanel({ trip, owedMin, beam, readinessPct, readinessSour
           /* The graduated globe. It is handed the exact inputs the SVG disc
              below consumes — `displayDate` (live or scrubbed), `displayOwed`
              (the real or overridden gap), the trip — so the scrubber drives
-             both surfaces and they cannot disagree. `interact` stays off:
-             the scrubber is the hero's interaction model, and a mid-page
-             canvas that captured drags would steal the page scroll on touch. */
+             both surfaces and they cannot disagree. `interact` follows the
+             same fine-pointer gate as the disc drag: desktop gets damped
+             orbit over the same scrubber-driven read, and `orbitZoom` stays
+             off so a wheel or swipe over a mid-page canvas still belongs to
+             the page. */
           <DawnGlobeCanvas
             className="dawn-map dawn-globe"
             date={displayDate}
@@ -483,7 +485,8 @@ export function HeroDawnPanel({ trip, owedMin, beam, readinessPct, readinessSour
             trip={trip}
             center={{ lon: centre[0], lat: centre[1] }}
             fitSpanDeg={fitSpanDeg}
-            interact={false}
+            interact={canDrag}
+            orbitZoom={false}
           />
         )}
         {hydrated && !useGlobe && (

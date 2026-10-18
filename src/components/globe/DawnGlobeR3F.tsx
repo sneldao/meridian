@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Line, OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
@@ -18,12 +18,22 @@ import { AIRPORTS } from "@/domain/airports";
 import {
   alongArc,
   chasePosition,
+  CROSSING_WINDOW,
+  dawnCrossing,
   easeInOut,
   greatCircle,
+  type DawnCrossing,
   type GreatCircle,
 } from "@/lib/globe/great-circle";
 import { landGeometry, LAND_RADIUS, LAND_LIFT } from "@/lib/globe/land-geometry";
-import { lonLatToVec3, sunDirection, viewBasis } from "@/lib/globe/spherical";
+import {
+  lonLatToVec3,
+  pxPerDegAt,
+  stepDistance,
+  sunDirection,
+  viewBasis,
+  zoomStep,
+} from "@/lib/globe/spherical";
 
 /**
  * The WebGL dawn globe — Tier 1 spike.
@@ -148,7 +158,14 @@ function twilightAmount(deg: number): number {
  *  curve, so they are built from the same object rather than two copies that
  *  could drift. Built declaratively from the solar model: the sun moves 0.25°
  *  of longitude a minute, so re-creating a handful of uniforms four times a
- *  second is free, and there is no per-frame mutation to get wrong. */
+ *  second is free, and there is no per-frame mutation to get wrong.
+ *
+ *  Re-creating the uniform *objects* each tick is only safe because R3F's
+ *  applyProps copies new uniform values into the material's existing uniform
+ *  objects ("ShaderMaterial uniforms must keep a stable target reference" in
+ *  @react-three/fiber's applyProps) — three's renderer captures
+ *  `material.uniforms` once at program creation, so never assign
+ *  `material.uniforms = …` directly on a mounted material. */
 function useDawnUniforms(sub: SubsolarPoint, body: SubsolarPoint | null) {
   return useMemo(
     () => ({
@@ -446,26 +463,59 @@ const LIGHT_FRAG = /* glsl */ `
  *  the hemisphere test below closes the graze-the-limb gap that even a tuned
  *  threshold leaves open. */
 const PICK_THRESHOLD = 0.025;
-function CityLights({ date, onHover }: { date: Date; onHover?: (h: CityHover | null) => void }) {
+
+/** Clustering ~1,145 airports is pure data work with no camera in it — run it
+ *  once at module load instead of inside a memo that re-ran 4x/sec. The
+ *  component is client-only (dynamic import), so module scope is safe. */
+const CLUSTERS = clusterAirports(AIRPORTS);
+
+function CityLights({
+  date,
+  onHover,
+  crossing,
+  flightProgress,
+}: {
+  date: Date;
+  onHover?: (h: CityHover | null) => void;
+  /** The route's terminator crossing, when the flight has one — the "moment"
+   *  the lights-ahead bloom reads against. */
+  crossing?: DawnCrossing | null;
+  /** The scrub-able flight progress; parked at 0 when there is no flight. */
+  flightProgress?: React.RefObject<number>;
+}) {
   const sub = useMemo(() => subsolarPoint(date), [date]);
   const camera = useThree((s) => s.camera);
   const size = useThree((s) => s.size);
   const gl = useThree((s) => s.gl);
 
-  // One buffer, rebuilt only when the split decision flips — not per frame.
-  const { geometry, members } = useMemo(() => {
-    const clusters = clusterAirports(AIRPORTS);
-    // Pixels per degree at the globe's surface, for EXPAND_PX's test. Measured
-    // to the *surface*, not the origin — what matters is how many pixels a
-    // metro covers, and it covers them up close. Recomputed on every clock
-    // tick (4Hz), which is human-speed for a clustering decision.
-    const fov = ((camera as THREE.PerspectiveCamera).fov ?? 40) * (Math.PI / 180);
-    const halfH = size.height / 2 / Math.tan(fov / 2);
-    const dist = Math.max(0.35, camera.position.length() - (1 + 0.004));
-    const pxPerDeg = (halfH / dist) * (180 / Math.PI);
-    // Per-cluster split, exactly as the lens decides — the global threshold
-    // keyed to `clusters[0]` was order-dependent and wrong.
-    const list = resolveLightSet(clusters, pxPerDeg);
+  const fov = (camera as THREE.PerspectiveCamera).fov ?? 40;
+
+  // The split decision re-runs only when zoom crosses a 10% step of surface
+  // distance (or the viewport/fov changes). `camera` is a stable object, so
+  // tracking it in a memo would never see a zoom; the step is polled per
+  // frame and stored as state, which means React re-renders exactly on the
+  // step boundary — including mid-dive while the flight camera pulls in —
+  // and never otherwise.
+  const [step, setStep] = useState(() =>
+    zoomStep(Math.max(0.35, camera.position.length() - (1 + 0.004))),
+  );
+  useFrame(() => {
+    const next = zoomStep(Math.max(0.35, camera.position.length() - (1 + 0.004)));
+    setStep((prev) => (prev === next ? prev : next));
+  });
+
+  // Pixels per degree at the globe's surface, for EXPAND_PX's test — measured
+  // at the step's centre distance, so the light set is stable inside a step.
+  // Per-cluster split, exactly as the lens decides — the global threshold
+  // keyed to `clusters[0]` was order-dependent and wrong.
+  const list = useMemo(
+    () => resolveLightSet(CLUSTERS, pxPerDegAt(fov, size.height, stepDistance(step))),
+    [step, size.height, fov],
+  );
+  const members = list;
+
+  // One buffer, rebuilt only when the light set or the sun moves — not per frame.
+  const geometry = useMemo(() => {
     const positions = new Float32Array(list.length * 3);
     const brightness = new Float32Array(list.length);
     list.forEach((d, i) => {
@@ -479,8 +529,8 @@ function CityLights({ date, onHover }: { date: Date; onHover?: (h: CityHover | n
     const g = new THREE.BufferGeometry();
     g.setAttribute("position", new THREE.BufferAttribute(positions, 3));
     g.setAttribute("aBright", new THREE.BufferAttribute(brightness, 1));
-    return { geometry: g, members: list };
-  }, [camera, size, sub]);
+    return g;
+  }, [list, sub]);
 
   useEffect(() => () => geometry.dispose(), [geometry]);
 
@@ -552,6 +602,32 @@ function CityLights({ date, onHover }: { date: Date; onHover?: (h: CityHover | n
     [size, gl],
   );
 
+  // The dawn-crossing moment: an "eyes adjust" lift, not a bloom pass.
+  // Individual dots coming out of daylight is already emergent — dotBrightness
+  // gates each dot on the same solar zenith the terminator is built on — so
+  // this lift adds the one thing per-dot physics cannot: anticipation. For
+  // about a second each side of the crossing, the whole field breathes on,
+  // the way a cabin dims and your pupils open before the cities appear. It is
+  // bounded (≤ ~0.3 opacity), driven by the eased flight fraction, so a
+  // scrubbed dial plays it identically to autoplay, and it decays to exactly
+  // the base opacity outside the window — no residue, and no extra pass,
+  // which is what keeps it short of the design doc's bloom ban.
+  // Written through the material's own live uniform slot — the shader
+  // material owns that object at runtime (three's intended mutation point),
+  // while the `uniforms` memo above stays untouched by the frame loop.
+  const materialRef = useRef<THREE.ShaderMaterial>(null);
+  useFrame(() => {
+    let pulse = 0;
+    if (crossing && flightProgress) {
+      const t = easeInOut(flightProgress.current);
+      const a = Math.abs(t - crossing.t) / CROSSING_WINDOW;
+      if (a < 1) pulse = (1 - a) * (1 - a);
+    }
+    // Every frame the lift could change — no branch, no residue.
+    const m = materialRef.current;
+    if (m) m.uniforms.uOpacity.value = 0.9 + 0.32 * pulse;
+  });
+
   return (
     <points
       ref={pointsRef}
@@ -560,6 +636,7 @@ function CityLights({ date, onHover }: { date: Date; onHover?: (h: CityHover | n
       onPointerOut={() => onHover?.(null)}
     >
       <shaderMaterial
+        ref={materialRef}
         vertexShader={LIGHT_VERT}
         fragmentShader={LIGHT_FRAG}
         uniforms={uniforms}
@@ -649,11 +726,14 @@ export interface DawnGlobeSceneProps {
   flying?: boolean;
   onHover?: (h: CityHover | null) => void;
   onStats?: (s: FrameStats) => void;
-  /** Free orbit on the canvas. The hero mounts the globe with this off: the
-   *  scrubber drives the read, and a mid-page canvas that captures drags
-   *  steals the page scroll on touch — the same reason the SVG disc's drag is
-   *  fine-pointer-only. */
+  /** Free orbit on the canvas — damped rotate plus a slow idle drift
+   *  (`autoRotate`). The hero passes the same fine-pointer flag the disc drag
+   *  answers to: desktop gets orbit, touch keeps controls off so the canvas
+   *  never captures a swipe meant for the page. */
   interact?: boolean;
+  /** Wheel/pinch zoom on the orbit. Off wherever the canvas sits mid-page:
+   *  a wheel over it must scroll the page, not dollies the camera. */
+  orbitZoom?: boolean;
 }
 
 export function DawnGlobeScene({
@@ -667,6 +747,7 @@ export function DawnGlobeScene({
   onHover,
   onStats,
   interact = true,
+  orbitZoom = true,
 }: DawnGlobeSceneProps) {
   const sub = useMemo(() => subsolarPoint(date), [date]);
   const body = useMemo(() => {
@@ -674,25 +755,32 @@ export function DawnGlobeScene({
     return bodySubsolarPoint(sub, owedMin, requiredShiftMin);
   }, [sub, owedMin, requiredShiftMin]);
   const gc = useMemo(() => (trip ? greatCircle(trip) : null), [trip]);
+  const crossing = useMemo(
+    () => (gc ? dawnCrossing(gc, sub) : null),
+    [gc, sub],
+  );
 
   return (
     <>
       <DawnSphere sub={sub} body={body} />
       <Land sub={sub} body={body} />
       <Suns sub={sub} body={body} />
-      <CityLights date={date} onHover={onHover} />
+      <CityLights date={date} onHover={onHover} crossing={crossing} flightProgress={flightProgress} />
       {hoverPoint && <HoverRing point={hoverPoint} />}
       {trip && <RouteArc trip={trip} />}
       <Atmosphere />
       <OrbitControls
         makeDefault
         enablePan={false}
+        enableZoom={orbitZoom}
         enableDamping
         dampingFactor={0.08}
         rotateSpeed={0.45}
         zoomSpeed={0.7}
         minDistance={1.6}
         maxDistance={6.5}
+        autoRotate
+        autoRotateSpeed={0.35}
         enabled={interact && !flying}
       />
       {gc && flightProgress && <FlightCamera gc={gc} progress={flightProgress} enabled={flying} />}

@@ -1426,6 +1426,15 @@ textarea:focus-visible,
   overflow: hidden;
   min-height: 260px;
 }
+/* OrbitControls stamps touch-action:none on the canvas at connect, on every
+   device, even with controls disabled — which would swallow a swipe meant to
+   scroll the page. pan-y gives the vertical gesture back to the document;
+   horizontal drags still reach the pointer handlers, and mouse orbit on a
+   fine pointer is untouched by touch-action anyway. !important is what beats
+   an inline style, nothing weaker does. */
+.dawn-globe canvas {
+  touch-action: pan-y !important;
+}
 /* Drag-to-recentre only binds on a fine pointer — see the component's gesture
    note. The cursor advertises that, and nothing else. */
 .dawn-map.grab {
