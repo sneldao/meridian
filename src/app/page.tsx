@@ -35,8 +35,6 @@ import { useRunState, calendarWithMoves, ledgerEvents, ghostGapDeg } from "@/sta
 import { meetingReadiness } from "@/domain/readiness";
 import {
   initVoice,
-  setVoiceEnabled,
-  speakOnce,
   stopAll as stopVoiceAll,
   subscribeVoiceErrors,
 } from "@/lib/voice/engine";
@@ -345,8 +343,7 @@ export default function Home() {
           });
           break;
         case "briefing":
-          // One narrator on the home surface, whatever the run's line count.
-          speakOnce(e.summary, "handoff");
+          // Voice is opt-in only — the banner's Listen button speaks on tap.
           setHasSavedPlan(true);
           try {
             if (
@@ -650,10 +647,8 @@ export default function Home() {
       } catch {
         /* storage unavailable */
       }
-      // Voice lives on /crew now (item 16). The home page only enables the
-      // engine so /crew's toggle has something to talk to; we no longer own
-      // the persisted preference here.
-      setVoiceEnabled(true);
+      // Nothing on Home speaks without a tap — voice stays off here; Listen
+      // buttons force their own utterance.
     }, 0);
     return () => clearTimeout(t);
   }, []);

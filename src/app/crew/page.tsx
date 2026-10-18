@@ -77,8 +77,8 @@ export default function Home() {
   const trip = (run.trip ?? data?.trip ?? null) as Trip | null;
 
   const esRef = useRef<EventSource | null>(null);
-  const [voiceOn, setVoiceOn] = useState(true);
-  const voiceOnRef = useRef(true);
+  const [voiceOn, setVoiceOn] = useState(false);
+  const voiceOnRef = useRef(false);
   const [voiceAvail, setVoiceAvail] = useState(false);
   // Per-agent utterance state: pending token buffer, chars already dispatched
   // to TTS, total display chars, and the current utterance id (karaoke key).
@@ -111,6 +111,11 @@ export default function Home() {
     const t = setTimeout(() => {
       try {
         initVoice().then(setVoiceAvail);
+        const savedVoice = localStorage.getItem("meridian:crewVoice");
+        const on = savedVoice === "on";
+        voiceOnRef.current = on;
+        setVoiceOn(on);
+        setVoiceEnabled(on);
         setHasSavedPlan(Boolean(localStorage.getItem("meridian:lastPlan")));
         setShowOnboarding(!localStorage.getItem("meridian:onboarded"));
         fetch("/api/memory")
@@ -271,8 +276,10 @@ export default function Home() {
           });
           break;
         case "briefing":
-          if (e.lines?.length) speakDialogue(e.lines);
-          else speakOnce(e.summary, "handoff");
+          if (voiceOnRef.current) {
+            if (e.lines?.length) speakDialogue(e.lines);
+            else speakOnce(e.summary, "handoff");
+          }
           setHasSavedPlan(true);
           try {
             if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
@@ -468,6 +475,24 @@ export default function Home() {
           onCheckIn={(extra) => beginStream(extra)}
         />
 
+        <button
+          type="button"
+          aria-pressed={voiceOn}
+          disabled={!voiceAvail}
+          title={voiceAvail ? undefined : "Voice isn't set up"}
+          onClick={() => {
+            const next = !voiceOn;
+            voiceOnRef.current = next;
+            setVoiceOn(next);
+            try { localStorage.setItem("meridian:crewVoice", next ? "on" : "off"); } catch { /* ignore */ }
+            setVoiceEnabled(next);
+            if (!next) stopVoice();
+          }}
+          className="shrink-0 rounded-lg border border-line bg-ink-2 px-3 py-1.5 text-xs font-semibold text-mist transition-colors hover:text-paper disabled:opacity-40"
+        >
+          {voiceOn ? "🔊 Voice on" : "🔈 Voice off"}
+        </button>
+
         <div className="relative ml-auto shrink-0" ref={menuRef}>
           <Button
             variant="secondary"
@@ -490,22 +515,6 @@ export default function Home() {
                   <Link href="/history" className="block rounded-lg px-3 py-1.5 text-xs text-mist hover:bg-line focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-paper focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
                     Past trips{runCount > 0 ? ` (${runCount})` : ""}
                   </Link>
-                  <button
-                    onClick={() => {
-                      if (!voiceAvail) return;
-                      const next = !voiceOn;
-                      voiceOnRef.current = next;
-                      setVoiceOn(next);
-                      setVoiceEnabled(next);
-                      if (!next) stopVoice();
-                      setMenuOpen(false);
-                    }}
-                    disabled={!voiceAvail}
-                    title={voiceAvail ? undefined : "No ElevenLabs key on this deployment"}
-                    className="w-full rounded-lg px-3 py-1.5 text-left text-xs text-mist hover:bg-line hover:text-paper disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-paper focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
-                  >
-                    voice {voiceAvail ? (voiceOn ? "on" : "off") : "unavailable"}
-                  </button>
                   {providerLabel && (
                     <div className="rounded-lg px-3 py-1.5 text-xs text-dim">
                       {providerLabel}{providerFallback ? " · fallback" : ""}
