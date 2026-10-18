@@ -2034,3 +2034,79 @@ textarea:focus-visible,
     font-size: 14px;
   }
 }
+
+/* Round 4 I — night mode */
+:root {
+  --m-bg: #F5EFE6;
+  --m-card: #fff8ef;
+  --m-text: #3a2e23;
+  --m-ink: #1E1B18;
+  --m-muted: #7a6a5c;
+  --m-border: #e3d5c3;
+  --m-border-2: #eee3d6;
+}
+html[data-theme="night"] {
+  --m-bg: #201a14;
+  --m-card: #2b231b;
+  --m-text: #F5EFE6;
+  --m-ink: #F5EFE6;
+  --m-muted: #a89383;
+  --m-border: #4a3d30;
+  --m-border-2: #3d332a;
+}
+html[data-theme="night"] body,
+html[data-theme="night"] .root {
+  background: var(--m-bg);
+  color: var(--m-ink);
+}
+html[data-theme="night"] .pill,
+html[data-theme="night"] .trip-chip,
+html[data-theme="night"] .day-step,
+html[data-theme="night"] .ask-chip,
+html[data-theme="night"] .chip,
+html[data-theme="night"] .cal-summary-num,
+html[data-theme="night"] .hero-meeting,
+html[data-theme="night"] .sheet-panel,
+html[data-theme="night"] .card,
+html[data-theme="night"] .ask,
+html[data-theme="night"] .hr,
+html[data-theme="night"] .day,
+html[data-theme="night"] .drawer,
+html[data-theme="night"] .demo-tag {
+  background: var(--m-card);
+  border-color: var(--m-border);
+  color: var(--m-text);
+}
+html[data-theme="night"] .tl-row,
+html[data-theme="night"] .cal-summary-num,
+html[data-theme="night"] .demo-tag {
+  border-color: var(--m-border-2);
+}
+html[data-theme="night"] .tl-title,
+html[data-theme="night"] .sheet-title,
+html[data-theme="night"] h1,
+html[data-theme="night"] h2,
+html[data-theme="night"] h3 {
+  color: var(--m-ink);
+}
+html[data-theme="night"] .tl-time span,
+html[data-theme="night"] .journey-step,
+html[data-theme="night"] .journey-step.later,
+html[data-theme="night"] .ask-foot,
+html[data-theme="night"] .sub,
+html[data-theme="night"] p {
+  color: var(--m-muted);
+}
+html[data-theme="night"] .journey-step.now,
+html[data-theme="night"] .pill a:hover,
+html[data-theme="night"] .pill button:hover {
+  color: var(--m-accent);
+}
+html[data-theme="night"] .tl-tag.placed {
+  color: #e99a6f;
+}
+
+/* Swipe rows: horizontal drags, vertical scrolling untouched. */
+.tl-row {
+  touch-action: pan-y;
+}

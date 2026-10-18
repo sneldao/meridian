@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { coverageOf, fmtMin } from "@/domain/circadian";
 import {
   buildDailyNudgesForDay,
@@ -158,6 +158,8 @@ export function NudgeFeedScreen({
   // The wake ack is a this-session thank-you, not a permanent banner.
   const [wakeAckFresh, setWakeAckFresh] = useState(false);
   const { toast: undoToast, show: showUndo } = useUndoToast();
+  const [swipe, setSwipe] = useState<{ id: string; dx: number } | null>(null);
+  const swipeRef = useRef<{ id: string; x0: number; y0: number; vert: boolean } | null>(null);
 
   // Item 11 — while the numbers are the sample persona's, steps are a preview
   // rather than commitments. `isPreview` is B's contract (domain/preview.ts):
@@ -1514,7 +1516,52 @@ export function NudgeFeedScreen({
           const isOpen = !!expandAllWhy || expandedWhyId === step.id;
           const city = cityFor(step.dayIndex);
           return (
-            <div key={step.id} className={`tl-row${isDone ? " done" : ""}${isSkip ? " skipped" : ""}`}>
+            <div
+              key={step.id}
+              className={`tl-row${isDone ? " done" : ""}${isSkip ? " skipped" : ""}`}
+              style={
+                swipe?.id === step.id
+                  ? {
+                      transform: `translateX(${swipe.dx}px)`,
+                      background:
+                        swipe.dx > 20
+                          ? "rgba(217,107,67,0.14)"
+                          : swipe.dx < -20
+                            ? "rgba(120,120,120,0.14)"
+                            : undefined,
+                    }
+                  : undefined
+              }
+              onPointerDown={(e) => {
+                if (e.pointerType !== "touch") return;
+                swipeRef.current = { id: step.id, x0: e.clientX, y0: e.clientY, vert: false };
+              }}
+              onPointerMove={(e) => {
+                const st = swipeRef.current;
+                if (!st || st.id !== step.id || st.vert) return;
+                const dx = e.clientX - st.x0;
+                const dy = e.clientY - st.y0;
+                if (Math.abs(dy) > Math.abs(dx)) {
+                  st.vert = true;
+                  setSwipe(null);
+                  return;
+                }
+                setSwipe({ id: step.id, dx });
+              }}
+              onPointerUp={(e) => {
+                const st = swipeRef.current;
+                swipeRef.current = null;
+                const dx = e.clientX - (st?.x0 ?? e.clientX);
+                setSwipe(null);
+                if (!st || st.vert) return;
+                if (dx > 72) doneTap(step);
+                else if (dx < -72) skipTap(step);
+              }}
+              onPointerCancel={() => {
+                swipeRef.current = null;
+                setSwipe(null);
+              }}
+            >
               <button
                 type="button"
                 className={`tl-check${isDone ? " on" : ""}`}

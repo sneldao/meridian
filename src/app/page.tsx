@@ -33,6 +33,15 @@ import { restorePlan } from "@/lib/restore-plan";
 import { parseBooking } from "@/lib/booking";
 import { syncFeed, upsertFeed } from "@/lib/feed";
 import { scheduleReminders, upcomingReminders } from "@/lib/reminders";
+
+function applyTheme(t: "auto" | "light" | "dark") {
+  const h = new Date().getHours();
+  const dark =
+    t === "dark" ||
+    (t === "auto" &&
+      (window.matchMedia("(prefers-color-scheme: dark)").matches || h >= 21 || h < 6));
+  document.documentElement.dataset.theme = dark ? "night" : "";
+}
 import { isTripFinished } from "@/lib/trip-status";
 import { JourneySteps } from "@/components/JourneySteps";
 import { useRunState, calendarWithMoves, ledgerEvents, ghostGapDeg } from "@/state/run";
@@ -171,6 +180,9 @@ export default function Home() {
   const [remindersOn, setRemindersOn] = useState(false);
   const [remindersBlocked, setRemindersBlocked] = useState(false);
   const [externalMark, setExternalMark] = useState<{ id: string; status: "done" | "skipped"; nonce: number } | null>(null);
+  const [themeChoice, setThemeChoice] = useState<"auto" | "light" | "dark">("auto");
+  const [installEvt, setInstallEvt] = useState<{ prompt: () => Promise<void> } | null>(null);
+  const [showInstallTip, setShowInstallTip] = useState(false);
   /** Run state is memory-only; the saved plan + trip let a reload show the
    *  locked plan instead of the example preview. Recomputed when the route
    *  changes or a new briefing lands. */
@@ -236,6 +248,15 @@ export default function Home() {
         initVoice().then(setVoiceAvail);
         setHasSavedPlan(Boolean(localStorage.getItem("meridian:lastPlan")));
         setRemindersOn(localStorage.getItem("meridian:reminders") === "on");
+        setThemeChoice((localStorage.getItem("meridian:theme") as "auto" | "light" | "dark") ?? "auto");
+        window.addEventListener("beforeinstallprompt", (e) => {
+          e.preventDefault();
+          setInstallEvt(e as unknown as { prompt: () => Promise<void> });
+        });
+        window.matchMedia?.("(prefers-color-scheme: dark)").addEventListener?.("change", () => {
+          const t = (localStorage.getItem("meridian:theme") ?? "auto") as "auto" | "light" | "dark";
+          applyTheme(t);
+        });
         // A notification tap that opened the app with the mark in the URL.
         const url = new URL(window.location.href);
         const mark = url.searchParams.get("mark");
@@ -871,6 +892,44 @@ export default function Home() {
             >
               Activity log
             </button>
+            <button
+              type="button"
+              className="m"
+              role="menuitem"
+              onClick={() => {
+                const next = themeChoice === "auto" ? "light" : themeChoice === "light" ? "dark" : "auto";
+                setThemeChoice(next);
+                try { localStorage.setItem("meridian:theme", next); } catch {}
+                applyTheme(next);
+              }}
+            >
+              Appearance: {themeChoice === "auto" ? "Auto" : themeChoice === "light" ? "Light" : "Dark"}
+            </button>
+            {(() => {
+              const standalone =
+                typeof window !== "undefined" &&
+                (window.matchMedia?.("(display-mode: standalone)").matches ||
+                  (navigator as { standalone?: boolean }).standalone);
+              const iOS =
+                typeof window !== "undefined" &&
+                /iP(hone|ad|od)/.test(navigator.userAgent);
+              if (standalone) return null;
+              if (!installEvt && !iOS) return null;
+              return (
+                <button
+                  type="button"
+                  className="m"
+                  role="menuitem"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    if (installEvt) void installEvt.prompt();
+                    else setShowInstallTip(true);
+                  }}
+                >
+                  Install app
+                </button>
+              );
+            })()}
             {hasSavedPlan && (
               <button
                 type="button"
