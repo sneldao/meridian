@@ -699,10 +699,10 @@ export function HeroDawnPanel({ trip, owedMin, beam, readinessPct, readinessSour
         <p className={`dawn-gap${focus === "gap" ? " hot" : ""}`}>
           {gap ? (
             <>
-              Your dawn is <b>{gap} {toward}</b> {destName}&apos;s — the crew is closing it.
+              Your body clock is <b>{gap} {toward}</b> {destName} time. This plan closes the gap.
             </>
           ) : (
-            <>Your dawn is {destName}&apos;s already — the job now is keeping it.</>
+            <>Your body clock is already on {destName} time — the plan helps you keep it there.</>
           )}
         </p>
 
@@ -710,8 +710,8 @@ export function HeroDawnPanel({ trip, owedMin, beam, readinessPct, readinessSour
             brand that promises "land at 100%". Say what is still ahead instead. */}
         <p className="dawn-note">
           {bankedH > 0
-            ? `Banked ~${bankedH}h of the ${shiftH}h shift; the rest lands in ${destName} daylight.`
-            : `${shiftH}h of clock to shift, and nothing banked yet — the crew takes it day by day, and every locked day pulls your dawn closer.`}
+            ? `About ${bankedH}h of the ${shiftH}h difference is done before you fly; daylight in ${destName} does the rest.`
+            : `${destName} is ${shiftH}h ${trip.direction === "east" ? "ahead" : "behind"}. Each day of the plan moves your body clock a little closer.`}
         </p>
       </div>
 
@@ -720,15 +720,15 @@ export function HeroDawnPanel({ trip, owedMin, beam, readinessPct, readinessSour
       <div className="stats hl-stats">
         <div className="stat">
           <em>{shiftH}h</em>
-          to shift
+          time difference
         </div>
         <div className="stat">
           <em>{readinessPct > 0 ? `${readinessPct}%` : `${bankedH}h`}</em>
           {readinessPct > 0
             ? readinessSource === "preview"
-              ? "banked on preview"
-              : "of shift locked"
-            : "banked so far"}
+              ? "adjusted before you fly (example)"
+              : "adjusted before you fly"
+            : "adjusted so far"}
         </div>
       </div>
     </div>

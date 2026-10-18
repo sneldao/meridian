@@ -26,6 +26,7 @@ import { HandoffBanner } from "@/components/HandoffBanner";
 import { AgentDrawer } from "@/components/AgentDrawer";
 import { RunAnnouncer } from "@/components/RunAnnouncer";
 import { useFocusTrap } from "@/lib/a11y";
+import { friendlyDayLabel } from "@/lib/day-label";
 import { useRunState, calendarWithMoves, ledgerEvents, ghostGapDeg } from "@/state/run";
 import { meetingReadiness } from "@/domain/readiness";
 import {
@@ -817,6 +818,11 @@ export default function Home() {
               coverage={run.briefing.coverage}
               fallback={providerFallback}
               voiceAvailable={voiceAvail}
+              destinationName={trip?.destination.name}
+              dayName={(label) => {
+                const spec = trip?.days.find((d) => d.label === label);
+                return spec ? friendlyDayLabel(spec, trip?.departureDayIndex) : label;
+              }}
               onDismiss={() => setBriefingDismissed(true)}
             />
           </div>

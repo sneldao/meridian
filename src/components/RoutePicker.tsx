@@ -55,6 +55,11 @@ const SHIFT_LABEL: Record<Surface, string> = {
   cream: "text-[#7a6a5c]",
 };
 
+const FIELD_LABEL: Record<Surface, string> = {
+  default: "text-[9px] font-bold uppercase tracking-wider text-dim",
+  cream: "text-[9px] font-bold uppercase tracking-wider text-[#a89a8a]",
+};
+
 const AIRPORT_INPUT: Record<Surface, string> = {
   default:
     "w-14 bg-transparent text-paper uppercase placeholder:normal-case placeholder:text-dim focus:w-36",
@@ -83,10 +88,14 @@ export function RoutePicker({
   // home page can sit on the warm ground without dark surface imports.
   const surfaceClass = SURFACE_CLASSES[surface];
 
-  return surface === "default" ? (
-    <Card className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 font-mono2 text-xs">
-      <div className="flex items-center gap-1.5">
-        <AirportField label="from" value={origin} date={date} disabled={disabled} onPick={(c) => onChange({ origin: c, dest, date })} surface={surface} />
+  const destCity = findAirport(dest)?.name ?? dest;
+  const fields = (
+    <>
+      <div className="flex items-end gap-1.5">
+        <div className="flex flex-col gap-0.5">
+          <span className={FIELD_LABEL[surface]}>From</span>
+          <AirportField label="From" value={origin} date={date} disabled={disabled} onPick={(c) => onChange({ origin: c, dest, date })} surface={surface} />
+        </div>
         <button
           type="button"
           disabled={disabled}
@@ -97,55 +106,40 @@ export function RoutePicker({
         >
           →
         </button>
-        <AirportField label="to" value={dest} date={date} disabled={disabled} onPick={(c) => onChange({ origin, dest: c, date })} surface={surface} />
+        <div className="flex flex-col gap-0.5">
+          <span className={FIELD_LABEL[surface]}>To</span>
+          <AirportField label="To" value={dest} date={date} disabled={disabled} onPick={(c) => onChange({ origin, dest: c, date })} surface={surface} />
+        </div>
       </div>
-      <div className="flex items-center gap-2">
-        <input
-          type="date"
-          value={date}
-          disabled={disabled}
-          onChange={(e) => e.target.value && onChange({ origin, dest, date: e.target.value })}
-          className={DATE_INPUT_CLASSES[surface]}
-          aria-label="Departure date"
-        />
+      <div className="flex items-end gap-2">
+        <div className="flex flex-col gap-0.5">
+          <span className={FIELD_LABEL[surface]}>Departs</span>
+          <input
+            type="date"
+            value={date}
+            disabled={disabled}
+            onChange={(e) => e.target.value && onChange({ origin, dest, date: e.target.value })}
+            className={DATE_INPUT_CLASSES[surface]}
+            aria-label="Departure date"
+          />
+        </div>
         {shift && (
           <span className={`whitespace-nowrap ${SHIFT_LABEL[surface]}`} title="Real offsets on these dates, DST included">
-            <span className={SHIFT_BADGE[surface]}>{Math.abs(shift.requiredShiftMin / 60)}h</span> {shift.direction}
+            {destCity} is <span className={SHIFT_BADGE[surface]}>{Math.abs(shift.requiredShiftMin / 60)}h</span>{" "}
+            {shift.direction === "east" ? "ahead" : "behind"}
           </span>
         )}
       </div>
+    </>
+  );
+
+  return surface === "default" ? (
+    <Card className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 font-mono2 text-xs">
+      {fields}
     </Card>
   ) : (
     <div className={`${surfaceClass} flex flex-wrap items-center justify-between gap-2`}>
-      <div className="flex items-center gap-1.5">
-        <AirportField label="from" value={origin} date={date} disabled={disabled} onPick={(c) => onChange({ origin: c, dest, date })} surface={surface} />
-        <button
-          type="button"
-          disabled={disabled}
-          onClick={() => onChange({ origin: dest, dest: origin, date })}
-          className={SWAP_CLASSES[surface]}
-          aria-label="Swap origin and destination"
-          title="Swap"
-        >
-          →
-        </button>
-        <AirportField label="to" value={dest} date={date} disabled={disabled} onPick={(c) => onChange({ origin, dest: c, date })} surface={surface} />
-      </div>
-      <div className="flex items-center gap-2">
-        <input
-          type="date"
-          value={date}
-          disabled={disabled}
-          onChange={(e) => e.target.value && onChange({ origin, dest, date: e.target.value })}
-          className={DATE_INPUT_CLASSES[surface]}
-          aria-label="Departure date"
-        />
-        {shift && (
-          <span className={`whitespace-nowrap ${SHIFT_LABEL[surface]}`} title="Real offsets on these dates, DST included">
-            <span className={SHIFT_BADGE[surface]}>{Math.abs(shift.requiredShiftMin / 60)}h</span> {shift.direction}
-          </span>
-        )}
-      </div>
+      {fields}
     </div>
   );
 }

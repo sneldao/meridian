@@ -49,9 +49,12 @@ export function DawnScrubber({
 
   return (
     <div className="scrub">
+      <p className="scrub-label" style={{ textTransform: "none", letterSpacing: "0.02em" }}>
+        Drag to explore — this doesn&apos;t change your plan.
+      </p>
       <div className="scrub-lane">
         <label className="scrub-label" htmlFor="dawn-scrub-time">
-          {homeLabel} clock
+          Time in {homeLabel}
         </label>
         <input
           id="dawn-scrub-time"
@@ -73,7 +76,7 @@ export function DawnScrubber({
       {shiftOpen && (
         <div className="scrub-lane">
           <label className="scrub-label" htmlFor="dawn-scrub-shift">
-            shift owed to {destLabel}
+            Body clock gap
           </label>
           <input
             id="dawn-scrub-shift"
@@ -84,7 +87,7 @@ export function DawnScrubber({
             step={5}
             value={Math.round(owedMin)}
             onChange={(e) => onOwedChange(Number(e.target.value))}
-            aria-label={`Hours of body-clock shift still owed to ${destLabel}`}
+            aria-label={`Hours your body clock is behind ${destLabel}`}
             aria-valuetext={`${(owedMin / 60).toFixed(1)} hours`}
           />
           <output className="scrub-val" htmlFor="dawn-scrub-shift">
@@ -95,7 +98,7 @@ export function DawnScrubber({
 
       {overridden && (
         <button type="button" className="scrub-reset" onClick={onReset}>
-          back to now
+          Reset
         </button>
       )}
     </div>

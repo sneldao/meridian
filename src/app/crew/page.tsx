@@ -451,12 +451,12 @@ export default function Home() {
           disabled={run.phase === "running"}
           variant="primary"
         >
-          {run.phase === "running" ? "shift in progress…" : run.phase === "done" ? "run it again" : "start the night shift"}
+          {run.phase === "running" ? "Building your plan…" : run.phase === "done" ? "Make it again" : "Make my plan"}
         </Button>
 
         {run.phase === "running" && (
           <Button variant="danger" onClick={cancelShift}>
-            cancel
+            Cancel
           </Button>
         )}
 
@@ -650,7 +650,7 @@ export default function Home() {
 
                   <div className="mt-5 flex justify-center">
                     <Button onClick={startShift}>
-                      Start the night shift
+                      Make my plan
                     </Button>
                   </div>
 

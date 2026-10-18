@@ -26,6 +26,7 @@ import { isPreview, tapBecomesCheckIn, wakeAck } from "@/domain/preview";
 import { calendarSummary, heroMeeting } from "@/domain/hero";
 import { secondTripCopy, secondTripProof } from "@/domain/second-trip";
 import { meetingReadiness } from "@/domain/readiness";
+import { friendlyDayLabel } from "@/lib/day-label";
 import type {
   AdherenceProfile,
   BaselineKind,
@@ -107,30 +108,6 @@ const CATEGORY_KIND: Partial<Record<NudgeCategory, InterventionKind>> = {
   nutrition: "caffeine_cutoff",
   sleep: "sleep_window",
 };
-
-/** Consumer-facing day names — domain labels ("D-3", "D+1") stay internal
- *  keys; users see dates when we have them, or plain words otherwise. The
- *  flight day keeps its ✈ but shows its date, so nothing on screen is a
- *  relative offset the traveller has to decode. */
-function friendlyDayLabel(
-  d: { label: string; dayIndex: number; date: string },
-  departureDayIndex?: number,
-): string {
-  const dep = departureDayIndex ?? 3;
-  let dateLabel = "";
-  if (d.date) {
-    const dt = new Date(`${d.date}T12:00:00`);
-    if (!Number.isNaN(dt.getTime()))
-      dateLabel = dt.toLocaleDateString(undefined, {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-      });
-  }
-  if (d.dayIndex === dep) return dateLabel ? `✈ ${dateLabel}` : "✈ Flight day";
-  if (dateLabel) return dateLabel;
-  return d.dayIndex < dep ? `Prep day ${d.dayIndex + 1}` : `Recovery day ${d.dayIndex - dep}`;
-}
 
 export function NudgeFeedScreen({
   trip,
@@ -456,19 +433,17 @@ export function NudgeFeedScreen({
   // Guided ribbon — the day's crew beats, distilled to one line. Only real
   // events, never reconstructed.
   const dayBeat = useMemo(() => {
-    if (!activeDaySpec) return null;
+    if (!expandAllWhy || !activeDaySpec) return null;
     const vs = verdicts.get(activeDaySpec.label) ?? [];
     if (!vs.length && !memoryPath) return null;
     const parts: string[] = [];
-    const nAttempts = Math.max(vs.length, drafts.get(activeDaySpec.label)?.attempt ?? 0);
-    if (nAttempts) parts.push(`drafted ${nAttempts}×`);
     const fails = vs.filter((v) => !v.feasible).length;
-    if (fails) parts.push(`revised ${fails}×`);
     const latest = vs.at(-1);
-    if (locked.has(activeDaySpec.label) && latest) parts.push("locked");
-    if (memoryPath) parts.push("your trip memory was used");
-    return parts.length ? `Crew: ${parts.join(" · ")}` : null;
-  }, [activeDaySpec, verdicts, drafts, locked, memoryPath]);
+    if (locked.has(activeDaySpec.label) && latest) parts.push("Planned and checked");
+    if (fails) parts.push(`revised ${fails} ${fails === 1 ? "time" : "times"} after a check`);
+    if (memoryPath) parts.push("used what we learned from your past trips");
+    return parts.length ? parts.join(" · ") : null;
+  }, [expandAllWhy, activeDaySpec, verdicts, locked, memoryPath]);
 
   // "Your next step" — the first incomplete step by TIME, never by category
   // order. Windows whose end has passed collapse into "Missed". A day that
@@ -543,8 +518,11 @@ export function NudgeFeedScreen({
   // says what it does instead of "0 min".
   const impactCopy = (category: NudgeCategory, verb: "done" | "missed") => {
     const n = activePlan ? stepImpactMin(activePlan, category) : 0;
-    if (n <= 0) return "keeps the rhythm steady";
-    return verb === "done" ? `dawn moved ~${n} min closer` : `skip costs ~${n} min`;
+    if (n <= 0) return "helps keep your new schedule steady";
+    const dest = trip?.destination.name ?? "your destination";
+    return verb === "done"
+      ? `your body clock moves about ${n} min closer to ${dest} time`
+      : `skipping costs about ${n} min`;
   };
   const doneWhere = isToday ? " today" : "";
   const countdown = (() => {
@@ -683,14 +661,14 @@ export function NudgeFeedScreen({
             baselineKind === "demo-default" &&
             !wakeBand ? (
             <p className="demo-tag">
-              Sample data below — answer one question to make it yours.
+              This is an example plan. Answer one question to make it yours.
             </p>
           ) : (
             baselineSource === "fixture" && (
               <p className="demo-tag">
                 {baselineKind === "demo-default" && !wakeBand
-                  ? "Sample traveller — these numbers are not your measurements."
-                  : "Sample traveller — the wearable figures are sample data; your wake time is yours."}
+                  ? "Example traveller — these numbers aren't your measurements."
+                  : "Your wake time is yours. Sleep and heart data are examples until you connect a wearable."}
               </p>
             )
           )}
@@ -726,7 +704,7 @@ export function NudgeFeedScreen({
             <div className="ask" role="group" aria-label="Your natural wake time">
               <p>
                 On a day with nothing early planned, when do you naturally wake?
-                <span> One answer and the plan is fitted to you, not to the sample.</span>
+                <span> Answer once and we&apos;ll fit the plan to you.</span>
               </p>
               <div className="ask-chips">
                 {([
@@ -751,8 +729,8 @@ export function NudgeFeedScreen({
                   promise is the difference between a promise and a threat.
                   Evenings are where an eastward trip is actually won. */}
               <p className="ask-promise">
-                Nothing before your floor unless you say so. Evenings do the heavy
-                lifting.
+                We won&apos;t schedule anything before you&apos;d normally be up. Most of
+                the work happens in the evening.
               </p>
             </div>
           )}
@@ -774,28 +752,26 @@ export function NudgeFeedScreen({
               </svg>
             </div>
             <div>
-              <div className="mini">Your next step · {currentDayName}</div>
+              <div className="mini">Next up · {currentDayName}</div>
             </div>
           </div>
 
           {totalSteps === 0 ? (
             isPostFlightDay ? (
               <>
-                <h2>Planned with you after you land</h2>
+                <h2>We&apos;ll plan this day after you land</h2>
                 <p className="s">
-                  The days before your flight bank what they can
+                  The days before your flight do what they can
                   {landedResidualHours !== null &&
-                    ` — you land about ${landedResidualHours}h short of ${trip?.destination.name ?? "your destination"} time`}{" "}
-                  and the crew finishes the plan once you&apos;re down.
+                    ` — you'll land about ${landedResidualHours}h off ${trip?.destination.name ?? "your destination"} time`}
+                  , and we&apos;ll finish the plan once you&apos;re there.
                 </p>
               </>
             ) : (
               <>
-                <h2>Not placed yet — personalise</h2>
+                <h2>No steps for this day yet</h2>
                 <p className="s">
-                  We couldn&apos;t honestly place this day against your calendar
-                  and baseline, so there are no invented times here — run the
-                  crew and it will draft this day with you.
+                  Make your plan and we&apos;ll fill in this day.
                 </p>
               </>
             )
@@ -807,18 +783,18 @@ export function NudgeFeedScreen({
               {tripFinished && (
                 <div className="arrival-nudge">
                   <span className="tw">Trip complete</span>
-                  <h2>See how the shift landed</h2>
+                  <h2>How did it go?</h2>
                   <p className="s">
-                    The plan ran out. Score the trip against what the crew
-                    promised at the gate, then tell it how it actually went — that
-                    is what the next trip plans from.
+                    Your plan is finished. See how well your body clock
+                    adjusted, then tell us how you felt — it makes your next
+                    plan better.
                   </p>
                   <div className="arrival-nudge-btns">
                     <a className="p1" href={`/arrival?date=${trip?.days[0]?.date ?? ""}`}>
-                      Score the trip
+                      See results
                     </a>
                     <a className="p2" href="/outcome">
-                      How it went
+                      Tell us how you felt
                     </a>
                   </div>
                 </div>
@@ -865,16 +841,7 @@ export function NudgeFeedScreen({
                     cursor: "pointer",
                   }}
                 >
-                  {/* Item 11 — on preview the tap is a try-it, not a record.
-                      "Done" next to a fabricated 07:00 read as a commitment,
-                      which is what made these taps training data. */}
-                  {previewMode
-                    ? completedIds.has(heroNudge.id)
-                      ? "Tried ✓"
-                      : "Try this"
-                    : completedIds.has(heroNudge.id)
-                      ? "Done ✓"
-                      : "Done"}
+                  {completedIds.has(heroNudge.id) ? "Done ✓" : "Done"}
                 </button>
                 <button
                   type="button"
@@ -899,13 +866,13 @@ export function NudgeFeedScreen({
                 <p style={{ margin: 0, fontSize: "12px", color: "#7a6a5c" }}>
                   {previewMode ? (
                     <>
-                      Tried — {impactCopy(heroNudge.category, "done")} Nothing
-                      saved; this is the sample profile, not your week.
+                      Done — {impactCopy(heroNudge.category, "done")}. Example
+                      plan only, so nothing is saved.
                     </>
                   ) : (
                     <>
                       Done — {impactCopy(heroNudge.category, "done")}
-                      {pendingMarks.has(heroNudge.id) ? " · feeds your next check-in" : ""}.
+                      {pendingMarks.has(heroNudge.id) ? " · saved for your next check-in" : ""}.
                     </>
                   )}
                 </p>
@@ -913,11 +880,11 @@ export function NudgeFeedScreen({
               {isSkipped(heroNudge.id) && (
                 <p style={{ margin: 0, fontSize: "12px", color: "#b04523" }}>
                   {previewMode ? (
-                    <>Skipped in the preview — nothing saved.</>
+                    <>Skipped — example plan only, nothing saved.</>
                   ) : (
                     <>
-                      Skipped — {impactCopy(heroNudge.category, "missed")} · the crew
-                      replans around it at check-in.
+                      Skipped — {impactCopy(heroNudge.category, "missed")}.
+                      We&apos;ll adjust the rest of your plan when you check in.
                     </>
                   )}
                 </p>
@@ -977,7 +944,7 @@ export function NudgeFeedScreen({
                                 cursor: "pointer",
                               }}
                             >
-                              {previewMode ? "Tried" : "Done"}
+                              Done
                             </button>
                             <button
                               type="button"
@@ -993,7 +960,7 @@ export function NudgeFeedScreen({
                                 cursor: "pointer",
                               }}
                             >
-                              {previewMode ? "Skip" : "Skip"}
+                              Skip
                             </button>
                           </span>
                         </li>
@@ -1007,8 +974,7 @@ export function NudgeFeedScreen({
             <>
               <h2>All done{doneWhere} ✓</h2>
               <p className="s">
-                Every step is marked done — the rest of the shift happens
-                tonight, on the plan you kept.
+                Nice work. Stick to tonight&apos;s bedtime and you&apos;re on track.
               </p>
             </>
           )}
@@ -1017,16 +983,13 @@ export function NudgeFeedScreen({
             <div className={`meter${previewMode ? " preview" : ""}`}>
               <div className="t">
                 {previewMode ? (
-                  // Item 11 — "0 of 4 done" is a promise about a real day. On
-                  // preview it is a demo of the mechanic, so it says so rather
-                  // than reporting a streak nobody is actually keeping.
-                  <>Preview from the sample · {completedCount} of {totalSteps} tried</>
+                  <>Example plan · {completedCount} of {totalSteps} done</>
                 ) : (
                   <>{completedCount} of {totalSteps} done{doneWhere}</>
                 )}
               </div>
               <div className="bar">
-                <i style={{ width: `${previewMode ? 0 : progressPct}%` }} />
+                <i style={{ width: `${progressPct}%` }} />
               </div>
             </div>
           )}
@@ -1038,23 +1001,17 @@ export function NudgeFeedScreen({
               onClick={onStartCrewSync}
               disabled={phase === "running"}
             >
-              {/* Item 13 — the calendar is the compliance surface, not the run
-                  button. "Lock the plan →" names the step it triggers: the
-                  crew run that locks each day, whose output lands as calendar
-                  events the traveller can accept. The old "Fit to me → to
-                  calendar" promised the .ics up front while delivering a ~45s
-                  run first (5B1) — the sub-copy below carries the calendar
-                  promise instead. */}
               {phase === "running"
-                ? `Checking your plan (${locked.size}/${days.length})…`
-                : "Lock the plan →"}
+                ? `Building your plan… (${locked.size} of ${days.length} days)`
+                : phase === "done"
+                  ? "Update my plan"
+                  : "Make my plan"}
             </button>
           </div>
           {phase === "idle" && totalSteps > 0 && (
             <p style={{ marginTop: "8px", fontSize: "11px", color: "#7a6a5c" }}>
-              The crew locks your plan as a calendar you can accept — the same
-              list you already live by. No notifications, just the asks where
-              your day already has room.
+              Takes about a minute. You&apos;ll get a file to add the steps to your
+              calendar — no notifications.
             </p>
           )}
           </div>
@@ -1085,11 +1042,20 @@ export function NudgeFeedScreen({
               is the sales pitch — two scannable columns the user can read at
               a glance, not a sentence that buries the gap inside clauses. */}
           <b style={{ color: "#3a2e23" }}>
-            {heroMtg.dayLabel} {fmtMin(heroMtg.localMin)} {heroMtg.title}
+            {(() => {
+              const spec = trip?.days.find((d) => d.label === heroMtg.dayLabel);
+              const day = spec
+                ? friendlyDayLabel(spec, trip?.departureDayIndex)
+                : heroMtg.dayLabel;
+              return `${day}, ${fmtMin(heroMtg.localMin)} · ${heroMtg.title}`;
+            })()}
           </b>
+          <div style={{ marginTop: "6px", fontSize: "10px", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "#7a6a5c" }}>
+            How this meeting will feel to your body
+          </div>
           <div
             style={{
-              marginTop: "6px",
+              marginTop: "4px",
               display: "grid",
               gridTemplateColumns: "1fr 1fr",
               gap: "8px",
@@ -1101,21 +1067,21 @@ export function NudgeFeedScreen({
               <span style={{ display: "block", fontWeight: 700, color: "#3a2e23", fontSize: "13px" }}>
                 {fmtMin(heroMtg.bodyMin)}
               </span>
-              <span>with Meridian</span>
+              <span>with this plan</span>
             </div>
             {heroMtg.bodyWithoutPlanMin !== heroMtg.bodyMin ? (
               <div>
                 <span style={{ display: "block", fontWeight: 700, color: "#b04523", fontSize: "13px" }}>
                   {fmtMin(heroMtg.bodyWithoutPlanMin)}
                 </span>
-                <span>without the plan</span>
+                <span>without a plan</span>
               </div>
             ) : (
               <div>
                 <span style={{ display: "block", fontWeight: 700, color: "#3a2e23", fontSize: "13px" }}>
                   {fmtMin(heroMtg.bodyWithoutPlanMin)}
                 </span>
-                <span>body time</span>
+                <span>your body time</span>
               </div>
             )}
           </div>
@@ -1128,7 +1094,9 @@ export function NudgeFeedScreen({
                 fontWeight: 700,
               }}
             >
-              at risk — lock the plan to clear it
+              {locked.size === 0
+                ? "This falls in your body's night. Make your plan to fix it."
+                : "Still early for your body — expect to feel tired."}
             </p>
           )}
         </div>
@@ -1156,9 +1124,9 @@ export function NudgeFeedScreen({
           }}
         >
           <span style={{ fontSize: "12px", fontWeight: 700, color: "#3a2e23" }}>
-            {pendingMarks.size} {pendingMarks.size === 1 ? "step" : "steps"} marked —
+            You&apos;ve marked {pendingMarks.size} {pendingMarks.size === 1 ? "step" : "steps"}.
             <span style={{ color: "#7a6a5c", fontWeight: 600 }}>
-              {" "}the crew replans the rest around what happened.
+              {" "}Send them so we can adjust the rest of your plan.
             </span>
           </span>
           <button
@@ -1175,7 +1143,7 @@ export function NudgeFeedScreen({
               cursor: "pointer",
             }}
           >
-            Check in →
+            Update plan
           </button>
         </div>
       )}
@@ -1238,7 +1206,7 @@ export function NudgeFeedScreen({
               color: "#7a6a5c",
             }}
           >
-            Spend your daylight in {tasteStripData.destination}
+            Things to do outside in {tasteStripData.destination} (daylight helps)
           </div>
           <ul style={{ margin: "8px 0 0", padding: 0, listStyle: "none" }}>
             {tasteStripData.places.map((p) => (
@@ -1275,8 +1243,8 @@ export function NudgeFeedScreen({
           {pendingMarks.size > 0 ? (
             <>
               <span style={{ fontSize: "12px", fontWeight: 700, color: "#5b4d41" }}>
-                {pendingMarks.size} {pendingMarks.size === 1 ? "step" : "steps"} marked —
-                the crew replans the rest around what happened.
+                You&apos;ve marked {pendingMarks.size} {pendingMarks.size === 1 ? "step" : "steps"}.
+                Send them so we can adjust the rest of your plan.
               </span>
               <button
                 type="button"
@@ -1292,13 +1260,13 @@ export function NudgeFeedScreen({
                   cursor: "pointer",
                 }}
               >
-                Check in →
+                Update plan
               </button>
             </>
           ) : (
             <>
               <span style={{ fontSize: "12px", fontWeight: 700, color: "#5b4d41" }}>
-                How did {currentDayName} go?
+                How did {isToday ? "today" : currentDayName} go?
               </span>
               <span style={{ display: "flex", gap: 8 }}>
                 {(["done", "partial", "skipped"] as const).map((s) => (
@@ -1317,7 +1285,7 @@ export function NudgeFeedScreen({
                       cursor: "pointer",
                     }}
                   >
-                    {s === "done" ? "Did it ✓" : s === "partial" ? "Partly" : "Skipped"}
+                    {s === "done" ? "Did it all" : s === "partial" ? "Some of it" : "None of it"}
                   </button>
                 ))}
               </span>
@@ -1327,28 +1295,30 @@ export function NudgeFeedScreen({
       )}
 
       {/* The rail — one line per step, in the order the day happens */}
-      {calSummary && (
+      {expandAllWhy && calSummary && (
         <div
           className="cal-summary rise"
           style={{ animationDelay: ".35s" }}
           aria-label="Calendar fit"
         >
-          {/* Item 13 — surface the numbers the run produces *before* the
-              timeline. Movable/fixed give the traveller the shape of the
-              negotiation; readinessLabel says how many post-flight meetings
-              already clear the sleep window. Nothing is invented — if there
-              are no events on the day the block disappears. */}
+          {/* The calendar negotiation in numbers — how many events the plan
+              can move, how many it can't, and how many post-flight meetings
+              already sit at a good body time. Detailed view only. */}
           <div className="cal-summary-num">
             <b>{calSummary.movable}</b>
-            <span>movable</span>
+            <span>calendar events we can move</span>
           </div>
           <div className="cal-summary-num">
             <b>{calSummary.fixed}</b>
-            <span>fixed</span>
+            <span>fixed events</span>
           </div>
           <div className="cal-summary-num">
-            <b>{calSummary.readinessLabel}</b>
-            <span>post-flight meetings</span>
+            <b>{calSummary.total === 0 ? "None" : `${calSummary.ready} of ${calSummary.total}`}</b>
+            <span>
+              {calSummary.total === 0
+                ? "meetings after you land"
+                : "meetings after you land at a good body time"}
+            </span>
           </div>
         </div>
       )}
@@ -1375,17 +1345,11 @@ export function NudgeFeedScreen({
               <div className="tl-body">
                 <h3 className="tl-title">
                   <span className="tl-title-text">{step.title}</span>
-                  {/* Item 14 — the rail carries the same vocabulary as the
-                      calendar. A row about a real event is tagged `movable`
-                      when the crew can move it; otherwise `placed`, which is
-                      the solver's word for "I have chosen this slot against
-                      your floor and existing commitments". The day reads
-                      calendar-shaped rather than as a list of intentions. */}
-                  <span
-                    className={`tl-tag ${step.calendarMove ? "movable" : "placed"}`}
-                  >
-                    {step.calendarMove ? "movable" : "placed"}
-                  </span>
+                  {step.id === heroNudge?.id ? (
+                    <span className="tl-tag placed">Next up</span>
+                  ) : step.calendarMove ? (
+                    <span className="tl-tag movable">Moves a calendar event</span>
+                  ) : null}
                 </h3>
                 <div className="tl-acts">
                   <button
@@ -1394,13 +1358,7 @@ export function NudgeFeedScreen({
                     onClick={() => markDone(step)}
                     aria-pressed={isDone}
                   >
-                    {previewMode
-                      ? isDone
-                        ? "Tried ✓"
-                        : "Try this"
-                      : isDone
-                        ? "Done ✓"
-                        : "Done"}
+                    {isDone ? "Done ✓" : "Done"}
                   </button>
                   <button
                     type="button"
@@ -1419,20 +1377,35 @@ export function NudgeFeedScreen({
                       }
                       aria-expanded={isOpen}
                     >
-                      {isOpen ? "Hide details" : "Why & details"}
+                      {isOpen ? "Hide details" : "Why?"}
                     </button>
                   )}
                 </div>
                 {isDone && (
                   <p style={{ margin: "4px 0 0", fontSize: "12px", color: "#7a6a5c" }}>
-                    Done — {impactCopy(step.category, "done")}
-                    {pendingMarks.has(step.id) ? " · feeds your next check-in" : ""}.
+                    {previewMode ? (
+                      <>
+                        Done — {impactCopy(step.category, "done")}. Example plan
+                        only, so nothing is saved.
+                      </>
+                    ) : (
+                      <>
+                        Done — {impactCopy(step.category, "done")}
+                        {pendingMarks.has(step.id) ? " · saved for your next check-in" : ""}.
+                      </>
+                    )}
                   </p>
                 )}
                 {isSkip && (
                   <p style={{ margin: "4px 0 0", fontSize: "12px", color: "#b04523" }}>
-                    Skipped — {impactCopy(step.category, "missed")} · the crew
-                    replans around it at check-in.
+                    {previewMode ? (
+                      <>Skipped — example plan only, nothing saved.</>
+                    ) : (
+                      <>
+                        Skipped — {impactCopy(step.category, "missed")}.
+                        We&apos;ll adjust the rest of your plan when you check in.
+                      </>
+                    )}
                   </p>
                 )}
                 {isOpen && (
@@ -1445,7 +1418,7 @@ export function NudgeFeedScreen({
                     {step.evidence ? (
                       <div className="evrow">
                         <span className="evchip" style={{ background: "transparent", border: "none", padding: "3px 0" }}>
-                          checked by the scorer · planned by the crew
+                          Checked against sleep research
                         </span>
                         {step.evidence.evalVerdict && (() => {
                           const violations = step.evidence.evalVerdict.violations;
@@ -1470,7 +1443,7 @@ export function NudgeFeedScreen({
                         )}
                         {step.evidence.memoryPath && (
                           <span className="evchip mem" title={step.evidence.memoryPath}>
-                            ↝ trip memory
+                            Based on your past trips
                           </span>
                         )}
                         {step.evidence.evalVerdict?.violations.length ? (
@@ -1489,8 +1462,8 @@ export function NudgeFeedScreen({
         {steps.length === 0 && (
           <p className="tl-empty">
             {isPostFlightDay
-              ? "Planned with you after you land."
-              : "Not placed yet — personalise."}
+              ? "We'll plan this day after you land."
+              : "No steps for this day yet."}
           </p>
         )}
       </section>

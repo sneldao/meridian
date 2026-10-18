@@ -24,12 +24,23 @@ interface HandoffBannerProps {
   coverage?: ShiftCoverage;
   fallback?: boolean;
   voiceAvailable?: boolean;
+  /** Destination display name ("Tokyo") for the plain-language read. */
+  destinationName?: string;
+  /** Maps a domain day label ("D-2") to a friendly name ("Thu 22 Oct"). */
+  dayName?: (label: string) => string;
   onDismiss?: () => void;
+}
+
+function fmtH(min: number): string {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  if (h > 0 && m > 0) return `${h}h ${m}m`;
+  if (h > 0) return `${h}h`;
+  return `${m}m`;
 }
 
 export function HandoffBanner({
   summary,
-  score,
   citations,
   days,
   ics,
@@ -37,6 +48,8 @@ export function HandoffBanner({
   coverage,
   fallback,
   voiceAvailable,
+  destinationName,
+  dayName,
   onDismiss,
 }: HandoffBannerProps) {
   const [voiceState, setVoiceState] = useState<"idle" | "loading" | "playing" | "error">("idle");
@@ -74,11 +87,16 @@ export function HandoffBanner({
     }, 12000);
   };
 
-  const pctCovered = coverage ? Math.round(coverage.ratio * 100) : Math.round(score * 100);
+  const dest = destinationName ?? "your destination";
+  const planLine = coverage
+    ? coverage.residualMin <= 0
+      ? `You should land fully adjusted to ${dest} time.`
+      : `Before you fly, this plan moves your body clock ${fmtH(coverage.achievedMin)} closer to ${dest} time. The other ${fmtH(coverage.residualMin)} adjusts in your first days there.`
+    : "Here's your plan.";
 
   return (
     <section
-      aria-label="Your personalized circadian handoff"
+      aria-label="Your plan is ready"
       className="relative overflow-hidden rounded-2xl border border-sun-dest/30 bg-gradient-to-br from-ink-3 via-ink-2 to-ink-2 p-5 shadow-lg"
     >
       {onDismiss && (
@@ -97,33 +115,29 @@ export function HandoffBanner({
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-pass/15 px-2.5 py-0.5 text-xs font-bold text-pass">
               <CheckCircle2 size={12} />
-              Your Plan is Ready
+              Your plan is ready
             </span>
-            {coverage && (
-              <span className="font-mono2 text-xs text-sun-dest">
-                {pctCovered}% of jet-lag shift covered ({coverage.achievedMin}/{coverage.requiredMin} min)
-              </span>
-            )}
           </div>
 
           {fallback && (
             <div className="mt-2 rounded-lg border border-fail/20 bg-fail/10 px-3 py-1.5 text-xs text-fail">
-              Used verified fallback schedule mid-run — review times before exporting.
+              Part of this plan used a backup schedule — double-check the times before adding it to your calendar.
             </div>
           )}
 
           <p className="mt-2.5 font-voice text-base leading-relaxed text-paper sm:text-lg">
-            {summary}
+            {planLine}
+            {citations.length > 0 ? ` Based on ${citations.length} studies.` : ""}
           </p>
 
           {firstMove && (
             <div className="mt-3 inline-flex flex-wrap items-center gap-2 rounded-xl border border-pass/25 bg-pass/10 px-3 py-2 text-xs">
               <span className="inline-flex items-center gap-1 font-bold tracking-wider text-pass uppercase">
                 <Sparkles size={12} />
-                First Action
+                First step
               </span>
               <span className="font-mono2 font-semibold text-paper">
-                {firstMove.day.label} at {fmtMin(firstMove.iv.startMin)}
+                {dayName?.(firstMove.day.label) ?? firstMove.day.label} at {fmtMin(firstMove.iv.startMin)}
               </span>
               <span className="text-mist">— {firstMove.iv.note}</span>
             </div>
@@ -138,7 +152,7 @@ export function HandoffBanner({
             className="inline-flex items-center gap-2 rounded-xl bg-paper px-4 py-2.5 text-xs font-bold text-ink shadow-sm transition-colors hover:bg-white"
           >
             <CalendarPlus size={14} />
-            Add to Calendar (.ics)
+            Add to my calendar
           </button>
 
           {voiceAvailable && (
@@ -152,10 +166,10 @@ export function HandoffBanner({
               {voiceState === "loading"
                 ? "Preparing audio…"
                 : voiceState === "playing"
-                  ? "Playing briefing…"
+                  ? "Playing…"
                   : voiceState === "error"
                     ? "Audio unavailable"
-                    : "Listen to Briefing"}
+                    : "Listen"}
             </button>
           )}
 
@@ -163,7 +177,7 @@ export function HandoffBanner({
             href="/review"
             className="inline-flex items-center gap-1.5 rounded-xl border border-line bg-ink/60 px-3.5 py-2 text-xs font-medium text-mist transition-colors hover:border-mist hover:text-paper"
           >
-            Full Printable Guide ({citations.length} studies)
+            Printable plan
             <ExternalLink size={12} />
           </Link>
         </div>
