@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { geoInterpolate, geoDistance } from "d3-geo";
-import { lonLatToVec3 } from "./spherical";
+import type { SubsolarPoint } from "@/domain/sun";
+import { sunDirection, lonLatToVec3 } from "./spherical";
 import type { Trip } from "@/domain/types";
 
 // The great circle the camera flies, and the machinery to fly it.
@@ -60,6 +61,52 @@ export function alongArc(
   const point = a.clone().lerp(b, frac).normalize();
   const tangent = b.clone().sub(a).normalize();
   return { point, tangent };
+}
+
+/** Half-width of the dawn-crossing window, as a share of the arc (0..1).
+ *  0.04 is about a second of the 20s flight on either side of the crossing —
+ *  long enough to be felt, short enough to be a moment, not a mood. */
+export const CROSSING_WINDOW = 0.04;
+
+/** Where the flight crosses the terminator.
+ *
+ *  The terminator is essentially stationary for the length of the flight —
+ *  the sun moves a tenth of a degree in 20s — so the *crossing* happens
+ *  because the route, not the Earth, moves through it. This finds that spot
+ *  as an arc fraction, by walking the samples and locating the sign change of
+ *  `dot(point, sunDir)` — the same dot product the terminator shader and
+ *  `isDaylight` are built on, so the crossing here cannot disagree with the
+ *  line drawn on the globe or the tooltip's daylight answer.
+ *
+ *  The first crossing is the moment: a route that dips across the terminator
+ *  and back reports only its entry into the new side. Returns null for a
+ *  route that spends its whole arc on one side of the line — the honest
+ *  answer is that there is no crossing to feel, not a moment invented. */
+export interface DawnCrossing {
+  /** Arc fraction 0..1 where the route's surface point changes daylight
+   *  state. Compare against the *eased* flight fraction (see `easeInOut`). */
+  t: number;
+  /** Entering night (`dusk`) or entering day (`dawn`) at the crossing. */
+  direction: "dusk" | "dawn";
+}
+
+export function dawnCrossing(gc: GreatCircle, sub: SubsolarPoint): DawnCrossing | null {
+  const sun = sunDirection(sub);
+  const n = gc.points.length - 1;
+  let prev = gc.points[0].dot(sun);
+  for (let i = 1; i <= n; i++) {
+    const cur = gc.points[i].dot(sun);
+    // A crossing is a strict sign flip; a sample exactly on the terminator
+    // (dot ≈ 0) matches its neighbour's side and produces no phantom moment.
+    const side = (d: number) => (d < 0 ? -1 : 1);
+    if (side(cur) !== side(prev)) {
+      const frac = Math.abs(prev) / (Math.abs(prev) + Math.abs(cur));
+      const direction = prev > 0 ? "dusk" : "dawn";
+      return { t: (i - 1 + frac) / n, direction };
+    }
+    prev = cur;
+  }
+  return null;
 }
 
 /** Cubic ease-in-out. The move has to start from rest and arrive at rest: a

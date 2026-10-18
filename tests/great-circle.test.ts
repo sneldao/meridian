@@ -1,8 +1,17 @@
 import { describe, expect, test } from "bun:test";
 import { geoDistance, geoInterpolate } from "d3-geo";
 import { DEMO_TRIP, buildTrip } from "@/domain/fixtures";
-import { alongArc, chasePosition, easeInOut, greatCircle } from "@/lib/globe/great-circle";
-import { lonLatToVec3, vec3ToLonLat } from "@/lib/globe/spherical";
+import type { SubsolarPoint } from "@/domain/sun";
+import type { Trip } from "@/domain/types";
+import {
+  alongArc,
+  chasePosition,
+  easeInOut,
+  greatCircle,
+  dawnCrossing,
+  type GreatCircle,
+} from "@/lib/globe/great-circle";
+import { lonLatToVec3, sunDirection, vec3ToLonLat } from "@/lib/globe/spherical";
 
 // The camera fly is the 85-second payoff, so it has to fly the route the rest
 // of the app already draws. These keep it honest.
@@ -157,5 +166,90 @@ describe("chasePosition", () => {
       const cam = chasePosition(point, tangent, 0.85, 0.3);
       expect(cam.y).toBeGreaterThan(-0.001);
     }
+  });
+});
+
+describe("dawnCrossing — the moment the route meets the terminator", () => {
+  // Fabricated trips with exact geometry: two equatorial points, sun parked
+  // on the prime meridian. On such an arc the daylight dot is cos(lon), so
+  // every expected crossing is arithmetic, not something merely measured.
+  const straightTriplet = (from: [number, number], to: [number, number]) =>
+    ({
+      origin: { lat: from[1], lon: from[0], code: "AAA" },
+      destination: { lat: to[1], lon: to[0], code: "BBB" },
+    }) as unknown as Trip;
+  const SUB: SubsolarPoint = { lon: 0, lat: 0 };
+  const circ = (a: number, b: number) => Math.abs(((a - b + 540) % 360) - 180);
+
+  test("day → night eastbound: crossing exactly halfway, direction dusk", () => {
+    const gc = greatCircle(straightTriplet([30, 0], [150, 0]));
+    const c = dawnCrossing(gc, SUB);
+    expect(c).not.toBeNull();
+    expect(c!.direction).toBe("dusk");
+    // lon 90 is (90-30)/120 = 0.5 of the way along the equator.
+    expect(Math.abs(c!.t - 0.5)).toBeLessThan(1 / 256);
+  });
+
+  test("night → day: same spot, mirrored direction", () => {
+    const gc = greatCircle(straightTriplet([-150, 0], [-30, 0]));
+    const c = dawnCrossing(gc, SUB);
+    expect(c!.direction).toBe("dawn");
+    expect(Math.abs(c!.t - 0.5)).toBeLessThan(1 / 256);
+  });
+
+  test("a route that spends the whole arc in daylight invents no moment", () => {
+    const gc = greatCircle(straightTriplet([-80, 0], [-20, 0]));
+    expect(dawnCrossing(gc, SUB)).toBeNull();
+  });
+
+  test("nor does one that never leaves the night side", () => {
+    const gc = greatCircle(straightTriplet([100, 0], [160, 0]));
+    expect(dawnCrossing(gc, SUB)).toBeNull();
+  });
+
+  test("the crossing agrees with the dot product the shader uses, per sample", () => {
+    // The physical claim: just before the crossing the route point is lit,
+    // just after it is not — the same cosine test as isDaylight.
+    const gc = greatCircle(DEMO_TRIP);
+    const date = new Date("2026-10-17T03:17:00Z");
+    const c = dawnCrossing(gc, {
+      lon: date.getUTCHours() * 15 - 60,
+      lat: -11,
+    });
+    if (c) {
+      expect(c.t).toBeGreaterThan(0);
+      expect(c.t).toBeLessThan(1);
+      const sun = sunDirection({ lon: date.getUTCHours() * 15 - 60, lat: -11 });
+      const before = alongArc(gc, c.t - 1 / (gc.points.length - 1) - 1e-6).point;
+      const after = alongArc(gc, c.t + 1 / (gc.points.length - 1) + 1e-6).point;
+      expect(Math.sign(before.dot(sun))).toBe(c.direction === "dusk" ? 1 : -1);
+      expect(Math.sign(after.dot(sun))).toBe(c.direction === "dusk" ? -1 : 1);
+    } else {
+      // Either valid: the real arc may sit entirely on one side at this
+      // instant — the null is the honest answer either way.
+      expect(c).toBeNull();
+    }
+  });
+
+  test("is deterministic — the same sun, the same crossing", () => {
+    const gc: GreatCircle = greatCircle(DEMO_TRIP);
+    const a = dawnCrossing(gc, { lon: 40, lat: 0 });
+    const b = dawnCrossing(gc, { lon: 40, lat: 0 });
+    expect(a?.t).toBe(b?.t);
+    expect(a?.direction).toBe(b?.direction);
+  });
+
+  test("a crossing close to an endpoint still reports, not off-arc", () => {
+    // Start 1° west of the terminator heading east: crossing sits within
+    // ~1° of the arc start, i.e. t ≈ 0.008 on an 120° arc.
+    const gc = greatCircle(straightTriplet([89, 0], [120, 0]));
+    const c = dawnCrossing(gc, SUB);
+    expect(c!.t).toBeGreaterThan(0);
+    expect(c!.t).toBeLessThan(0.05);
+  });
+
+  test("circ sanity — the helper used above is least-angle distance", () => {
+    expect(circ(-170, 170)).toBe(20);
+    expect(circ(10, 10)).toBe(0);
   });
 });

@@ -9,7 +9,12 @@ import { DEMO_TRIP } from "@/domain/fixtures";
 import { solarZenithDeg, subsolarPoint } from "@/domain/sun";
 import { SKY_BAND_LABEL, skyBand } from "@/domain/sky";
 import { localClock } from "@/domain/timezones";
-import { easeInOut } from "@/lib/globe/great-circle";
+import {
+  CROSSING_WINDOW,
+  dawnCrossing,
+  easeInOut,
+  greatCircle,
+} from "@/lib/globe/great-circle";
 import { motion, MotionConfig } from "framer-motion";
 import type { CityHover, FrameStats } from "@/components/globe/DawnGlobeR3F";
 
@@ -40,14 +45,33 @@ const DawnGlobeCanvas = dynamic(
 /** The flight, as a hairline along the frame's bottom edge: the route's
  *  ground track, readable without looking away from the globe. Appears only
  *  while the flight is in motion — a parked dial needs no chrome. */
-function PlanetHairline({ flightT, flying }: { flightT: number; flying: boolean }) {
+function PlanetHairline({
+  flightT,
+  flying,
+  crossingPct,
+}: {
+  flightT: number;
+  flying: boolean;
+  /** The terminator crossing as a route fraction — the notch the growing
+   *  edge of the line sweeps past, or null for a route that never crosses. */
+  crossingPct: number | null;
+}) {
   const alive = flying || (flightT > 0 && flightT < 1);
   return (
-    <div
-      aria-hidden
-      className="pointer-events-none absolute bottom-0 left-0 h-[3px] rounded-br-2xl bg-sun-dest transition-opacity duration-300"
-      style={{ width: `${flightT * 100}%`, opacity: alive ? 1 : 0 }}
-    />
+    <>
+      <div
+        aria-hidden
+        className="pointer-events-none absolute bottom-0 left-0 h-[3px] rounded-br-2xl bg-sun-dest transition-opacity duration-300"
+        style={{ width: `${flightT * 100}%`, opacity: alive ? 1 : 0 }}
+      />
+      {crossingPct !== null && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute bottom-0 h-3 w-px bg-sun-dest/50"
+          style={{ left: `${crossingPct * 100}%` }}
+        />
+      )}
+    </>
   );
 }
 
@@ -201,6 +225,25 @@ export default function GlobeSpikePage() {
   const hoverSunAlt =
     hover && hoverSub ? 90 - solarZenithDeg(hover.lat, hover.lon, hoverSub) : null;
 
+  // The dawn-crossing moment: where along the route the terminator is met.
+  // Same dot product as the shader and `isDaylight`, so the chip, the notch
+  // on the hairline, and the lights' anticipation lift all fire off one
+  // geometric fact — a route that never crosses draws no chrome at all.
+  const routeGc = useMemo(() => greatCircle(DEMO_TRIP), []);
+  const crossing = useMemo(
+    () => dawnCrossing(routeGc, subsolarPoint(date ?? new Date(0))),
+    [routeGc, date],
+  );
+  const eased = easeInOut(flightT);
+  // The hairline draws *time* (the dial), but the chip and the notch fire on
+  // the camera's real route position — the same eased fraction the flight
+  // camera and the lights' lift read, so all three moments line up.
+  const easedCrossingPct = crossing ? easeInOut(crossing.t) : null;
+  const inCrossingWindow =
+    crossing && Math.abs(eased - crossing.t) <= CROSSING_WINDOW
+      ? crossing
+      : null;
+
   return (
     <MotionConfig reducedMotion="user">
     <main className="mx-auto max-w-6xl px-6 py-10">
@@ -229,8 +272,29 @@ export default function GlobeSpikePage() {
               <DawnGlobeCanvas className="h-full w-full" {...scene} onStats={setStats} />
               {/* Flight hairline: the route's ground track, along the bottom edge
                   of frame. Readable at arm's length while the eye stays on the
-                  globe, gone again when the dial parks. */}
-              <PlanetHairline flightT={flightT} flying={flying} />
+                  globe, gone again when the dial parks. The notch marks the
+                  terminator crossing — the notch the growing edge sweeps past
+                  is the moment itself. */}
+              <PlanetHairline
+                flightT={flightT}
+                flying={flying}
+                crossingPct={crossing ? easedCrossingPct : null}
+              />
+              {/* The moment chip: names what just happened physically, and
+                  disappears when the window closes — a caption, not a
+                  notification. */}
+              {inCrossingWindow && (
+                <motion.div
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                  className="pointer-events-none absolute inset-x-0 bottom-8 mx-auto w-fit rounded-full border border-sun-dest/30 bg-ink-2/90 px-3 py-1 font-mono2 text-2xs text-sun-dest backdrop-blur"
+                >
+                  {inCrossingWindow.direction === "dusk"
+                    ? "crossed into night — the cities are coming up beneath"
+                    : "crossed into day — the cities are letting go"}
+                </motion.div>
+              )}
               {/* Hover read-out. Everything here is computed — the daylight
                   flag is `isDaylight`, the sun line is `solarZenithDeg`, the
                   same calls the terminator shader makes, so the tooltip can

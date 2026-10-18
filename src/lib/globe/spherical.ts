@@ -95,3 +95,26 @@ export function projectOrthographic(
   if (depth < 0) return null;
   return [v.dot(right) * k + tx, -v.dot(up) * k + ty];
 }
+
+/** Zoom is tracked in 10% steps of surface distance so the split decision
+ *  re-runs on a real zoom, not every frame. */
+export const ZOOM_STEP = 1.1;
+
+/** Which 10% bucket a surface distance falls in — `stepDistance(zoomStep(d))`
+ *  is within ±~5% of `d`. */
+export function zoomStep(surfaceDist: number): number {
+  return Math.round(Math.log(surfaceDist) / Math.log(ZOOM_STEP));
+}
+
+/** The surface distance at the centre of a step bucket. */
+export function stepDistance(step: number): number {
+  return ZOOM_STEP ** step;
+}
+
+/** Pixels per degree at the globe's surface, for the city-light split test.
+ *  Measured to the *surface*, not the origin — what matters is how many
+ *  pixels a metro covers, and it covers them up close. */
+export function pxPerDegAt(fovDeg: number, heightPx: number, surfaceDist: number): number {
+  const halfH = heightPx / 2 / Math.tan((fovDeg * DEG) / 2);
+  return (halfH / surfaceDist) * (180 / Math.PI);
+}

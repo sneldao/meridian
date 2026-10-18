@@ -6,9 +6,13 @@ import { dawnLayers, shiftMinToDeg, GHOST_VISIBLE_MIN } from "@/domain/dawn-laye
 import {
   lonLatToVec3,
   projectOrthographic,
+  pxPerDegAt,
+  stepDistance,
   sunDirection,
   viewBasis,
   vec3ToLonLat,
+  zoomStep,
+  ZOOM_STEP,
 } from "@/lib/globe/spherical";
 
 // The WebGL globe is only allowed to exist if it draws the same world the SVG
@@ -175,5 +179,37 @@ describe("the ghost terminator's shader equivalent matches dawn-layers", () => {
 
   test("shiftMinToDeg is the quarter-degree the comment claims", () => {
     expect(shiftMinToDeg(60)).toBeCloseTo(15, 12);
+  });
+});
+describe("the zoom-step helpers quantise distance the way CityLights needs", () => {
+  // The split decision re-runs on a real zoom, not every frame — so the step
+  // must hold inside a small move and flip on a real one.
+  test("zoomStep is stable inside ±4% of a step centre and flips past 10%", () => {
+    for (let step = -12; step <= 12; step++) {
+      const centre = stepDistance(step);
+      // `+ 0` collapses a -0 bucket, which Object.is counts as distinct from 0.
+      const s = zoomStep(centre) + 0;
+      expect(zoomStep(centre * 1.04) + 0).toBe(s);
+      expect(zoomStep(centre / 1.04) + 0).toBe(s);
+      // A full step past centre must land in the neighbouring bucket.
+      expect(zoomStep(centre * ZOOM_STEP) + 0).toBe(s + 1);
+      expect(zoomStep(centre / ZOOM_STEP) + 0).toBe(s - 1);
+    }
+  });
+
+  test("stepDistance(zoomStep(d)) is within 5% of d over the camera's range", () => {
+    for (let d = 0.35; d <= 6; d *= 1.013) {
+      const ratio = stepDistance(zoomStep(d)) / d;
+      expect(ratio).toBeGreaterThan(0.95);
+      expect(ratio).toBeLessThan(1.05);
+    }
+  });
+
+  test("pxPerDegAt is the perspective formula and shrinks with distance", () => {
+    const fov = 38, h = 800, d = 1.2;
+    const expected = (h / 2 / Math.tan(((fov * Math.PI) / 180) / 2) / d) * (180 / Math.PI);
+    expect(pxPerDegAt(fov, h, d)).toBeCloseTo(expected, 9);
+    expect(pxPerDegAt(fov, h, 2.4)).toBeLessThan(pxPerDegAt(fov, h, 1.2));
+    expect(pxPerDegAt(fov, h, 4.8)).toBeLessThan(pxPerDegAt(fov, h, 2.4));
   });
 });
