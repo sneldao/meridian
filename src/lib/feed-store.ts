@@ -14,6 +14,7 @@
 //     days jsonb not null,
 //     updated_at timestamptz default now()
 //   );
+import { createHash, randomBytes, timingSafeEqual } from "crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "fs";
 import path from "path";
 import { supabaseAdmin } from "@/tools/supabase";
@@ -22,12 +23,44 @@ import type { DayPlan, Trip } from "@/domain/types";
 const ID_RE = /^[a-f0-9]{10}$/;
 const TABLE = "meridian_feeds";
 
+/** Read surfaces that get their own token — kill a leaked assistant link
+ *  without re-subscribing the traveller's calendar. */
+export const FEED_SURFACES = ["calendar", "assistant"] as const;
+export type FeedSurface = (typeof FEED_SURFACES)[number];
+
 export interface FeedRecord {
   keyHash: string;
   ics: string;
   trip: Trip;
   days: DayPlan[];
   updatedAt: string;
+  /** surface → sha256 hex of the read token. Absent on feeds written before
+   *  tokens existed — those stay readable on the bare id until refreshed. */
+  tokens?: Record<string, string>;
+}
+
+export function sha256(s: string): string {
+  return createHash("sha256").update(s).digest("hex");
+}
+
+export function mintReadToken(): string {
+  return randomBytes(16).toString("hex");
+}
+
+/** A surface with a stored hash demands a matching ?t= — compared in constant
+ *  time. A surface with no hash yet (pre-token feed) stays open on the bare
+ *  id, which is the same exposure those links always had. */
+export function feedTokenOk(
+  rec: FeedRecord,
+  surface: FeedSurface,
+  t: string | null,
+): boolean {
+  const want = rec.tokens?.[surface];
+  if (!want) return true;
+  if (!t) return false;
+  const given = Buffer.from(sha256(t), "hex");
+  const stored = Buffer.from(want, "hex");
+  return stored.length === given.length && timingSafeEqual(stored, given);
 }
 
 function feedFile(id: string): string {
@@ -86,11 +119,18 @@ function parseRecord(raw: unknown): FeedRecord | null {
   ) {
     return null;
   }
+  const tokens =
+    r.tokens && typeof r.tokens === "object"
+      ? Object.fromEntries(
+          Object.entries(r.tokens).filter(([, v]) => typeof v === "string"),
+        )
+      : undefined;
   return {
     keyHash: r.keyHash,
     ics: r.ics,
     trip: r.trip,
     days: r.days,
+    tokens,
     updatedAt: typeof r.updatedAt === "string" ? r.updatedAt : new Date(0).toISOString(),
   };
 }
@@ -119,7 +159,7 @@ export async function readFeed(id: string): Promise<FeedRecord | null> {
   if (db) {
     const { data, error } = await db
       .from(TABLE)
-      .select("key_hash, ics, trip, days, updated_at")
+      .select("key_hash, ics, trip, days, tokens, updated_at")
       .eq("id", id)
       .maybeSingle();
     // Table missing or the read failed → fall through to disk so a feed
@@ -130,6 +170,7 @@ export async function readFeed(id: string): Promise<FeedRecord | null> {
         ics: data.ics,
         trip: data.trip,
         days: data.days,
+        tokens: data.tokens,
         updatedAt: data.updated_at,
       });
       if (rec) return rec;
@@ -148,6 +189,7 @@ export async function writeFeed(id: string, rec: FeedRecord): Promise<boolean> {
       ics: rec.ics,
       trip: rec.trip,
       days: rec.days,
+      tokens: rec.tokens ?? null,
       updated_at: rec.updatedAt,
     });
     if (!error) return true;

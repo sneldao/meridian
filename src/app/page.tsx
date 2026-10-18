@@ -1246,6 +1246,14 @@ export default function Home() {
                   >
                     Copy link
                   </button>
+                  <button
+                    type="button"
+                    className="chip"
+                    style={{ minHeight: 44 }}
+                    onClick={() => void assistant.resetLink()}
+                  >
+                    Reset link
+                  </button>
                   <p style={{ margin: "8px 0 0", fontSize: 12, color: "#a89383" }}>
                     Works with Siri Shortcuts on iPhone — or any assistant that can fetch a link.
                   </p>
@@ -1259,7 +1267,7 @@ export default function Home() {
                     On Android or elsewhere, opening the link reads your next step aloud — no app needed.
                   </p>
                   <p style={{ margin: "10px 0 0", fontSize: 11, color: "#a89383" }}>
-                    Anyone with this link can hear your next step, so keep it private.
+                    Anyone with this link can hear your next step — reset it if it gets shared.
                   </p>
                 </>
               ) : (

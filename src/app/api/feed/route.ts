@@ -1,16 +1,21 @@
 // Calendar feeds: POST a plan's ics + trip, get a webcal URL back that stays
 // current as the plan changes. Backed by Supabase when configured, else
 // artifacts on disk — see src/lib/feed-store.ts for the store and the table.
-import { randomBytes, createHash, timingSafeEqual } from "crypto";
+import { randomBytes, timingSafeEqual } from "crypto";
 import { rateLimit } from "@/lib/rateLimit";
-import { readFeed, validDays, validTrip, writeFeed } from "@/lib/feed-store";
+import {
+  FEED_SURFACES,
+  mintReadToken,
+  readFeed,
+  sha256,
+  validDays,
+  validTrip,
+  writeFeed,
+} from "@/lib/feed-store";
+import type { FeedRecord } from "@/lib/feed-store";
 
 const ID_RE = /^[a-f0-9]{10}$/;
 const MAX_ICS = 300 * 1024;
-
-function sha256(s: string): string {
-  return createHash("sha256").update(s).digest("hex");
-}
 
 export async function POST(req: Request) {
   const rl = rateLimit(req, "feed", { limit: 60, windowMs: 60 * 60 * 1000 });
@@ -54,27 +59,51 @@ export async function POST(req: Request) {
     if (want.length !== given.length || !timingSafeEqual(want, given)) {
       return Response.json({ error: "forbidden" }, { status: 403 });
     }
-    const ok = await writeFeed(body.id, {
+    // A feed written before tokens existed mints them on its next update —
+    // the writer is the one party we can hand fresh read tokens to.
+    const minted: Record<string, string> = {};
+    const tokens = { ...(stored.tokens ?? {}) };
+    for (const surface of FEED_SURFACES) {
+      if (!tokens[surface]) {
+        const raw = mintReadToken();
+        tokens[surface] = sha256(raw);
+        minted[surface] = raw;
+      }
+    }
+    const rec: FeedRecord = {
       keyHash: sha256(body.key),
       ics: body.ics,
       trip: body.trip,
       days: body.days,
+      tokens,
       updatedAt: new Date().toISOString(),
-    });
-    return Response.json(ok ? { id: body.id } : { error: "write failed" }, {
-      status: ok ? 200 : 500,
-    });
+    };
+    const ok = await writeFeed(body.id, rec);
+    return Response.json(
+      ok
+        ? { id: body.id, ...(Object.keys(minted).length ? { tokens: minted } : {}) }
+        : { error: "write failed" },
+      { status: ok ? 200 : 500 },
+    );
   }
 
   const id = randomBytes(5).toString("hex"); // unguessable enough for a demo
   const key = randomBytes(16).toString("hex");
+  const tokens: Record<string, string> = {};
+  const minted: Record<string, string> = {};
+  for (const surface of FEED_SURFACES) {
+    const raw = mintReadToken();
+    tokens[surface] = sha256(raw);
+    minted[surface] = raw;
+  }
   const ok = await writeFeed(id, {
     keyHash: sha256(key),
     ics: body.ics,
     trip: body.trip,
     days: body.days,
+    tokens,
     updatedAt: new Date().toISOString(),
   });
   if (!ok) return Response.json({ error: "write failed" }, { status: 500 });
-  return Response.json({ id, key });
+  return Response.json({ id, key, tokens: minted });
 }

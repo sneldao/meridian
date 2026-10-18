@@ -1,5 +1,10 @@
 import { useCallback, useState } from "react";
-import { upsertFeed } from "@/lib/feed";
+import { feedToken, getFeedRef, rotateFeedToken, upsertFeed } from "@/lib/feed";
+
+function assistantUrl(id: string): string {
+  const t = feedToken("assistant");
+  return `${location.origin}/api/assistant/next?feed=${id}&format=text${t ? `&t=${t}` : ""}`;
+}
 
 /** The voice-assistant sheet's link is minted lazily on first open — it needs
  *  a saved plan to upsert a feed, so opening without one shows the sheet's
@@ -20,7 +25,7 @@ export function useAssistantLink() {
         plan && savedTrip
           ? await upsertFeed({ ics: plan.ics, trip: savedTrip, days: plan.days })
           : null;
-      if (id) setUrl(`${location.origin}/api/assistant/next?feed=${id}&format=text`);
+      if (id) setUrl(assistantUrl(id));
     } catch {
       /* leave url null */
     } finally {
@@ -30,5 +35,15 @@ export function useAssistantLink() {
 
   const closeSheet = useCallback(() => setOpen(false), []);
 
-  return { open, url, busy, openSheet, closeSheet };
+  /** Kill the link currently shown and mint a fresh one — for when it was
+   *  shared somewhere it shouldn't have been. */
+  const resetLink = useCallback(async () => {
+    const token = await rotateFeedToken("assistant");
+    const id = getFeedRef()?.id;
+    if (token && id) {
+      setUrl(`${location.origin}/api/assistant/next?feed=${id}&format=text&t=${token}`);
+    }
+  }, []);
+
+  return { open, url, busy, openSheet, closeSheet, resetLink };
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { upsertFeed } from "@/lib/feed";
+import { feedToken, upsertFeed } from "@/lib/feed";
 
 /** "Subscribe in my calendar" — creates (or refreshes) the plan's webcal feed,
  *  then surfaces the link plus a copy button. */
@@ -27,7 +27,10 @@ export function SubscribeCalendar({
       setState("error");
       return;
     }
-    setUrl(`webcal://${location.host}/api/feed/${id}/calendar.ics`);
+    const t = feedToken("calendar");
+    setUrl(
+      `webcal://${location.host}/api/feed/${id}/calendar.ics${t ? `?t=${t}` : ""}`,
+    );
     setState("ready");
   };
 
