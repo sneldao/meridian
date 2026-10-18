@@ -7,7 +7,6 @@ import {
   Volume2,
   X,
 } from "lucide-react";
-import { fmtMin } from "@/domain/circadian";
 import { planSummaryLine } from "@/lib/plan-copy";
 import { speakDialogue, speakOnce } from "@/lib/voice/engine";
 import type { Citation, DayPlan, ShiftCoverage, VoiceLine } from "@/domain/types";
@@ -32,22 +31,17 @@ interface HandoffBannerProps {
 export function HandoffBanner({
   summary,
   citations,
-  days,
   ics,
   lines,
   coverage,
   fallback,
   voiceAvailable,
   destinationName,
-  dayName,
   onDismiss,
 }: HandoffBannerProps) {
   const [voiceState, setVoiceState] = useState<"idle" | "loading" | "playing" | "error">("idle");
   const playGen = useRef(0);
 
-  const firstMove = days
-    .flatMap((d) => d.interventions.map((iv) => ({ day: d, iv })))
-    .find(({ iv }) => iv.kind === "light_exposure" || iv.kind === "sleep_window");
 
   const downloadIcs = () => {
     const blob = new Blob([ics], { type: "text/calendar" });

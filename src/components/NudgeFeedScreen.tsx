@@ -29,6 +29,7 @@ import { meetingReadiness } from "@/domain/readiness";
 import { friendlyDayLabel } from "@/lib/day-label";
 import { isTripFinished } from "@/lib/trip-status";
 import { VoiceControls } from "@/components/VoiceControls";
+import { useUndoToast } from "@/components/UndoToast";
 import type {
   AdherenceProfile,
   BaselineKind,
@@ -144,6 +145,7 @@ export function NudgeFeedScreen({
   const [dayListOpen, setDayListOpen] = useState(false);
   // The wake ack is a this-session thank-you, not a permanent banner.
   const [wakeAckFresh, setWakeAckFresh] = useState(false);
+  const { toast: undoToast, show: showUndo } = useUndoToast();
 
   // Item 11 — while the numbers are the sample persona's, steps are a preview
   // rather than commitments. `isPreview` is B's contract (domain/preview.ts):
@@ -475,6 +477,23 @@ export function NudgeFeedScreen({
   const resolvedIds = useMemo(
     () => new Set([...completedIds, ...(previewMode ? skippedPreview : skippedIds)]),
     [completedIds, skippedIds, skippedPreview, previewMode],
+  );
+  // Every Done/Skip is undoable — the toast's Undo is just the same toggle.
+  const doneTap = useCallback(
+    (st: TravelerNudge) => {
+      const wasDone = completedIds.has(st.id);
+      markDone(st);
+      if (!wasDone) showUndo("Marked done", () => markDone(st));
+    },
+    [completedIds, markDone, showUndo],
+  );
+  const skipTap = useCallback(
+    (st: TravelerNudge) => {
+      const wasSkipped = previewMode ? skippedPreview.has(st.id) : skippedIds.has(st.id);
+      markSkipped(st);
+      if (!wasSkipped) showUndo("Skipped", () => markSkipped(st));
+    },
+    [previewMode, skippedPreview, skippedIds, markSkipped, showUndo],
   );
   // The day verdict is a report on a day that happened — asking "how did a
   // future day go" is unanswerable. When today isn't inside the trip at all
@@ -841,7 +860,7 @@ export function NudgeFeedScreen({
               <div style={{ display: tripFinished ? "none" : "flex", gap: 10, alignItems: "center", marginTop: "2px" }}>
                 <button
                   type="button"
-                  onClick={() => markDone(heroNudge)}
+                  onClick={() => doneTap(heroNudge)}
                   aria-pressed={completedIds.has(heroNudge.id)}
                   style={{
                     alignSelf: "flex-start",
@@ -1427,7 +1446,7 @@ export function NudgeFeedScreen({
               <button
                 type="button"
                 className={`tl-check${isDone ? " on" : ""}`}
-                onClick={(e) => { e.stopPropagation(); markDone(step); }}
+                onClick={(e) => { e.stopPropagation(); doneTap(step); }}
                 aria-pressed={isDone}
                 aria-label={`Mark "${step.title}" done`}
               >
@@ -1477,7 +1496,7 @@ export function NudgeFeedScreen({
                     <button
                       type="button"
                       className="tl-skip"
-                      onClick={(e) => { e.stopPropagation(); markSkipped(step); }}
+                      onClick={(e) => { e.stopPropagation(); skipTap(step); }}
                       aria-pressed={isSkip}
                     >
                       {isSkip ? "Skipped ✓" : "Skip"}
@@ -1564,6 +1583,7 @@ export function NudgeFeedScreen({
 
       {/* Simple + a saved plan: the day's steps are the thing; re-running is
           the quiet second action at the bottom of the list. */}
+      {undoToast}
       {simple && hasPlan && !tripFinished && (
         <button
           type="button"

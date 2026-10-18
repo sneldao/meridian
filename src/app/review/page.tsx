@@ -10,6 +10,7 @@ import { INTERVENTION_ICONS, INTERVENTION_LABELS } from "@/lib/intervention-icon
 import { friendlyDayLabel } from "@/lib/day-label";
 import { planSummaryLine } from "@/lib/plan-copy";
 import { PageHeader } from "@/components/PageHeader";
+import { useUndoToast } from "@/components/UndoToast";
 import { ShiftBoard, type ShiftDraft } from "@/components/lenses/ShiftBoard";
 
 interface SavedPlan {
@@ -109,14 +110,24 @@ export default function ReviewPage() {
     URL.revokeObjectURL(a.href);
   };
 
+  const { toast, show } = useUndoToast();
   const clearPlan = () => {
-    if (!window.confirm("Delete your saved plan? This can't be undone.")) return;
+    const planRaw = localStorage.getItem(PLAN_KEY);
+    const tripRaw = localStorage.getItem(TRIP_KEY);
     try {
       localStorage.removeItem(PLAN_KEY);
       localStorage.removeItem(TRIP_KEY);
     } catch {}
     setPlan(null);
     setTrip(null);
+    show("Plan deleted", () => {
+      try {
+        if (planRaw) localStorage.setItem(PLAN_KEY, planRaw);
+        if (tripRaw) localStorage.setItem(TRIP_KEY, tripRaw);
+      } catch {}
+      if (planRaw) setPlan(JSON.parse(planRaw) as SavedPlan);
+      if (tripRaw) setTrip(JSON.parse(tripRaw) as SavedTrip);
+    });
   };
 
   if (!loaded) {
@@ -265,6 +276,7 @@ export default function ReviewPage() {
           )}
         </aside>
       </section>
+      {toast}
     </main>
   );
 }

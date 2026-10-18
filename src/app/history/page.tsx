@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Card } from "@/components/ui";
 import { PageHeader } from "@/components/PageHeader";
+import { useUndoToast } from "@/components/UndoToast";
 import { secondTripCopy, secondTripProof } from "@/domain/second-trip";
 import { scoreBand } from "@/domain/score";
 
@@ -49,18 +50,48 @@ export default function HistoryPage() {
     return () => clearTimeout(t);
   }, []);
 
+  const { toast, show } = useUndoToast();
+  const snapshot = (keys: string[]) =>
+    keys.map((k) => [k, localStorage.getItem(k)] as const);
+  const restore = (snap: (readonly [string, string | null])[]) => {
+    snap.forEach(([k, v]) => {
+      try {
+        if (v === null) localStorage.removeItem(k);
+        else localStorage.setItem(k, v);
+      } catch {}
+    });
+  };
+
   const clear = () => {
-    if (!window.confirm("Clear your trip history?")) return;
+    const snap = snapshot(["meridian:history"]);
     try { localStorage.removeItem("meridian:history"); } catch {}
     setItems([]);
+    show("History cleared", () => {
+      restore(snap);
+      try {
+        const raw = localStorage.getItem("meridian:history");
+        setItems(raw ? (JSON.parse(raw) as HistEntry[]) : []);
+      } catch {
+        setItems([]);
+      }
+    });
   };
 
   const deleteAll = () => {
-    if (!window.confirm("Delete your saved plan, trip history and check-ins from this device? This can't be undone.")) return;
-    ["meridian:lastPlan","meridian:lastTrip","meridian:history","meridian:outcomes","meridian:checkins"].forEach((k) => {
+    const snap = snapshot(["meridian:lastPlan","meridian:lastTrip","meridian:history","meridian:outcomes","meridian:checkins"]);
+    snap.forEach(([k]) => {
       try { localStorage.removeItem(k); } catch {}
     });
     setItems([]);
+    show("All your data deleted", () => {
+      restore(snap);
+      try {
+        const raw = localStorage.getItem("meridian:history");
+        setItems(raw ? (JSON.parse(raw) as HistEntry[]) : []);
+      } catch {
+        setItems([]);
+      }
+    });
   };
 
   if (!loaded) return <main className="flex min-h-screen items-center justify-center text-clay-2">Loading…</main>;
@@ -94,6 +125,7 @@ export default function HistoryPage() {
           />
         ))}
       </ul>
+      {toast}
     </main>
   );
 }
