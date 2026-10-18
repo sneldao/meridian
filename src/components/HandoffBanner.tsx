@@ -11,6 +11,7 @@ import {
   X,
 } from "lucide-react";
 import { fmtMin } from "@/domain/circadian";
+import { planSummaryLine } from "@/lib/plan-copy";
 import { speakDialogue, speakOnce } from "@/lib/voice/engine";
 import type { Citation, DayPlan, ShiftCoverage, VoiceLine } from "@/domain/types";
 
@@ -29,14 +30,6 @@ interface HandoffBannerProps {
   /** Maps a domain day label ("D-2") to a friendly name ("Thu 22 Oct"). */
   dayName?: (label: string) => string;
   onDismiss?: () => void;
-}
-
-function fmtH(min: number): string {
-  const h = Math.floor(min / 60);
-  const m = min % 60;
-  if (h > 0 && m > 0) return `${h}h ${m}m`;
-  if (h > 0) return `${h}h`;
-  return `${m}m`;
 }
 
 export function HandoffBanner({
@@ -87,12 +80,7 @@ export function HandoffBanner({
     }, 12000);
   };
 
-  const dest = destinationName ?? "your destination";
-  const planLine = coverage
-    ? coverage.residualMin <= 0
-      ? `You should land fully adjusted to ${dest} time.`
-      : `Before you fly, this plan moves your body clock ${fmtH(coverage.achievedMin)} closer to ${dest} time. The other ${fmtH(coverage.residualMin)} adjusts in your first days there.`
-    : "Here's your plan.";
+  const planLine = planSummaryLine(coverage, destinationName, citations.length);
 
   return (
     <section
@@ -127,7 +115,6 @@ export function HandoffBanner({
 
           <p className="mt-2.5 font-voice text-base leading-relaxed text-paper sm:text-lg">
             {planLine}
-            {citations.length > 0 ? ` Based on ${citations.length} studies.` : ""}
           </p>
 
           {firstMove && (

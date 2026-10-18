@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import type { CrewMemory } from "@/domain/types";
 import Link from "next/link";
 import { Card } from "@/components/ui";
+import { PageHeader } from "@/components/PageHeader";
+import { INTERVENTION_LABELS } from "@/lib/intervention-icons";
 
 interface Outcome {
   savedAt: string;
@@ -68,45 +70,87 @@ export default function OutcomePage() {
     }
   };
 
+  const chip = (selected: boolean) =>
+    `rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+      selected
+        ? "border-terracotta bg-terracotta text-paper"
+        : "border-line bg-ink-2 text-mist hover:text-paper"
+    }`;
+
   return (
     <main className="mx-auto max-w-2xl px-6 py-8">
-      <header className="mb-6">
-        <Link href="/" className="text-xs text-mist hover:text-paper">← Today</Link>
-        <h1 className="mt-2 text-lg font-bold tracking-[0.3em] text-paper">POST-TRIP CHECK-IN</h1>
-      </header>
+      <PageHeader title="How did your trip go?" />
 
       <p className="text-sm leading-relaxed text-mist">
-        Close the loop. These answers feed next run&apos;s adherence model.
+        Two quick questions. Your answers help us fit your next plan better.
       </p>
 
       {hasPlan === false ? (
         <Card className="mt-6 p-4">
           <p className="text-xs leading-relaxed text-mist">
-            Nothing to grade yet — there&apos;s no trip on file. Run the crew
-            first, live the plan, then tell us how it went.
+            Nothing to rate yet — make a plan and follow it first.
           </p>
           <Link href="/" className="mt-3 inline-block text-xs font-bold text-paper hover:text-white">
-            ← Back to today
+            ← Back to my plan
           </Link>
         </Card>
       ) : (
         <>
-          <label className="mt-6 block text-xs text-mist">
-            How much of the plan did you follow? {adherence === null ? "(unset)" : `(${adherence}/5)`}
-            <input type="range" min={0} max={5} value={adherence ?? 0} onChange={(e) => setAdherence(Number(e.target.value))} className="mt-2 w-full" />
-          </label>
+          <fieldset className="mt-6">
+            <legend className="text-xs text-mist">How much of the plan did you follow?</legend>
+            <div role="radiogroup" className="mt-2 flex flex-wrap gap-2">
+              {([
+                ["None", 0],
+                ["A little", 1],
+                ["About half", 3],
+                ["Most", 4],
+                ["All", 5],
+              ] as const).map(([label, v]) => (
+                <button
+                  key={v}
+                  type="button"
+                  role="radio"
+                  aria-checked={adherence === v}
+                  onClick={() => setAdherence(v)}
+                  className={chip(adherence === v)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+
+          <fieldset className="mt-6">
+            <legend className="text-xs text-mist">How bad was the jet lag on your first day?</legend>
+            <div role="radiogroup" className="mt-2 flex flex-wrap gap-2">
+              {([
+                ["None", 0],
+                ["Mild", 3],
+                ["Moderate", 5],
+                ["Bad", 7],
+                ["Terrible", 10],
+              ] as const).map(([label, v]) => (
+                <button
+                  key={v}
+                  type="button"
+                  role="radio"
+                  aria-checked={jetlag === v}
+                  onClick={() => setJetlag(v)}
+                  className={chip(jetlag === v)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </fieldset>
 
           <label className="mt-6 block text-xs text-mist">
-            Jet lag severity on arrival day {jetlag === null ? "(unset)" : `(${jetlag}/10)`}
-            <input type="range" min={0} max={10} value={jetlag ?? 0} onChange={(e) => setJetlag(Number(e.target.value))} className="mt-2 w-full" />
-          </label>
-
-          <label className="mt-6 block text-xs text-mist">
-            Notes
+            Anything else? (optional)
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={4}
+              placeholder="e.g. I couldn't get outside in the mornings"
               className="mt-2 w-full rounded-lg border border-line bg-ink-2 p-2 text-xs text-paper"
             />
           </label>
@@ -117,11 +161,11 @@ export default function OutcomePage() {
               disabled={adherence === null || jetlag === null}
               className="rounded-lg bg-paper px-4 py-2 text-xs font-bold text-ink hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
             >
-              Save check-in
+              Save
             </button>
-            {saved === "crew" && <span className="text-xs text-pass">saved — the crew knows</span>}
+            {saved === "crew" && <span className="text-xs text-pass">Thanks — we&apos;ll use this for your next plan.</span>}
             {saved === "local" && (
-              <span className="text-xs text-mist">saved locally — couldn&apos;t reach the crew</span>
+              <span className="text-xs text-mist">Saved on this device. We couldn&apos;t reach the server, so it won&apos;t shape your next plan yet.</span>
             )}
           </div>
         </>
@@ -129,15 +173,18 @@ export default function OutcomePage() {
 
       {memory?.learned && (
         <Card className="mt-8 p-4">
-          <h2 className="text-sm font-bold text-paper">What Meridian has learned</h2>
+          <h2 className="text-sm font-bold text-paper">What we&apos;ve learned about you</h2>
           {memory.learned.skippedKinds?.length ? (
             <div className="mt-2 text-xs text-mist">
-              Historically difficult: {memory.learned.skippedKinds.join(", ")}
+              Harder for you:{" "}
+              {memory.learned.skippedKinds
+                .map((k) => INTERVENTION_LABELS[k] ?? k.replace(/_/g, " "))
+                .join(", ")}
             </div>
           ) : null}
           {memory.learned.earliestDoneMin !== undefined ? (
             <div className="mt-1 text-xs text-mist">
-              Earliest ask ever completed: {String(Math.floor(memory.learned.earliestDoneMin / 60)).padStart(2, "0")}:
+              Earliest step you&apos;ve done: {String(Math.floor(memory.learned.earliestDoneMin / 60)).padStart(2, "0")}:
               {String(memory.learned.earliestDoneMin % 60).padStart(2, "0")}
             </div>
           ) : null}
@@ -149,7 +196,7 @@ export default function OutcomePage() {
             </ul>
           ) : null}
           {memory.runs?.length ? (
-            <div className="mt-2 text-xs text-mist">{memory.runs.length} prior shift(s) on file.</div>
+            <div className="mt-2 text-xs text-mist">{memory.runs.length} past plan(s) on file.</div>
           ) : null}
         </Card>
       )}

@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { Card } from "@/components/ui";
+import { PageHeader } from "@/components/PageHeader";
 import { secondTripCopy, secondTripProof } from "@/domain/second-trip";
 import { scoreBand } from "@/domain/score";
 
@@ -50,35 +50,35 @@ export default function HistoryPage() {
   }, []);
 
   const clear = () => {
+    if (!window.confirm("Clear your trip history?")) return;
     try { localStorage.removeItem("meridian:history"); } catch {}
     setItems([]);
   };
 
-  if (!loaded) return <main className="flex min-h-screen items-center justify-center text-clay-2">loading…</main>;
+  const deleteAll = () => {
+    if (!window.confirm("Delete your saved plan, trip history and check-ins from this device? This can't be undone.")) return;
+    ["meridian:lastPlan","meridian:lastTrip","meridian:history","meridian:outcomes","meridian:checkins"].forEach((k) => {
+      try { localStorage.removeItem(k); } catch {}
+    });
+    setItems([]);
+  };
+
+  if (!loaded) return <main className="flex min-h-screen items-center justify-center text-clay-2">Loading…</main>;
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-8">
-      <header className="mb-6 flex items-center justify-between">
-        <div>
-          <Link href="/" className="text-xs text-clay-2 hover:text-clay">← Today</Link>
-          <h1 className="mt-2 text-lg font-bold tracking-[0.3em] text-clay">TRIP HISTORY</h1>
-        </div>
-        <button onClick={clear} className="text-xs text-clay-2 hover:text-clay-fail">clear</button>
-        <button
-          onClick={() => {
-            ["meridian:lastPlan","meridian:lastTrip","meridian:history","meridian:outcomes","meridian:checkins"].forEach((k) => {
-              try { localStorage.removeItem(k); } catch {}
-            });
-            setItems([]);
-          }}
-          className="ml-3 text-xs text-clay-2 hover:text-clay-fail"
-        >
-          reset all
-        </button>
-      </header>
+      <PageHeader
+        title="Past trips"
+        actions={
+          <>
+            <button onClick={clear} className="text-xs text-clay-2 hover:text-clay-fail">Clear history</button>
+            <button onClick={deleteAll} className="text-xs text-clay-2 hover:text-clay-fail">Delete all my data</button>
+          </>
+        }
+      />
 
       {items.length === 0 && (
-        <p className="text-sm text-clay-2">No completed runs yet.</p>
+        <p className="text-sm text-clay-2">No past trips yet. Plans you make will show up here.</p>
       )}
 
       <ul className="space-y-3">
@@ -118,34 +118,31 @@ function HistoryCard({ entry: it, older }: { entry: HistEntry; older: HistEntry[
   // palette rather than the cream one the page chrome uses. Same bands, same
   // PASS_SCORE — the number stops being decorative and starts reporting.
   const band = scoreBand(it.score);
-  const scoreTone =
+  const bandWord =
+    band === "pass" ? "✓ Passed checks" : band === "warn" ? "Below our standard" : "Didn't pass";
+  const bandTone =
     band === "pass" ? "text-pass" : band === "warn" ? "text-sun-dest" : "text-fail";
   return (
     <li><Card className="p-4">
       <div className="flex items-baseline justify-between">
         <div className="font-mono2 text-xs text-paper">
-          {it.trip ? `${it.trip.origin.code} → ${it.trip.destination.code} · ${Math.abs(it.trip.requiredShiftMin / 60)}h ${it.trip.direction}` : "Demo trip"}
+          {it.trip
+            ? `${it.trip.origin.code} → ${it.trip.destination.code} · ${Math.abs(it.trip.requiredShiftMin / 60)}h ${it.trip.direction === "east" ? "ahead" : "behind"}`
+            : "Demo trip"}
         </div>
         <div className="flex items-center gap-2">
-          {it.provider && <span className="font-mono2 text-xs text-mist">{it.provider}</span>}
-          {it.fallback && <span className="rounded bg-fail/10 px-1.5 py-0.5 text-xs text-fail">fallback</span>}
-          <div className={`font-mono2 text-xs ${scoreTone}`}>{it.score.toFixed(2)}</div>
+          {it.fallback && <span className="rounded bg-fail/10 px-1.5 py-0.5 text-xs text-fail">used a backup schedule</span>}
+          <div className={`font-mono2 text-xs ${bandTone}`}>{bandWord}</div>
         </div>
       </div>
-      <div className="mt-1 text-xs text-dim">{new Date(it.savedAt).toLocaleString()}</div>
-      <div className="mt-2 text-xs text-mist">{it.summary}</div>
+      <div className="mt-1 text-xs text-dim">
+        {new Date(it.savedAt).toLocaleString()} · {it.days.length} {it.days.length === 1 ? "day" : "days"} planned
+      </div>
       {proof ? (
         <div className="mt-2 text-xs text-dim" style={{ fontStyle: "italic" }}>
           {secondTripCopy(proof)}
         </div>
       ) : null}
-      <div className="mt-2 flex flex-wrap gap-1.5">
-        {it.days.map((d, i) => (
-          <span key={i} className="rounded border border-line bg-ink-3 px-2 py-0.5 font-mono2 text-xs text-mist">
-            {d.label} {d.shiftMin}m
-          </span>
-        ))}
-      </div>
     </Card>
     </li>
   );

@@ -7,6 +7,8 @@ import { arrivalHeadline, arrivalRead, tripDebrief } from "@/domain/arrival";
 import { dayPlace } from "@/domain/today";
 import type { CheckIn, Trip } from "@/domain/types";
 import { arrivalRows, destClockMin } from "@/domain/arrival-rows";
+import { scoreBand } from "@/domain/score";
+import { friendlyDayLabel } from "@/lib/day-label";
 
 // The payoff. "Land at 100%" is promised in the nav on every screen, and until
 // now nothing ever cashed it — the journey ended at the plan and the only
@@ -148,14 +150,14 @@ export default function ArrivalPage() {
       <main className="arr">
         <div className="arr-in">
           <span className="arr-kicker">Not yet</span>
-          <h1>Still {dayPlace(trip, trip.departureDayIndex).city} time.</h1>
+          <h1>You&apos;re still on {dayPlace(trip, trip.departureDayIndex).city} time.</h1>
           <p className="arr-lede">
-            You land in {dest.name} on {arrivedDay?.date ?? "the flight day"}. This
-            page scores the trip against what the crew promised at the gate — it
-            opens the morning after.
+            You land in {dest.name} on{" "}
+            {arrivedDay ? friendlyDayLabel(arrivedDay, trip.departureDayIndex) : "the flight day"}.
+            Come back the morning after you land to see how well your body clock adjusted.
           </p>
           <Link className="arr-btn" href="/">
-            Back to today
+            Back to my plan
           </Link>
         </div>
       </main>
@@ -166,7 +168,7 @@ export default function ArrivalPage() {
     <main className="arr">
       <div className="arr-in">
         <span className="arr-kicker">
-          {dest.name} · {fmtMin(destClock)} · day {read.daysSinceArrival + 1} since landing
+          {dest.name} · {fmtMin(destClock)} · day {read.daysSinceArrival + 1} in {dest.name}
         </span>
         <h1>{arrivalHeadline(read, dest.name)}</h1>
 
@@ -174,7 +176,7 @@ export default function ArrivalPage() {
             happened. Splitting them with a label makes the page read in two
             passes (promise → account), so the traveller sees their own marks
             in context rather than mixed into the gate's numbers. */}
-        <span className="arr-section-label">What the crew promised</span>
+        <span className="arr-section-label">What the plan promised</span>
         <div className="arr-grid">
           {rows.slice(0, 3).map((r) => (
             <div className="arr-cell" key={r.label}>
@@ -185,7 +187,7 @@ export default function ArrivalPage() {
           ))}
         </div>
 
-        <span className="arr-section-label">What actually happened</span>
+        <span className="arr-section-label">What you did</span>
         <div className="arr-grid">
           {rows.slice(3).map((r) => (
             <div className="arr-cell account" key={r.label}>
@@ -206,7 +208,7 @@ export default function ArrivalPage() {
         </p>
         <div className="arr-actions">
           <Link className="arr-btn" href="/outcome">
-            Tell the crew how it went
+            Tell us how you felt
           </Link>
           <Link className="arr-btn ghost" href="/review">
             See the plan
@@ -219,12 +221,18 @@ export default function ArrivalPage() {
             the "plan your next trip" line closes the loop back to Today. */}
         {(debrief && (debrief.lesson || debrief.carriedFrom || debrief.gateScore !== null)) && (
           <>
-            <span className="arr-section-label">What the crew learned</span>
+            <span className="arr-section-label">What we learned</span>
             <div className="arr-grid">
               {debrief!.gateScore !== null && (
                 <div className="arr-cell" key="gate-score">
-                  <em>{debrief!.gateScore.toFixed(2)}</em>
-                  <span>plan quality at the gate</span>
+                  <em>
+                    {scoreBand(debrief!.gateScore) === "pass"
+                      ? "✓ Passed checks"
+                      : scoreBand(debrief!.gateScore) === "warn"
+                        ? "Below our standard"
+                        : "Didn't pass"}
+                  </em>
+                  <span>plan check</span>
                 </div>
               )}
               {debrief!.lesson && (
@@ -236,7 +244,7 @@ export default function ArrivalPage() {
               {debrief!.carriedFrom && (
                 <div className="arr-cell" key="carried">
                   <em>{debrief!.carriedFrom}</em>
-                  <span>carried in — the plan started from this trip, not zero</span>
+                  <span>an earlier trip helped shape this plan</span>
                 </div>
               )}
             </div>
@@ -251,8 +259,8 @@ export default function ArrivalPage() {
         <p className="arr-foot">
           Timing guidance, not medical advice.{" "}
           {read.daysRemaining > 0
-            ? `${read.daysRemaining} day${read.daysRemaining === 1 ? "" : "s"} of the plan left to live.`
-            : "That's the trip."}
+            ? `${read.daysRemaining} day${read.daysRemaining === 1 ? "" : "s"} of the plan left.`
+            : "That's the end of the plan."}
         </p>
       </div>
     </main>
