@@ -27,6 +27,7 @@ import { calendarSummary, heroMeeting } from "@/domain/hero";
 import { secondTripCopy, secondTripProof } from "@/domain/second-trip";
 import { meetingReadiness } from "@/domain/readiness";
 import { friendlyDayLabel } from "@/lib/day-label";
+import { isTripFinished } from "@/lib/trip-status";
 import type {
   AdherenceProfile,
   BaselineKind,
@@ -458,31 +459,11 @@ export function NudgeFeedScreen({
       ? nowMinOnDay(trip, activeDaySpec.dayIndex, new Date())
       : null;
 
-  // The trip is over once the last planned day has passed at the destination's
-  // clock. Judged there rather than in the viewer's timezone — a traveller whose
-  // trip ended at 21:00 Tokyo time shouldn't still be told there are days left
-  // because it's lunchtime at home.
-  // The trip is over once the last planned day has fully passed at the
-  // destination's clock — compared as calendar dates, not by dividing elapsed
-  // minutes, which drifts by one whenever the local time isn't midnight.
-  const tripFinished = (() => {
-    if (!trip) return false;
-    const last = trip.days[trip.days.length - 1];
-    if (!last?.date) return false;
-    // `nowDate` (captured once above) is the clock to judge with — not
-    // `nowMin`, which is null whenever the *selected* day isn't today, and
-    // that is exactly the state a finished trip is always in. Judging on it
-    // made the completion card unreachable.
-    const todayAtDest = new Date(
-      nowDate.getTime() + trip.destination.utcOffsetMin * 60000,
-    )
-      .toISOString()
-      .slice(0, 10);
-    return (
-      Date.parse(`${todayAtDest}T00:00:00Z`) >
-      Date.parse(`${last.date}T00:00:00Z`)
-    );
-  })();
+  // `nowDate` (captured once above) is the clock to judge with — not
+  // `nowMin`, which is null whenever the *selected* day isn't today, and
+  // that is exactly the state a finished trip is always in. Judging on it
+  // made the completion card unreachable.
+  const tripFinished = isTripFinished(trip, nowDate);
   // Skipped counts as resolved: "I'm not doing this" should drop the step out
   // of the hero slot and the missed list, not keep nagging with it.
   const resolvedIds = useMemo(
@@ -561,6 +542,10 @@ export function NudgeFeedScreen({
     ? heroReadiness(trip, [...locked.values()], previewLocked)
     : { pct: 0, source: "none" as const };
   const readinessPct = readiness.pct;
+  // One obvious action: before a plan exists that's "Make my plan" (the next
+  // step is a preview and stays secondary); afterwards the day's Done is the
+  // primary and updating the plan drops to outline.
+  const hasPlan = locked.size > 0;
 
   // Item 13 — the calendar is the compliance surface. The summary block sits
   // above the timeline so a traveller sees the numbers they will lock before
@@ -656,30 +641,19 @@ export function NudgeFeedScreen({
             box — and "your next step" wrapped to (2,1), orphaned below the fold
             at half width. One wrapper, two grid children. */}
         <div className="hr-col">
-          {/* 5B3 — one frame, not six hedges. When the wake question is live
-              (demo-default, unanswered), the sample tag folds into it: "Sample
-              data below — answer one question to make it yours." The
-              per-element hedges underneath ("Try this", "Preview from…",
-              "banked on preview") stay — they carry distinct signals — but
-              the single decision point sits at the top. When answered, the
-              ack replaces the frame and the other hedges already retire via
-              their own previewMode/source conditionals. Garmin never shows
-              the frame: the numbers were already theirs. */}
+          {/* One frame, not six hedges. When the wake question is live
+              (demo-default, unanswered), it carries the example-plan framing
+              itself — the separate tag is dropped so there is one decision
+              point, not two. Other fixture states keep their own tag. Garmin
+              never shows one: the numbers were already theirs. */}
           {baselineSource === "fixture" &&
-            baselineKind === "demo-default" &&
-            !wakeBand ? (
-            <p className="demo-tag">
-              This is an example plan. Answer one question to make it yours.
-            </p>
-          ) : (
-            baselineSource === "fixture" && (
+            !(baselineKind === "demo-default" && !wakeBand && onWakeBand) && (
               <p className="demo-tag">
                 {baselineKind === "demo-default" && !wakeBand
                   ? "Example traveller — these numbers aren't your measurements."
                   : "Your wake time is yours. Sleep and heart data are examples until you connect a wearable."}
               </p>
-            )
-          )}
+            )}
 
           {/* B1 render — the wake answer re-plans the preview instantly, and
               `wakeAck` names it so the traveller learns the answer mattered.
@@ -710,6 +684,7 @@ export function NudgeFeedScreen({
               means answering re-plans the preview instantly with no refetch. */}
           {baselineKind === "demo-default" && !wakeBand && onWakeBand && (
             <div className="ask" role="group" aria-label="Your natural wake time">
+              <p className="ask-title">Make this plan yours</p>
               <p>
                 On a day with nothing early planned, when do you naturally wake?
                 <span> Answer once and we&apos;ll fit the plan to you.</span>
@@ -739,6 +714,9 @@ export function NudgeFeedScreen({
               <p className="ask-promise">
                 We won&apos;t schedule anything before you&apos;d normally be up. Most of
                 the work happens in the evening.
+              </p>
+              <p className="ask-foot">
+                Until then, you&apos;re seeing an example plan.
               </p>
             </div>
           )}
@@ -839,9 +817,11 @@ export function NudgeFeedScreen({
                   aria-pressed={completedIds.has(heroNudge.id)}
                   style={{
                     alignSelf: "flex-start",
-                    background: "linear-gradient(90deg, #D96B43, #e99a6f)",
-                    color: "#fff8ef",
-                    border: "none",
+                    background: hasPlan
+                      ? "linear-gradient(90deg, #D96B43, #e99a6f)"
+                      : "transparent",
+                    color: hasPlan ? "#fff8ef" : "#3a2e23",
+                    border: hasPlan ? "none" : "1.5px solid #D96B43",
                     borderRadius: "999px",
                     padding: "10px 22px",
                     fontSize: "13px",
@@ -1006,7 +986,7 @@ export function NudgeFeedScreen({
           <div className="cta">
             <button
               type="button"
-              className="p2"
+              className={hasPlan ? "p2" : "p1"}
               onClick={onStartCrewSync}
               disabled={phase === "running"}
             >
@@ -1167,15 +1147,18 @@ export function NudgeFeedScreen({
         >
           {days.map((d) => {
             const isSelected = d.label === currentLabel;
+            const isTodayPill = todayIdx !== null && d.dayIndex === todayIdx;
             return (
               <button
                 key={d.dayIndex}
                 type="button"
                 onClick={() => onSelectDay(d.label)}
                 aria-pressed={isSelected}
+                aria-current={isTodayPill ? "date" : undefined}
                 className={`day ${isSelected ? "on" : ""}`}
               >
                 {friendlyDayLabel(d, trip?.departureDayIndex)}
+                {isTodayPill ? " · Today" : ""}
               </button>
             );
           })}
@@ -1363,7 +1346,7 @@ export function NudgeFeedScreen({
                 <div className="tl-acts">
                   <button
                     type="button"
-                    className="tl-done"
+                    className={`tl-done${hasPlan ? "" : " alt"}`}
                     onClick={() => markDone(step)}
                     aria-pressed={isDone}
                   >

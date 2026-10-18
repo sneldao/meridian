@@ -29,6 +29,8 @@ import { RunAnnouncer } from "@/components/RunAnnouncer";
 import { useFocusTrap } from "@/lib/a11y";
 import { friendlyDayLabel } from "@/lib/day-label";
 import { restorePlan } from "@/lib/restore-plan";
+import { isTripFinished } from "@/lib/trip-status";
+import { JourneySteps } from "@/components/JourneySteps";
 import { useRunState, calendarWithMoves, ledgerEvents, ghostGapDeg } from "@/state/run";
 import { meetingReadiness } from "@/domain/readiness";
 import {
@@ -893,6 +895,17 @@ export default function Home() {
                 }}
               />
             </div>
+
+            {/* Where the traveller is — one quiet line under the route. */}
+            <JourneySteps
+              current={
+                isTripFinished(trip, new Date())
+                  ? 3
+                  : effectiveLocked.size > 0
+                    ? 2
+                    : 1
+              }
+            />
 
             {/* The one depth control: Simple is the calm viewport, Detailed
                 opens every evidence drawer, AI at work is the crew surface. */}

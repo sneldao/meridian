@@ -217,6 +217,29 @@ body {
 .pill a.on:hover {
   color: #F5EFE6;
 }
+.journey {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 8px 4px 0;
+  padding: 0;
+  font-size: 11px;
+  font-weight: 700;
+}
+.journey-step {
+  color: #7a6a5c;
+}
+.journey-step.now {
+  color: #D96B43;
+}
+.journey-step.later {
+  opacity: 0.55;
+}
+.journey-check {
+  margin-right: 3px;
+  color: #3a2e23;
+}
 .btn {
   font: inherit;
   font-size: 12px;
@@ -561,6 +584,18 @@ body {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
+}
+.ask .ask-title {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #3a2e23;
+}
+.ask-foot {
+  margin: 8px 0 0;
+  font-size: 11px;
+  font-weight: 500;
+  color: #7a6a5c;
 }
 .ask-chip {
   font: inherit;
@@ -1176,6 +1211,13 @@ body {
      illustration, not the job. */
   .hr-col {
     order: -1;
+  }
+  /* The tags and the ask sit outside .hr's padding — on a phone they would
+     otherwise touch the card's edges. */
+  .hr-col > .demo-tag,
+  .hr-col > .ask {
+    margin-left: 18px;
+    margin-right: 18px;
   }
   /* Stacked, the fixed panel height stops earning its keep — and the scrubber's
      three-column lane wants the full card width. */
@@ -1800,6 +1842,18 @@ textarea:focus-visible,
   border-color: #b04523;
   background: #b04523;
   color: #fff8ef;
+}
+/* Before a plan exists the Done tap is a preview — the outline keeps it
+   secondary to "Make my plan" without reading as disabled. */
+.tl-done.alt {
+  border-color: #D96B43;
+  background: transparent;
+  color: #3a2e23;
+}
+.tl-done.alt[aria-pressed="true"] {
+  border-color: #b04523;
+  background: rgba(217, 107, 67, 0.12);
+  color: #b04523;
 }
 .tl-skip {
   padding: 6px 14px;
