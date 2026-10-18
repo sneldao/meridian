@@ -1,42 +1,15 @@
 // Calendar feeds: POST a plan's ics + trip, get a webcal URL back that stays
-// current as the plan changes. Artifacts on disk (demo-grade — Render's FS is
-// ephemeral; graduate to Supabase rows in P2). Reader lives in
-// src/lib/feed-store.ts (route files can't export helpers).
+// current as the plan changes. Backed by Supabase when configured, else
+// artifacts on disk — see src/lib/feed-store.ts for the store and the table.
 import { randomBytes, createHash, timingSafeEqual } from "crypto";
-import { mkdirSync, readFileSync, writeFileSync } from "fs";
-import path from "path";
 import { rateLimit } from "@/lib/rateLimit";
+import { readFeed, validDays, validTrip, writeFeed } from "@/lib/feed-store";
 
 const ID_RE = /^[a-f0-9]{10}$/;
 const MAX_ICS = 300 * 1024;
 
 function sha256(s: string): string {
   return createHash("sha256").update(s).digest("hex");
-}
-
-function validTrip(t: unknown): boolean {
-  const trip = t as {
-    origin?: { name?: unknown; utcOffsetMin?: unknown };
-    destination?: { name?: unknown; utcOffsetMin?: unknown };
-    departureDayIndex?: unknown;
-    days?: unknown;
-  } | null;
-  return Boolean(
-    trip &&
-      typeof trip.origin?.name === "string" &&
-      typeof trip.origin?.utcOffsetMin === "number" &&
-      typeof trip.destination?.name === "string" &&
-      typeof trip.destination?.utcOffsetMin === "number" &&
-      typeof trip.departureDayIndex === "number" &&
-      Array.isArray(trip.days) &&
-      trip.days.every(
-        (d) =>
-          d &&
-          typeof (d as { dayIndex?: unknown }).dayIndex === "number" &&
-          typeof (d as { label?: unknown }).label === "string" &&
-          typeof (d as { date?: unknown }).date === "string",
-      ),
-  );
 }
 
 export async function POST(req: Request) {
@@ -58,13 +31,11 @@ export async function POST(req: Request) {
     body.ics.length > MAX_ICS ||
     !Array.isArray(body.days) ||
     body.days.length > 30 ||
+    !validDays(body.days) ||
     !validTrip(body.trip)
   ) {
     return Response.json({ error: "expected { ics, trip, days }" }, { status: 400 });
   }
-
-  const dir = path.join(process.cwd(), "artifacts", "feeds");
-  mkdirSync(dir, { recursive: true });
 
   if (body.id) {
     // Update path: the write key proves ownership — only its hash is stored.
@@ -74,11 +45,8 @@ export async function POST(req: Request) {
     if (typeof body.key !== "string" || !body.key) {
       return Response.json({ error: "forbidden" }, { status: 403 });
     }
-    const file = path.join(dir, `${body.id}.json`);
-    let stored: { keyHash: string };
-    try {
-      stored = JSON.parse(readFileSync(file, "utf8")) as { keyHash: string };
-    } catch {
+    const stored = await readFeed(body.id);
+    if (!stored) {
       return Response.json({ error: "not found" }, { status: 404 });
     }
     const given = Buffer.from(sha256(body.key), "hex");
@@ -86,30 +54,27 @@ export async function POST(req: Request) {
     if (want.length !== given.length || !timingSafeEqual(want, given)) {
       return Response.json({ error: "forbidden" }, { status: 403 });
     }
-    writeFileSync(
-      file,
-      JSON.stringify({
-        keyHash: sha256(body.key),
-        ics: body.ics,
-        trip: body.trip,
-        days: body.days,
-        updatedAt: new Date().toISOString(),
-      }),
-    );
-    return Response.json({ id: body.id });
-  }
-
-  const id = randomBytes(5).toString("hex"); // unguessable enough for a demo
-  const key = randomBytes(16).toString("hex");
-  writeFileSync(
-    path.join(dir, `${id}.json`),
-    JSON.stringify({
-      keyHash: sha256(key),
+    const ok = await writeFeed(body.id, {
+      keyHash: sha256(body.key),
       ics: body.ics,
       trip: body.trip,
       days: body.days,
       updatedAt: new Date().toISOString(),
-    }),
-  );
+    });
+    return Response.json(ok ? { id: body.id } : { error: "write failed" }, {
+      status: ok ? 200 : 500,
+    });
+  }
+
+  const id = randomBytes(5).toString("hex"); // unguessable enough for a demo
+  const key = randomBytes(16).toString("hex");
+  const ok = await writeFeed(id, {
+    keyHash: sha256(key),
+    ics: body.ics,
+    trip: body.trip,
+    days: body.days,
+    updatedAt: new Date().toISOString(),
+  });
+  if (!ok) return Response.json({ error: "write failed" }, { status: 500 });
   return Response.json({ id, key });
 }

@@ -5,7 +5,7 @@ export async function GET(
   ctx: { params: Promise<{ id: string }> },
 ) {
   const { id } = await ctx.params;
-  const feed = readFeed(id);
+  const feed = await readFeed(id);
   if (!feed) return new Response("not found", { status: 404 });
   return new Response(feed.ics, {
     headers: { "Content-Type": "text/calendar; charset=utf-8" },

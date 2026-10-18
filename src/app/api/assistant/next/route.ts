@@ -7,12 +7,9 @@ export async function GET(req: Request) {
   if (!rl.ok) return Response.json({ error: "rate limited" }, { status: 429 });
   const url = new URL(req.url);
   const id = url.searchParams.get("feed") ?? "";
-  const record = readFeed(id);
+  const record = await readFeed(id);
   if (!record) return Response.json({ error: "not found" }, { status: 404 });
-  const step = nextStepFromPlan(
-    { trip: record.trip as never, days: record.days as never },
-    new Date(),
-  );
+  const step = nextStepFromPlan({ trip: record.trip, days: record.days }, new Date());
   const speech = step ? step.speech : "You've finished your plan.";
   if (url.searchParams.get("format") === "text") {
     return new Response(speech, {
