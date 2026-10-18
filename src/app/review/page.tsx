@@ -191,7 +191,7 @@ export default function ReviewPage() {
             that&apos;s your body clock adjusting.
           </p>
           <Card className="mt-3 h-[380px] overflow-hidden">
-            <ShiftBoard days={specs} drafts={NO_DRAFTS} verdicts={NO_VERDICTS} locked={locked} readOnly />
+            <ShiftBoard days={specs} drafts={NO_DRAFTS} verdicts={NO_VERDICTS} locked={locked} readOnly rowLabel={(spec) => friendlyDayLabel(spec, trip?.departureDayIndex)} />
           </Card>
 
           <div className="mt-6 space-y-4">

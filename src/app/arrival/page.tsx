@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { fmtMin } from "@/domain/circadian";
-import { arrivalHeadline, arrivalRead, tripDebrief } from "@/domain/arrival";
+import { arrivalRead, tripDebrief } from "@/domain/arrival";
+import { INTERVENTION_LABELS } from "@/lib/intervention-icons";
 import { dayPlace } from "@/domain/today";
 import type { CheckIn, Trip } from "@/domain/types";
 import { arrivalRows, destClockMin } from "@/domain/arrival-rows";
@@ -170,7 +171,13 @@ export default function ArrivalPage() {
         <span className="arr-kicker">
           {dest.name} · {fmtMin(destClock)} · day {read.daysSinceArrival + 1} in {dest.name}
         </span>
-        <h1>{arrivalHeadline(read, dest.name)}</h1>
+        <h1>
+          {!read.promise?.coverage
+            ? `You're in ${dest.name}. Your plan wasn't saved, so there's nothing to compare — you can still tell us how you felt.`
+            : read.promise.coverage.residualMin <= 0
+              ? "You landed fully adjusted."
+              : `You landed ${(read.promise.coverage.residualMin / 60).toFixed(1)}h off ${dest.name} time — ${Math.round(read.promise.coverage.ratio * 100)}% of the adjustment happened before you flew.`}
+        </h1>
 
         {/* Two sections — what was promised at the gate, and what actually
             happened. Splitting them with a label makes the page read in two
@@ -237,8 +244,8 @@ export default function ArrivalPage() {
               )}
               {debrief!.lesson && (
                 <div className="arr-cell" key="lesson">
-                  <em>{debrief!.lesson.label}</em>
-                  <span>{debrief!.lesson.detail}</span>
+                  <em>{INTERVENTION_LABELS[debrief!.lesson.label.replace(/ /g, "_") as keyof typeof INTERVENTION_LABELS] ?? debrief!.lesson.label}</em>
+                  <span>Your strongest habit this trip — we&apos;ll lean on it next time.</span>
                 </div>
               )}
               {debrief!.carriedFrom && (
