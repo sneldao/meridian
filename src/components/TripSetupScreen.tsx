@@ -127,7 +127,10 @@ export function TripSetupScreen({
 
       {variant === "page" && (
         <div className="card">
-          <h3>Route &amp; timezone shift</h3>
+          {/* One card, one job: the two answers the plan needs (where/when,
+              when you wake) and the action they unlock, in one place — the
+              question and its CTA were split across two cards before. */}
+          <h3>Your trip</h3>
           {editingRoute ? (
             <div style={{ marginBottom: "12px" }}>
               <RoutePicker
@@ -169,6 +172,46 @@ export function TripSetupScreen({
                 />
               </div>
             </>
+          )}
+
+          {onWakeBand && (
+            <div className="f" role="group" aria-label="Your natural wake time">
+              <label>On a day with nothing early planned, when do you naturally wake?</label>
+              <div className="chips" style={{ display: "flex", gap: 6 }}>
+                {([
+                  ["before6", "Before 6"],
+                  ["6to8", "6–8"],
+                  ["after8", "After 8"],
+                ] as const).map(([band, label]) => (
+                  <button
+                    key={band}
+                    type="button"
+                    className={`chip ${wakeBand === band ? "on" : ""}`}
+                    aria-pressed={wakeBand === band}
+                    disabled={phase === "running"}
+                    onClick={() => onWakeBand(wakeBand === band ? null : band)}
+                  >
+                    {label}
+                  </button>
+                ))}
+                {wakeBand && (
+                  <button type="button" className="chip" onClick={() => onWakeBand(null)}>
+                    Clear
+                  </button>
+                )}
+              </div>
+              {/* The answer re-plans the preview instantly; name it so the
+                  traveller learns it mattered. Null (garmin, cleared) renders
+                  nothing — same contract as the hero line. */}
+              {(() => {
+                const ack = wakeAck(baselineKind, wakeBand);
+                return ack ? (
+                  <p className="src-line" style={{ fontSize: "11px", color: "#4a7a5c", margin: "6px 0 0" }}>
+                    {ack}
+                  </p>
+                ) : null;
+              })()}
+            </div>
           )}
 
           <div className="ex">
@@ -228,7 +271,10 @@ export function TripSetupScreen({
       <div className="two rise" style={{ animationDelay: ".55s" }}>
         <div className="card">
           <h3>Your sleep</h3>
-          {onWakeBand && (
+          {/* The wake question moved into the trip card on the page variant —
+              question and the CTA it unlocks live together now. The sheet
+              (settings) variant keeps it here. */}
+          {variant === "sheet" && onWakeBand && (
             <div className="f" role="group" aria-label="Your natural wake time">
               <label>On a day with nothing early planned, when do you naturally wake?</label>
               <div className="chips" style={{ display: "flex", gap: 6 }}>
