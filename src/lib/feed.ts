@@ -3,6 +3,26 @@
 // tokens gate the webcal and assistant links. They never leave the device
 // except in their own POST bodies / query params.
 const FEED_KEY = "meridian:feed";
+const FAIL_KEY = "meridian:feedFails";
+const STALE_KEY = "meridian:feedStale";
+/** Consecutive failed syncs before the UI is told the calendar is stale.
+ *  One dropped POST is normal; three in a row means the feed is drifting. */
+const STALE_AFTER = 3;
+
+function noteFeedResult(ok: boolean) {
+  try {
+    const fails = ok ? 0 : Number(localStorage.getItem(FAIL_KEY) ?? 0) + 1;
+    localStorage.setItem(FAIL_KEY, String(fails));
+    if (fails >= STALE_AFTER) {
+      localStorage.setItem(STALE_KEY, "1");
+      window.dispatchEvent(new Event("meridian:feed-stale"));
+    } else {
+      localStorage.removeItem(STALE_KEY);
+    }
+  } catch {
+    /* storage unavailable */
+  }
+}
 
 export type FeedSurface = "calendar" | "assistant";
 
@@ -55,6 +75,7 @@ export async function upsertFeed(payload: {
       | { id?: string; key?: string; tokens?: Partial<Record<FeedSurface, string>> }
       | null;
     if (!res.ok || !data?.id) return null;
+    noteFeedResult(true);
     if (data.key || data.tokens) {
       const next = { ...(ref ?? { id: data.id, key: data.key ?? "" }) };
       if (data.key) next.key = data.key;
@@ -76,7 +97,9 @@ export function syncFeed(payload: { ics: string; trip: unknown; days: unknown })
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ ...payload, id: ref.id, key: ref.key }),
-  }).catch(() => {});
+  })
+    .then((r) => noteFeedResult(r.ok))
+    .catch(() => noteFeedResult(false));
 }
 
 /** Rotate one surface's read token — kills links minted with the old one.

@@ -105,6 +105,9 @@ export interface NudgeFeedScreenProps {
   remindersOn?: boolean;
   onToggleReminders?: () => void;
   remindersBlocked?: boolean;
+  /** Feed syncs have failed repeatedly — the subscribed calendar is silently
+   *  going stale. Rendered near the reminder toggle it sits next to. */
+  feedStale?: boolean;
   onCancelRun?: () => void;
   runActiveAgent?: string | null;
   /** Report what actually happened — per-step did/skip marks or one
@@ -162,6 +165,7 @@ export function NudgeFeedScreen({
   remindersOn,
   onToggleReminders,
   remindersBlocked,
+  feedStale,
   onCancelRun,
   runActiveAgent,
   onCheckIn,
@@ -905,6 +909,11 @@ export function NudgeFeedScreen({
           {remindersBlocked && (
             <p style={{ margin: "4px 0 0", fontSize: 11, color: "#b04523" }}>
               Notifications are blocked in your browser settings.
+            </p>
+          )}
+          {feedStale && (
+            <p style={{ margin: "4px 0 0", fontSize: 11, color: "#b04523" }}>
+              Your calendar stopped syncing — run the crew again to push the latest plan.
             </p>
           )}
 

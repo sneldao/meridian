@@ -42,6 +42,7 @@ import { friendlyDayLabel } from "@/lib/day-label";
 import { restorePlan } from "@/lib/restore-plan";
 import { syncFeed } from "@/lib/feed";
 import { useAssistantLink } from "@/lib/use-assistant-link";
+import { useFeedStale } from "@/lib/use-feed-health";
 import { useInstallPrompt } from "@/lib/use-install-prompt";
 import { useReminders } from "@/lib/use-reminders";
 import { useTheme } from "@/lib/use-theme";
@@ -180,6 +181,7 @@ export default function Home() {
   const [bookingError, setBookingError] = useState(false);
   const assistant = useAssistantLink();
   const install = useInstallPrompt();
+  const feedStale = useFeedStale();
   const { theme, cycleTheme } = useTheme();
   /** Run state is memory-only; the saved plan + trip let a reload show the
    *  locked plan instead of the example preview. Recomputed when the route
@@ -1068,6 +1070,7 @@ export default function Home() {
                 remindersOn={remindersOn}
                 onToggleReminders={toggleReminders}
                 remindersBlocked={remindersBlocked}
+                feedStale={feedStale}
                 onCancelRun={cancelShift}
                 runActiveAgent={run.activeAgent}
                 pastRuns={pastRuns}
