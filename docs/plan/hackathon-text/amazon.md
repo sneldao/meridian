@@ -8,9 +8,9 @@ Deadline: **2026-10-23, 12:00 PDT**.
 ## Sponsor-tech delta
 The whole Meridian crew surface is a self-hosted **MCP server** — Streamable
 HTTP, protocol 2025-11-25, exposed at `POST /api/mcp` against the live
-Render deployment. Eight tools ship today: `preview_trip`, `plan_shift`,
-`evaluate_plan`, `record_check_in`, `search_literature`, `crew_memory`,
-`recall_findings`, `latest_plan`. Verified live: `initialize` → `tools/list`
+Render deployment. Ten tools ship today: `preview_trip`, `plan_shift`,
+`evaluate_plan`, `record_check_in`, `search_literature`, `search_web`,
+`destination_taste`, `crew_memory`, `recall_findings`, `latest_plan`. Verified live: `initialize` → `tools/list`
 → `tools/call plan_shift` returns a real briefing, real .ics, real
 citations. **Any agent** — Claude, an Alexa+ skill, an in-house voice
 assistant — can call the same crew the product UI calls. The MCP server is
