@@ -756,7 +756,7 @@ export function NudgeFeedScreen({
           {/* B3 — the crew remembers. One line under the wake answer, same
               tag treatment; null proofs render nothing. */}
           {secondTrip ? (
-            <p className="demo-tag" style={{ borderColor: "#d8cfc0" }}>
+            <p className="demo-tag" style={{ borderColor: "var(--m-border)" }}>
               {secondTripCopy(secondTrip)}
             </p>
           ) : null}
@@ -919,7 +919,7 @@ export function NudgeFeedScreen({
                     background: hasPlan
                       ? "linear-gradient(90deg, #D96B43, #e99a6f)"
                       : "transparent",
-                    color: hasPlan ? "#fff8ef" : "#3a2e23",
+                    color: hasPlan ? "var(--m-card)" : "var(--m-text)",
                     border: hasPlan ? "none" : "1.5px solid #D96B43",
                     borderRadius: "999px",
                     padding: "10px 22px",
@@ -938,8 +938,8 @@ export function NudgeFeedScreen({
                   aria-pressed={isSkipped(heroNudge.id)}
                   style={{
                     background: "transparent",
-                    border: "1px solid #e3d5c3",
-                    color: "#7a6a5c",
+                    border: "1px solid var(--m-border)",
+                    color: "var(--m-muted)",
                     borderRadius: "999px",
                     padding: "10px 18px",
                     fontSize: "12px",
@@ -952,7 +952,7 @@ export function NudgeFeedScreen({
                 </button>
               </div>
               {completedIds.has(heroNudge.id) && (
-                <p style={{ margin: 0, fontSize: "12px", color: "#7a6a5c" }}>
+                <p style={{ margin: 0, fontSize: "12px", color: "var(--m-muted)" }}>
                   {previewMode ? (
                     <>
                       Done — {impactCopy(heroNudge.category, "done")}. Example
@@ -989,7 +989,7 @@ export function NudgeFeedScreen({
                       border: "none",
                       padding: 0,
                       cursor: "pointer",
-                      color: "#7a6a5c",
+                      color: "var(--m-muted)",
                       fontSize: "12px",
                       fontWeight: 700,
                     }}
@@ -1007,9 +1007,9 @@ export function NudgeFeedScreen({
                             alignItems: "baseline",
                             gap: "10px",
                             padding: "6px 0",
-                            borderTop: "1px solid #eee3d6",
+                            borderTop: "1px solid var(--m-border-2)",
                             fontSize: "12px",
-                            color: "#7a6a5c",
+                            color: "var(--m-muted)",
                           }}
                         >
                           <span>
@@ -1024,12 +1024,12 @@ export function NudgeFeedScreen({
                               onClick={() => markDone(m)}
                               style={{
                                 background: "transparent",
-                                border: "1px solid #e3d5c3",
+                                border: "1px solid var(--m-border)",
                                 borderRadius: 999,
                                 padding: "3px 10px",
                                 fontSize: "11px",
                                 fontWeight: 700,
-                                color: "#5b4d41",
+                                color: "var(--m-text)",
                                 cursor: "pointer",
                               }}
                             >
@@ -1040,12 +1040,12 @@ export function NudgeFeedScreen({
                               onClick={() => markSkipped(m)}
                               style={{
                                 background: "transparent",
-                                border: "1px solid #e3d5c3",
+                                border: "1px solid var(--m-border)",
                                 borderRadius: 999,
                                 padding: "3px 10px",
                                 fontSize: "11px",
                                 fontWeight: 700,
-                                color: "#7a6a5c",
+                                color: "var(--m-muted)",
                                 cursor: "pointer",
                               }}
                             >
@@ -1105,7 +1105,7 @@ export function NudgeFeedScreen({
                 aria-checked={!!remindersOn}
                 onClick={onToggleReminders}
                 title="Reminders work while Meridian is open in a tab or installed on your phone."
-                className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full border border-[#e3d5c3] px-3.5 py-1.5 text-xs font-bold text-[#5b4d41]"
+                className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full border border-[var(--m-border)] px-3.5 py-1.5 text-xs font-bold text-[var(--m-text)]"
                 style={remindersOn ? { borderColor: "#D96B43", background: "rgba(217,107,67,0.12)" } : undefined}
               >
                 🔔 Remind me at each step
@@ -1132,7 +1132,7 @@ export function NudgeFeedScreen({
             />
           </div>
           {phase === "idle" && totalSteps > 0 && (
-            <p style={{ marginTop: "8px", fontSize: "11px", color: "#7a6a5c" }}>
+            <p style={{ marginTop: "8px", fontSize: "11px", color: "var(--m-muted)" }}>
               {simple
                 ? "Takes about a minute."
                 : "Takes about a minute. You'll get a file to add the steps to your calendar — no notifications."}
@@ -1143,7 +1143,7 @@ export function NudgeFeedScreen({
       </div>
 
       {simple && trip && (
-        <div className="rise" style={{ animationDelay: ".25s", margin: "8px 4px 0", fontSize: "12px", color: "#7a6a5c", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <div className="rise" style={{ animationDelay: ".25s", margin: "8px 4px 0", fontSize: "12px", color: "var(--m-muted)", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <span>
             {dawnOwedMin > 0
               ? <>Your body clock is {Math.round(dawnOwedMin / 6) / 10}h {trip.direction === "east" ? "behind" : "ahead"} {trip.destination.name} time · {readinessPct}% adjusted before you fly{readiness.source === "preview" ? " (example)" : ""}</>
@@ -1153,7 +1153,7 @@ export function NudgeFeedScreen({
             type="button"
             onClick={() => setGlobeOpen((v) => !v)}
             aria-expanded={globeOpen}
-            style={{ background: "none", border: "none", padding: 0, cursor: "pointer", color: "#7a6a5c", fontSize: "12px", fontWeight: 700 }}
+            style={{ background: "none", border: "none", padding: 0, cursor: "pointer", color: "var(--m-muted)", fontSize: "12px", fontWeight: 700 }}
           >
             {globeOpen ? "Hide globe ▴" : "Show globe ▾"}
           </button>
@@ -1181,10 +1181,10 @@ export function NudgeFeedScreen({
             margin: "8px 4px 0",
             padding: "10px 12px",
             borderRadius: "10px",
-            border: "1px solid #e3d5c3",
-            background: "#fff8ef",
+            border: "1px solid var(--m-border)",
+            background: "var(--m-card)",
             fontSize: "13px",
-            color: "#5b4d41",
+            color: "var(--m-text)",
             lineHeight: 1.45,
           }}
         >
@@ -1192,7 +1192,7 @@ export function NudgeFeedScreen({
               event line on top and the body-time delta underneath. The delta
               is the sales pitch — two scannable columns the user can read at
               a glance, not a sentence that buries the gap inside clauses. */}
-          <b style={{ color: "#3a2e23" }}>
+          <b style={{ color: "var(--m-text)" }}>
             {(() => {
               const spec = trip?.days.find((d) => d.label === heroMtg.dayLabel);
               const day = spec
@@ -1205,7 +1205,7 @@ export function NudgeFeedScreen({
             })()}
           </b>
           {!simple && (
-          <div style={{ marginTop: "6px", fontSize: "10px", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "#7a6a5c" }}>
+          <div style={{ marginTop: "6px", fontSize: "10px", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--m-muted)" }}>
             How this meeting will feel to your body
           </div>
           )}
@@ -1216,11 +1216,11 @@ export function NudgeFeedScreen({
               gridTemplateColumns: "1fr 1fr",
               gap: "8px",
               fontSize: "12px",
-              color: "#7a6a5c",
+              color: "var(--m-muted)",
             }}
           >
             <div>
-              <span style={{ display: "block", fontWeight: 700, color: "#3a2e23", fontSize: "13px" }}>
+              <span style={{ display: "block", fontWeight: 700, color: "var(--m-text)", fontSize: "13px" }}>
                 {fmtMin(heroMtg.bodyMin)}
               </span>
               <span>with this plan</span>
@@ -1234,7 +1234,7 @@ export function NudgeFeedScreen({
               </div>
             ) : (
               <div>
-                <span style={{ display: "block", fontWeight: 700, color: "#3a2e23", fontSize: "13px" }}>
+                <span style={{ display: "block", fontWeight: 700, color: "var(--m-text)", fontSize: "13px" }}>
                   {fmtMin(heroMtg.bodyWithoutPlanMin)}
                 </span>
                 <span>your body time</span>
@@ -1270,8 +1270,8 @@ export function NudgeFeedScreen({
             marginTop: "12px",
             padding: "10px 14px",
             borderRadius: "12px",
-            border: "1px solid #e3d5c3",
-            background: "#fff8ef",
+            border: "1px solid var(--m-border)",
+            background: "var(--m-card)",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
@@ -1279,9 +1279,9 @@ export function NudgeFeedScreen({
             flexWrap: "wrap",
           }}
         >
-          <span style={{ fontSize: "12px", fontWeight: 700, color: "#3a2e23" }}>
+          <span style={{ fontSize: "12px", fontWeight: 700, color: "var(--m-text)" }}>
             You&apos;ve marked {pendingMarks.size} {pendingMarks.size === 1 ? "step" : "steps"}.
-            <span style={{ color: "#7a6a5c", fontWeight: 600 }}>
+            <span style={{ color: "var(--m-muted)", fontWeight: 600 }}>
               {" "}Send them so we can adjust the rest of your plan.
             </span>
           </span>
@@ -1291,7 +1291,7 @@ export function NudgeFeedScreen({
             style={{
               border: "1px solid #D96B43",
               background: "#D96B43",
-              color: "#fff8ef",
+              color: "var(--m-card)",
               borderRadius: 999,
               padding: "6px 14px",
               fontSize: "12px",
@@ -1367,7 +1367,7 @@ export function NudgeFeedScreen({
             marginTop: "8px",
             fontSize: "11px",
             fontWeight: 600,
-            color: "#7a6a5c",
+            color: "var(--m-muted)",
             letterSpacing: "0.02em",
           }}
         >
@@ -1389,7 +1389,7 @@ export function NudgeFeedScreen({
               fontWeight: 800,
               letterSpacing: "0.08em",
               textTransform: "uppercase",
-              color: "#7a6a5c",
+              color: "var(--m-muted)",
             }}
           >
             Things to do outside in {tasteStripData.destination} (daylight helps)
@@ -1398,11 +1398,11 @@ export function NudgeFeedScreen({
             {tasteStripData.places.map((p) => (
               <li
                 key={p.name}
-                style={{ fontSize: "13px", color: "#3a2e23", padding: "4px 0" }}
+                style={{ fontSize: "13px", color: "var(--m-text)", padding: "4px 0" }}
               >
                 <b>{p.name}</b>
                 {p.categories.length > 0 && (
-                  <span style={{ color: "#7a6a5c" }}> · {p.categories.join(", ")}</span>
+                  <span style={{ color: "var(--m-muted)" }}> · {p.categories.join(", ")}</span>
                 )}
               </li>
             ))}
@@ -1428,7 +1428,7 @@ export function NudgeFeedScreen({
         >
           {pendingMarks.size > 0 ? (
             <>
-              <span style={{ fontSize: "12px", fontWeight: 700, color: "#5b4d41" }}>
+              <span style={{ fontSize: "12px", fontWeight: 700, color: "var(--m-text)" }}>
                 You&apos;ve marked {pendingMarks.size} {pendingMarks.size === 1 ? "step" : "steps"}.
                 Send them so we can adjust the rest of your plan.
               </span>
@@ -1438,7 +1438,7 @@ export function NudgeFeedScreen({
                 style={{
                   border: "1px solid #D96B43",
                   background: "#D96B43",
-                  color: "#fff8ef",
+                  color: "var(--m-card)",
                   borderRadius: 999,
                   padding: "8px 16px",
                   fontSize: "12px",
@@ -1451,7 +1451,7 @@ export function NudgeFeedScreen({
             </>
           ) : dayVerdictAllowed ? (
             <>
-              <span style={{ fontSize: "12px", fontWeight: 700, color: "#5b4d41" }}>
+              <span style={{ fontSize: "12px", fontWeight: 700, color: "var(--m-text)" }}>
                 How did {isToday ? "today" : currentDayName} go?
               </span>
               <span style={{ display: "flex", gap: 8 }}>
@@ -1461,9 +1461,9 @@ export function NudgeFeedScreen({
                     type="button"
                     onClick={() => sendDayVerdict(s)}
                     style={{
-                      border: "1px solid #e3d5c3",
-                      background: s === "done" ? "#D96B43" : "#fff8ef",
-                      color: s === "done" ? "#fff8ef" : "#5b4d41",
+                      border: "1px solid var(--m-border)",
+                      background: s === "done" ? "#D96B43" : "var(--m-card)",
+                      color: s === "done" ? "var(--m-card)" : "var(--m-text)",
                       borderRadius: 999,
                       padding: "8px 14px",
                       fontSize: "12px",
@@ -1594,14 +1594,14 @@ export function NudgeFeedScreen({
                 <h3 className="tl-title">
                   <span className="tl-title-text">{step.title}</span>
                   {isSkip && !isOpen && (
-                    <span style={{ fontSize: "11px", fontWeight: 600, color: "#b7ab9d" }}>Skipped</span>
+                    <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--m-faint)" }}>Skipped</span>
                   )}
                   {step.id === heroNudge?.id ? (
                     <span className="tl-tag placed">Next up</span>
                   ) : step.calendarMove ? (
                     <span className="tl-tag movable">Moves a calendar event</span>
                   ) : null}
-                  <span aria-hidden="true" style={{ marginLeft: "auto", color: "#b7ab9d" }}>
+                  <span aria-hidden="true" style={{ marginLeft: "auto", color: "var(--m-faint)" }}>
                     {isOpen ? "▴" : "▾"}
                   </span>
                 </h3>
@@ -1621,7 +1621,7 @@ export function NudgeFeedScreen({
                       {isSkip ? "Skipped ✓" : "Skip"}
                     </button>
                     {isDone && (
-                      <p style={{ margin: "6px 0 0", fontSize: "12px", color: "#7a6a5c" }}>
+                      <p style={{ margin: "6px 0 0", fontSize: "12px", color: "var(--m-muted)" }}>
                         {previewMode ? (
                           <>
                             Done — {impactCopy(step.category, "done")}. Example plan
@@ -1708,7 +1708,7 @@ export function NudgeFeedScreen({
           type="button"
           onClick={onStartCrewSync}
           disabled={phase === "running"}
-          style={{ margin: "10px auto 0", display: "block", background: "none", border: "none", padding: 0, cursor: "pointer", color: "#7a6a5c", fontSize: "12px", fontWeight: 700 }}
+          style={{ margin: "10px auto 0", display: "block", background: "none", border: "none", padding: 0, cursor: "pointer", color: "var(--m-muted)", fontSize: "12px", fontWeight: 700 }}
         >
           {phase === "running" ? `Building your plan… (${locked.size} of ${days.length} days)` : "Update my plan"}
         </button>

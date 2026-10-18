@@ -151,7 +151,7 @@ export function VoiceControls({ nextStep, todaySteps, yesterday, bedAt, onDone }
         {canSpeak && briefing && (
           <button
             type="button"
-            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full border border-[#e3d5c3] px-3.5 py-1.5 text-xs font-bold text-[#5b4d41] hover:border-[#D96B43]"
+            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full border border-[var(--m-border)] px-3.5 py-1.5 text-xs font-bold text-[var(--m-text)] hover:border-[#D96B43]"
             onClick={() => {
               if (speaking) {
                 stopSpeaking();
@@ -168,7 +168,7 @@ export function VoiceControls({ nextStep, todaySteps, yesterday, bedAt, onDone }
         {canListen && (
           <button
             type="button"
-            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full border border-[#e3d5c3] px-3.5 py-1.5 text-xs font-bold text-[#5b4d41] hover:border-[#D96B43]"
+            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full border border-[var(--m-border)] px-3.5 py-1.5 text-xs font-bold text-[var(--m-text)] hover:border-[#D96B43]"
             onClick={ask}
             disabled={listening}
           >
@@ -177,7 +177,7 @@ export function VoiceControls({ nextStep, todaySteps, yesterday, bedAt, onDone }
           </button>
         )}
       </div>
-      <span aria-live="polite" className="text-[11px] text-[#7a6a5c]">
+      <span aria-live="polite" className="text-[11px] text-[var(--m-muted)]">
         {micError
           ? "Couldn't hear you — tap Ask to try again."
           : heard

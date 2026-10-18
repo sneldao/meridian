@@ -956,7 +956,7 @@ export default function Home() {
                 Use with Siri
               </button>
             )}
-            <div style={{ padding: "8px 12px 4px", fontSize: "11px", color: "#7a6a5c" }}>
+            <div style={{ padding: "8px 12px 4px", fontSize: "11px", color: "var(--m-muted)" }}>
               Timing guidance, not medical advice.
             </div>
           </div>
@@ -1022,13 +1022,13 @@ export default function Home() {
               {routeOpen && (
                 <div style={{ marginTop: 8 }}>
                   <div className="card" style={{ padding: "12px 14px", marginBottom: 10 }}>
-                    <b style={{ fontSize: "12px", color: "#3a2e23" }}>Paste your booking</b>
+                    <b style={{ fontSize: "12px", color: "var(--m-text)" }}>Paste your booking</b>
                     <textarea
                       value={bookingText}
                       onChange={(e) => { setBookingText(e.target.value); setBookingError(false); }}
                       rows={3}
                       placeholder="e.g. Your flight BA005 London Heathrow (LHR) to Tokyo Haneda (HND) departs Wed 21 Oct 2026"
-                      style={{ width: "100%", marginTop: 6, padding: 8, fontSize: 13, borderRadius: 8, border: "1px solid #e3d5c3", font: "inherit" }}
+                      style={{ width: "100%", marginTop: 6, padding: 8, fontSize: 13, borderRadius: 8, border: "1px solid var(--m-border)", font: "inherit" }}
                     />
                     <button
                       type="button"
@@ -1288,10 +1288,10 @@ export default function Home() {
                 ×
               </button>
               <h2 className="sheet-title">Ask Siri for your next step</h2>
-              {siriBusy && <p style={{ fontSize: 12, color: "#7a6a5c" }}>Making your link…</p>}
+              {siriBusy && <p style={{ fontSize: 12, color: "#a89383" }}>Making your link…</p>}
               {siriUrl ? (
                 <>
-                  <p style={{ fontSize: 12, color: "#5b4d41", wordBreak: "break-all", fontFamily: "monospace" }}>
+                  <p style={{ fontSize: 12, color: "#e8ded2", wordBreak: "break-all", fontFamily: "monospace" }}>
                     {siriUrl}
                   </p>
                   <button
@@ -1302,19 +1302,19 @@ export default function Home() {
                   >
                     Copy link
                   </button>
-                  <ol style={{ margin: "12px 0 0", paddingLeft: 18, fontSize: 13, color: "#3a2e23", lineHeight: 1.7 }}>
+                  <ol style={{ margin: "12px 0 0", paddingLeft: 18, fontSize: 13, color: "#e8ded2", lineHeight: 1.7 }}>
                     <li>Open the Shortcuts app and tap +.</li>
                     <li>Add &quot;Get contents of URL&quot; and paste the link.</li>
                     <li>Add &quot;Speak text&quot;.</li>
                     <li>Name it &quot;Next Meridian step&quot; — then say &quot;Hey Siri, next Meridian step&quot;.</li>
                   </ol>
-                  <p style={{ margin: "10px 0 0", fontSize: 11, color: "#7a6a5c" }}>
+                  <p style={{ margin: "10px 0 0", fontSize: 11, color: "#a89383" }}>
                     Anyone with this link can hear your next step, so keep it private.
                   </p>
                 </>
               ) : (
                 !siriBusy && (
-                  <p style={{ fontSize: 12, color: "#7a6a5c" }}>
+                  <p style={{ fontSize: 12, color: "#a89383" }}>
                     Couldn&apos;t make a link yet — save a plan first.
                   </p>
                 )

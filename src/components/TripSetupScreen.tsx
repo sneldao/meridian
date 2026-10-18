@@ -220,7 +220,7 @@ export function TripSetupScreen({
             );
           })}
         </div>
-        <p className="src-line" style={{ fontSize: "11px", color: "#7a6a5c", margin: "8px 0 0" }}>
+        <p className="src-line" style={{ fontSize: "11px", color: "var(--m-muted)", margin: "8px 0 0" }}>
           These are times of day, not specific flights.
         </p>
       </div>
@@ -267,7 +267,7 @@ export function TripSetupScreen({
               })()}
             </div>
           )}
-          <p className="src-line" style={{ fontSize: "11px", color: "#7a6a5c", margin: "0 0 6px" }}>
+          <p className="src-line" style={{ fontSize: "11px", color: "var(--m-muted)", margin: "0 0 6px" }}>
             {baselineSource === "garmin" ? "Using your Garmin data" : "Using example sleep data"}
           </p>
           {hasAllBio && (
@@ -292,7 +292,7 @@ export function TripSetupScreen({
           {baselineSource !== "garmin" && (
             <div className="f" style={{ marginTop: 8 }}>
               <label>Connect your wearable</label>
-              <p style={{ fontSize: "11px", color: "#7a6a5c", margin: "0 0 6px" }}>
+              <p style={{ fontSize: "11px", color: "var(--m-muted)", margin: "0 0 6px" }}>
                 Have a Garmin? Upload your sleep export for a more accurate plan.
               </p>
               <input
@@ -323,7 +323,7 @@ export function TripSetupScreen({
 
         <div className="card">
           <h3>Your calendar</h3>
-          <p className="src-line" style={{ fontSize: "11px", color: "#7a6a5c", margin: "0 0 6px" }}>
+          <p className="src-line" style={{ fontSize: "11px", color: "var(--m-muted)", margin: "0 0 6px" }}>
             {calendarSource === "google"
               ? "Connected to Google Calendar"
               : "Using an example calendar"}
