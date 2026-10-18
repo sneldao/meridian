@@ -836,10 +836,8 @@ export function NudgeFeedScreen({
                   aria-pressed={completedIds.has(heroNudge.id)}
                   style={{
                     alignSelf: "flex-start",
-                    background: previewMode
-                      ? "linear-gradient(90deg, #cfc4b4, #ddd3c5)"
-                      : "linear-gradient(90deg, #D96B43, #e99a6f)",
-                    color: previewMode ? "#5b4d41" : "#fff8ef",
+                    background: "linear-gradient(90deg, #D96B43, #e99a6f)",
+                    color: "#fff8ef",
                     border: "none",
                     borderRadius: "999px",
                     padding: "10px 22px",

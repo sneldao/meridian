@@ -1172,6 +1172,11 @@ body {
   .hero {
     grid-template-columns: 1fr;
   }
+  /* Stacked, the question and the next step come first — the globe is the
+     illustration, not the job. */
+  .hr-col {
+    order: -1;
+  }
   /* Stacked, the fixed panel height stops earning its keep — and the scrubber's
      three-column lane wants the full card width. */
   .hl {
@@ -1782,18 +1787,18 @@ textarea:focus-visible,
 }
 .tl-done {
   padding: 6px 16px;
-  border: 1px solid #e3d5c3;
+  border: 1px solid #D96B43;
   border-radius: 999px;
-  background: #fff;
-  color: #5b4d41;
+  background: #D96B43;
+  color: #fff8ef;
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.03em;
   cursor: pointer;
 }
 .tl-done[aria-pressed="true"] {
-  border-color: #D96B43;
-  background: #D96B43;
+  border-color: #b04523;
+  background: #b04523;
   color: #fff8ef;
 }
 .tl-skip {
