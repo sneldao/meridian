@@ -50,7 +50,7 @@ export function DawnScrubber({
   return (
     <div className="scrub">
       <p className="scrub-label" style={{ textTransform: "none", letterSpacing: "0.02em" }}>
-        Drag to explore — this doesn&apos;t change your plan.
+        Drag to see how the light shifts your morning.
       </p>
       <div className="scrub-lane">
         <label className="scrub-label" htmlFor="dawn-scrub-time">
