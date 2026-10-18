@@ -1975,3 +1975,62 @@ textarea:focus-visible,
 .tl-check.on {
   background: #D96B43;
 }
+
+/* Round 4 A — 44px taps, sentence-case labels */
+.day-step {
+  width: 44px;
+  height: 44px;
+  font-size: 20px;
+}
+.tl-check {
+  position: relative;
+}
+.tl-check::after {
+  content: "";
+  position: absolute;
+  inset: -11px;
+}
+.ask-chip {
+  min-height: 44px;
+  padding: 10px 16px;
+  font-size: 13px;
+}
+.pill button,
+.pill a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+.trip-chip {
+  min-height: 44px;
+}
+.cta button,
+.tl-skip,
+.hero-actions button {
+  min-height: 44px;
+}
+.mini {
+  font-size: 12px;
+  letter-spacing: normal;
+  text-transform: none;
+}
+.tl-time span {
+  font-size: 11px;
+  letter-spacing: normal;
+  text-transform: none;
+}
+.cal-summary-num span {
+  font-size: 11px;
+  letter-spacing: normal;
+  text-transform: none;
+}
+@media (max-width: 720px) {
+  .hero .s,
+  .drawer p,
+  .ask p,
+  .demo-tag,
+  .journey-step,
+  .hr .hr-stat {
+    font-size: 14px;
+  }
+}

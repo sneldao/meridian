@@ -843,6 +843,7 @@ export function NudgeFeedScreen({
                     border: hasPlan ? "none" : "1.5px solid #D96B43",
                     borderRadius: "999px",
                     padding: "10px 22px",
+                    minHeight: "44px",
                     fontSize: "13px",
                     fontWeight: 800,
                     letterSpacing: "0.04em",

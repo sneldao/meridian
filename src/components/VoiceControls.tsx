@@ -135,7 +135,7 @@ export function VoiceControls({ nextStep, todaySteps, onDone }: VoiceControlsPro
         {canSpeak && nextStepText && (
           <button
             type="button"
-            className="inline-flex items-center gap-1.5 rounded-full border border-[#e3d5c3] px-3 py-1.5 text-xs font-bold text-[#5b4d41] hover:border-[#D96B43]"
+            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full border border-[#e3d5c3] px-3.5 py-1.5 text-xs font-bold text-[#5b4d41] hover:border-[#D96B43]"
             onClick={() => {
               if (speaking) {
                 stopSpeaking();
@@ -152,7 +152,7 @@ export function VoiceControls({ nextStep, todaySteps, onDone }: VoiceControlsPro
         {canListen && (
           <button
             type="button"
-            className="inline-flex items-center gap-1.5 rounded-full border border-[#e3d5c3] px-3 py-1.5 text-xs font-bold text-[#5b4d41] hover:border-[#D96B43]"
+            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full border border-[#e3d5c3] px-3.5 py-1.5 text-xs font-bold text-[#5b4d41] hover:border-[#D96B43]"
             onClick={ask}
             disabled={listening}
           >
