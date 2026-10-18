@@ -613,7 +613,7 @@ body {
 .ask-chip:hover {
   background: #D96B43;
   border-color: #D96B43;
-  color: var(--m-card);
+  color: var(--m-on-accent);
 }
 .ask-chip:focus-visible {
   outline: 2px solid #D96B43;
@@ -635,7 +635,7 @@ body {
   padding: 26px;
   min-height: 540px;
   min-width: 0;
-  color: var(--m-bg);
+  color: #F5EFE6;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -1105,7 +1105,7 @@ body {
   margin: 0 0 10px;
   font-size: 16px;
   font-weight: 800;
-  color: var(--m-bg);
+  color: #F5EFE6;
 }
 .fo {
   font: inherit;
@@ -1841,7 +1841,7 @@ textarea:focus-visible,
   border: 1px solid #D96B43;
   border-radius: 999px;
   background: #D96B43;
-  color: var(--m-card);
+  color: var(--m-on-accent);
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.03em;
@@ -1850,7 +1850,7 @@ textarea:focus-visible,
 .tl-done[aria-pressed="true"] {
   border-color: #b04523;
   background: #b04523;
-  color: var(--m-card);
+  color: var(--m-on-accent);
 }
 /* Before a plan exists the Done tap is a preview — the outline keeps it
    secondary to "Make my plan" without reading as disabled. */
@@ -1965,7 +1965,7 @@ textarea:focus-visible,
   border-radius: 999px;
   border: 1.5px solid #D96B43;
   background: transparent;
-  color: var(--m-card);
+  color: var(--m-on-accent);
   font-size: 12px;
   font-weight: 800;
   line-height: 1;
@@ -2037,28 +2037,32 @@ textarea:focus-visible,
 
 /* Round 4 I — night mode */
 :root {
-  --m-bg: var(--m-bg);
-  --m-card: var(--m-card);
-  --m-text: var(--m-text);
-  --m-ink: var(--m-ink);
-  --m-muted: var(--m-muted);
-  --m-border: var(--m-border);
-  --m-border-2: var(--m-border-2);
-  --m-faint: var(--m-faint);
-  --m-card-2: var(--m-card-2);
-  --m-tag: var(--m-tag);
+  --m-bg: #F5EFE6;
+  --m-card: #fff8ef;
+  --m-text: #3a2e23;
+  --m-ink: #1E1B18;
+  --m-muted: #7a6a5c;
+  --m-border: #e3d5c3;
+  --m-border-2: #eee3d6;
+  --m-faint: #a39282;
+  --m-card-2: #f3e9dc;
+  --m-tag: rgba(217, 107, 67, 0.12);
+  --m-accent: #D96B43;
+  --m-on-accent: #fff8ef;
 }
 html[data-theme="night"] {
   --m-bg: #201a14;
   --m-card: #2b231b;
-  --m-text: var(--m-bg);
-  --m-ink: var(--m-bg);
+  --m-text: #F5EFE6;
+  --m-ink: #F5EFE6;
   --m-muted: #a89383;
   --m-border: #4a3d30;
   --m-border-2: #3d332a;
   --m-faint: #6f6055;
   --m-card-2: #332a20;
   --m-tag: rgba(217, 107, 67, 0.18);
+  --m-accent: #D96B43;
+  --m-on-accent: #fff8ef;
 }
 html[data-theme="night"] body,
 html[data-theme="night"] .root {
