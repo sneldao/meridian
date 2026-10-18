@@ -184,9 +184,9 @@ export default function Home() {
   const [routeOpen, setRouteOpen] = useState(false);
   const [bookingText, setBookingText] = useState("");
   const [bookingError, setBookingError] = useState(false);
-  const [siriOpen, setSiriOpen] = useState(false);
-  const [siriUrl, setSiriUrl] = useState<string | null>(null);
-  const [siriBusy, setSiriBusy] = useState(false);
+  const [assistantOpen, setAssistantOpen] = useState(false);
+  const [assistantUrl, setAssistantUrl] = useState<string | null>(null);
+  const [assistantBusy, setAssistantBusy] = useState(false);
   const [remindersOn, setRemindersOn] = useState(false);
   const [remindersBlocked, setRemindersBlocked] = useState(false);
   const [externalMark, setExternalMark] = useState<{ id: string; status: "done" | "skipped"; nonce: number } | null>(null);
@@ -602,7 +602,7 @@ export default function Home() {
       // must work even from inside a text field. (It previously didn't: the old
       // handler returned early for INPUT/TEXTAREA before reaching Escape.)
       if (e.code === "Escape") {
-        if (siriOpen) setSiriOpen(false);
+        if (assistantOpen) setAssistantOpen(false);
         else if (setupOpen) setSetupOpen(false);
         else if (agentDrawerOpen) setAgentDrawerOpen(false);
         else if (menuOpen) setMenuOpen(false);
@@ -611,7 +611,7 @@ export default function Home() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [run.phase, cancelShift, agentDrawerOpen, menuOpen, setupOpen, siriOpen]);
+  }, [run.phase, cancelShift, agentDrawerOpen, menuOpen, setupOpen, assistantOpen]);
 
   // Wedge watchdog. Runs only while a run is live, and reports the same
   // recoverable state `onerror` does — the CTA comes back either way.
@@ -948,23 +948,23 @@ export default function Home() {
                 role="menuitem"
                 onClick={async () => {
                   setMenuOpen(false);
-                  setSiriOpen(true);
-                  if (!siriUrl && !siriBusy) {
-                    setSiriBusy(true);
+                  setAssistantOpen(true);
+                  if (!assistantUrl && !assistantBusy) {
+                    setAssistantBusy(true);
                     try {
                       const plan = JSON.parse(localStorage.getItem("meridian:lastPlan") || "null");
                       const savedTrip = JSON.parse(localStorage.getItem("meridian:lastTrip") || "null");
                       const id = plan && savedTrip ? await upsertFeed({ ics: plan.ics, trip: savedTrip, days: plan.days }) : null;
-                      if (id) setSiriUrl(`${location.origin}/api/assistant/next?feed=${id}&format=text`);
+                      if (id) setAssistantUrl(`${location.origin}/api/assistant/next?feed=${id}&format=text`);
                     } catch {
-                      /* leave siriUrl null */
+                      /* leave assistantUrl null */
                     } finally {
-                      setSiriBusy(false);
+                      setAssistantBusy(false);
                     }
                   }
                 }}
               >
-                Use with Siri
+                Voice assistant
               </button>
             )}
             <div style={{ padding: "8px 12px 4px", fontSize: "11px", color: "var(--m-muted)" }}>
@@ -1304,38 +1304,41 @@ export default function Home() {
           </div>
         )}
 
-        {siriOpen && (
+        {assistantOpen && (
           <div
             className="sheet-backdrop"
             role="dialog"
             aria-modal="true"
-            aria-label="Use with Siri"
-            onClick={() => setSiriOpen(false)}
+            aria-label="Voice assistant"
+            onClick={() => setAssistantOpen(false)}
           >
             <div className="sheet-panel" onClick={(e) => e.stopPropagation()}>
               <button
                 type="button"
                 className="sheet-close"
-                onClick={() => setSiriOpen(false)}
+                onClick={() => setAssistantOpen(false)}
                 aria-label="Close"
               >
                 ×
               </button>
-              <h2 className="sheet-title">Ask Siri for your next step</h2>
-              {siriBusy && <p style={{ fontSize: 12, color: "#a89383" }}>Making your link…</p>}
-              {siriUrl ? (
+              <h2 className="sheet-title">Ask your assistant for the next step</h2>
+              {assistantBusy && <p style={{ fontSize: 12, color: "#a89383" }}>Making your link…</p>}
+              {assistantUrl ? (
                 <>
                   <p style={{ fontSize: 12, color: "#e8ded2", wordBreak: "break-all", fontFamily: "monospace" }}>
-                    {siriUrl}
+                    {assistantUrl}
                   </p>
                   <button
                     type="button"
                     className="chip"
                     style={{ minHeight: 44 }}
-                    onClick={() => void navigator.clipboard?.writeText(siriUrl)}
+                    onClick={() => void navigator.clipboard?.writeText(assistantUrl)}
                   >
                     Copy link
                   </button>
+                  <p style={{ margin: "8px 0 0", fontSize: 12, color: "#a89383" }}>
+                    Works with Siri Shortcuts on iPhone — or any assistant that can fetch a link.
+                  </p>
                   <ol style={{ margin: "12px 0 0", paddingLeft: 18, fontSize: 13, color: "#e8ded2", lineHeight: 1.7 }}>
                     <li>Open the Shortcuts app and tap +.</li>
                     <li>Add &quot;Get contents of URL&quot; and paste the link.</li>
@@ -1347,7 +1350,7 @@ export default function Home() {
                   </p>
                 </>
               ) : (
-                !siriBusy && (
+                !assistantBusy && (
                   <p style={{ fontSize: 12, color: "#a89383" }}>
                     Couldn&apos;t make a link yet — save a plan first.
                   </p>
