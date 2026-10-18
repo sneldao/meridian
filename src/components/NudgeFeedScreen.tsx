@@ -798,7 +798,10 @@ export function NudgeFeedScreen({
                     plan better.
                   </p>
                   <div className="arrival-nudge-btns">
-                    <a className="p1" href={`/arrival?date=${trip?.days[0]?.date ?? ""}`}>
+                    <a
+                      className="p1"
+                      href={`/arrival?origin=${trip?.origin.code ?? ""}&dest=${trip?.destination.code ?? ""}&date=${trip?.days.find((d) => d.dayIndex === trip.departureDayIndex)?.date ?? ""}`}
+                    >
                       See results
                     </a>
                     <a className="p2" href="/outcome">

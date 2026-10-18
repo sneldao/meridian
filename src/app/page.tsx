@@ -550,18 +550,6 @@ export default function Home() {
     [persistCheckIns, beginStream],
   );
 
-  // Does this element consume Space itself? Buttons activate on key*up*, so a
-  // preventDefault() on keydown silently swallows their activation — which is
-  // why Space could not press any button on this page.
-  const consumesSpace = (target: EventTarget | null): boolean => {
-    const el = target as HTMLElement | null;
-    if (!el || typeof el.tagName !== "string") return false;
-    if (["INPUT", "TEXTAREA", "SELECT", "BUTTON", "A", "OPTION"].includes(el.tagName)) return true;
-    if (el.isContentEditable) return true;
-    const role = el.getAttribute("role");
-    return role === "button" || role === "link" || role === "menuitem" || role === "checkbox";
-  };
-
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       // Escape first and unconditionally — closing the sheet or cancelling a run
@@ -572,16 +560,11 @@ export default function Home() {
         else if (agentDrawerOpen) setAgentDrawerOpen(false);
         else if (menuOpen) setMenuOpen(false);
         else if (run.phase === "running") cancelShift();
-        return;
       }
-      if (e.code !== "Space") return;
-      if (consumesSpace(e.target)) return;
-      e.preventDefault();
-      if (run.phase !== "running") startShift();
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [run.phase, startShift, cancelShift, agentDrawerOpen, menuOpen, setupOpen]);
+  }, [run.phase, cancelShift, agentDrawerOpen, menuOpen, setupOpen]);
 
   // Wedge watchdog. Runs only while a run is live, and reports the same
   // recoverable state `onerror` does — the CTA comes back either way.
@@ -771,7 +754,7 @@ export default function Home() {
             {/* Carries the trip being scored, so "Rate my trip" opens the
                 journey you were actually on rather than the default one. */}
             <Link
-              href={`/arrival?date=${departureDate}`}
+              href={`/arrival?origin=${origin}&dest=${dest}&date=${departureDate}`}
               className="m"
               role="menuitem"
               onClick={() => setMenuOpen(false)}

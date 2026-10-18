@@ -25,11 +25,7 @@ import { arrivalRows, destClockMin } from "@/domain/arrival-rows";
 // otherwise the default trip is three days out. `?arrived=1` pretends the last
 // day has passed, for looking at the payoff before it happens rather than
 // waiting a week for it.
-function tripDateFromSearch(now: Date): string {
-  if (typeof window !== "undefined") {
-    const q = new URLSearchParams(window.location.search).get("date");
-    if (q && /^\d{4}-\d{2}-\d{2}$/.test(q)) return q;
-  }
+function defaultDepartureDate(now: Date): string {
   const d = new Date(now.getTime() + 3 * 86400000);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
@@ -44,8 +40,24 @@ export default function ArrivalPage() {
 
   useEffect(() => {
     let cancelled = false;
-    const date = tripDateFromSearch(new Date());
-    fetch(`/api/trip?origin=LHR&dest=HND&date=${date}`)
+    // URL params win; otherwise the saved trip (the one this page exists to
+    // score); otherwise the demo route.
+    const sp = new URLSearchParams(window.location.search);
+    let lastTrip: Trip | null = null;
+    try {
+      lastTrip = JSON.parse(localStorage.getItem("meridian:lastTrip") || "null");
+    } catch {
+      /* corrupt storage is an absent trip, not a crash */
+    }
+    const origin = sp.get("origin") ?? lastTrip?.origin?.code ?? "LHR";
+    const dest = sp.get("dest") ?? lastTrip?.destination?.code ?? "HND";
+    const depDay = lastTrip?.days?.find((d) => d.dayIndex === lastTrip.departureDayIndex);
+    const qDate = sp.get("date");
+    const date =
+      qDate && /^\d{4}-\d{2}-\d{2}$/.test(qDate)
+        ? qDate
+        : depDay?.date ?? defaultDepartureDate(new Date());
+    fetch(`/api/trip?origin=${origin}&dest=${dest}&date=${date}`)
       .then((r) => r.json())
       .then((d2: { trip: Trip }) => {
         const t = setTimeout(() => {
