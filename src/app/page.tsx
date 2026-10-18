@@ -14,6 +14,7 @@ import type {
   BaselineKind,
   CalendarEvent,
   CrewEvent,
+  DayPlan,
   Trip,
   WearableBaseline,
 } from "@/domain/types";
@@ -27,6 +28,7 @@ import { AgentDrawer } from "@/components/AgentDrawer";
 import { RunAnnouncer } from "@/components/RunAnnouncer";
 import { useFocusTrap } from "@/lib/a11y";
 import { friendlyDayLabel } from "@/lib/day-label";
+import { restorePlan } from "@/lib/restore-plan";
 import { useRunState, calendarWithMoves, ledgerEvents, ghostGapDeg } from "@/state/run";
 import { meetingReadiness } from "@/domain/readiness";
 import {
@@ -94,6 +96,8 @@ const DEPTH_KEY = "meridian:depth";
 // /crew page owns its own storage key. Keep this comment in case a future
 // lane reintroduces voice on the home surface.
 
+const EMPTY_LOCKED: Map<string, DayPlan> = new Map();
+
 const MEMORY_TOOL_NAMES = new Set([
   "recallFindings",
   "priorFailures",
@@ -154,6 +158,10 @@ export default function Home() {
   >([]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [agentDrawerOpen, setAgentDrawerOpen] = useState(false);
+  /** Run state is memory-only; the saved plan + trip let a reload show the
+   *  locked plan instead of the example preview. Recomputed when the route
+   *  changes or a new briefing lands. */
+  const [restoredLocked, setRestoredLocked] = useState<Map<string, DayPlan> | null>(null);
 
   const guideRef = useRef<HTMLDivElement | null>(null);
   const setupRef = useRef<HTMLDivElement | null>(null);
@@ -601,12 +609,37 @@ export default function Home() {
   const openSetup = () => setSetupOpen(true);
   const closeSetup = () => setSetupOpen(false);
 
+  // Restore the saved plan after a reload — run state is memory-only, but
+  // `meridian:lastPlan` + `meridian:lastTrip` were written at briefing time.
+  // restorePlan vetoes any route/date mismatch, so editing the route drops
+  // back to the example preview.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      try {
+        setRestoredLocked(
+          restorePlan(
+            localStorage.getItem("meridian:lastPlan"),
+            localStorage.getItem("meridian:lastTrip"),
+            { origin, dest, date: departureDate },
+          ),
+        );
+      } catch {
+        setRestoredLocked(null);
+      }
+    }, 0);
+    return () => clearTimeout(t);
+  }, [origin, dest, departureDate, run.briefing]);
+
+  const effectiveLocked = run.locked.size ? run.locked : (restoredLocked ?? EMPTY_LOCKED);
+  const effectivePhase =
+    run.phase === "idle" && restoredLocked?.size ? "done" : run.phase;
+
   const providerFallback = run.errors.length > 0;
   const baseline = run.baseline ?? resolveBaseline(wakeBand, data?.baseline);
   const rawCalendar = run.calendar.length > 0 ? run.calendar : (data?.calendar ?? []);
   const currentEvents = run.calendar.length > 0 ? calendarWithMoves(run) : rawCalendar;
   const currentReadiness = trip
-    ? meetingReadiness(trip, currentEvents, [...run.locked.values()], baseline)
+    ? meetingReadiness(trip, currentEvents, [...effectiveLocked.values()], baseline)
     : [];
   const activeCitations = run.citations;
   // Latest graph-memory consult this run — hop path into nudge evidence rows.
@@ -760,7 +793,7 @@ export default function Home() {
                     ? heroMeeting({
                         trip,
                         calendar: currentEvents,
-                        locked: [...run.locked.values()].map((d) => ({ shiftMin: d.shiftMin })),
+                        locked: [...effectiveLocked.values()].map((d) => ({ shiftMin: d.shiftMin })),
                         baseline,
                       })
                     : null;
@@ -910,10 +943,10 @@ export default function Home() {
             <div ref={guideRef}>
               <NudgeFeedScreen
                 trip={trip}
-                phase={run.phase}
+                phase={effectivePhase}
                 selectedDayLabel={selectedDayLabel}
                 onSelectDay={setSelectedDayLabel}
-                locked={run.locked}
+                locked={effectiveLocked}
                 drafts={run.drafts}
                 verdicts={run.verdicts}
                 rejected={run.rejected}
@@ -942,10 +975,10 @@ export default function Home() {
             {depth === "guided" && (
               <DeepDiveVisuals
                 trip={trip}
-                phase={run.phase}
+                phase={effectivePhase}
                 sunProgress={run.sunProgress}
                 ghostGap={ghostGapDeg(run)}
-                locked={run.locked}
+                locked={effectiveLocked}
                 drafts={run.drafts}
                 verdicts={run.verdicts}
                 calendar={currentEvents}
