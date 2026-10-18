@@ -1322,6 +1322,31 @@ export default function Home() {
             </div>
           </div>
         )}
+
+        {showInstallTip && (
+          <div
+            className="sheet-backdrop"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Install app"
+            onClick={() => setShowInstallTip(false)}
+          >
+            <div className="sheet-panel" onClick={(e) => e.stopPropagation()}>
+              <button
+                type="button"
+                className="sheet-close"
+                onClick={() => setShowInstallTip(false)}
+                aria-label="Close"
+              >
+                ×
+              </button>
+              <h2 className="sheet-title">Install app</h2>
+              <p style={{ fontSize: 13, color: "#e8ded2" }}>
+                Tap Share, then &quot;Add to Home Screen&quot;.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       <AgentDrawer
