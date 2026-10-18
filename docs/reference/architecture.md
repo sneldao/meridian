@@ -122,7 +122,9 @@ serves the demo traveller.
 Optional Supabase layer (`src/tools/supabase.ts`): when `SUPABASE_URL` +
 `SUPABASE_SERVICE_ROLE_KEY` are set, runs and check-ins are appended to
 `public.meridian_events` and `/api/persistence/runs` serves cross-run history.
-Without them everything falls back to `localStorage`. Project + schema details
+Feeds (`meridian_feeds`) and push subscriptions (`meridian_push_subscriptions`)
+live there too — feeds fall back to `artifacts/feeds/*.json` on disk without
+keys. Everything else falls back to `localStorage`. Project + schema details
 in [providers.md](providers.md#supabase-persistence-optional).
 
 ## API surface
@@ -139,6 +141,12 @@ in [providers.md](providers.md#supabase-persistence-optional).
 | `POST /api/graph/seed` | Seeds/wipes a tenant graph (`{"tenant":"demo"|"other","reset":true?}`) — needed because the Render pserv is internal-only; disabled unless `SEED_ADMIN_TOKEN` is set, then requires `x-seed-token` |
 | `GET /api/voice` · `POST /api/voice` | Voice-layer availability; TTS audio — see [providers.md](providers.md) |
 | `POST /api/mcp` | Self-hosted MCP server (Streamable HTTP, protocol 2025-11-25; stateless JSON-RPC over POST). Tools wrap the crew surface: `preview_trip`, `plan_shift`, `evaluate_plan`, `record_check_in`, `search_literature`, `crew_memory`, `recall_findings`, `latest_plan`, `search_web` (Tavily), `destination_taste` (Qloo) — implemented in `src/mcp/server.ts`. GET 405s (no server push); DELETE is a no-op. |
+| `POST /api/feed` | Create or update a plan feed `{ics, trip, days}` → `{id, key, tokens}`. `key` authorizes updates (hash stored, constant-time compare); `tokens` are per-surface read tokens (`calendar`, `assistant`). Rate-limited, ICS capped at 300KB |
+| `GET /api/feed/[id]/calendar.ics` | The webcal URL — serves the current ICS, gated on `?t=` when a calendar token exists. Legacy feeds without tokens still serve on the bare id |
+| `POST /api/feed/rotate` | `{id, key, surface}` → mints a fresh read token for one surface, killing its old links. The assistant sheet's "Reset link" |
+| `GET /api/assistant/next` | `?feed=<id>&t=<token>&format=text` — one spoken sentence naming the next plan step (`nextStepFromPlan` — zone-aware, pre-flight steps in origin time, post-flight in destination). Built for Siri Shortcuts / any URL-fetching assistant |
+| `GET·POST·DELETE /api/push/subscribe` | GET: `{enabled, publicKey}` — false without VAPID env. POST: `{id, key, endpoint, keys}` stores a Web Push subscription under the feed's write key. DELETE by endpoint stops sends |
+| `GET /api/cron/dispatch` | The reminder sender — `Authorization: Bearer $CRON_SECRET`, intended to run every ~15 min. For each subscription: reads the feed, sends steps due inside the dispatch window (late beats never for a missed tick), dedupes via the row's `sent` map, culls dead endpoints (404/410). 503 when push isn't configured |
 
 ## Layout
 

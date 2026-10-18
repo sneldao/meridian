@@ -118,15 +118,33 @@ check-ins are written to `public.meridian_events` (single JSONB table — spec i
 so offline/replay runs still work. Live status: `GET /api/persistence/runs`
 returns `{"enabled":true,...}` when wired up.
 
+Two more tables back the surfaces that leave the browser:
+
+- `public.meridian_feeds` (`src/lib/feed-store.ts`) — calendar/assistant feeds:
+  `ics`, `trip`, `days`, hashed write key, per-surface read tokens. Falls back
+  to `artifacts/feeds/*.json` on disk when Supabase isn't configured.
+- `public.meridian_push_subscriptions` (`src/lib/push.ts`) — Web Push
+  subscriptions (`endpoint`, `keys`, `sent` dedup map) tied to a feed id.
+  Required for pushed reminders; without it reminders still work while the
+  app is open.
+
 | Var | Purpose |
 |---|---|
 | `SUPABASE_URL` | Project URL (`https://<ref>.supabase.co`) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server-only service role key — never expose via `NEXT_PUBLIC_*` |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Web Push identity — binds subscriptions to us |
+| `VAPID_PRIVATE_KEY` | Signs every push send — server-only |
+| `VAPID_SUBJECT` | `mailto:` contact embedded in the VAPID JWT (spec-required) |
+| `CRON_SECRET` | Bearer token guarding `GET /api/cron/dispatch` |
+
+VAPID keys generate with `npx web-push generate-vapid-keys`. Push is optional:
+without them `GET /api/push/subscribe` reports `{"enabled":false}` and the app
+keeps its in-tab reminders.
 
 Provisioned project: `meridian`, ref `vpeakvspljdoxbwfsdvw`, West Europe
-(London), org `Imperfect`. Schema is versioned in `supabase/migrations/` — the
-table DDL matches `src/tools/supabase.ts`, with RLS enabled and no policies
-(only the service role, used server-side, can read/write).
+(London), org `Imperfect`. Schema is versioned in `supabase/migrations/` — RLS
+enabled and no policies on every table (only the service role, used
+server-side, can read/write).
 
 To recreate from a fresh clone:
 

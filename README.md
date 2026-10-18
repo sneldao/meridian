@@ -22,9 +22,18 @@ cp .env.example .env.local    # defaults to featherless (needs a key) — AGENT_
 bun run dev                   # http://localhost:3000
 ```
 
-Optional: `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` in `.env.local` persist
-run history server-side (project `vpeakvspljdoxbwfsdvw`, see
-[providers.md](docs/reference/providers.md#supabase-persistence-optional)).
+Optional extras, all in `.env.local` — every one degrades gracefully when unset:
+
+- `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` — run history, durable
+  calendar/assistant feeds, and push subscriptions (project
+  `vpeakvspljdoxbwfsdvw`, see
+  [providers.md](docs/reference/providers.md#supabase-persistence-optional))
+- `NEXT_PUBLIC_VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY` + `VAPID_SUBJECT` —
+  push notifications that arrive while the app is closed
+  (`npx web-push generate-vapid-keys`)
+- `CRON_SECRET` — bearer token guarding `GET /api/cron/dispatch`, the
+  scheduler endpoint that actually sends pushed reminders (call it every
+  ~15 min from Render cron / any scheduler)
 
 ## The crew
 
@@ -101,6 +110,13 @@ Commits run `gitleaks` + typecheck + lint via `.githooks/` (enabled through
 Meridian ships a minimal service worker (`public/sw.js`) that caches the app
 shell and serves `public/offline.html` when the network is gone. Saved handoffs
 live in `localStorage`, so a completed plan stays readable offline.
+
+The same service worker carries Web Push (`push` + `notificationclick`
+handlers): reminders arrive while the app is closed when VAPID is configured,
+and Done/Skip taps focus an open window or deep-link the mark back in.
+Calendar and assistant surfaces ride `meridian_feeds` — webcal subscriptions
+stay current as plans change, and `/api/assistant/next` speaks the next step
+for Siri Shortcuts or any URL-fetching assistant.
 
 ## Tests
 
