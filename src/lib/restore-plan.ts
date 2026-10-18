@@ -1,4 +1,4 @@
-import type { DayPlan } from "@/domain/types";
+import type { Citation, DayPlan } from "@/domain/types";
 
 /** Rebuilds the locked-days map from the saved plan + saved trip, but only
  *  when the pair still describes the route on screen: same airports and the
@@ -8,7 +8,7 @@ export function restorePlan(
   lastPlanRaw: string | null,
   lastTripRaw: string | null,
   route: { origin: string; dest: string; date: string },
-): Map<string, DayPlan> | null {
+): { locked: Map<string, DayPlan>; citations: Citation[] } | null {
   if (!lastPlanRaw || !lastTripRaw) return null;
   try {
     const plan = JSON.parse(lastPlanRaw);
@@ -24,11 +24,14 @@ export function restorePlan(
         )
       : null;
     if (!depDay || depDay.date !== route.date) return null;
-    return new Map<string, DayPlan>(
-      plan.days
-        .filter((d: DayPlan) => typeof d?.label === "string")
-        .map((d: DayPlan) => [d.label, d]),
-    );
+    return {
+      locked: new Map<string, DayPlan>(
+        plan.days
+          .filter((d: DayPlan) => typeof d?.label === "string")
+          .map((d: DayPlan) => [d.label, d]),
+      ),
+      citations: Array.isArray(plan.citations) ? plan.citations : [],
+    };
   } catch {
     return null;
   }

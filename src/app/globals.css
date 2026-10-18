@@ -1751,7 +1751,7 @@ textarea:focus-visible,
 }
 .tl-row {
   display: grid;
-  grid-template-columns: 78px 1fr;
+  grid-template-columns: 22px 78px 1fr;
   gap: 14px;
   align-items: start;
   padding: 14px 0;
@@ -1912,7 +1912,66 @@ textarea:focus-visible,
     padding: 4px 14px 10px;
   }
   .tl-row {
-    grid-template-columns: 66px 1fr;
+    grid-template-columns: 22px 60px 1fr;
     gap: 10px;
   }
+}
+
+/* R3 — calm Simple view */
+.hero.slim {
+  grid-template-columns: 1fr;
+}
+.trip-chip {
+  font: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  border: 1px solid #e3d5c3;
+  border-radius: 999px;
+  background: #fff8ef;
+  color: #3a2e23;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+}
+.trip-chip-change {
+  color: #D96B43;
+  font-size: 11px;
+  font-weight: 800;
+}
+.day-step {
+  font: inherit;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid #e3d5c3;
+  background: #fff8ef;
+  color: #5b4d41;
+  font-size: 16px;
+  cursor: pointer;
+}
+.day-step:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.tl-check {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin-top: 2px;
+  border-radius: 999px;
+  border: 1.5px solid #D96B43;
+  background: transparent;
+  color: #fff8ef;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+  align-self: flex-start;
+}
+.tl-check.on {
+  background: #D96B43;
 }

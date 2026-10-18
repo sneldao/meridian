@@ -13,6 +13,7 @@ import type {
   CheckInRequest,
   BaselineKind,
   CalendarEvent,
+  Citation,
   CrewEvent,
   DayPlan,
   Trip,
@@ -158,10 +159,12 @@ export default function Home() {
   >([]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [agentDrawerOpen, setAgentDrawerOpen] = useState(false);
+  const [routeOpen, setRouteOpen] = useState(false);
   /** Run state is memory-only; the saved plan + trip let a reload show the
    *  locked plan instead of the example preview. Recomputed when the route
    *  changes or a new briefing lands. */
   const [restoredLocked, setRestoredLocked] = useState<Map<string, DayPlan> | null>(null);
+  const [restoredCitations, setRestoredCitations] = useState<Citation[]>([]);
 
   const guideRef = useRef<HTMLDivElement | null>(null);
   const setupRef = useRef<HTMLDivElement | null>(null);
@@ -581,13 +584,13 @@ export default function Home() {
   useEffect(() => {
     const t = setTimeout(() => {
       try {
-        setRestoredLocked(
-          restorePlan(
-            localStorage.getItem("meridian:lastPlan"),
-            localStorage.getItem("meridian:lastTrip"),
-            { origin, dest, date: departureDate },
-          ),
+        const r = restorePlan(
+          localStorage.getItem("meridian:lastPlan"),
+          localStorage.getItem("meridian:lastTrip"),
+          { origin, dest, date: departureDate },
         );
+        setRestoredLocked(r?.locked ?? null);
+        setRestoredCitations(r?.citations ?? []);
       } catch {
         setRestoredLocked(null);
       }
@@ -606,7 +609,7 @@ export default function Home() {
   const currentReadiness = trip
     ? meetingReadiness(trip, currentEvents, [...effectiveLocked.values()], baseline)
     : [];
-  const activeCitations = run.citations;
+  const activeCitations = run.citations.length ? run.citations : restoredCitations;
   // Latest graph-memory consult this run — hop path into nudge evidence rows.
   let memoryPath: string | undefined;
   for (let i = run.log.length - 1; i >= 0; i--) {
@@ -850,31 +853,43 @@ export default function Home() {
         {trip ? (
           <>
             <div ref={setupRef}>
-              {/* Item A.1 — the route picker is now the first thing the
-                  traveller sees, not buried behind Edit → Edit trip. The demo
-                  trip (LHR → HND) is the *starting point*, not the only option.
-                  Rule 1 stands — auto-trip in five seconds is right; what was
-                  missing was the path to make it theirs. The other settings
-                  (wearable, wake band, flight window) stay behind Edit trip
-                  in the Menu — they aren't the first-impression problem. */}
-              <RoutePicker
-                origin={origin}
-                dest={dest}
-                date={departureDate}
-                surface="cream"
-                onChange={(next) => {
-                  setOrigin(next.origin);
-                  setDest(next.dest);
-                  setDepartureDate(next.date);
-                  // A window id from the old direction is meaningless on the
-                  // new one; fall back to the new route's recommended window.
-                  setFlightChoice(null);
-                  reset();
-                }}
-              />
+              {/* The trip as one line; the full picker opens on tap and closes
+                  after a pick. */}
+              <button
+                type="button"
+                className="trip-chip"
+                onClick={() => setRouteOpen((v) => !v)}
+                aria-expanded={routeOpen}
+              >
+                {trip.origin.name} → {trip.destination.name} ·{" "}
+                {trip.days.find((d) => d.dayIndex === trip.departureDayIndex)?.date
+                  ? new Date(`${trip.days.find((d) => d.dayIndex === trip.departureDayIndex)!.date}T12:00:00`).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })
+                  : departureDate}{" "}
+                · {trip.destination.name} is {Math.abs(trip.requiredShiftMin / 60)}h{" "}
+                {trip.direction === "east" ? "ahead" : "behind"}{" "}
+                <span className="trip-chip-change">✎ Change</span>
+              </button>
+              {routeOpen && (
+                <div style={{ marginTop: 8 }}>
+                  <RoutePicker
+                    origin={origin}
+                    dest={dest}
+                    date={departureDate}
+                    surface="cream"
+                    onChange={(next) => {
+                      setOrigin(next.origin);
+                      setDest(next.dest);
+                      setDepartureDate(next.date);
+                      setFlightChoice(null);
+                      setRouteOpen(false);
+                      reset();
+                    }}
+                  />
+                </div>
+              )}
             </div>
 
-            {/* Where the traveller is — one quiet line under the route. */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
             <JourneySteps
               current={
                 isTripFinished(trip, new Date())
@@ -892,7 +907,7 @@ export default function Home() {
                 className="pill depth"
                 role="group"
                 aria-label="View"
-                style={{ margin: "10px 4px 0", alignSelf: "flex-start" }}
+                style={{ margin: "10px 4px 0" }}
               >
                 <button
                   type="button"
@@ -913,6 +928,7 @@ export default function Home() {
                 <Link href="/crew">AI at work</Link>
               </div>
             )}
+            </div>
 
             <div ref={guideRef}>
               <NudgeFeedScreen

@@ -23,10 +23,11 @@ const tripRaw = JSON.stringify(trip);
 
 describe("restorePlan", () => {
   test("matching plan + trip returns the days keyed by label", () => {
-    const map = restorePlan(plan, tripRaw, route);
-    expect(map).not.toBeNull();
-    expect([...map!.keys()]).toEqual(["D-3", "D-2", "D-1"]);
-    expect(map!.get("D-2")!.shiftMin).toBe(30);
+    const res = restorePlan(plan, tripRaw, route);
+    expect(res).not.toBeNull();
+    expect([...res!.locked.keys()]).toEqual(["D-3", "D-2", "D-1"]);
+    expect(res!.locked.get("D-2")!.shiftMin).toBe(30);
+    expect(res!.citations).toEqual([]);
   });
 
   test("a different route restores nothing", () => {

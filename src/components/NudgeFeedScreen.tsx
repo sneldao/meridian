@@ -28,6 +28,7 @@ import { secondTripCopy, secondTripProof } from "@/domain/second-trip";
 import { meetingReadiness } from "@/domain/readiness";
 import { friendlyDayLabel } from "@/lib/day-label";
 import { isTripFinished } from "@/lib/trip-status";
+import { VoiceControls } from "@/components/VoiceControls";
 import type {
   AdherenceProfile,
   BaselineKind,
@@ -138,6 +139,8 @@ export function NudgeFeedScreen({
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
   const [expandedWhyId, setExpandedWhyId] = useState<string | null>(null);
   const [showMissed, setShowMissed] = useState(false);
+  const [globeOpen, setGlobeOpen] = useState(false);
+  const [dayListOpen, setDayListOpen] = useState(false);
 
   // Item 11 — while the numbers are the sample persona's, steps are a preview
   // rather than commitments. `isPreview` is B's contract (domain/preview.ts):
@@ -546,6 +549,7 @@ export function NudgeFeedScreen({
   // step is a preview and stays secondary); afterwards the day's Done is the
   // primary and updating the plan drops to outline.
   const hasPlan = locked.size > 0;
+  const simple = !expandAllWhy;
 
   // Item 13 — the calendar is the compliance surface. The summary block sits
   // above the timeline so a traveller sees the numbers they will lock before
@@ -625,8 +629,8 @@ export function NudgeFeedScreen({
     <>
       {/* Split-Horizon Hero Card — the left panel is the trip's real dawn line:
           body clock against destination, with the next light window on it. */}
-      <div className="hero rise" style={{ animationDelay: ".2s" }}>
-        {trip && (
+      <div className={`hero rise${simple && !globeOpen ? " slim" : ""}`} style={{ animationDelay: ".2s" }}>
+        {trip && (!simple || globeOpen) && (
           <HeroDawnPanel
             trip={trip}
             owedMin={dawnOwedMin}
@@ -711,10 +715,12 @@ export function NudgeFeedScreen({
                   reads as the run-up to a 05:30 request tomorrow; naming the
                   promise is the difference between a promise and a threat.
                   Evenings are where an eastward trip is actually won. */}
-              <p className="ask-promise">
-                We won&apos;t schedule anything before you&apos;d normally be up. Most of
-                the work happens in the evening.
-              </p>
+              {!simple && (
+                <p className="ask-promise">
+                  We won&apos;t schedule anything before you&apos;d normally be up. Most of
+                  the work happens in the evening.
+                </p>
+              )}
               <p className="ask-foot">
                 Until then, you&apos;re seeing an example plan.
               </p>
@@ -1007,6 +1013,24 @@ export function NudgeFeedScreen({
         </div>
       </div>
 
+      {simple && trip && (
+        <div className="rise" style={{ animationDelay: ".25s", margin: "8px 4px 0", fontSize: "12px", color: "#7a6a5c", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <span>
+            {dawnOwedMin > 0
+              ? <>Your body clock is {Math.round(dawnOwedMin / 6) / 10}h {trip.direction === "east" ? "behind" : "ahead"} {trip.destination.name} time · {readinessPct}% adjusted before you fly{readiness.source === "preview" ? " (example)" : ""}</>
+              : <>Your body clock is on {trip.destination.name} time</>}
+          </span>
+          <button
+            type="button"
+            onClick={() => setGlobeOpen((v) => !v)}
+            aria-expanded={globeOpen}
+            style={{ background: "none", border: "none", padding: 0, cursor: "pointer", color: "#7a6a5c", fontSize: "12px", fontWeight: 700 }}
+          >
+            {globeOpen ? "Hide globe ▴" : "Show globe ▾"}
+          </button>
+        </div>
+      )}
+
       {/* Item 15 — the meeting is the product. The subhead sits under the
           dawn card so the body-time gap is read against the event it will
           decide. `null` from the contract renders nothing — a fixture
@@ -1036,16 +1060,21 @@ export function NudgeFeedScreen({
               const day = spec
                 ? friendlyDayLabel(spec, trip?.departureDayIndex)
                 : heroMtg.dayLabel;
+              if (simple) {
+                return `${heroMtg.title}, ${day} ${fmtMin(heroMtg.localMin)} — feels like ${fmtMin(heroMtg.bodyMin)} to your body${heroMtg.bodyWithoutPlanMin !== heroMtg.bodyMin ? ` (${fmtMin(heroMtg.bodyWithoutPlanMin)} without a plan)` : ""}`;
+              }
               return `${day}, ${fmtMin(heroMtg.localMin)} · ${heroMtg.title}`;
             })()}
           </b>
+          {!simple && (
           <div style={{ marginTop: "6px", fontSize: "10px", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "#7a6a5c" }}>
             How this meeting will feel to your body
           </div>
+          )}
           <div
             style={{
+              display: simple ? "none" : "grid",
               marginTop: "4px",
-              display: "grid",
               gridTemplateColumns: "1fr 1fr",
               gap: "8px",
               fontSize: "12px",
@@ -1137,31 +1166,58 @@ export function NudgeFeedScreen({
         </div>
       )}
 
-      {/* Day Selector Pills — real trip days only, never invented fixture dates */}
-      {days.length > 0 && (
-        <div
-          className="row days rise"
-          style={{ animationDelay: ".3s" }}
-          role="group"
-          aria-label="Select trip day"
-        >
-          {days.map((d) => {
-            const isSelected = d.label === currentLabel;
-            const isTodayPill = todayIdx !== null && d.dayIndex === todayIdx;
-            return (
-              <button
-                key={d.dayIndex}
-                type="button"
-                onClick={() => onSelectDay(d.label)}
-                aria-pressed={isSelected}
-                aria-current={isTodayPill ? "date" : undefined}
-                className={`day ${isSelected ? "on" : ""}`}
-              >
-                {friendlyDayLabel(d, trip?.departureDayIndex)}
-                {isTodayPill ? " · Today" : ""}
-              </button>
-            );
-          })}
+      {/* Day stepper — ‹ › through the days; the centre label opens the
+          full list for a direct jump. Real trip days only. */}
+      {days.length > 0 && activeDaySpec && (
+        <div className="rise" style={{ animationDelay: ".3s", marginTop: "22px", position: "relative" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+            <button
+              type="button"
+              aria-label="Previous day"
+              disabled={activeDayIndex <= 0}
+              onClick={() => days[activeDayIndex - 1] && onSelectDay(days[activeDayIndex - 1].label)}
+              className="day-step"
+            >
+              ‹
+            </button>
+            <button
+              type="button"
+              onClick={() => setDayListOpen((v) => !v)}
+              aria-expanded={dayListOpen}
+              aria-current={todayIdx === activeDaySpec.dayIndex ? "date" : undefined}
+              className="day"
+              style={{ flex: 1 }}
+            >
+              {currentDayName}
+              {todayIdx === activeDaySpec.dayIndex ? " · Today" : ""} ▾
+            </button>
+            <button
+              type="button"
+              aria-label="Next day"
+              disabled={activeDayIndex >= days.length - 1}
+              onClick={() => days[activeDayIndex + 1] && onSelectDay(days[activeDayIndex + 1].label)}
+              className="day-step"
+            >
+              ›
+            </button>
+          </div>
+          {dayListOpen && (
+            <div className="card" style={{ position: "absolute", zIndex: 30, top: "calc(100% + 4px)", left: 0, right: 0, padding: 6, display: "flex", flexDirection: "column", gap: 2 }}>
+              {days.map((d) => (
+                <button
+                  key={d.dayIndex}
+                  type="button"
+                  onClick={() => { onSelectDay(d.label); setDayListOpen(false); }}
+                  aria-current={todayIdx === d.dayIndex ? "date" : undefined}
+                  className={`day ${d.label === currentLabel ? "on" : ""}`}
+                  style={{ width: "100%", textAlign: "left" }}
+                >
+                  {friendlyDayLabel(d, trip?.departureDayIndex)}
+                  {todayIdx === d.dayIndex ? " · Today" : ""}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -1323,83 +1379,49 @@ export function NudgeFeedScreen({
           const city = cityFor(step.dayIndex);
           return (
             <div key={step.id} className={`tl-row${isDone ? " done" : ""}${isSkip ? " skipped" : ""}`}>
+              <button
+                type="button"
+                className={`tl-check${isDone ? " on" : ""}`}
+                onClick={(e) => { e.stopPropagation(); markDone(step); }}
+                aria-pressed={isDone}
+                aria-label={`Mark "${step.title}" done`}
+              >
+                {isDone ? "✓" : ""}
+              </button>
               <div className="tl-time">
-                {/* Item 14 — the rail renders the ask as a window, not an
-                    instant. The instant reads as a deadline; the window reads
-                    as "this is where on the day it fits". The solver already
-                    holds floor − 105min and tries at/after-floor light first
-                    — the surface now says so. */}
                 <b>
                   {fmtMin(step.startMin)}–{fmtMin(step.endMin)}
                 </b>
                 <span>{city}</span>
               </div>
-              <div className="tl-body">
+              <div
+                className="tl-body"
+                role="button"
+                tabIndex={0}
+                onClick={() => !expandAllWhy && setExpandedWhyId(isOpen ? null : step.id)}
+                onKeyDown={(e) => {
+                  if (!expandAllWhy && (e.key === "Enter" || e.key === " ")) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setExpandedWhyId(isOpen ? null : step.id);
+                  }
+                }}
+                style={{ cursor: expandAllWhy ? "default" : "pointer" }}
+              >
                 <h3 className="tl-title">
                   <span className="tl-title-text">{step.title}</span>
+                  {isSkip && !isOpen && (
+                    <span style={{ fontSize: "11px", fontWeight: 600, color: "#b7ab9d" }}>Skipped</span>
+                  )}
                   {step.id === heroNudge?.id ? (
                     <span className="tl-tag placed">Next up</span>
                   ) : step.calendarMove ? (
                     <span className="tl-tag movable">Moves a calendar event</span>
                   ) : null}
+                  <span aria-hidden="true" style={{ marginLeft: "auto", color: "#b7ab9d" }}>
+                    {isOpen ? "▴" : "▾"}
+                  </span>
                 </h3>
-                <div className="tl-acts">
-                  <button
-                    type="button"
-                    className={`tl-done${hasPlan ? "" : " alt"}`}
-                    onClick={() => markDone(step)}
-                    aria-pressed={isDone}
-                  >
-                    {isDone ? "Done ✓" : "Done"}
-                  </button>
-                  <button
-                    type="button"
-                    className="tl-skip"
-                    onClick={() => markSkipped(step)}
-                    aria-pressed={isSkip}
-                  >
-                    {isSkip ? "Skipped ✓" : "Skip"}
-                  </button>
-                  {!expandAllWhy && (
-                    <button
-                      type="button"
-                      className="tl-why"
-                      onClick={() =>
-                        setExpandedWhyId(isOpen ? null : step.id)
-                      }
-                      aria-expanded={isOpen}
-                    >
-                      {isOpen ? "Hide details" : "Why?"}
-                    </button>
-                  )}
-                </div>
-                {isDone && (
-                  <p style={{ margin: "4px 0 0", fontSize: "12px", color: "#7a6a5c" }}>
-                    {previewMode ? (
-                      <>
-                        Done — {impactCopy(step.category, "done")}. Example plan
-                        only, so nothing is saved.
-                      </>
-                    ) : (
-                      <>
-                        Done — {impactCopy(step.category, "done")}
-                        {pendingMarks.has(step.id) ? " · saved for your next check-in" : ""}.
-                      </>
-                    )}
-                  </p>
-                )}
-                {isSkip && (
-                  <p style={{ margin: "4px 0 0", fontSize: "12px", color: "#b04523" }}>
-                    {previewMode ? (
-                      <>Skipped — example plan only, nothing saved.</>
-                    ) : (
-                      <>
-                        Skipped — {impactCopy(step.category, "missed")}.
-                        We&apos;ll adjust the rest of your plan when you check in.
-                      </>
-                    )}
-                  </p>
-                )}
                 {isOpen && (
                   <div className="drawer tl-drawer">
                     <b>
@@ -1407,6 +1429,41 @@ export function NudgeFeedScreen({
                     </b>
                     <p>{step.actionSummary}</p>
                     <p>{step.whyItHelps}</p>
+                    <button
+                      type="button"
+                      className="tl-skip"
+                      onClick={(e) => { e.stopPropagation(); markSkipped(step); }}
+                      aria-pressed={isSkip}
+                    >
+                      {isSkip ? "Skipped ✓" : "Skip"}
+                    </button>
+                    {isDone && (
+                      <p style={{ margin: "6px 0 0", fontSize: "12px", color: "#7a6a5c" }}>
+                        {previewMode ? (
+                          <>
+                            Done — {impactCopy(step.category, "done")}. Example plan
+                            only, so nothing is saved.
+                          </>
+                        ) : (
+                          <>
+                            Done — {impactCopy(step.category, "done")}
+                            {pendingMarks.has(step.id) ? " · saved for your next check-in" : ""}.
+                          </>
+                        )}
+                      </p>
+                    )}
+                    {isSkip && (
+                      <p style={{ margin: "6px 0 0", fontSize: "12px", color: "#b04523" }}>
+                        {previewMode ? (
+                          <>Skipped — example plan only, nothing saved.</>
+                        ) : (
+                          <>
+                            Skipped — {impactCopy(step.category, "missed")}.
+                            We&apos;ll adjust the rest of your plan when you check in.
+                          </>
+                        )}
+                      </p>
+                    )}
                     {step.evidence ? (
                       <div className="evrow">
                         <span className="evchip" style={{ background: "transparent", border: "none", padding: "3px 0" }}>
