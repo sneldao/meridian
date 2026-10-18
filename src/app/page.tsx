@@ -30,6 +30,7 @@ import { RunAnnouncer } from "@/components/RunAnnouncer";
 import { useFocusTrap } from "@/lib/a11y";
 import { friendlyDayLabel } from "@/lib/day-label";
 import { restorePlan } from "@/lib/restore-plan";
+import { parseBooking } from "@/lib/booking";
 import { isTripFinished } from "@/lib/trip-status";
 import { JourneySteps } from "@/components/JourneySteps";
 import { useRunState, calendarWithMoves, ledgerEvents, ghostGapDeg } from "@/state/run";
@@ -160,6 +161,8 @@ export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [agentDrawerOpen, setAgentDrawerOpen] = useState(false);
   const [routeOpen, setRouteOpen] = useState(false);
+  const [bookingText, setBookingText] = useState("");
+  const [bookingError, setBookingError] = useState(false);
   /** Run state is memory-only; the saved plan + trip let a reload show the
    *  locked plan instead of the example preview. Recomputed when the route
    *  changes or a new briefing lands. */
@@ -864,6 +867,41 @@ export default function Home() {
               </button>
               {routeOpen && (
                 <div style={{ marginTop: 8 }}>
+                  <div className="card" style={{ padding: "12px 14px", marginBottom: 10 }}>
+                    <b style={{ fontSize: "12px", color: "#3a2e23" }}>Paste your booking</b>
+                    <textarea
+                      value={bookingText}
+                      onChange={(e) => { setBookingText(e.target.value); setBookingError(false); }}
+                      rows={3}
+                      placeholder="e.g. Your flight BA005 London Heathrow (LHR) to Tokyo Haneda (HND) departs Wed 21 Oct 2026"
+                      style={{ width: "100%", marginTop: 6, padding: 8, fontSize: 13, borderRadius: 8, border: "1px solid #e3d5c3", font: "inherit" }}
+                    />
+                    <button
+                      type="button"
+                      className="chip"
+                      style={{ marginTop: 6, minHeight: 44 }}
+                      onClick={() => {
+                        const r = parseBooking(bookingText, new Date());
+                        if (!r) {
+                          setBookingError(true);
+                          return;
+                        }
+                        setOrigin(r.origin);
+                        setDest(r.dest);
+                        setDepartureDate(r.date);
+                        setFlightChoice(null);
+                        setRouteOpen(false);
+                        reset();
+                      }}
+                    >
+                      Use these details
+                    </button>
+                    {bookingError && (
+                      <p role="alert" style={{ margin: "6px 0 0", fontSize: 12, color: "#b04523" }}>
+                        Couldn&apos;t find both airports and a date — make sure the text includes the airport codes (like LHR) and the flight date.
+                      </p>
+                    )}
+                  </div>
                   <RoutePicker
                     origin={origin}
                     dest={dest}
