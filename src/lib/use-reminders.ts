@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { DayPlan, Trip } from "@/domain/types";
+import { dropPushSubscription, ensurePushSubscription } from "@/lib/push-client";
 import { scheduleReminders, upcomingReminders } from "@/lib/reminders";
 
 const REM_KEY = "meridian:reminders";
@@ -80,9 +81,20 @@ export function useReminders(opts: {
     );
   }, [remindersOn, trip, lockedDays]);
 
+  // Once reminders are on and permission granted, make sure the server knows
+  // this device's push subscription — re-running is idempotent, and it heals
+  // subscriptions the browser rotated or a redeploy invalidated.
+  useEffect(() => {
+    if (!remindersOn) return;
+    if (typeof Notification === "undefined" || Notification.permission !== "granted")
+      return;
+    void ensurePushSubscription();
+  }, [remindersOn]);
+
   const toggleReminders = useCallback(() => {
     if (remindersOn) {
       setRemindersOn(false);
+      void dropPushSubscription();
       try {
         localStorage.setItem(REM_KEY, "off");
       } catch {

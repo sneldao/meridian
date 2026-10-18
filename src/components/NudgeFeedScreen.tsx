@@ -877,7 +877,7 @@ export function NudgeFeedScreen({
                   role="switch"
                   aria-checked={!!remindersOn}
                   aria-label="Remind me at each step"
-                  title="Remind me at each step — they work while Meridian is open, in this tab or the installed app."
+                  title="Remind me at each step — as notifications on this device."
                   onClick={onToggleReminders}
                   className="icon-btn"
                   style={remindersOn ? { color: "#D96B43", borderColor: "#D96B43" } : undefined}
