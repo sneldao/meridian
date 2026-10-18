@@ -1,5 +1,6 @@
 import type { DayPlan, Trip } from "@/domain/types";
 import { INTERVENTION_LABELS } from "@/lib/intervention-icons";
+import { timedInterventions } from "@/lib/plan-schedule";
 
 /** Which intervention kinds earn a nudge, and the nudge-id suffix each maps to
  *  (must stay aligned with `buildDailyNudgesForDay` in src/domain/nudges.ts). */
@@ -18,7 +19,7 @@ export interface ScheduledReminder {
 }
 
 /** All reminder-worthy steps in the next `horizonMs`, as absolute times —
- *  same zone math as src/lib/assistant.ts. */
+ *  same clock as src/lib/assistant.ts via src/lib/plan-schedule.ts. */
 export function upcomingReminders(
   trip: Trip,
   days: DayPlan[],
@@ -26,30 +27,18 @@ export function upcomingReminders(
   horizonMs = 24 * 3600 * 1000,
 ): ScheduledReminder[] {
   const nowMs = now.getTime();
-  const out: ScheduledReminder[] = [];
-  for (const day of days) {
-    const spec = trip.days.find((d) => d.dayIndex === day.dayIndex);
-    if (!spec?.date) continue;
-    const zone =
-      day.dayIndex <= trip.departureDayIndex
-        ? trip.origin.utcOffsetMin
-        : trip.destination.utcOffsetMin;
-    const midnight = Date.parse(`${spec.date}T00:00:00Z`);
-    for (const iv of day.interventions) {
-      const category =
-        KIND_TO_CATEGORY[iv.kind as keyof typeof KIND_TO_CATEGORY];
-      if (!category) continue;
-      const at = midnight + (iv.startMin - zone) * 60000;
-      if (at <= nowMs || at > nowMs + horizonMs) continue;
-      out.push({
-        id: `${day.label}-${category}`,
-        at,
-        title: INTERVENTION_LABELS[iv.kind],
-        body: iv.note,
-      });
-    }
-  }
-  return out.sort((a, b) => a.at - b.at);
+  return timedInterventions(trip, days)
+    .filter((t) => {
+      const category = KIND_TO_CATEGORY[t.iv.kind as keyof typeof KIND_TO_CATEGORY];
+      return category !== undefined && t.startMs > nowMs && t.startMs <= nowMs + horizonMs;
+    })
+    .map((t) => ({
+      id: `${t.day.label}-${KIND_TO_CATEGORY[t.iv.kind as keyof typeof KIND_TO_CATEGORY]}`,
+      at: t.startMs,
+      title: INTERVENTION_LABELS[t.iv.kind],
+      body: t.iv.note,
+    }))
+    .sort((a, b) => a.at - b.at);
 }
 
 /** setTimeout-based scheduling — reminders fire while Meridian stays open.

@@ -1,5 +1,6 @@
 import type { DayPlan, Trip } from "@/domain/types";
 import { INTERVENTION_LABELS } from "@/lib/intervention-icons";
+import { timedInterventions } from "@/lib/plan-schedule";
 
 export interface AssistantStep {
   kind: string;
@@ -26,53 +27,32 @@ export function nextStepFromPlan(
   feed: { trip: Trip; days: DayPlan[] },
   now: Date,
 ): AssistantStep | null {
-  const { trip, days } = feed;
   const nowMs = now.getTime();
-  let best: { start: number; step: Omit<AssistantStep, "speech"> } | null = null;
+  let best: { startMs: number; step: Omit<AssistantStep, "speech">; zone: number } | null = null;
 
-  for (const day of days) {
-    const spec = trip.days.find((d) => d.dayIndex === day.dayIndex);
-    if (!spec?.date) continue;
-    const zone =
-      day.dayIndex <= trip.departureDayIndex
-        ? trip.origin.utcOffsetMin
-        : trip.destination.utcOffsetMin;
-    const city =
-      day.dayIndex <= trip.departureDayIndex
-        ? trip.origin.name
-        : trip.destination.name;
-    const midnight = Date.parse(`${spec.date}T00:00:00Z`);
-    for (const iv of day.interventions) {
-      const start = midnight + (iv.startMin - zone) * 60000;
-      const endRaw = iv.endMin ?? iv.startMin;
-      const end = midnight + (endRaw - zone) * 60000 + (endRaw < iv.startMin ? 86400000 : 0);
-      if (end <= nowMs) continue;
-      if (!best || start < best.start) {
-        best = {
-          start,
-          step: {
-            kind: iv.kind,
-            label: INTERVENTION_LABELS[iv.kind] ?? iv.kind.replace(/_/g, " "),
-            startMin: iv.startMin,
-            endMin: iv.endMin,
-            dayIndex: day.dayIndex,
-            date: spec.date,
-            city,
-            note: iv.note,
-          },
-        };
-      }
-    }
+  for (const t of timedInterventions(feed.trip, feed.days)) {
+    if (t.endMs <= nowMs) continue;
+    if (best && t.startMs >= best.startMs) continue;
+    best = {
+      startMs: t.startMs,
+      zone: t.zone,
+      step: {
+        kind: t.iv.kind,
+        label: INTERVENTION_LABELS[t.iv.kind] ?? t.iv.kind.replace(/_/g, " "),
+        startMin: t.iv.startMin,
+        endMin: t.iv.endMin,
+        dayIndex: t.day.dayIndex,
+        date: t.date,
+        city: t.city,
+        note: t.iv.note,
+      },
+    };
   }
   if (!best) return null;
 
   // Relative-day wording judged in the step's own zone.
-  const stepZone =
-    best.step.dayIndex <= trip.departureDayIndex
-      ? trip.origin.utcOffsetMin
-      : trip.destination.utcOffsetMin;
-  const localNow = new Date(nowMs + stepZone * 60000);
-  const localStep = new Date(best.start + stepZone * 60000);
+  const localNow = new Date(nowMs + best.zone * 60000);
+  const localStep = new Date(best.startMs + best.zone * 60000);
   const dayDiff =
     Math.floor(Date.UTC(localStep.getUTCFullYear(), localStep.getUTCMonth(), localStep.getUTCDate()) / 86400000) -
     Math.floor(Date.UTC(localNow.getUTCFullYear(), localNow.getUTCMonth(), localNow.getUTCDate()) / 86400000);
