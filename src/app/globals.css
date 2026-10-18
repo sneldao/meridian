@@ -210,11 +210,6 @@ body {
   background: #1E1B18;
   color: #F5EFE6;
 }
-.depth-foot {
-  display: flex;
-  justify-content: center;
-  margin: 28px 0 8px;
-}
 .pill a:hover,
 .pill button:hover {
   color: #D96B43;

@@ -669,10 +669,6 @@ export default function Home() {
             <span>Land at 100%</span>
           </button>
 
-          <div className="pill" role="navigation" aria-label="Primary">
-            <Link href="/crew">Crew</Link>
-          </div>
-
           <div className="right">
             {/* Item 16 — Calm (the Plan rung) is "words + one number + one CTA".
                 The voice toggle, named agents, and the narrator now live behind
@@ -704,44 +700,29 @@ export default function Home() {
               className="m"
               role="menuitem"
               onClick={() => {
-                goGuide();
-                setMenuOpen(false);
-              }}
-            >
-              Today
-            </button>
-            <button
-              type="button"
-              className="m"
-              role="menuitem"
-              onClick={() => {
                 openSetup();
                 setMenuOpen(false);
               }}
             >
               Edit trip
             </button>
-            {/* Both branches were identical — a leftover conditional, collapsed. */}
-            <Link href="/review" className="m" onClick={() => setMenuOpen(false)}>
-              Your plan{hasSavedPlan ? " →" : ""}
-            </Link>
-            <Link href="/history" className="m" onClick={() => setMenuOpen(false)}>
+            {hasSavedPlan && (
+              <Link href="/review" className="m" role="menuitem" onClick={() => setMenuOpen(false)}>
+                Saved plan
+              </Link>
+            )}
+            <Link href="/history" className="m" role="menuitem" onClick={() => setMenuOpen(false)}>
               Past trips{runCount > 0 ? ` (${runCount})` : ""}
             </Link>
-            {/* Carries the trip being scored, so "Score the trip" opens the
+            {/* Carries the trip being scored, so "Rate my trip" opens the
                 journey you were actually on rather than the default one. */}
             <Link
               href={`/arrival?date=${departureDate}`}
               className="m"
+              role="menuitem"
               onClick={() => setMenuOpen(false)}
             >
-              Score the trip
-            </Link>
-            <Link href="/outcome" className="m" onClick={() => setMenuOpen(false)}>
-              How the trip went
-            </Link>
-            <Link href="/crew" className="m" onClick={() => setMenuOpen(false)}>
-              See the crew →
+              Rate my trip
             </Link>
             {run.briefing && (
               <button
@@ -804,7 +785,7 @@ export default function Home() {
                 setAgentDrawerOpen(true);
               }}
             >
-              Behind the scenes
+              Activity log
             </button>
             <div style={{ padding: "8px 12px 4px", fontSize: "11px", color: "#7a6a5c" }}>
               Timing guidance, not medical advice.
@@ -871,17 +852,13 @@ export default function Home() {
               />
             </div>
 
-            {/* 5B2 — duplicate, don't move. Rule 4 calls the dial the
-                interface but it lived below the entire timeline as
-                .depth-foot. This compact pill sits directly under the hero
-                card (same chooseDepth handler, same state); the footer stays
-                as-is. Two entry points, zero state work — placement data
-                (which one gets tapped) decides the single home later. */}
+            {/* The one depth control: Simple is the calm viewport, Detailed
+                opens every evidence drawer, AI at work is the crew surface. */}
             {trip && (
               <div
                 className="pill depth"
                 role="group"
-                aria-label="How much to see"
+                aria-label="View"
                 style={{ margin: "10px 4px 0", alignSelf: "flex-start" }}
               >
                 <button
@@ -890,7 +867,7 @@ export default function Home() {
                   aria-pressed={depth !== "guided"}
                   onClick={() => chooseDepth("calm")}
                 >
-                  Plan
+                  Simple
                 </button>
                 <button
                   type="button"
@@ -898,9 +875,9 @@ export default function Home() {
                   aria-pressed={depth === "guided"}
                   onClick={() => chooseDepth("guided")}
                 >
-                  Why
+                  Detailed
                 </button>
-                <Link href="/crew">Crew</Link>
+                <Link href="/crew">AI at work</Link>
               </div>
             )}
 
@@ -1052,36 +1029,6 @@ export default function Home() {
                 onCheckIn={checkInAndStream}
                 onBackToGuide={closeSetup}
               />
-            </div>
-          </div>
-        )}
-
-        {trip && (
-          <div className="depth-foot">
-            <div className="pill depth" role="group" aria-label="How much to see">
-              {/* Item 16 — depth relabels to Plan / Why / Crew. The Plan rung
-                  is the calm viewport (words + one number + one CTA); Why
-                  opens every evidence drawer; Crew is the dedicated surface
-                  where the narrator and named agents live. The first viewport
-                  no longer carries crew names or the voice toggle — those
-                  moved to /crew. */}
-              <button
-                type="button"
-                className={depth !== "guided" ? "on" : undefined}
-                aria-pressed={depth !== "guided"}
-                onClick={() => chooseDepth("calm")}
-              >
-                Plan
-              </button>
-              <button
-                type="button"
-                className={depth === "guided" ? "on" : undefined}
-                aria-pressed={depth === "guided"}
-                onClick={() => chooseDepth("guided")}
-              >
-                Why
-              </button>
-              <Link href="/crew">Crew</Link>
             </div>
           </div>
         )}

@@ -398,7 +398,7 @@ export default function Home() {
             href="/"
             className="mt-1 inline-block text-[11px] font-semibold tracking-wide text-clay-2 underline-offset-2 transition-colors hover:text-terracotta"
           >
-            ← the traveller&apos;s view
+            ← Back to my plan
           </Link>
         </div>
 
@@ -411,19 +411,19 @@ export default function Home() {
             href="/"
             className="rounded-full px-3.5 py-1.5 text-xs font-semibold text-mist transition-all hover:text-paper"
           >
-            Today
+            Simple
           </Link>
           <Link
             href="/?depth=guided"
             className="rounded-full px-3.5 py-1.5 text-xs font-semibold text-mist transition-all hover:text-paper"
           >
-            See why
+            Detailed
           </Link>
           <span
             aria-current="page"
             className="rounded-full bg-paper px-3.5 py-1.5 text-xs font-semibold text-ink shadow-sm"
           >
-            Crew
+            AI at work
           </span>
         </nav>
 
@@ -484,17 +484,12 @@ export default function Home() {
                 <div className="space-y-1">
                   {hasSavedPlan && (
                     <Link href="/review" className="block rounded-lg px-3 py-1.5 text-xs text-paper hover:bg-line focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-paper focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
-                      view saved handoff →
+                      Saved plan
                     </Link>
                   )}
                   <Link href="/history" className="block rounded-lg px-3 py-1.5 text-xs text-mist hover:bg-line focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-paper focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
-                    history
+                    Past trips{runCount > 0 ? ` (${runCount})` : ""}
                   </Link>
-                  {runCount > 0 && (
-                    <Link href="/history" className="block rounded-lg px-3 py-1.5 text-xs text-mist hover:bg-line focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-paper focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
-                      {runCount} runs
-                    </Link>
-                  )}
                   <button
                     onClick={() => {
                       if (!voiceAvail) return;
