@@ -330,14 +330,12 @@ export function TripSetupScreen({
           </p>
           <div className="m3" style={{ gridTemplateColumns: "1fr 1fr" }}>
             <div>
-              {cal.movable} events we can move
-              <b>Work calendar</b>
+              Events we can move
+              <b>{cal.movable}</b>
             </div>
             <div>
-              {cal.total === 0
-                ? "Meetings after you land: none"
-                : `Meetings after you land: ${cal.ready} of ${cal.total} at a good body time`}
-              <b>Post-flight</b>
+              {cal.total === 0 ? "Meetings after you land" : "Meetings after you land at a good body time"}
+              <b>{cal.total === 0 ? "None" : `${cal.ready} of ${cal.total}`}</b>
             </div>
           </div>
         </div>
