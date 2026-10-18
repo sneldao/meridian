@@ -63,6 +63,18 @@ function isValidDate(v: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v));
 }
 
+/** The day Home should open on: today when the trip spans it, else the first
+ *  pre-flight day, else the first day. Used at fetch time and again when a
+ *  run finishes — while it runs, the day pills follow the crew's locks. */
+function pickHomeDayLabel(trip: Trip): string | null {
+  const todayIdx = todayDayIndex(trip, new Date());
+  const spec =
+    (todayIdx !== null ? trip.days.find((x) => x.dayIndex === todayIdx) : undefined) ??
+    trip.days[1] ??
+    trip.days[0];
+  return spec?.label ?? null;
+}
+
 /** Consumer default departure: three days out, in the *viewer's* local date, so
  *  the trip always has a "today" to act on. Deliberately not derived at render
  *  time — the server and the browser can disagree on the calendar day, which
@@ -120,6 +132,9 @@ export default function Home() {
    *  "wedged" — see the effect below. */
   const lastEventAt = useRef(0);
   const briefingSeen = useRef(false);
+  /** The trip the live run is planning for — set on run_start so the done
+   *  handler can re-aim the day pills without a stale render-time `trip`. */
+  const runTripRef = useRef<Trip | null>(null);
 
   // A run can wedge without the connection ever erroring: the stream stays open
   // while the server waits on something optional. That is invisible to
@@ -183,12 +198,8 @@ export default function Home() {
         setData(d);
         // Open on the day that is actually today; fall back to the first
         // pre-flight day when the trip doesn't span today.
-        const todayIdx = d?.trip ? todayDayIndex(d.trip, new Date()) : null;
-        const daySpec =
-          (todayIdx !== null ? d.trip.days.find((x) => x.dayIndex === todayIdx) : undefined) ??
-          d?.trip?.days?.[1] ??
-          d?.trip?.days?.[0];
-        if (daySpec?.label) setSelectedDayLabel(daySpec.label);
+        const label = d?.trip ? pickHomeDayLabel(d.trip) : null;
+        if (label) setSelectedDayLabel(label);
       })
       .catch(() => setTripResolved(true));
   }, [tripQuery, departureDate]);
@@ -267,6 +278,7 @@ export default function Home() {
           stopVoice();
           setEntries([{ kind: "system", text: "shift started — crew assembling" }]);
           setBriefingDismissed(false);
+          runTripRef.current = e.trip;
           if (e.trip.days[0]?.label) {
             setSelectedDayLabel(e.trip.days[0].label);
           }
@@ -400,6 +412,14 @@ export default function Home() {
           setEntries((prev) => [...prev, { kind: "system", text: "shift complete" }]);
           setStreamError(null);
           esRef.current?.close();
+          // While the run streamed, the day pills followed each lock — which
+          // leaves them sitting on the last day the crew touched. Hand the
+          // view back to the day the traveller would pick themselves.
+          {
+            const t = runTripRef.current ?? data?.trip;
+            const label = t ? pickHomeDayLabel(t) : null;
+            if (label) setSelectedDayLabel(label);
+          }
           break;
       }
     },

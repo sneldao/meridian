@@ -489,6 +489,14 @@ export function NudgeFeedScreen({
     () => new Set([...completedIds, ...(previewMode ? skippedPreview : skippedIds)]),
     [completedIds, skippedIds, skippedPreview, previewMode],
   );
+  // The day verdict is a report on a day that happened — asking "how did a
+  // future day go" is unanswerable. When today isn't inside the trip at all
+  // (null), the trip is either all ahead or all behind: `tripFinished` splits
+  // the two, and only the behind case earns the question.
+  const todayIdx = trip ? todayDayIndex(trip, nowDate) : null;
+  const dayVerdictAllowed =
+    !!activeDaySpec &&
+    (todayIdx !== null ? activeDaySpec.dayIndex <= todayIdx : tripFinished);
   const { next: heroNudge, missed: missedNudges } = pickNextStep(
     steps,
     resolvedIds,
@@ -1227,7 +1235,7 @@ export function NudgeFeedScreen({
       {/* Check-in — the thumb-sized touch that keeps the plan honest. With
           per-step marks queued it becomes the send surface; without them the
           day-level verdicts still work in one tap. */}
-      {phase === "done" && onCheckIn && (
+      {phase === "done" && onCheckIn && (pendingMarks.size > 0 || dayVerdictAllowed) && (
         <div
           className="card rise"
           style={{
@@ -1263,7 +1271,7 @@ export function NudgeFeedScreen({
                 Update plan
               </button>
             </>
-          ) : (
+          ) : dayVerdictAllowed ? (
             <>
               <span style={{ fontSize: "12px", fontWeight: 700, color: "#5b4d41" }}>
                 How did {isToday ? "today" : currentDayName} go?
@@ -1290,7 +1298,7 @@ export function NudgeFeedScreen({
                 ))}
               </span>
             </>
-          )}
+          ) : null}
         </div>
       )}
 
