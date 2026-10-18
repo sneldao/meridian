@@ -535,23 +535,6 @@ export default function Home() {
     [trip, beginStream, persistCheckIns],
   );
 
-  // The MorningCheckin surface hands over base64 check-ins — decode, persist,
-  // then stream. One intake for every surface.
-  const checkInAndStream = useCallback(
-    (extra?: { checkins?: string; startDay?: number }) => {
-      if (extra?.checkins) {
-        try {
-          const parsed = JSON.parse(atob(extra.checkins));
-          if (Array.isArray(parsed)) persistCheckIns(parsed as CheckIn[]);
-        } catch {
-          /* a malformed param is the run route's problem */
-        }
-      }
-      beginStream(extra);
-    },
-    [persistCheckIns, beginStream],
-  );
-
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       // Escape first and unconditionally — closing the sheet or cancelling a run
@@ -743,7 +726,7 @@ export default function Home() {
                 setMenuOpen(false);
               }}
             >
-              Edit trip
+              Trip settings
             </button>
             {hasSavedPlan && (
               <Link href="/review" className="m" role="menuitem" onClick={() => setMenuOpen(false)}>
@@ -1025,7 +1008,6 @@ export default function Home() {
               sessionStartedAt={run.sessionStartedAt}
               onStart={startShift}
               onCancel={cancelShift}
-              onCheckIn={checkInAndStream}
               onBackToGuide={goGuide}
             />
           </div>
@@ -1037,7 +1019,7 @@ export default function Home() {
             className="sheet-backdrop"
             role="dialog"
             aria-modal="true"
-            aria-label="Edit trip"
+            aria-label="Trip settings"
             onClick={closeSetup}
           >
             <div className="sheet-panel" ref={setupPanelRef} onClick={(e) => e.stopPropagation()}>
@@ -1050,6 +1032,7 @@ export default function Home() {
                 ×
               </button>
               <TripSetupScreen
+                variant="sheet"
                 trip={trip}
                 origin={origin}
                 dest={dest}
@@ -1081,7 +1064,6 @@ export default function Home() {
                 sessionStartedAt={run.sessionStartedAt}
                 onStart={startShift}
                 onCancel={cancelShift}
-                onCheckIn={checkInAndStream}
                 onBackToGuide={closeSetup}
               />
             </div>

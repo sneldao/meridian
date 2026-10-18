@@ -13,9 +13,11 @@ import type { BaselineKind } from "@/domain/types";
 import type { WakeBand } from "@/domain/fixtures";
 import type { MeetingReadiness } from "@/domain/readiness";
 import { RoutePicker } from "@/components/RoutePicker";
-import { MorningCheckin } from "@/components/MorningCheckin";
 
 interface TripSetupScreenProps {
+  /** "page" is the no-trip fallback screen (route editor + start); "sheet"
+   *  is the settings overlay on Home — no route editor, no run controls. */
+  variant?: "sheet" | "page";
   trip: Trip | null;
   origin: string;
   dest: string;
@@ -25,7 +27,7 @@ interface TripSetupScreenProps {
   selectedFlightId: string | null;
   onSelectFlightId: (id: string) => void;
   baseline?: WearableBaseline;
-  /** "fixture" = the demo Garmin numbers, not measured. Drives the Demo tag. */
+  /** "fixture" = the demo Garmin numbers, not measured. */
   baselineSource?: "fixture" | "garmin";
   /** Provenance of the baseline — the preview gate (item 11/12). Optional so
    *  older callers keep compiling; absent means "nothing fetched yet", which
@@ -44,11 +46,11 @@ interface TripSetupScreenProps {
   sessionStartedAt?: number;
   onStart: () => void;
   onCancel: () => void;
-  onCheckIn: (extra: { checkins: string; startDay: number }) => void;
   onBackToGuide: () => void;
 }
 
 export function TripSetupScreen({
+  variant = "page",
   trip,
   origin,
   dest,
@@ -67,10 +69,9 @@ export function TripSetupScreen({
   phase,
   lockedCount,
   totalDays,
-  sessionStartedAt,
   onStart,
   onCancel,
-  onCheckIn,
+  onBackToGuide,
 }: TripSetupScreenProps) {
   const [editingRoute, setEditingRoute] = useState(false);
   // Garmin CSV upload (item 12): the POST has existed since 92299c3 with zero
@@ -112,60 +113,19 @@ export function TripSetupScreen({
     flightOptions[0]?.id ||
     "";
 
-  // Honest counts: no invented fallbacks. An absent measurement reads "—",
-  // never a plausible-looking number (task 3.2 — "No invented values anywhere").
-  // Item 12 extends it: fixture HRV / resting HR are measurements, so on
-  // preview they read "—" too — via the contract, not an inline kind check.
+  // Honest counts: no invented fallbacks. The biometric grid only renders when
+  // all three measurements exist — a row of "—" is noise, not a fact.
   const bio = displayBiometrics({ baselineKind, wakeBand, baseline });
-  const movableCount = calendar.filter((e) => e.movable).length;
+  const hasAllBio = bio.sleep !== null && bio.hrv !== null && bio.restingHr !== null;
   // Same helper the Today rail uses, so the two surfaces cannot drift into
-  // telling the traveller two different things about the same calendar. It
-  // used to be a second, hand-rolled copy of this arithmetic.
-  const readinessLabel = calendarSummary(calendar, readiness).readinessLabel;
-
-  // Anything sourced from the demo fixture is labelled as such, so a number the
-  // app made up is never presented as something the traveller measured.
-  const isDemo = baselineSource === "fixture" || calendarSource === "fixture";
+  // telling the traveller two different things about the same calendar.
+  const cal = calendarSummary(calendar, readiness);
 
   return (
     <>
-      {/* 2. Best Flight Time Advisor Bottom-Sheet Drawer */}
-      <div className="sheet rise" style={{ animationDelay: ".5s" }}>
-        <div className="hand" />
-        <h2>Best departure windows</h2>
-        <div className="sub">Pick a real flight inside the best window — these are windows, not bookable flights</div>
-        <div className="fl">
-          {flightOptions.map((opt, idx) => {
-            const isSelected = activeFlightId
-              ? opt.id === activeFlightId
-              : idx === 0;
-            return (
-              <div
-                key={opt.id}
-                role="button"
-                tabIndex={0}
-                onClick={() => onSelectFlightId(opt.id)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    onSelectFlightId(opt.id);
-                  }
-                }}
-                className={`fo ${isSelected ? "best" : ""}`}
-              >
-                <small>{opt.badge}</small>
-                <b>
-                  {opt.departsLocal} → {opt.arrivesDest}
-                </b>
-                <span>{opt.bestFor}</span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      {variant === "sheet" && <h2 className="sheet-title">Trip settings</h2>}
 
-      {/* Two-Column Setup Cards: Route & Timezone Shift + Garmin Wearable & Work Calendar */}
-      <div className="two rise" style={{ animationDelay: ".55s" }}>
+      {variant === "page" && (
         <div className="card">
           <h3>Route &amp; timezone shift</h3>
           {editingRoute ? (
@@ -219,32 +179,55 @@ export function TripSetupScreen({
               disabled={phase === "running"}
             >
               {phase === "running"
-                ? `Building (${lockedCount}/${totalDays})…`
-                : "Personalise"}
+                ? `Building your plan… (${lockedCount} of ${totalDays} days)`
+                : "Make my plan"}
             </button>
-            {phase === "running" ? (
+            {phase === "running" && (
               <button type="button" className="p2" onClick={onCancel}>
                 Stop
               </button>
-            ) : phase === "done" ? (
-              <MorningCheckin
-                phase={phase}
-                lockedCount={lockedCount}
-                totalDays={totalDays}
-                sessionStartedAt={sessionStartedAt}
-                onCheckIn={onCheckIn}
-              />
-            ) : null}
+            )}
           </div>
         </div>
+      )}
 
+      {/* Best time to fly — real buttons, not divs pretending. */}
+      <div className="sheet rise" style={{ animationDelay: ".5s" }}>
+        <div className="hand" />
+        <h2>Best time to fly</h2>
+        <div className="sub">
+          Pick the time of day you&apos;d like to fly — we&apos;ll plan around it.
+        </div>
+        <div className="fl">
+          {flightOptions.map((opt, idx) => {
+            const isSelected = activeFlightId
+              ? opt.id === activeFlightId
+              : idx === 0;
+            return (
+              <button
+                key={opt.id}
+                type="button"
+                aria-pressed={isSelected}
+                onClick={() => onSelectFlightId(opt.id)}
+                className={`fo ${isSelected ? "best" : ""}`}
+              >
+                <small>{opt.badge}</small>
+                <b>
+                  {opt.departsLocal} → {opt.arrivesDest}
+                </b>
+                <span>{opt.bestFor}</span>
+              </button>
+            );
+          })}
+        </div>
+        <p className="src-line" style={{ fontSize: "11px", color: "#7a6a5c", margin: "8px 0 0" }}>
+          These are times of day, not specific flights.
+        </p>
+      </div>
+
+      <div className="two rise" style={{ animationDelay: ".55s" }}>
         <div className="card">
-          <h3>Wearable &amp; work calendar</h3>
-          {isDemo && (
-            <p className="demo-tag">
-              Demo profile — these numbers are sample data, not your measurements.
-            </p>
-          )}
+          <h3>Your sleep</h3>
           {onWakeBand && (
             <div className="f" role="group" aria-label="Your natural wake time">
               <label>On a day with nothing early planned, when do you naturally wake?</label>
@@ -285,33 +268,32 @@ export function TripSetupScreen({
             </div>
           )}
           <p className="src-line" style={{ fontSize: "11px", color: "#7a6a5c", margin: "0 0 6px" }}>
-            Wearable: {baselineSource === "garmin" ? "connected" : "sample profile"} · Calendar:{" "}
-            {calendarSource === "google" ? "connected" : "sample — connect yours"}
+            {baselineSource === "garmin" ? "Using your Garmin data" : "Using example sleep data"}
           </p>
-          <div className="m3">
-            <div>
-              Usual Sleep
-              <b>{bio.sleep ?? "—"}</b>
+          {hasAllBio && (
+            <div className="m3">
+              <div>
+                Usual sleep
+                <b>{bio.sleep}</b>
+              </div>
+              <div>
+                Heart rate variability
+                <b>{bio.hrv}</b>
+              </div>
+              <div>
+                Resting heart rate
+                <b>{bio.restingHr}</b>
+              </div>
             </div>
-            <div>
-              HRV
-              <b>{bio.hrv ?? "—"}</b>
-            </div>
-            <div>
-              Resting HR
-              <b>{bio.restingHr ?? "—"}</b>
-            </div>
-          </div>
-          {/* Item 12: the unconnected slot. No fixture numbers above (they read
-              "—" via the contract); this is the honest alternative — a real
-              export or the one wake question. Garmin Health API is
-              partner-gated, so CSV export is the demo path by design. */}
+          )}
+          {/* Item 12: the unconnected slot. A real export or the one wake
+              question. Garmin Health API is partner-gated, so CSV export is
+              the demo path by design. */}
           {baselineSource !== "garmin" && (
             <div className="f" style={{ marginTop: 8 }}>
               <label>Connect your wearable</label>
               <p style={{ fontSize: "11px", color: "#7a6a5c", margin: "0 0 6px" }}>
-                Connect Garmin (CSV export for now) or answer 1 question — your
-                wake answer above personalises the plan instantly.
+                Have a Garmin? Upload your sleep export for a more accurate plan.
               </p>
               <input
                 ref={fileRef}
@@ -327,28 +309,48 @@ export function TripSetupScreen({
                 disabled={phase === "running" || uploadState === "sending"}
                 onClick={() => fileRef.current?.click()}
               >
-                {uploadState === "sending" ? "Reading export…" : "Upload Garmin CSV"}
+                {uploadState === "sending" ? "Reading export…" : "Upload Garmin file"}
               </button>
               {uploadState === "error" && (
                 <p role="alert" style={{ fontSize: "11px", color: "#b04523", margin: "6px 0 0" }}>
-                  {uploadError ?? "upload failed"} — needs a header row plus at
-                  least two nights with date, bedtime, wake and sleep duration.
+                  {uploadError ?? "Upload failed"} — the file needs a header row
+                  and at least two nights of sleep.
                 </p>
               )}
             </div>
           )}
+        </div>
+
+        <div className="card">
+          <h3>Your calendar</h3>
+          <p className="src-line" style={{ fontSize: "11px", color: "#7a6a5c", margin: "0 0 6px" }}>
+            {calendarSource === "google"
+              ? "Connected to Google Calendar"
+              : "Using an example calendar"}
+          </p>
           <div className="m3" style={{ gridTemplateColumns: "1fr 1fr" }}>
             <div>
-              {movableCount} movable
-              <b>Work Calendar</b>
+              {cal.movable} events we can move
+              <b>Work calendar</b>
             </div>
             <div>
-              {readinessLabel}
-              <b>post-flight meetings</b>
+              {cal.total === 0
+                ? "Meetings after you land: none"
+                : `Meetings after you land: ${cal.ready} of ${cal.total} at a good body time`}
+              <b>Post-flight</b>
             </div>
           </div>
         </div>
       </div>
+
+      {variant === "sheet" && (
+        <div className="ex" style={{ marginTop: "12px" }}>
+          <button type="button" className="p1" onClick={onBackToGuide}>
+            Done
+          </button>
+        </div>
+      )}
+
       <p style={{ margin: "16px 0 0", fontSize: "11px", color: "var(--color-mist)" }}>
         Timing guidance, not medical advice.
       </p>

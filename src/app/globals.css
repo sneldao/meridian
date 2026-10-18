@@ -1101,7 +1101,16 @@ body {
   gap: 12px;
   margin-top: 16px;
 }
+.sheet-title {
+  margin: 0 0 10px;
+  font-size: 16px;
+  font-weight: 800;
+  color: #3a2e23;
+}
 .fo {
+  font: inherit;
+  color: inherit;
+  text-align: left;
   border-radius: 18px;
   padding: 14px;
   background: #2b2621;
