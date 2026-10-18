@@ -989,24 +989,37 @@ export function NudgeFeedScreen({
             </div>
           )}
 
-          <div className="cta">
-            <button
-              type="button"
-              className={hasPlan ? "p2" : "p1"}
-              onClick={onStartCrewSync}
-              disabled={phase === "running"}
-            >
-              {phase === "running"
-                ? `Building your plan… (${locked.size} of ${days.length} days)`
-                : phase === "done"
-                  ? "Update my plan"
-                  : "Make my plan"}
-            </button>
+          <div className="cta" style={{ alignItems: "center" }}>
+            {!(simple && hasPlan) && (
+              <button
+                type="button"
+                className={hasPlan ? "p2" : "p1"}
+                onClick={onStartCrewSync}
+                disabled={phase === "running"}
+              >
+                {phase === "running"
+                  ? `Building your plan… (${locked.size} of ${days.length} days)`
+                  : phase === "done"
+                    ? "Update my plan"
+                    : "Make my plan"}
+              </button>
+            )}
+            <VoiceControls
+              nextStep={heroNudge && !tripFinished ? {
+                time: `${countdown ? `${countdown} · ` : ""}${fmtMin(heroNudge.startMin)}`,
+                city: cityFor(heroNudge.dayIndex),
+                title: heroNudge.title,
+                actionSummary: heroNudge.actionSummary,
+              } : null}
+              todaySteps={steps.map((st) => ({ time: fmtMin(st.startMin), title: st.title }))}
+              onDone={heroNudge ? () => markDone(heroNudge) : undefined}
+            />
           </div>
           {phase === "idle" && totalSteps > 0 && (
             <p style={{ marginTop: "8px", fontSize: "11px", color: "#7a6a5c" }}>
-              Takes about a minute. You&apos;ll get a file to add the steps to your
-              calendar — no notifications.
+              {simple
+                ? "Takes about a minute."
+                : "Takes about a minute. You'll get a file to add the steps to your calendar — no notifications."}
             </p>
           )}
           </div>
@@ -1516,6 +1529,19 @@ export function NudgeFeedScreen({
           </p>
         )}
       </section>
+
+      {/* Simple + a saved plan: the day's steps are the thing; re-running is
+          the quiet second action at the bottom of the list. */}
+      {simple && hasPlan && !tripFinished && (
+        <button
+          type="button"
+          onClick={onStartCrewSync}
+          disabled={phase === "running"}
+          style={{ margin: "10px auto 0", display: "block", background: "none", border: "none", padding: 0, cursor: "pointer", color: "#7a6a5c", fontSize: "12px", fontWeight: 700 }}
+        >
+          {phase === "running" ? `Building your plan… (${locked.size} of ${days.length} days)` : "Update my plan"}
+        </button>
+      )}
     </>
   );
 }
