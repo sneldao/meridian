@@ -446,13 +446,6 @@ export default function Home() {
   const beginStream = useCallback(
     (extra?: { checkins?: string; startDay?: number }) => {
       if (run.phase === "running") return;
-      if (
-        typeof window !== "undefined" &&
-        "Notification" in window &&
-        Notification.permission === "default"
-      ) {
-        Notification.requestPermission().catch(() => {});
-      }
       esRef.current?.close();
       reset();
       setEntries([]);

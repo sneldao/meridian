@@ -142,6 +142,8 @@ export function NudgeFeedScreen({
   const [heroWhyId, setHeroWhyId] = useState<string | null>(null);
   const [globeOpen, setGlobeOpen] = useState(false);
   const [dayListOpen, setDayListOpen] = useState(false);
+  // The wake ack is a this-session thank-you, not a permanent banner.
+  const [wakeAckFresh, setWakeAckFresh] = useState(false);
 
   // Item 11 — while the numbers are the sample persona's, steps are a preview
   // rather than commitments. `isPreview` is B's contract (domain/preview.ts):
@@ -479,9 +481,15 @@ export function NudgeFeedScreen({
   // (null), the trip is either all ahead or all behind: `tripFinished` splits
   // the two, and only the behind case earns the question.
   const todayIdx = trip ? todayDayIndex(trip, nowDate) : null;
+  // Past days ask whenever they're selected; today waits until 5pm — the day
+  // isn't judgeable before the evening it was building towards. `nowMin` is
+  // already null-safe above.
   const dayVerdictAllowed =
     !!activeDaySpec &&
-    (todayIdx !== null ? activeDaySpec.dayIndex <= todayIdx : tripFinished);
+    (todayIdx !== null
+      ? activeDaySpec.dayIndex < todayIdx ||
+        (activeDaySpec.dayIndex === todayIdx && (nowMin ?? 0) >= 17 * 60)
+      : tripFinished);
   const { next: heroNudge, missed: missedNudges } = pickNextStep(
     steps,
     resolvedIds,
@@ -664,14 +672,15 @@ export function NudgeFeedScreen({
               `wakeAck` names it so the traveller learns the answer mattered.
               Null when no answer is in play (garmin, unanswered) — renders
               nothing rather than an invented line. */}
-          {(() => {
-            const ack = wakeAck(baselineKind, wakeBand);
-            return ack ? (
-              <p className="demo-tag" style={{ borderColor: "#cfe3d4" }}>
-                {ack}
-              </p>
-            ) : null;
-          })()}
+          {wakeAckFresh &&
+            (() => {
+              const ack = wakeAck(baselineKind, wakeBand);
+              return ack ? (
+                <p className="demo-tag" style={{ borderColor: "#cfe3d4" }}>
+                  {ack}
+                </p>
+              ) : null;
+            })()}
 
           {/* B3 — the crew remembers. One line under the wake answer, same
               tag treatment; null proofs render nothing. */}
@@ -704,7 +713,7 @@ export function NudgeFeedScreen({
                     key={band}
                     type="button"
                     className="ask-chip"
-                    onClick={() => onWakeBand(band)}
+                    onClick={() => { setWakeAckFresh(true); onWakeBand(band); }}
                   >
                     {label}
                   </button>
@@ -1062,7 +1071,16 @@ export function NudgeFeedScreen({
           dawn card so the body-time gap is read against the event it will
           decide. `null` from the contract renders nothing — a fixture
           meeting with no real attendees would be the worst possible fake. */}
-      {heroMtg && (
+      {heroMtg &&
+        (!simple ||
+          (() => {
+            const mtgIdx = trip?.days.find((d) => d.label === heroMtg.dayLabel)?.dayIndex;
+            return (
+              mtgIdx !== undefined &&
+              activeDaySpec !== null &&
+              (activeDaySpec.dayIndex === mtgIdx || activeDaySpec.dayIndex === mtgIdx - 1)
+            );
+          })()) && (
         <div
           className="rise hero-meeting"
           style={{
