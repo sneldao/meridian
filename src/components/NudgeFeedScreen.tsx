@@ -868,6 +868,7 @@ export function NudgeFeedScreen({
             </div>
             <div>
               <div className="mini" key={heroNudge?.id}>
+                {previewMode && <span className="preview-pill">Preview</span>}
                 Next up · {heroNudge ? `${fmtMin(heroNudge.startMin)} ${cityFor(heroNudge.dayIndex)}` : ""}
                 {countdown ? ` · ${countdown}` : ""}
                 {!isToday ? ` · ${currentDayName}` : ""}
@@ -1584,29 +1585,26 @@ export function NudgeFeedScreen({
           style={{ animationDelay: ".35s" }}
           aria-label="Calendar fit"
         >
-          {/* The calendar negotiation in numbers — how many events the plan
-              can move, how many it can't, and how many post-flight meetings
-              already sit at a good body time. Detailed view only. */}
-          <div className="cal-summary-num">
-            <b>{calSummary.movable}</b>
-            <span>calendar events we can move</span>
-          </div>
-          <div className="cal-summary-num">
-            <b>{calSummary.fixed}</b>
-            <span>fixed events</span>
-          </div>
-          <div className="cal-summary-num">
-            <b>{calSummary.total === 0 ? "None" : `${calSummary.ready} of ${calSummary.total}`}</b>
-            <span>
-              {calSummary.total === 0
-                ? "meetings after you land"
-                : "meetings after you land at a good body time"}
-            </span>
-          </div>
+          {/* The calendar negotiation in one sentence — how many post-flight
+              meetings land at a bad body time and what we can do about it.
+              Detailed view only. */}
+          {(() => {
+            const bad = calSummary.total - calSummary.ready;
+            const line =
+              calSummary.total === 0
+                ? "No meetings after you land — nothing clashes with the plan."
+                : bad === 0
+                  ? `All ${calSummary.total} meeting${calSummary.total === 1 ? "" : "s"} after you land already sit${calSummary.total === 1 ? "s" : ""} at a good body time.`
+                  : `${bad} of ${calSummary.total} meeting${calSummary.total === 1 ? "" : "s"} after you land hit${bad === 1 ? "s" : ""} a bad body time` +
+                    (calSummary.movable > 0
+                      ? ` — we can move ${calSummary.movable} event${calSummary.movable === 1 ? "" : "s"}.`
+                      : " — the plan works around it.");
+            return <p className="cal-summary-line">{line}</p>;
+          })()}
         </div>
       )}
 
-      <section className="tl rise" style={{ animationDelay: ".4s" }} aria-label={`${currentDayName} — steps`}>
+      <section className={`tl rise${previewMode ? " preview" : ""}`} style={{ animationDelay: ".4s" }} aria-label={`${currentDayName} — steps`}>
         {steps.map((step) => {
           const isDone = completedIds.has(step.id);
           const isSkip = isSkipped(step.id);

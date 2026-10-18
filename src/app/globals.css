@@ -1734,6 +1734,34 @@ textarea:focus-visible,
   line-height: 1.35;
   color: var(--m-muted);
 }
+.cal-summary-line {
+  margin: 0;
+  padding: 11px 13px;
+  border: 1px solid var(--m-border-2);
+  border-radius: 12px;
+  background: var(--m-card);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--m-text);
+}
+/* Preview honesty: example plans announce themselves on the hero and the
+   day rail dims — Done/Skip still move (dry run), but nothing reads as live. */
+.preview-pill {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 1px 7px;
+  border: 1px solid var(--m-border);
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--m-faint);
+  vertical-align: 1px;
+}
+.tl.preview .tl-row {
+  opacity: 0.55;
+}
 @media (max-width: 420px) {
   .cal-summary {
     gap: 7px;
