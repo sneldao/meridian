@@ -999,19 +999,22 @@ export default function Home() {
             </div>
 
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+            {/* Orientation chrome waits for a plan to exist — on first landing
+                the job is the question and the CTA, not a progress map or a
+                mode picker the traveller can't yet choose between. */}
+            {effectiveLocked.size > 0 && (
             <JourneySteps
               current={
                 isTripFinished(trip, new Date())
                   ? 3
-                  : effectiveLocked.size > 0
-                    ? 2
-                    : 1
+                  : 2
               }
             />
+            )}
 
             {/* The one depth control: Simple is the calm viewport, Detailed
                 opens every evidence drawer, AI at work is the crew surface. */}
-            {trip && (
+            {trip && effectiveLocked.size > 0 && (
               <div
                 className="pill depth"
                 role="group"
