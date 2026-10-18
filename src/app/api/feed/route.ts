@@ -68,8 +68,11 @@ export async function POST(req: Request) {
 
   if (body.id) {
     // Update path: the write key proves ownership — only its hash is stored.
-    if (!ID_RE.test(body.id) || typeof body.key !== "string" || !body.key) {
-      return Response.json({ error: "invalid id or key" }, { status: 400 });
+    if (!ID_RE.test(body.id)) {
+      return Response.json({ error: "invalid id" }, { status: 400 });
+    }
+    if (typeof body.key !== "string" || !body.key) {
+      return Response.json({ error: "forbidden" }, { status: 403 });
     }
     const file = path.join(dir, `${body.id}.json`);
     let stored: { keyHash: string };
