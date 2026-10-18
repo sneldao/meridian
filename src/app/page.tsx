@@ -40,17 +40,11 @@ import { RunAnnouncer } from "@/components/RunAnnouncer";
 import { useFocusTrap } from "@/lib/a11y";
 import { friendlyDayLabel } from "@/lib/day-label";
 import { restorePlan } from "@/lib/restore-plan";
-import { syncFeed, upsertFeed } from "@/lib/feed";
-import { scheduleReminders, upcomingReminders } from "@/lib/reminders";
-
-function applyTheme(t: "auto" | "light" | "dark") {
-  const h = new Date().getHours();
-  const dark =
-    t === "dark" ||
-    (t === "auto" &&
-      (window.matchMedia("(prefers-color-scheme: dark)").matches || h >= 21 || h < 6));
-  document.documentElement.dataset.theme = dark ? "night" : "";
-}
+import { syncFeed } from "@/lib/feed";
+import { useAssistantLink } from "@/lib/use-assistant-link";
+import { useInstallPrompt } from "@/lib/use-install-prompt";
+import { useReminders } from "@/lib/use-reminders";
+import { useTheme } from "@/lib/use-theme";
 import { isTripFinished } from "@/lib/trip-status";
 import { JourneySteps } from "@/components/JourneySteps";
 import { useRunState, calendarWithMoves, ledgerEvents, ghostGapDeg } from "@/state/run";
@@ -184,15 +178,9 @@ export default function Home() {
   const [routeOpen, setRouteOpen] = useState(false);
   const [bookingText, setBookingText] = useState("");
   const [bookingError, setBookingError] = useState(false);
-  const [assistantOpen, setAssistantOpen] = useState(false);
-  const [assistantUrl, setAssistantUrl] = useState<string | null>(null);
-  const [assistantBusy, setAssistantBusy] = useState(false);
-  const [remindersOn, setRemindersOn] = useState(false);
-  const [remindersBlocked, setRemindersBlocked] = useState(false);
-  const [externalMark, setExternalMark] = useState<{ id: string; status: "done" | "skipped"; nonce: number } | null>(null);
-  const [themeChoice, setThemeChoice] = useState<"auto" | "light" | "dark">("auto");
-  const [installEvt, setInstallEvt] = useState<{ prompt: () => Promise<void> } | null>(null);
-  const [showInstallTip, setShowInstallTip] = useState(false);
+  const assistant = useAssistantLink();
+  const install = useInstallPrompt();
+  const { theme, cycleTheme } = useTheme();
   /** Run state is memory-only; the saved plan + trip let a reload show the
    *  locked plan instead of the example preview. Recomputed when the route
    *  changes or a new briefing lands. */
@@ -257,35 +245,6 @@ export default function Home() {
       try {
         initVoice().then(setVoiceAvail);
         setHasSavedPlan(Boolean(localStorage.getItem("meridian:lastPlan")));
-        setRemindersOn(localStorage.getItem("meridian:reminders") === "on");
-        setThemeChoice((localStorage.getItem("meridian:theme") as "auto" | "light" | "dark") ?? "auto");
-        window.addEventListener("beforeinstallprompt", (e) => {
-          e.preventDefault();
-          setInstallEvt(e as unknown as { prompt: () => Promise<void> });
-        });
-        window.matchMedia?.("(prefers-color-scheme: dark)").addEventListener?.("change", () => {
-          const t = (localStorage.getItem("meridian:theme") ?? "auto") as "auto" | "light" | "dark";
-          applyTheme(t);
-        });
-        // A notification tap that opened the app with the mark in the URL.
-        const url = new URL(window.location.href);
-        const mark = url.searchParams.get("mark");
-        const status = url.searchParams.get("status");
-        if (mark && (status === "done" || status === "skipped")) {
-          const label = mark.replace(/-[^-]+$/, "");
-          setSelectedDayLabel(label);
-          setExternalMark({ id: mark, status, nonce: Date.now() });
-          url.searchParams.delete("mark");
-          url.searchParams.delete("status");
-          window.history.replaceState(null, "", url.toString());
-        }
-        navigator.serviceWorker?.addEventListener?.("message", (ev) => {
-          const d = ev.data as { type?: string; id?: string; status?: string };
-          if (d?.type === "meridian-mark" && d.id && (d.status === "done" || d.status === "skipped")) {
-            setSelectedDayLabel(d.id.replace(/-[^-]+$/, ""));
-            setExternalMark({ id: d.id, status: d.status, nonce: Date.now() });
-          }
-        });
         fetch("/api/memory")
           .then((r) => r.json())
           .then((d) => setRunCount(Array.isArray(d?.runs) ? d.runs.length : 0))
@@ -602,7 +561,7 @@ export default function Home() {
       // must work even from inside a text field. (It previously didn't: the old
       // handler returned early for INPUT/TEXTAREA before reaching Escape.)
       if (e.code === "Escape") {
-        if (assistantOpen) setAssistantOpen(false);
+        if (assistant.open) assistant.closeSheet();
         else if (setupOpen) setSetupOpen(false);
         else if (agentDrawerOpen) setAgentDrawerOpen(false);
         else if (menuOpen) setMenuOpen(false);
@@ -611,7 +570,7 @@ export default function Home() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [run.phase, cancelShift, agentDrawerOpen, menuOpen, setupOpen, assistantOpen]);
+  }, [run.phase, cancelShift, agentDrawerOpen, menuOpen, setupOpen, assistant]);
 
   // Wedge watchdog. Runs only while a run is live, and reports the same
   // recoverable state `onerror` does — the CTA comes back either way.
@@ -664,38 +623,8 @@ export default function Home() {
   const effectivePhase =
     run.phase === "idle" && restoredLocked?.size ? "done" : run.phase;
 
-  // Reminder timers: next 24h of Done/Skip-able steps, cancelled and rebuilt
-  // whenever the plan or route moves.
-  useEffect(() => {
-    if (!remindersOn || !trip || effectiveLocked.size === 0) return;
-    if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
-    return scheduleReminders(
-      upcomingReminders(trip, [...effectiveLocked.values()], new Date()),
-    );
-  }, [remindersOn, trip, effectiveLocked]);
-
-  const toggleReminders = useCallback(() => {
-    if (remindersOn) {
-      setRemindersOn(false);
-      try { localStorage.setItem("meridian:reminders", "off"); } catch {}
-      return;
-    }
-    if (typeof Notification === "undefined") {
-      setRemindersBlocked(true);
-      return;
-    }
-    Notification.requestPermission()
-      .then((perm) => {
-        if (perm !== "granted") {
-          setRemindersBlocked(true);
-          return;
-        }
-        setRemindersBlocked(false);
-        setRemindersOn(true);
-        try { localStorage.setItem("meridian:reminders", "on"); } catch {}
-      })
-      .catch(() => setRemindersBlocked(true));
-  }, [remindersOn]);
+  const { remindersOn, remindersBlocked, externalMark, toggleReminders } =
+    useReminders({ trip, lockedDays: effectiveLocked, onMarkDay: setSelectedDayLabel });
 
   const providerFallback = run.errors.length > 0;
   const baseline = run.baseline ?? resolveBaseline(wakeBand, data?.baseline);
@@ -907,14 +836,9 @@ export default function Home() {
               type="button"
               className="m"
               role="menuitem"
-              onClick={() => {
-                const next = themeChoice === "auto" ? "light" : themeChoice === "light" ? "dark" : "auto";
-                setThemeChoice(next);
-                try { localStorage.setItem("meridian:theme", next); } catch {}
-                applyTheme(next);
-              }}
+              onClick={cycleTheme}
             >
-              Appearance: {themeChoice === "auto" ? "Auto" : themeChoice === "light" ? "Light" : "Dark"}
+              Appearance: {theme === "auto" ? "Auto" : theme === "light" ? "Light" : "Dark"}
             </button>
             {(() => {
               const standalone =
@@ -925,7 +849,7 @@ export default function Home() {
                 typeof window !== "undefined" &&
                 /iP(hone|ad|od)/.test(navigator.userAgent);
               if (standalone) return null;
-              if (!installEvt && !iOS) return null;
+              if (!install.installEvt && !iOS) return null;
               return (
                 <button
                   type="button"
@@ -933,8 +857,7 @@ export default function Home() {
                   role="menuitem"
                   onClick={() => {
                     setMenuOpen(false);
-                    if (installEvt) void installEvt.prompt();
-                    else setShowInstallTip(true);
+                    install.promptInstall();
                   }}
                 >
                   Install app
@@ -946,22 +869,9 @@ export default function Home() {
                 type="button"
                 className="m"
                 role="menuitem"
-                onClick={async () => {
+                onClick={() => {
                   setMenuOpen(false);
-                  setAssistantOpen(true);
-                  if (!assistantUrl && !assistantBusy) {
-                    setAssistantBusy(true);
-                    try {
-                      const plan = JSON.parse(localStorage.getItem("meridian:lastPlan") || "null");
-                      const savedTrip = JSON.parse(localStorage.getItem("meridian:lastTrip") || "null");
-                      const id = plan && savedTrip ? await upsertFeed({ ics: plan.ics, trip: savedTrip, days: plan.days }) : null;
-                      if (id) setAssistantUrl(`${location.origin}/api/assistant/next?feed=${id}&format=text`);
-                    } catch {
-                      /* leave assistantUrl null */
-                    } finally {
-                      setAssistantBusy(false);
-                    }
-                  }
+                  void assistant.openSheet();
                 }}
               >
                 Voice assistant
@@ -1304,35 +1214,35 @@ export default function Home() {
           </div>
         )}
 
-        {assistantOpen && (
+        {assistant.open && (
           <div
             className="sheet-backdrop"
             role="dialog"
             aria-modal="true"
             aria-label="Voice assistant"
-            onClick={() => setAssistantOpen(false)}
+            onClick={assistant.closeSheet}
           >
             <div className="sheet-panel" onClick={(e) => e.stopPropagation()}>
               <button
                 type="button"
                 className="sheet-close"
-                onClick={() => setAssistantOpen(false)}
+                onClick={assistant.closeSheet}
                 aria-label="Close"
               >
                 ×
               </button>
               <h2 className="sheet-title">Ask your assistant for the next step</h2>
-              {assistantBusy && <p style={{ fontSize: 12, color: "#a89383" }}>Making your link…</p>}
-              {assistantUrl ? (
+              {assistant.busy && <p style={{ fontSize: 12, color: "#a89383" }}>Making your link…</p>}
+              {assistant.url ? (
                 <>
                   <p style={{ fontSize: 12, color: "#e8ded2", wordBreak: "break-all", fontFamily: "monospace" }}>
-                    {assistantUrl}
+                    {assistant.url}
                   </p>
                   <button
                     type="button"
                     className="chip"
                     style={{ minHeight: 44 }}
-                    onClick={() => void navigator.clipboard?.writeText(assistantUrl)}
+                    onClick={() => void navigator.clipboard?.writeText(assistant.url!)}
                   >
                     Copy link
                   </button>
@@ -1345,12 +1255,15 @@ export default function Home() {
                     <li>Add &quot;Speak text&quot;.</li>
                     <li>Name it &quot;Next Meridian step&quot; — then say &quot;Hey Siri, next Meridian step&quot;.</li>
                   </ol>
+                  <p style={{ margin: "8px 0 0", fontSize: 12, color: "#a89383" }}>
+                    On Android or elsewhere, opening the link reads your next step aloud — no app needed.
+                  </p>
                   <p style={{ margin: "10px 0 0", fontSize: 11, color: "#a89383" }}>
                     Anyone with this link can hear your next step, so keep it private.
                   </p>
                 </>
               ) : (
-                !assistantBusy && (
+                !assistant.busy && (
                   <p style={{ fontSize: 12, color: "#a89383" }}>
                     Couldn&apos;t make a link yet — save a plan first.
                   </p>
@@ -1360,19 +1273,19 @@ export default function Home() {
           </div>
         )}
 
-        {showInstallTip && (
+        {install.showInstallTip && (
           <div
             className="sheet-backdrop"
             role="dialog"
             aria-modal="true"
             aria-label="Install app"
-            onClick={() => setShowInstallTip(false)}
+            onClick={() => install.setShowInstallTip(false)}
           >
             <div className="sheet-panel" onClick={(e) => e.stopPropagation()}>
               <button
                 type="button"
                 className="sheet-close"
-                onClick={() => setShowInstallTip(false)}
+                onClick={() => install.setShowInstallTip(false)}
                 aria-label="Close"
               >
                 ×
