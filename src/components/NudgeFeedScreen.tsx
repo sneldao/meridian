@@ -20,7 +20,20 @@ import {
   todayDayIndex,
 } from "@/domain/today";
 import { ADHERENCE_PROFILE, type WakeBand } from "@/domain/fixtures";
-import { HeroDawnPanel } from "@/components/HeroDawnPanel";
+import dynamic from "next/dynamic";
+// ~90KB of globe + world-atlas JSON — a separate chunk, fetched only when the
+// globe actually opens.
+const HeroDawnPanel = dynamic(
+  () => import("@/components/HeroDawnPanel").then((m) => m.HeroDawnPanel),
+  {
+    loading: () => (
+      <div
+        style={{ minHeight: 540, borderRadius: 18, background: "#1E1B18" }}
+        aria-hidden="true"
+      />
+    ),
+  },
+);
 import { evalChipLabel, evalChipTitle } from "@/components/ui/eval-chip";
 import { isPreview, tapBecomesCheckIn, wakeAck } from "@/domain/preview";
 import { calendarSummary, heroMeeting } from "@/domain/hero";

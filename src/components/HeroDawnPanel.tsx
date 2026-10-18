@@ -2,7 +2,18 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import dynamic from "next/dynamic";
-import { useReducedMotion } from "framer-motion";
+
+function useReducedMotionLocal() {
+  return useSyncExternalStore(
+    (cb) => {
+      const mq = matchMedia("(prefers-reduced-motion: reduce)");
+      mq.addEventListener("change", cb);
+      return () => mq.removeEventListener("change", cb);
+    },
+    () => matchMedia("(prefers-reduced-motion: reduce)").matches,
+    () => false,
+  );
+}
 import {
   geoDistance,
   geoGraticule10,
@@ -103,7 +114,7 @@ export function HeroDawnPanel({ trip, owedMin, beam, readinessPct, readinessSour
   const requiredMin = Math.abs(trip.requiredShiftMin);
   const bankedH = Math.round((requiredMin * readinessPct) / 100 / 60 * 10) / 10;
   const shiftH = Math.round(requiredMin / 60);
-  const reduce = useReducedMotion();
+  const reduce = useReducedMotionLocal();
 
   // One tick every 250ms, not one per minute: the terminator's 0.25°/min is
   // invisible at 60s updates (a quarter-pixel jump per minute reads as a

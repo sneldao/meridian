@@ -21,16 +21,25 @@ import type {
 } from "@/domain/types";
 import { type LogEntry } from "@/components/CrewFeed";
 import { NudgeFeedScreen } from "@/components/NudgeFeedScreen";
-import { RoutePicker } from "@/components/RoutePicker";
-import { DeepDiveVisuals } from "@/components/DeepDiveVisuals";
-import { TripSetupScreen } from "@/components/TripSetupScreen";
+import dynamic from "next/dynamic";
+const RoutePicker = dynamic(
+  () => import("@/components/RoutePicker").then((m) => m.RoutePicker),
+  { loading: () => <div style={{ minHeight: 44 }} aria-hidden="true" /> },
+);
+const DeepDiveVisuals = dynamic(
+  () => import("@/components/DeepDiveVisuals").then((m) => m.DeepDiveVisuals),
+);
+const TripSetupScreen = dynamic(
+  () => import("@/components/TripSetupScreen").then((m) => m.TripSetupScreen),
+);
 import { HandoffBanner } from "@/components/HandoffBanner";
-import { AgentDrawer } from "@/components/AgentDrawer";
+const AgentDrawer = dynamic(
+  () => import("@/components/AgentDrawer").then((m) => m.AgentDrawer),
+);
 import { RunAnnouncer } from "@/components/RunAnnouncer";
 import { useFocusTrap } from "@/lib/a11y";
 import { friendlyDayLabel } from "@/lib/day-label";
 import { restorePlan } from "@/lib/restore-plan";
-import { parseBooking } from "@/lib/booking";
 import { syncFeed, upsertFeed } from "@/lib/feed";
 import { scheduleReminders, upcomingReminders } from "@/lib/reminders";
 
@@ -171,6 +180,7 @@ export default function Home() {
   >([]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [agentDrawerOpen, setAgentDrawerOpen] = useState(false);
+  const [drawerUsed, setDrawerUsed] = useState(false);
   const [routeOpen, setRouteOpen] = useState(false);
   const [bookingText, setBookingText] = useState("");
   const [bookingError, setBookingError] = useState(false);
@@ -887,6 +897,7 @@ export default function Home() {
               className="m"
               onClick={() => {
                 setMenuOpen(false);
+                setDrawerUsed(true);
                 setAgentDrawerOpen(true);
               }}
             >
@@ -1034,7 +1045,8 @@ export default function Home() {
                       type="button"
                       className="chip"
                       style={{ marginTop: 6, minHeight: 44 }}
-                      onClick={() => {
+                      onClick={async () => {
+                        const { parseBooking } = await import("@/lib/booking");
                         const r = parseBooking(bookingText, new Date());
                         if (!r) {
                           setBookingError(true);
@@ -1170,7 +1182,27 @@ export default function Home() {
             )}
           </>
         ) : !tripResolved ? (
-          <div ref={setupRef} style={{ minHeight: "40vh" }} />
+          <div ref={setupRef} aria-busy="true" aria-label="Loading your plan" style={{ padding: "24px 0" }}>
+            <span className="sr-only">Loading your plan…</span>
+            <div className="skel" style={{ width: "60%", height: 44, borderRadius: 999 }} />
+            <div className="skel card" style={{ marginTop: 18, padding: 20 }}>
+              <div className="skel" style={{ width: "40%", height: 14, borderRadius: 6 }} />
+              <div className="skel" style={{ width: "80%", height: 20, borderRadius: 6, marginTop: 12 }} />
+              <div className="skel" style={{ width: "65%", height: 14, borderRadius: 6, marginTop: 8 }} />
+              <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+                <div className="skel" style={{ width: 120, height: 44, borderRadius: 999 }} />
+                <div className="skel" style={{ width: 90, height: 44, borderRadius: 999 }} />
+              </div>
+            </div>
+            <div className="skel" style={{ width: "100%", height: 44, borderRadius: 999, marginTop: 22 }} />
+            {[0, 1, 2].map((i) => (
+              <div key={i} style={{ display: "flex", gap: 14, marginTop: 18, alignItems: "center" }}>
+                <div className="skel" style={{ width: 22, height: 22, borderRadius: 999 }} />
+                <div className="skel" style={{ width: 80, height: 14, borderRadius: 6 }} />
+                <div className="skel" style={{ flex: 1, height: 14, borderRadius: 6 }} />
+              </div>
+            ))}
+          </div>
         ) : (
           <div ref={setupRef}>
             <TripSetupScreen
@@ -1349,7 +1381,7 @@ export default function Home() {
         )}
       </div>
 
-      <AgentDrawer
+      {drawerUsed && <AgentDrawer
         open={agentDrawerOpen}
         onClose={() => setAgentDrawerOpen(false)}
         entries={entries}
@@ -1358,7 +1390,7 @@ export default function Home() {
         activeAgent={run.activeAgent}
         toolCalls={run.toolCalls}
         lockedDays={run.locked.size}
-      />
+      />}
     </div>
   );
 }
