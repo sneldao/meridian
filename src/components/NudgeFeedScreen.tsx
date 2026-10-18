@@ -439,6 +439,32 @@ export function NudgeFeedScreen({
     return [...raw].sort((a, b) => a.startMin - b.startMin);
   }, [trip, activeDaySpec, locked, drafts, preview, baseline, calendarEvents, moves, citations, verdicts, rejected, memoryPath, effectiveAdherence]);
 
+  // "Yesterday you did X of Y" — marks against the previous day's ids; null
+  // when there's no previous day or it had no steps to mark.
+  const yesterday = useMemo(() => {
+    if (!trip || !activeDaySpec || activeDaySpec.dayIndex <= 0) return null;
+    const prevSpec = trip.days.find((d) => d.dayIndex === activeDaySpec.dayIndex - 1);
+    if (!prevSpec) return null;
+    const plan =
+      locked.get(prevSpec.label) ??
+      drafts.get(prevSpec.label)?.plan ??
+      preview?.get(prevSpec.label)?.plan;
+    const ids = buildDailyNudgesForDay({
+      trip,
+      dayIndex: prevSpec.dayIndex,
+      plan,
+      baseline,
+      calendarEvents,
+      moves,
+      citations,
+      verdicts: verdicts.get(prevSpec.label),
+      dayRejected: rejected.has(prevSpec.label),
+      memoryPath,
+      adherence: effectiveAdherence,
+    }).map((n) => n.id);
+    if (!ids.length) return null;
+    return { done: ids.filter((id) => completedIds.has(id)).length, total: ids.length };
+  }, [trip, activeDaySpec, locked, drafts, preview, baseline, calendarEvents, moves, citations, verdicts, rejected, memoryPath, effectiveAdherence, completedIds]);
   // Guided ribbon — the day's crew beats, distilled to one line. Only real
   // events, never reconstructed.
   const dayBeat = useMemo(() => {
@@ -1053,8 +1079,12 @@ export function NudgeFeedScreen({
                 title: heroNudge.title,
                 actionSummary: heroNudge.actionSummary,
               } : null}
-              todaySteps={steps.map((st) => ({ time: fmtMin(st.startMin), title: st.title }))}
-              onDone={heroNudge ? () => markDone(heroNudge) : undefined}
+              todaySteps={steps
+                .filter((st) => !resolvedIds.has(st.id))
+                .map((st) => ({ time: fmtMin(st.startMin), title: st.title }))}
+              yesterday={yesterday}
+              bedAt={activePlan ? fmtMin(activePlan.targetBedtimeMin) : null}
+              onDone={heroNudge ? () => doneTap(heroNudge) : undefined}
             />
           </div>
           {phase === "idle" && totalSteps > 0 && (

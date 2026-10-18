@@ -46,10 +46,15 @@ interface SpeechRecognitionLike {
 export interface VoiceControlsProps {
   nextStep: { time: string; city: string; title: string; actionSummary: string } | null;
   todaySteps: { time: string; title: string }[];
+  /** Marks from the day before the selected day — null when there's nothing
+   *  to report. */
+  yesterday?: { done: number; total: number } | null;
+  /** The selected day's planned bedtime, already formatted. */
+  bedAt?: string | null;
   onDone?: () => void;
 }
 
-export function VoiceControls({ nextStep, todaySteps, onDone }: VoiceControlsProps) {
+export function VoiceControls({ nextStep, todaySteps, yesterday, bedAt, onDone }: VoiceControlsProps) {
   const [speaking, setSpeaking] = useState(false);
   const [listening, setListening] = useState(false);
   const [heard, setHeard] = useState<string | null>(null);
@@ -72,9 +77,20 @@ export function VoiceControls({ nextStep, todaySteps, onDone }: VoiceControlsPro
   const nextStepText = nextStep
     ? `${nextStep.time} ${nextStep.city}: ${nextStep.title}. ${nextStep.actionSummary}`
     : null;
-  const todayText = todaySteps.length
-    ? todaySteps.map((s) => `${s.time} ${s.title}`).join(". ")
-    : null;
+  // "Listen to today" is a 20-second briefing: yesterday's marks, today's next
+  // three steps, tonight's bedtime, then the one step that's actually next.
+  const briefingParts: string[] = [];
+  if (yesterday && yesterday.total > 0) {
+    briefingParts.push(`Yesterday you did ${yesterday.done} of ${yesterday.total} steps.`);
+  }
+  const remaining = todaySteps.slice(0, 3);
+  if (remaining.length) {
+    briefingParts.push(`Today: ${remaining.map((st) => `${st.title} at ${st.time}`).join(", ")}.`);
+  }
+  if (bedAt) briefingParts.push(`Tonight, bed at ${bedAt}.`);
+  if (nextStep) briefingParts.push(`Next up: ${nextStep.title} at ${nextStep.time}.`);
+  const briefing = briefingParts.join(" ");
+  const todayText = briefing || null;
 
   const handleTranscript = (raw: string) => {
     const t = raw.toLowerCase();
@@ -91,7 +107,7 @@ export function VoiceControls({ nextStep, todaySteps, onDone }: VoiceControlsPro
       return;
     }
     if (t.includes("next") && nextStepText) {
-      speak(nextStepText);
+      speak(briefing);
       return;
     }
     if ((t.includes("today") || t.includes("plan")) && todayText) {
@@ -132,7 +148,7 @@ export function VoiceControls({ nextStep, todaySteps, onDone }: VoiceControlsPro
   return (
     <div className="flex flex-col items-end gap-1">
       <div className="flex gap-2">
-        {canSpeak && nextStepText && (
+        {canSpeak && briefing && (
           <button
             type="button"
             className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full border border-[#e3d5c3] px-3.5 py-1.5 text-xs font-bold text-[#5b4d41] hover:border-[#D96B43]"
@@ -141,12 +157,12 @@ export function VoiceControls({ nextStep, todaySteps, onDone }: VoiceControlsPro
                 stopSpeaking();
                 setSpeaking(false);
               } else {
-                speak(nextStepText);
+                speak(briefing);
               }
             }}
           >
             {speaking ? <Square size={12} /> : <Volume2 size={12} />}
-            {speaking ? "Stop" : "Listen"}
+            {speaking ? "Stop" : "Listen to today"}
           </button>
         )}
         {canListen && (
