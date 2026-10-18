@@ -1159,14 +1159,12 @@ export function NudgeFeedScreen({
             </>
           )}
 
-          {totalSteps > 0 && (
-            <div className={`meter${previewMode ? " preview" : ""}`}>
+          {/* No meter on a preview — "0 of 5 done" over invented steps is a
+              progress bar on someone else's day. Progress means yours. */}
+          {totalSteps > 0 && !previewMode && (
+            <div className="meter">
               <div className="t">
-                {previewMode ? (
-                  <>Example plan · {completedCount} of {totalSteps} done</>
-                ) : (
-                  <>{completedCount} of {totalSteps} done{doneWhere}</>
-                )}
+                {completedCount} of {totalSteps} done{doneWhere}
               </div>
               <div className="bar">
                 <i style={{ width: `${progressPct}%` }} />
