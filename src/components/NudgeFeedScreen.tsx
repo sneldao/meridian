@@ -139,6 +139,7 @@ export function NudgeFeedScreen({
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
   const [expandedWhyId, setExpandedWhyId] = useState<string | null>(null);
   const [showMissed, setShowMissed] = useState(false);
+  const [heroWhyId, setHeroWhyId] = useState<string | null>(null);
   const [globeOpen, setGlobeOpen] = useState(false);
   const [dayListOpen, setDayListOpen] = useState(false);
 
@@ -810,10 +811,22 @@ export function NudgeFeedScreen({
                   </span>
                   <h2>{heroNudge.title}</h2>
                   <p className="s">{heroNudge.actionSummary}</p>
-                  <div className="drawer">
-                    <b>Why this helps</b>
-                    <p>{heroNudge.whyItHelps}</p>
-                  </div>
+                  {expandAllWhy || heroWhyId === heroNudge.id ? (
+                    <div className="drawer">
+                      <b>Why this helps</b>
+                      <p>{heroNudge.whyItHelps}</p>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className="tl-why"
+                      aria-expanded={false}
+                      onClick={() => setHeroWhyId(heroNudge.id)}
+                      style={{ alignSelf: "flex-start" }}
+                    >
+                      Why?
+                    </button>
+                  )}
                 </>
               )}
               <div style={{ display: tripFinished ? "none" : "flex", gap: 10, alignItems: "center", marginTop: "2px" }}>
