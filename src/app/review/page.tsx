@@ -11,6 +11,7 @@ import { friendlyDayLabel } from "@/lib/day-label";
 import { planSummaryLine } from "@/lib/plan-copy";
 import { PageHeader } from "@/components/PageHeader";
 import { useUndoToast } from "@/components/UndoToast";
+import { SubscribeCalendar } from "@/components/SubscribeCalendar";
 import { ShiftBoard, type ShiftDraft } from "@/components/lenses/ShiftBoard";
 
 interface SavedPlan {
@@ -187,6 +188,12 @@ export default function ReviewPage() {
 
       <div className="mt-5 flex flex-wrap gap-2">
         <button onClick={downloadIcs} className="rounded-lg bg-paper px-4 py-2 text-sm font-bold text-ink transition-colors hover:bg-white">Add to my calendar</button>
+        <SubscribeCalendar
+          ics={plan.ics}
+          trip={trip}
+          days={plan.days}
+          className="rounded-lg border border-line bg-ink-2 px-4 py-2 text-sm font-bold text-paper transition-colors hover:border-mist"
+        />
         <button onClick={downloadMarkdown} className="rounded-lg border border-line bg-ink-2 px-4 py-2 text-sm font-bold text-paper transition-colors hover:border-mist">Download as text</button>
         <Link href={arrivalHref} className="rounded-lg border border-line bg-ink-2 px-4 py-2 text-sm text-mist transition-colors hover:text-paper">Rate my trip</Link>
         <ReplanLink trip={trip} />

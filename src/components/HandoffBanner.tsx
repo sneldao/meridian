@@ -8,10 +8,13 @@ import {
   X,
 } from "lucide-react";
 import { planSummaryLine } from "@/lib/plan-copy";
+import { SubscribeCalendar } from "@/components/SubscribeCalendar";
 import { speakDialogue, speakOnce } from "@/lib/voice/engine";
-import type { Citation, DayPlan, ShiftCoverage, VoiceLine } from "@/domain/types";
+import type { Citation, DayPlan, ShiftCoverage, Trip, VoiceLine } from "@/domain/types";
 
 interface HandoffBannerProps {
+  /** Needed to publish the webcal feed. */
+  trip?: Trip | null;
   summary: string;
   score: number;
   citations: Citation[];
@@ -29,7 +32,9 @@ interface HandoffBannerProps {
 }
 
 export function HandoffBanner({
+  trip,
   summary,
+  days,
   citations,
   ics,
   lines,
@@ -121,6 +126,14 @@ export function HandoffBanner({
             <CalendarPlus size={14} />
             Add to my calendar
           </button>
+          {trip && days && (
+            <SubscribeCalendar
+              ics={ics}
+              trip={trip}
+              days={days}
+              className="inline-flex items-center gap-2 rounded-xl border border-line bg-ink-3 px-3.5 py-2 text-xs font-semibold text-paper transition-colors hover:border-mist"
+            />
+          )}
 
           {voiceAvailable && (
             <button

@@ -31,6 +31,7 @@ import { useFocusTrap } from "@/lib/a11y";
 import { friendlyDayLabel } from "@/lib/day-label";
 import { restorePlan } from "@/lib/restore-plan";
 import { parseBooking } from "@/lib/booking";
+import { syncFeed } from "@/lib/feed";
 import { isTripFinished } from "@/lib/trip-status";
 import { JourneySteps } from "@/components/JourneySteps";
 import { useRunState, calendarWithMoves, ledgerEvents, ghostGapDeg } from "@/state/run";
@@ -379,6 +380,12 @@ export default function Home() {
                 savedAt: new Date().toISOString(),
               }),
             );
+            // A subscribed calendar tracks the newest plan without the
+            // traveller re-importing the .ics by hand.
+            // The briefing carries no trip — runTripRef has the run_start one.
+            if (e.ics && runTripRef.current && e.days) {
+              syncFeed({ ics: e.ics, trip: runTripRef.current, days: e.days });
+            }
             // The ledger is the traveller's record of trips that happened, so
             // only runs that locked days belong in it. Writing unconditionally
             // put failed runs into the user-facing log: three `0.00` rows with
@@ -824,6 +831,7 @@ export default function Home() {
         {run.briefing && !briefingDismissed && (
           <div style={{ marginBottom: "18px" }}>
             <HandoffBanner
+              trip={trip}
               summary={run.briefing.summary}
               score={run.briefing.score}
               citations={run.briefing.citations}
