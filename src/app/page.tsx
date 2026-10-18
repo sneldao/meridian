@@ -32,6 +32,7 @@ import { friendlyDayLabel } from "@/lib/day-label";
 import { restorePlan } from "@/lib/restore-plan";
 import { parseBooking } from "@/lib/booking";
 import { syncFeed, upsertFeed } from "@/lib/feed";
+import { scheduleReminders, upcomingReminders } from "@/lib/reminders";
 import { isTripFinished } from "@/lib/trip-status";
 import { JourneySteps } from "@/components/JourneySteps";
 import { useRunState, calendarWithMoves, ledgerEvents, ghostGapDeg } from "@/state/run";
@@ -167,6 +168,9 @@ export default function Home() {
   const [siriOpen, setSiriOpen] = useState(false);
   const [siriUrl, setSiriUrl] = useState<string | null>(null);
   const [siriBusy, setSiriBusy] = useState(false);
+  const [remindersOn, setRemindersOn] = useState(false);
+  const [remindersBlocked, setRemindersBlocked] = useState(false);
+  const [externalMark, setExternalMark] = useState<{ id: string; status: "done" | "skipped"; nonce: number } | null>(null);
   /** Run state is memory-only; the saved plan + trip let a reload show the
    *  locked plan instead of the example preview. Recomputed when the route
    *  changes or a new briefing lands. */
@@ -231,6 +235,26 @@ export default function Home() {
       try {
         initVoice().then(setVoiceAvail);
         setHasSavedPlan(Boolean(localStorage.getItem("meridian:lastPlan")));
+        setRemindersOn(localStorage.getItem("meridian:reminders") === "on");
+        // A notification tap that opened the app with the mark in the URL.
+        const url = new URL(window.location.href);
+        const mark = url.searchParams.get("mark");
+        const status = url.searchParams.get("status");
+        if (mark && (status === "done" || status === "skipped")) {
+          const label = mark.replace(/-[^-]+$/, "");
+          setSelectedDayLabel(label);
+          setExternalMark({ id: mark, status, nonce: Date.now() });
+          url.searchParams.delete("mark");
+          url.searchParams.delete("status");
+          window.history.replaceState(null, "", url.toString());
+        }
+        navigator.serviceWorker?.addEventListener?.("message", (ev) => {
+          const d = ev.data as { type?: string; id?: string; status?: string };
+          if (d?.type === "meridian-mark" && d.id && (d.status === "done" || d.status === "skipped")) {
+            setSelectedDayLabel(d.id.replace(/-[^-]+$/, ""));
+            setExternalMark({ id: d.id, status: d.status, nonce: Date.now() });
+          }
+        });
         fetch("/api/memory")
           .then((r) => r.json())
           .then((d) => setRunCount(Array.isArray(d?.runs) ? d.runs.length : 0))
@@ -608,6 +632,39 @@ export default function Home() {
   const effectiveLocked = run.locked.size ? run.locked : (restoredLocked ?? EMPTY_LOCKED);
   const effectivePhase =
     run.phase === "idle" && restoredLocked?.size ? "done" : run.phase;
+
+  // Reminder timers: next 24h of Done/Skip-able steps, cancelled and rebuilt
+  // whenever the plan or route moves.
+  useEffect(() => {
+    if (!remindersOn || !trip || effectiveLocked.size === 0) return;
+    if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
+    return scheduleReminders(
+      upcomingReminders(trip, [...effectiveLocked.values()], new Date()),
+    );
+  }, [remindersOn, trip, effectiveLocked]);
+
+  const toggleReminders = useCallback(() => {
+    if (remindersOn) {
+      setRemindersOn(false);
+      try { localStorage.setItem("meridian:reminders", "off"); } catch {}
+      return;
+    }
+    if (typeof Notification === "undefined") {
+      setRemindersBlocked(true);
+      return;
+    }
+    Notification.requestPermission()
+      .then((perm) => {
+        if (perm !== "granted") {
+          setRemindersBlocked(true);
+          return;
+        }
+        setRemindersBlocked(false);
+        setRemindersOn(true);
+        try { localStorage.setItem("meridian:reminders", "on"); } catch {}
+      })
+      .catch(() => setRemindersBlocked(true));
+  }, [remindersOn]);
 
   const providerFallback = run.errors.length > 0;
   const baseline = run.baseline ?? resolveBaseline(wakeBand, data?.baseline);
@@ -1026,6 +1083,10 @@ export default function Home() {
                 }}
                 onStartCrewSync={startShift}
                 onCheckIn={sendDayCheckIn}
+                externalMark={externalMark}
+                remindersOn={remindersOn}
+                onToggleReminders={toggleReminders}
+                remindersBlocked={remindersBlocked}
                 pastRuns={pastRuns}
               />
             </div>

@@ -83,6 +83,14 @@ export interface NudgeFeedScreenProps {
    *  state). Optional so callers without the read keep the current shape. */
   pastRuns?: { savedAt: string; trip?: { origin?: { code?: string }; destination?: { code?: string }; requiredShiftMin?: number; direction?: "east" | "west" } | null; score: number }[];
   onStartCrewSync: () => void;
+  /** A mark coming from outside (notification tap / URL). Applied once the
+   *  step is in `steps` — nonce retriggers the effect per mark. */
+  externalMark?: { id: string; status: "done" | "skipped"; nonce: number } | null;
+  /** Reminders toggle — owned by page.tsx, rendered in the next-up card when
+   *  a plan exists. */
+  remindersOn?: boolean;
+  onToggleReminders?: () => void;
+  remindersBlocked?: boolean;
   /** Report what actually happened — per-step did/skip marks or one
    *  day-level verdict. `lastMarkedDayIndex` lets the replan resume the day
    *  after the checked day. */
@@ -113,6 +121,7 @@ const CATEGORY_KIND: Partial<Record<NudgeCategory, InterventionKind>> = {
 };
 
 export function NudgeFeedScreen({
+  externalMark,
   trip,
   phase,
   selectedDayLabel,
@@ -134,6 +143,9 @@ export function NudgeFeedScreen({
   onWakeBand,
   pastRuns,
   onStartCrewSync,
+  remindersOn,
+  onToggleReminders,
+  remindersBlocked,
   onCheckIn,
 }: NudgeFeedScreenProps) {
   const effectiveAdherence = adherence ?? ADHERENCE_PROFILE;
@@ -535,6 +547,18 @@ export function NudgeFeedScreen({
       ? activeDaySpec.dayIndex < todayIdx ||
         (activeDaySpec.dayIndex === todayIdx && (nowMin ?? 0) >= 17 * 60)
       : tripFinished);
+  useEffect(() => {
+    if (!externalMark) return;
+    const step = steps.find((st) => st.id === externalMark.id);
+    if (!step) return;
+    const t = setTimeout(() => {
+      if (externalMark.status === "done") markDone(step);
+      else markSkipped(step);
+    }, 0);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalMark?.nonce, externalMark?.id, externalMark?.status, steps]);
+
   const { next: heroNudge, missed: missedNudges } = pickNextStep(
     steps,
     resolvedIds,
@@ -1071,6 +1095,24 @@ export function NudgeFeedScreen({
                     ? "Update my plan"
                     : "Make my plan"}
               </button>
+            )}
+            {hasPlan && onToggleReminders && (
+              <button
+                type="button"
+                role="switch"
+                aria-checked={!!remindersOn}
+                onClick={onToggleReminders}
+                title="Reminders work while Meridian is open in a tab or installed on your phone."
+                className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full border border-[#e3d5c3] px-3.5 py-1.5 text-xs font-bold text-[#5b4d41]"
+                style={remindersOn ? { borderColor: "#D96B43", background: "rgba(217,107,67,0.12)" } : undefined}
+              >
+                🔔 Remind me at each step
+              </button>
+            )}
+            {remindersBlocked && (
+              <span style={{ fontSize: 11, color: "#b04523" }}>
+                Notifications are blocked in your browser settings.
+              </span>
             )}
             <VoiceControls
               nextStep={heroNudge && !tripFinished ? {

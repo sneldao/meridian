@@ -54,16 +54,7 @@ describe("nextStepFromPlan", () => {
   });
 
   test("crosses the flight-day zone switch", () => {
-    const feed = {
-      trip: TRIP,
-      days: days(
-        [2, "D0", [iv("caffeine_cutoff", 720)]],
-        [3, "D+1", [iv("exercise", 480)]],
-      ),
-    };
-    // after D+1 08:00 Tokyo = 2026-10-21 23:00Z; D+1 exercise at 480 Tokyo is past,
-    // so nothing is next → but a later step in Tokyo zone should win.
-    const feed2 = {
+const feed2 = {
       trip: TRIP,
       days: days([3, "D+1", [iv("exercise", 480), iv("sleep_window", 1260)]]),
     };
