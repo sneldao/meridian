@@ -2,7 +2,7 @@
 // current as the plan changes. Artifacts on disk (demo-grade — Render's FS is
 // ephemeral; graduate to Supabase rows in P2). Reader lives in
 // src/lib/feed-store.ts (route files can't export helpers).
-import { randomBytes, createHash } from "crypto";
+import { randomBytes, createHash, timingSafeEqual } from "crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "fs";
 import path from "path";
 import { rateLimit } from "@/lib/rateLimit";
@@ -81,7 +81,9 @@ export async function POST(req: Request) {
     } catch {
       return Response.json({ error: "not found" }, { status: 404 });
     }
-    if (stored.keyHash !== sha256(body.key)) {
+    const given = Buffer.from(sha256(body.key), "hex");
+    const want = Buffer.from(String(stored.keyHash), "hex");
+    if (want.length !== given.length || !timingSafeEqual(want, given)) {
       return Response.json({ error: "forbidden" }, { status: 403 });
     }
     writeFileSync(
