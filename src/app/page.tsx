@@ -31,7 +31,7 @@ import { useFocusTrap } from "@/lib/a11y";
 import { friendlyDayLabel } from "@/lib/day-label";
 import { restorePlan } from "@/lib/restore-plan";
 import { parseBooking } from "@/lib/booking";
-import { syncFeed } from "@/lib/feed";
+import { syncFeed, upsertFeed } from "@/lib/feed";
 import { isTripFinished } from "@/lib/trip-status";
 import { JourneySteps } from "@/components/JourneySteps";
 import { useRunState, calendarWithMoves, ledgerEvents, ghostGapDeg } from "@/state/run";
@@ -164,6 +164,9 @@ export default function Home() {
   const [routeOpen, setRouteOpen] = useState(false);
   const [bookingText, setBookingText] = useState("");
   const [bookingError, setBookingError] = useState(false);
+  const [siriOpen, setSiriOpen] = useState(false);
+  const [siriUrl, setSiriUrl] = useState<string | null>(null);
+  const [siriBusy, setSiriBusy] = useState(false);
   /** Run state is memory-only; the saved plan + trip let a reload show the
    *  locked plan instead of the example preview. Recomputed when the route
    *  changes or a new briefing lands. */
@@ -544,7 +547,8 @@ export default function Home() {
       // must work even from inside a text field. (It previously didn't: the old
       // handler returned early for INPUT/TEXTAREA before reaching Escape.)
       if (e.code === "Escape") {
-        if (setupOpen) setSetupOpen(false);
+        if (siriOpen) setSiriOpen(false);
+        else if (setupOpen) setSetupOpen(false);
         else if (agentDrawerOpen) setAgentDrawerOpen(false);
         else if (menuOpen) setMenuOpen(false);
         else if (run.phase === "running") cancelShift();
@@ -552,7 +556,7 @@ export default function Home() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [run.phase, cancelShift, agentDrawerOpen, menuOpen, setupOpen]);
+  }, [run.phase, cancelShift, agentDrawerOpen, menuOpen, setupOpen, siriOpen]);
 
   // Wedge watchdog. Runs only while a run is live, and reports the same
   // recoverable state `onerror` does — the CTA comes back either way.
@@ -810,6 +814,32 @@ export default function Home() {
             >
               Activity log
             </button>
+            {hasSavedPlan && (
+              <button
+                type="button"
+                className="m"
+                role="menuitem"
+                onClick={async () => {
+                  setMenuOpen(false);
+                  setSiriOpen(true);
+                  if (!siriUrl && !siriBusy) {
+                    setSiriBusy(true);
+                    try {
+                      const plan = JSON.parse(localStorage.getItem("meridian:lastPlan") || "null");
+                      const savedTrip = JSON.parse(localStorage.getItem("meridian:lastTrip") || "null");
+                      const id = plan && savedTrip ? await upsertFeed({ ics: plan.ics, trip: savedTrip, days: plan.days }) : null;
+                      if (id) setSiriUrl(`${location.origin}/api/assistant/next?feed=${id}&format=text`);
+                    } catch {
+                      /* leave siriUrl null */
+                    } finally {
+                      setSiriBusy(false);
+                    }
+                  }
+                }}
+              >
+                Use with Siri
+              </button>
+            )}
             <div style={{ padding: "8px 12px 4px", fontSize: "11px", color: "#7a6a5c" }}>
               Timing guidance, not medical advice.
             </div>
@@ -1116,6 +1146,59 @@ export default function Home() {
                 onCancel={cancelShift}
                 onBackToGuide={closeSetup}
               />
+            </div>
+          </div>
+        )}
+
+        {siriOpen && (
+          <div
+            className="sheet-backdrop"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Use with Siri"
+            onClick={() => setSiriOpen(false)}
+          >
+            <div className="sheet-panel" onClick={(e) => e.stopPropagation()}>
+              <button
+                type="button"
+                className="sheet-close"
+                onClick={() => setSiriOpen(false)}
+                aria-label="Close"
+              >
+                ×
+              </button>
+              <h2 className="sheet-title">Ask Siri for your next step</h2>
+              {siriBusy && <p style={{ fontSize: 12, color: "#7a6a5c" }}>Making your link…</p>}
+              {siriUrl ? (
+                <>
+                  <p style={{ fontSize: 12, color: "#5b4d41", wordBreak: "break-all", fontFamily: "monospace" }}>
+                    {siriUrl}
+                  </p>
+                  <button
+                    type="button"
+                    className="chip"
+                    style={{ minHeight: 44 }}
+                    onClick={() => void navigator.clipboard?.writeText(siriUrl)}
+                  >
+                    Copy link
+                  </button>
+                  <ol style={{ margin: "12px 0 0", paddingLeft: 18, fontSize: 13, color: "#3a2e23", lineHeight: 1.7 }}>
+                    <li>Open the Shortcuts app and tap +.</li>
+                    <li>Add &quot;Get contents of URL&quot; and paste the link.</li>
+                    <li>Add &quot;Speak text&quot;.</li>
+                    <li>Name it &quot;Next Meridian step&quot; — then say &quot;Hey Siri, next Meridian step&quot;.</li>
+                  </ol>
+                  <p style={{ margin: "10px 0 0", fontSize: 11, color: "#7a6a5c" }}>
+                    Anyone with this link can hear your next step, so keep it private.
+                  </p>
+                </>
+              ) : (
+                !siriBusy && (
+                  <p style={{ fontSize: 12, color: "#7a6a5c" }}>
+                    Couldn&apos;t make a link yet — save a plan first.
+                  </p>
+                )
+              )}
             </div>
           </div>
         )}
