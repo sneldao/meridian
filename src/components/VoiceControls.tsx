@@ -52,9 +52,10 @@ export interface VoiceControlsProps {
   /** The selected day's planned bedtime, already formatted. */
   bedAt?: string | null;
   onDone?: () => void;
+  compact?: boolean;
 }
 
-export function VoiceControls({ nextStep, todaySteps, yesterday, bedAt, onDone }: VoiceControlsProps) {
+export function VoiceControls({ nextStep, todaySteps, yesterday, bedAt, onDone, compact }: VoiceControlsProps) {
   const [speaking, setSpeaking] = useState(false);
   const [listening, setListening] = useState(false);
   const [heard, setHeard] = useState<string | null>(null);
@@ -145,13 +146,19 @@ export function VoiceControls({ nextStep, todaySteps, yesterday, bedAt, onDone }
 
   if (!canListen && !canSpeak) return null;
 
+  const btnCls = compact
+    ? "inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--m-border)] text-[var(--m-text)] hover:border-[#D96B43]"
+    : "inline-flex min-h-[44px] items-center gap-1.5 rounded-full border border-[var(--m-border)] px-3.5 py-1.5 text-xs font-bold text-[var(--m-text)] hover:border-[#D96B43]";
+
   return (
     <div className="flex flex-col items-end gap-1">
       <div className="flex gap-2">
         {canSpeak && briefing && (
           <button
             type="button"
-            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full border border-[var(--m-border)] px-3.5 py-1.5 text-xs font-bold text-[var(--m-text)] hover:border-[#D96B43]"
+            className={btnCls}
+            aria-label={speaking ? "Stop" : "Listen to today"}
+            title={speaking ? "Stop" : "Listen to today"}
             onClick={() => {
               if (speaking) {
                 stopSpeaking();
@@ -161,19 +168,21 @@ export function VoiceControls({ nextStep, todaySteps, yesterday, bedAt, onDone }
               }
             }}
           >
-            {speaking ? <Square size={12} /> : <Volume2 size={12} />}
-            {speaking ? "Stop" : "Listen to today"}
+            {speaking ? <Square size={compact ? 14 : 12} /> : <Volume2 size={compact ? 16 : 12} />}
+            {!compact && (speaking ? "Stop" : "Listen to today")}
           </button>
         )}
         {canListen && (
           <button
             type="button"
-            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full border border-[var(--m-border)] px-3.5 py-1.5 text-xs font-bold text-[var(--m-text)] hover:border-[#D96B43]"
+            className={btnCls}
+            aria-label={listening ? "Listening…" : "Ask"}
+            title={listening ? "Listening…" : "Ask"}
             onClick={ask}
             disabled={listening}
           >
-            <Mic size={12} />
-            {listening ? "Listening…" : "Ask"}
+            <Mic size={compact ? 16 : 12} />
+            {!compact && (listening ? "Listening…" : "Ask")}
           </button>
         )}
       </div>

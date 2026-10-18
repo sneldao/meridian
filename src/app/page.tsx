@@ -1158,6 +1158,8 @@ export default function Home() {
                 remindersOn={remindersOn}
                 onToggleReminders={toggleReminders}
                 remindersBlocked={remindersBlocked}
+                onCancelRun={cancelShift}
+                runActiveAgent={run.activeAgent}
                 pastRuns={pastRuns}
               />
             </div>

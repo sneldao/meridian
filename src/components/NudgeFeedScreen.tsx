@@ -35,12 +35,13 @@ const HeroDawnPanel = dynamic(
   },
 );
 import { evalChipLabel, evalChipTitle } from "@/components/ui/eval-chip";
-import { isPreview, tapBecomesCheckIn, wakeAck } from "@/domain/preview";
+import { isPreview, tapBecomesCheckIn } from "@/domain/preview";
 import { calendarSummary, heroMeeting } from "@/domain/hero";
 import { secondTripCopy, secondTripProof } from "@/domain/second-trip";
 import { meetingReadiness } from "@/domain/readiness";
 import { friendlyDayLabel } from "@/lib/day-label";
 import { isTripFinished } from "@/lib/trip-status";
+import { Bell, BellRing } from "lucide-react";
 import { VoiceControls } from "@/components/VoiceControls";
 import { useUndoToast } from "@/components/UndoToast";
 import type {
@@ -104,6 +105,8 @@ export interface NudgeFeedScreenProps {
   remindersOn?: boolean;
   onToggleReminders?: () => void;
   remindersBlocked?: boolean;
+  onCancelRun?: () => void;
+  runActiveAgent?: string | null;
   /** Report what actually happened — per-step did/skip marks or one
    *  day-level verdict. `lastMarkedDayIndex` lets the replan resume the day
    *  after the checked day. */
@@ -159,6 +162,8 @@ export function NudgeFeedScreen({
   remindersOn,
   onToggleReminders,
   remindersBlocked,
+  onCancelRun,
+  runActiveAgent,
   onCheckIn,
 }: NudgeFeedScreenProps) {
   const effectiveAdherence = adherence ?? ADHERENCE_PROFILE;
@@ -168,8 +173,11 @@ export function NudgeFeedScreen({
   const [heroWhyId, setHeroWhyId] = useState<string | null>(null);
   const [globeOpen, setGlobeOpen] = useState(false);
   const [dayListOpen, setDayListOpen] = useState(false);
+  const [celebrated, setCelebrated] = useState(false);
   // The wake ack is a this-session thank-you, not a permanent banner.
-  const [wakeAckFresh, setWakeAckFresh] = useState(false);
+  const [wakeJustAnswered, setWakeJustAnswered] = useState(false);
+  // "Got it" line lingers three seconds where the card was.
+  const [wakeCollapsing, setWakeCollapsing] = useState(false);
   const { toast: undoToast, show: showUndo } = useUndoToast();
   const [swipe, setSwipe] = useState<{ id: string; dx: number } | null>(null);
   const swipeRef = useRef<{ id: string; x0: number; y0: number; vert: boolean } | null>(null);
@@ -534,6 +542,9 @@ export function NudgeFeedScreen({
   // Every Done/Skip is undoable — the toast's Undo is just the same toggle.
   const doneTap = useCallback(
     (st: TravelerNudge) => {
+      if (window.matchMedia("(pointer: coarse)").matches) {
+        navigator.vibrate?.(10);
+      }
       const wasDone = completedIds.has(st.id);
       markDone(st);
       if (!wasDone) showUndo("Marked done", () => markDone(st));
@@ -593,6 +604,15 @@ export function NudgeFeedScreen({
   const progressPct = totalSteps
     ? Math.round((completedCount / totalSteps) * 100)
     : 0;
+  // Glow once per calendar day when today's last step is marked done.
+  useEffect(() => {
+    if (!isToday || totalSteps === 0 || completedCount < totalSteps) return;
+    const key = `meridian:celebrated:${new Date().toDateString()}`;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, "1");
+    const t = setTimeout(() => setCelebrated(true), 0);
+    return () => clearTimeout(t);
+  }, [isToday, totalSteps, completedCount]);
   // The plan behind the day's steps, for the impact copy below.
   const activePlan = activeDaySpec
     ? (locked.get(activeDaySpec.label) ??
@@ -722,6 +742,56 @@ export function NudgeFeedScreen({
     <>
       {/* Split-Horizon Hero Card — the left panel is the trip's real dawn line:
           body clock against destination, with the next light window on it. */}
+          {(wakeCollapsing ||
+            (baselineKind === "demo-default" && !wakeBand && onWakeBand)) && (
+          <div className="ask-wrap">
+            <div className={`ask${wakeCollapsing ? " collapsing" : ""}`} role="group" aria-label="Your natural wake time">
+              <p className="ask-title">Make this plan yours</p>
+              <p>
+                On a day with nothing early planned, when do you naturally wake?
+                <span> Answer once and we&apos;ll fit the plan to you.</span>
+              </p>
+              <div className="ask-chips">
+                {([
+                  ["before6", "Before 6"],
+                  ["6to8", "6–8"],
+                  ["after8", "After 8"],
+                ] as const).map(([band, label]) => (
+                  <button
+                    key={band}
+                    type="button"
+                    className="ask-chip"
+                    onClick={() => {
+                      setWakeCollapsing(true);
+                      setWakeJustAnswered(true);
+                      setTimeout(() => setWakeCollapsing(false), 280);
+                      setTimeout(() => setWakeJustAnswered(false), 3000);
+                      onWakeBand?.(band);
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {/* Item 14 — the solver holds a compliance floor (`floor - 105min`
+                  in circadian.ts) and tries at/after-floor light first, but
+                  nothing on the surface said so. An ask at exactly the floor
+                  reads as the run-up to a 05:30 request tomorrow; naming the
+                  promise is the difference between a promise and a threat.
+                  Evenings are where an eastward trip is actually won. */}
+              {!simple && (
+                <p className="ask-promise">
+                  We won&apos;t schedule anything before you&apos;d normally be up. Most of
+                  the work happens in the evening.
+                </p>
+              )}
+              <p className="ask-foot">
+                Until then, you&apos;re seeing an example plan.
+              </p>
+            </div>
+            </div>
+          )}
+
       <div className={`hero rise${simple && !globeOpen ? " slim" : ""}`} style={{ animationDelay: ".2s" }}>
         {trip && (!simple || globeOpen) && (
           <HeroDawnPanel
@@ -752,19 +822,13 @@ export function NudgeFeedScreen({
               </p>
             )}
 
-          {/* B1 render — the wake answer re-plans the preview instantly, and
-              `wakeAck` names it so the traveller learns the answer mattered.
-              Null when no answer is in play (garmin, unanswered) — renders
-              nothing rather than an invented line. */}
-          {wakeAckFresh &&
-            (() => {
-              const ack = wakeAck(baselineKind, wakeBand);
-              return ack ? (
-                <p className="demo-tag" style={{ borderColor: "#cfe3d4" }}>
-                  {ack}
-                </p>
-              ) : null;
-            })()}
+          {/* After an answer: the card collapses and this line shows for 3s
+              in its place. wakeAck stays for other surfaces. */}
+          {wakeJustAnswered && (
+            <p className="demo-tag" style={{ borderColor: "#cfe3d4" }}>
+              Got it — the plan now fits your mornings.
+            </p>
+          )}
 
           {/* B3 — the crew remembers. One line under the wake answer, same
               tag treatment; null proofs render nothing. */}
@@ -780,49 +844,10 @@ export function NudgeFeedScreen({
               `/api/trip` can't report a `wake-band` kind because it never sees
               `wake`; the band is applied client-side via resolveBaseline, which
               means answering re-plans the preview instantly with no refetch. */}
-          {baselineKind === "demo-default" && !wakeBand && onWakeBand && (
-            <div className="ask" role="group" aria-label="Your natural wake time">
-              <p className="ask-title">Make this plan yours</p>
-              <p>
-                On a day with nothing early planned, when do you naturally wake?
-                <span> Answer once and we&apos;ll fit the plan to you.</span>
-              </p>
-              <div className="ask-chips">
-                {([
-                  ["before6", "Before 6"],
-                  ["6to8", "6–8"],
-                  ["after8", "After 8"],
-                ] as const).map(([band, label]) => (
-                  <button
-                    key={band}
-                    type="button"
-                    className="ask-chip"
-                    onClick={() => { setWakeAckFresh(true); onWakeBand(band); }}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-              {/* Item 14 — the solver holds a compliance floor (`floor - 105min`
-                  in circadian.ts) and tries at/after-floor light first, but
-                  nothing on the surface said so. An ask at exactly the floor
-                  reads as the run-up to a 05:30 request tomorrow; naming the
-                  promise is the difference between a promise and a threat.
-                  Evenings are where an eastward trip is actually won. */}
-              {!simple && (
-                <p className="ask-promise">
-                  We won&apos;t schedule anything before you&apos;d normally be up. Most of
-                  the work happens in the evening.
-                </p>
-              )}
-              <p className="ask-foot">
-                Until then, you&apos;re seeing an example plan.
-              </p>
-            </div>
-          )}
 
-          <div className="hr">
-          <div className="row">
+          <div className={`hr${celebrated ? " celebrate" : ""}`}>
+          <div className="row" style={{ alignItems: "flex-start" }}>
+            <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 10 }}>
             <div className="badge">
               <svg
                 width="24"
@@ -838,9 +863,50 @@ export function NudgeFeedScreen({
               </svg>
             </div>
             <div>
-              <div className="mini">Next up · {currentDayName}</div>
+              <div className="mini" key={heroNudge?.id}>
+                Next up · {heroNudge ? `${fmtMin(heroNudge.startMin)} ${cityFor(heroNudge.dayIndex)}` : ""}
+                {countdown ? ` · ${countdown}` : ""}
+                {!isToday ? ` · ${currentDayName}` : ""}
+              </div>
+            </div>
+            </div>
+            <div style={{ display: "flex", gap: 4, alignItems: "flex-start" }}>
+              {hasPlan && onToggleReminders && (
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={!!remindersOn}
+                  aria-label="Remind me at each step"
+                  title="Remind me at each step — they work while Meridian is open in a tab or installed on your phone."
+                  onClick={onToggleReminders}
+                  className="icon-btn"
+                  style={remindersOn ? { color: "#D96B43", borderColor: "#D96B43" } : undefined}
+                >
+                  {remindersOn ? <BellRing size={16} /> : <Bell size={16} />}
+                </button>
+              )}
+              <VoiceControls
+                compact
+                nextStep={heroNudge && !tripFinished ? {
+                  time: `${countdown ? `${countdown} · ` : ""}${fmtMin(heroNudge.startMin)}`,
+                  city: cityFor(heroNudge.dayIndex),
+                  title: heroNudge.title,
+                  actionSummary: heroNudge.actionSummary,
+                } : null}
+                todaySteps={steps
+                  .filter((st) => !resolvedIds.has(st.id))
+                  .map((st) => ({ time: fmtMin(st.startMin), title: st.title }))}
+                yesterday={yesterday}
+                bedAt={activePlan ? fmtMin(activePlan.targetBedtimeMin) : null}
+                onDone={heroNudge ? () => doneTap(heroNudge) : undefined}
+              />
             </div>
           </div>
+          {remindersBlocked && (
+            <p style={{ margin: "4px 0 0", fontSize: 11, color: "#b04523" }}>
+              Notifications are blocked in your browser settings.
+            </p>
+          )}
 
           {totalSteps === 0 ? (
             isPostFlightDay ? (
@@ -902,8 +968,10 @@ export function NudgeFeedScreen({
                     {countdown ? " · " : ""}
                     {fmtMin(heroNudge.startMin)} {cityFor(heroNudge.dayIndex)}
                   </span>
+                  <div key={heroNudge.id} className="nudge-in">
                   <h2>{heroNudge.title}</h2>
                   <p className="s">{heroNudge.actionSummary}</p>
+                </div>
                   {expandAllWhy || heroWhyId === heroNudge.id ? (
                     <div className="drawer">
                       <b>Why this helps</b>
@@ -1096,6 +1164,32 @@ export function NudgeFeedScreen({
             </div>
           )}
 
+          {phase === "running" && (
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ height: 3, borderRadius: 999, background: "var(--m-border-2)", overflow: "hidden" }}>
+                <div style={{ height: "100%", width: "30%", background: "#D96B43", animation: "skel-shimmer 1.2s ease-in-out infinite" }} />
+              </div>
+              <p style={{ margin: "6px 0 0", fontSize: 12, color: "var(--m-muted)" }}>
+                {(() => {
+                  const a = runActiveAgent;
+                  if (a === "analyst") return "Reading your sleep pattern…";
+                  if (a === "researcher") return "Finding the research…";
+                  if (a === "planner") return `Planning ${currentDayName}…`;
+                  if (a === "evaluator") return "Checking the plan…";
+                  if (a === "negotiator") return "Fitting it around your calendar…";
+                  return "Building your plan…";
+                })()}{" "}
+                · {locked.size} of {days.length} days ready
+              </p>
+              <button
+                type="button"
+                onClick={onCancelRun}
+                style={{ marginTop: 4, background: "none", border: "none", padding: "6px 0", cursor: "pointer", color: "var(--m-muted)", fontSize: 12, fontWeight: 700 }}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
           <div className="cta" style={{ alignItems: "center" }}>
             {!(simple && hasPlan) && (
               <button
@@ -1105,44 +1199,13 @@ export function NudgeFeedScreen({
                 disabled={phase === "running"}
               >
                 {phase === "running"
-                  ? `Building your plan… (${locked.size} of ${days.length} days)`
+                  ? "Building…"
                   : phase === "done"
                     ? "Update my plan"
                     : "Make my plan"}
               </button>
             )}
-            {hasPlan && onToggleReminders && (
-              <button
-                type="button"
-                role="switch"
-                aria-checked={!!remindersOn}
-                onClick={onToggleReminders}
-                title="Reminders work while Meridian is open in a tab or installed on your phone."
-                className="inline-flex min-h-[44px] items-center gap-1.5 rounded-full border border-[var(--m-border)] px-3.5 py-1.5 text-xs font-bold text-[var(--m-text)]"
-                style={remindersOn ? { borderColor: "#D96B43", background: "rgba(217,107,67,0.12)" } : undefined}
-              >
-                🔔 Remind me at each step
-              </button>
-            )}
-            {remindersBlocked && (
-              <span style={{ fontSize: 11, color: "#b04523" }}>
-                Notifications are blocked in your browser settings.
-              </span>
-            )}
-            <VoiceControls
-              nextStep={heroNudge && !tripFinished ? {
-                time: `${countdown ? `${countdown} · ` : ""}${fmtMin(heroNudge.startMin)}`,
-                city: cityFor(heroNudge.dayIndex),
-                title: heroNudge.title,
-                actionSummary: heroNudge.actionSummary,
-              } : null}
-              todaySteps={steps
-                .filter((st) => !resolvedIds.has(st.id))
-                .map((st) => ({ time: fmtMin(st.startMin), title: st.title }))}
-              yesterday={yesterday}
-              bedAt={activePlan ? fmtMin(activePlan.targetBedtimeMin) : null}
-              onDone={heroNudge ? () => doneTap(heroNudge) : undefined}
-            />
+
           </div>
           {phase === "idle" && totalSteps > 0 && (
             <p style={{ marginTop: "8px", fontSize: "11px", color: "var(--m-muted)" }}>
@@ -1339,8 +1402,20 @@ export function NudgeFeedScreen({
               className="day"
               style={{ flex: 1 }}
             >
-              {currentDayName}
-              {todayIdx === activeDaySpec.dayIndex ? " · Today" : ""} ▾
+              <span style={{ display: "block" }}>
+                {currentDayName}
+                {todayIdx === activeDaySpec.dayIndex ? " · Today" : ""} ▾
+              </span>
+              {totalSteps > 0 && (
+                <span style={{ display: "block", marginTop: 4 }}>
+                  <span style={{ display: "block", height: 3, borderRadius: 999, background: "var(--m-border-2)", overflow: "hidden" }}>
+                    <span style={{ display: "block", height: "100%", width: `${progressPct}%`, background: "#D96B43", transition: "width 0.3s ease-out" }} />
+                  </span>
+                  <span style={{ fontSize: 10, fontWeight: 600, color: todayIdx === activeDaySpec.dayIndex ? "var(--m-on-accent)" : "var(--m-muted)" }}>
+                    {previewMode ? `Example plan · ${completedCount} of ${totalSteps} done` : `${completedCount} of ${totalSteps} done`}
+                  </span>
+                </span>
+              )}
             </button>
             <button
               type="button"

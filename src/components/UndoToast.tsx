@@ -49,6 +49,7 @@ export function useUndoToast(): {
         fontWeight: 600,
         boxShadow: "0 8px 28px rgba(30,27,24,0.35)",
       }}
+      className="toast-in"
     >
       <span>{item.message}</span>
       <button

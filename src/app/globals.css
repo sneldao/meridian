@@ -2153,3 +2153,101 @@ html[data-theme="night"] .skel::after {
   overflow: hidden; clip: rect(0 0 0 0);
   white-space: nowrap; border: 0;
 }
+
+/* P2f — one focus ring everywhere on Home */
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid #D96B43;
+  outline-offset: 2px;
+}
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  border: 1px solid var(--m-border);
+  background: var(--m-card);
+  color: var(--m-muted);
+  cursor: pointer;
+}
+.icon-btn:hover {
+  border-color: #D96B43;
+  color: #D96B43;
+}
+
+/* P3 — small moments of delight (all ≤250ms unless noted) */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes done-pop {
+    0% { transform: scale(0.85); }
+    55% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+  .tl-check.on {
+    animation: done-pop 0.22s ease-out;
+  }
+  .tl-row.done .tl-title-text {
+    color: var(--m-muted);
+    transition: color 0.2s ease-out;
+  }
+  @keyframes nudge-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .nudge-in {
+    animation: nudge-in 0.22s ease-out;
+  }
+  @keyframes celebrate-rise {
+    from { opacity: 0.4; transform: translateY(10px) scale(0.9); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes celebrate-glow {
+    0%,100% { box-shadow: 0 0 0 0 rgba(217,107,67,0); }
+    50% { box-shadow: 0 0 24px 6px rgba(217,107,67,0.35); }
+  }
+  .celebrate .badge {
+    animation: celebrate-rise 0.35s ease-out, celebrate-glow 0.4s ease-out 0.05s;
+  }
+  @keyframes toast-in {
+    from { opacity: 0; transform: translate(-50%, 12px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+  }
+  .toast-in { animation: toast-in 0.2s ease-out; }
+  .toast-out { opacity: 0; transform: translate(-50%, 8px); transition: opacity .2s ease-out, transform .2s ease-out; }
+  @keyframes check-draw {
+    from { stroke-dashoffset: 10; }
+    to { stroke-dashoffset: 0; }
+  }
+  .journey-check path {
+    stroke-dasharray: 10;
+    animation: check-draw 0.25s ease-out;
+  }
+  .tl-expander {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.25s ease-out;
+  }
+  .tl-expander.open {
+    grid-template-rows: 1fr;
+  }
+  .tl-expander > div {
+    overflow: hidden;
+    min-height: 0;
+  }
+  .ask.collapsing {
+    max-height: 0;
+    opacity: 0;
+    margin: 0;
+    padding: 0 14px;
+    overflow: hidden;
+    transition: max-height 0.25s ease-out, opacity 0.2s ease-out, padding 0.25s ease-out;
+  }
+}
+.ask {
+  max-height: 400px;
+}
