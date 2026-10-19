@@ -156,11 +156,6 @@ function draftDay(
             startMin: wrap(bed - CAFFEINE_CUTOFF_BEFORE_BED_MIN - 5),
             note: `Last caffeine 8h before the ${fmtMin(bed)} bedtime.`,
           },
-          {
-            kind: "melatonin",
-            startMin: wrap(bed - 270),
-            note: `Melatonin timing window ~4–5h before bed (timing only, no dose).`,
-          },
           { kind: "sleep_window", startMin: bed, endMin: wake, note: `Bed ${fmtMin(bed)}, up ${fmtMin(wake)} — local night.` },
         ]
       : [
@@ -254,11 +249,14 @@ function draftDay(
           endMin: bed,
           note: "Lights low for the last hour — evening light works against the advance.",
         },
-        {
-          kind: "melatonin",
-          startMin: wrap(bed - 270),
-          note: `Melatonin timing window ~4–5h before bed (timing only, no dose).`,
-        },
+        // No melatonin window here on purpose. The phase-response model still
+        // understands a melatonin timing cue, and the planner may propose one,
+        // but the solver no longer inserts a supplement into a plan the
+        // traveller did not ask for: the crew advises on timing, not on
+        // medication, and a standing melatonin prompt reads as a standing
+        // recommendation. Phase 1 of the dial work removed it here and in the
+        // post-flight branch; docs/reference/scoring.md notes the model still
+        // supports it when a plan carries it.
       ]
     : [
         {
