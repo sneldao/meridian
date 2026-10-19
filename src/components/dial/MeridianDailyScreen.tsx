@@ -16,6 +16,7 @@
 import { useMemo, useState } from "react";
 import { fmtMin } from "@/domain/circadian";
 import { type MascotTone } from "@/domain/mascot";
+import type { EpistemicTag } from "@/domain/evidence";
 import { computeTripTrajectory, directionOptions } from "@/domain/misalignment";
 import { buildShiftWeekPlan } from "@/domain/shift-work";
 import type {
@@ -28,6 +29,11 @@ import type {
 } from "@/domain/types";
 import { CircadianDial, type DialCommitmentNotch, type DialMark } from "./CircadianDial";
 import { DailyActionCard, type DailyAction, type PlanStatus } from "./DailyActionCard";
+import { HoldToConfirm } from "./HoldToConfirm";
+import {
+  MeridianOnboarding,
+  type OnboardingState,
+} from "./MeridianOnboarding";
 
 export type MeridianMode = "TRIP" | "SHIFT";
 
@@ -42,6 +48,13 @@ export interface MeridianDailyScreenProps {
   /** The scorer's verdicts, keyed by day label. */
   verdicts: Map<string, EvalResult[]>;
   baseline?: WearableBaseline;
+  /**
+   * Where the baseline came from. This is the difference between "Measured"
+   * and a demo fixture wearing a measured label: the sample baseline is not
+   * the traveller's data, and the dial says "Unknown" rather than borrowing
+   * someone else's provenance.
+   */
+  baselineProvenance?: "garmin" | "self-reported" | "demo" | "unknown";
   calendarEvents: CalendarEvent[];
   citations: Citation[];
   selectedDayLabel: string;
@@ -59,6 +72,7 @@ export function MeridianDailyScreen({
   drafts,
   verdicts,
   baseline,
+  baselineProvenance = "unknown",
   calendarEvents,
   citations,
   selectedDayLabel,
@@ -71,6 +85,19 @@ export function MeridianDailyScreen({
   const [alcoholDays, setAlcoholDays] = useState<Set<number>>(new Set());
   const [done, setDone] = useState(false);
   const [partnerCovers, setPartnerCovers] = useState(false);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
+  /**
+   * The traveller's own answers, when they have given any. Kept apart from
+   * the baseline prop so a self-report overrides a demo fixture instead of
+   * being averaged into it — and so the provenance tag can say which one the
+   * number came from.
+   */
+  const [selfReport, setSelfReport] = useState<{
+    bedtimeMin: number;
+    wakeMin: number;
+    chronotype: WearableBaseline["chronotype"];
+  } | null>(null);
+  const [wearableOptedIn, setWearableOptedIn] = useState(false);
 
   // Every plan we have, in day order — the input the projection needs.
   const plans: DayPlan[] = useMemo(() => {
@@ -82,17 +109,37 @@ export function MeridianDailyScreen({
     return out;
   }, [trip, locked, drafts]);
 
+  /** The baseline the model uses: the traveller's own answer when they have
+   *  given one, the wearable's when they have imported one, the run's
+   *  baseline otherwise. */
+  const effectiveBaseline = useMemo<WearableBaseline | undefined>(() => {
+    if (!baseline) return undefined;
+    if (selfReport) {
+      return {
+        ...baseline,
+        avgBedtimeMin: selfReport.bedtimeMin,
+        avgWakeMin: selfReport.wakeMin,
+        chronotype: selfReport.chronotype,
+        source: "You told us",
+      };
+    }
+    if (wearableOptedIn) {
+      return { ...baseline, source: "Wearable import (simulated)" };
+    }
+    return baseline;
+  }, [baseline, selfReport, wearableOptedIn]);
+
   const traj = useMemo(() => {
-    if (!trip || !baseline) return [];
+    if (!trip || !effectiveBaseline) return [];
     return computeTripTrajectory({
       trip,
       days: plans,
-      baseline,
+      baseline: effectiveBaseline,
       calendar: calendarEvents,
       skippedDayIndices: skippedDays,
       alcoholDayIndices: alcoholDays,
     });
-  }, [trip, baseline, plans, calendarEvents, skippedDays, alcoholDays]);
+  }, [trip, effectiveBaseline, plans, calendarEvents, skippedDays, alcoholDays]);
 
   const shiftWeek = useMemo(
     () =>
@@ -104,8 +151,92 @@ export function MeridianDailyScreen({
     [partnerCovers, skippedDays, alcoholDays],
   );
 
+
+  /** The tag on the dial's number: where the input came from. */
+  const provenance: EpistemicTag =
+    wearableOptedIn && selfReport === null
+      ? "Measured"
+      : selfReport
+        ? "You told us"
+        : baselineProvenance === "demo" || baselineProvenance === "unknown"
+          ? "Unknown"
+          : "You told us";
+
+  const spec = trip?.days.find((d) => d.label === selectedDayLabel) ?? trip?.days[0];
+  const point = traj.find((t) => t.dayIndex === spec?.dayIndex) ?? traj[0];
+
+  const onboarding = (
+    <>
+      <div className="dial-actions">
+        <button
+          type="button"
+          className="dial-btn"
+          onClick={() => setOnboardingOpen(true)}
+        >
+          Set up your clock
+        </button>
+      </div>
+      <MeridianOnboarding
+        open={onboardingOpen}
+        state={{
+          mode,
+          bedtimeMin: selfReport?.bedtimeMin ?? baseline?.avgBedtimeMin ?? 23 * 60 + 55,
+          wakeMin: selfReport?.wakeMin ?? baseline?.avgWakeMin ?? 6 * 60 + 45,
+          chronotype: selfReport?.chronotype ?? baseline?.chronotype ?? "neutral",
+          wearableOptedIn,
+          tone,
+          protect: [],
+        }}
+        onChange={(next: OnboardingState) => {
+          setTone(next.tone);
+          setWearableOptedIn(next.wearableOptedIn);
+          if (next.mode !== mode) onChangeMode(next.mode);
+          // The answers land on the model as they are given, not at the end.
+          setSelfReport({
+            bedtimeMin: next.bedtimeMin,
+            wakeMin: next.wakeMin,
+            chronotype: next.chronotype,
+          });
+        }}
+        onClose={() => setOnboardingOpen(false)}
+        onComplete={() => setOnboardingOpen(false)}
+        commitments={calendarEvents.map((e) => ({
+          id: e.id,
+          title: e.title,
+          startMin: e.startMin,
+          endMin: e.endMin,
+          movable: e.movable,
+        }))}
+        reveal={
+          point
+            ? {
+                baseline: {
+                  bedtimeMin: effectiveBaseline?.avgBedtimeMin ?? 0,
+                  wakeMin: effectiveBaseline?.avgWakeMin ?? 0,
+                  source:
+                    wearableOptedIn && !selfReport
+                      ? ("measured" as const)
+                      : ("self-reported" as const),
+                },
+                target: {
+                  bedtimeMin: point.targetBedMin,
+                  wakeMin: point.targetWakeMin,
+                  label: trip
+                    ? `The night you are aiming at (${trip.destination.name} time)`
+                    : "The night you are aiming at",
+                },
+                misalignmentHours: point.misalignmentHours,
+                baselineMisalignmentHours: point.baselineMisalignmentHours,
+              }
+            : undefined
+        }
+      />
+    </>
+  );
+
   if (mode === "SHIFT") {
     return (
+      <>
       <ShiftScreen
         week={shiftWeek}
         tone={tone}
@@ -131,12 +262,13 @@ export function MeridianDailyScreen({
             return next;
           })
         }
+        provenance={provenance}
       />
+      {onboarding}
+      </>
     );
   }
 
-  const spec = trip?.days.find((d) => d.label === selectedDayLabel) ?? trip?.days[0];
-  const point = traj.find((t) => t.dayIndex === spec?.dayIndex) ?? traj[0];
   const plan = locked.get(selectedDayLabel) ?? drafts.get(selectedDayLabel)?.plan;
   const verdictList = verdicts.get(selectedDayLabel) ?? [];
   const verdict = verdictList[verdictList.length - 1];
@@ -224,7 +356,7 @@ export function MeridianDailyScreen({
       : "failed";
   const statusNote = verdict?.violations?.[0]?.message;
 
-  const options = directionOptions(trip, baseline.chronotype);
+  const options = directionOptions(trip, effectiveBaseline?.chronotype ?? "neutral");
 
   return (
     <div className="flex flex-col gap-4">
@@ -335,7 +467,7 @@ export function MeridianDailyScreen({
         baselineMisalignmentHours={point.baselineMisalignmentHours}
         commitments={commitments}
         marks={marks}
-        epistemicTag="Estimated"
+        epistemicTag={provenance}
         tone={tone}
         onChangeTone={setTone}
         skippedToday={skippedDays.has(point.dayIndex)}
@@ -354,6 +486,8 @@ export function MeridianDailyScreen({
           is showing the demo baseline, not yours.
         </p>
       )}
+
+      {onboarding}
     </div>
   );
 }
@@ -370,6 +504,7 @@ function ShiftScreen({
   alcoholDays,
   onToggleSkipped,
   onToggleAlcohol,
+  provenance,
 }: {
   week: ReturnType<typeof buildShiftWeekPlan>;
   tone: MascotTone;
@@ -381,6 +516,7 @@ function ShiftScreen({
   alcoholDays: Set<number>;
   onToggleSkipped: (dayIndex: number) => void;
   onToggleAlcohol: (dayIndex: number) => void;
+  provenance: EpistemicTag;
 }) {
   const [dayIndex, setDayIndex] = useState(0);
   const [doneDays, setDoneDays] = useState<Set<number>>(new Set());
@@ -505,7 +641,7 @@ function ShiftScreen({
         baselineMisalignmentHours={day.baselineMisalignmentHours}
         commitments={commitments}
         marks={marks}
-        epistemicTag="Estimated"
+        epistemicTag={provenance}
         tone={tone}
         onChangeTone={onChangeTone}
         skippedToday={false}
@@ -529,17 +665,21 @@ function ShiftScreen({
         </ul>
         <p className="dial-sub">{day.honestTradeOffNote}</p>
         <div className="dial-actions">
-          <button
-            type="button"
-            className="dial-btn"
-            aria-pressed={partnerCovers}
-            onClick={() => onPartnerCovers(!partnerCovers)}
-          >
-            {partnerCovers
-              ? "✓ Partner covers the 15:30 pickup"
-              : "Adapt: partner covers the 15:30 pickup"}
-          </button>
+          <HoldToConfirm
+            label={
+              partnerCovers
+                ? "✓ Partner covers the 15:30 pickup"
+                : "Hold to hand over the 15:30 pickup"
+            }
+            holdingLabel="Hold to hand over the pickup"
+            pressed={partnerCovers}
+            onConfirm={() => onPartnerCovers(!partnerCovers)}
+          />
         </div>
+        <p className="dial-sub">
+          Handing the pickup over buys an hour of sleep before the last night
+          shift. It is a trade, so it takes a hold rather than a tap.
+        </p>
       </section>
     </div>
   );

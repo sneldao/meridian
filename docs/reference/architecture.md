@@ -171,7 +171,9 @@ src/tools/       science (SMR → Firecrawl → static), tavily, qloo,
                  calendar (ICS), wearable
 src/agents/      providers, crew prompts, runtime, night replay, morning replay
 src/components/  NudgeFeedScreen (the Calm `/` surface: next step, timeline,
-                 readiness), TripSummary (trip chip + edit sheet),
+                 readiness), dial/ (the clock view: CircadianDial, the mascot,
+                 the daily action card, the shift week, the five-step setup),
+                 TripSummary (trip chip + edit sheet),
                  HeroDawnPanel + DawnScrubber (the residual globe and its
                  clock/shift scrubber — hover, fine-pointer drag, and two native
                  range inputs, all layered on a caption that states the same
