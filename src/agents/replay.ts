@@ -13,53 +13,56 @@ import { replayPlanFor } from "./replay-plan";
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const BEAT = Number(process.env.REPLAY_BEAT_MS ?? 60);
 
-/** The five scripted day plans (D-3 .. D+1), all valid under the night profile. */
+/** The five scripted day plans (D-3 .. D+1), all valid under the night profile.
+ *  Same policy as the solver: eastbound shifts never put a wake before
+ *  floor − 105 (05:15), so only D-3 advances before the hold days; the rest of
+ *  the shift is honestly owed at landing. */
 export function scriptedDays(citations: Citation[]): DayPlan[] {
   return [
     {
       dayIndex: 0,
       label: "D-3",
-      shiftMin: -60,
-      targetBedtimeMin: 22 * 60 + 55,
-      targetWakeMin: 5 * 60 + 45,
+      shiftMin: -90,
+      targetBedtimeMin: 22 * 60 + 25,
+      targetWakeMin: 5 * 60 + 15,
       interventions: [
-        { kind: "light_exposure", startMin: 5 * 60 + 50, endMin: 6 * 60 + 50, note: "Bright light within an hour of the new wake target — the advance anchor.", citationId: citations[2].id },
-        { kind: "caffeine_cutoff", startMin: 14 * 60 + 55, note: "Last coffee 8h before the new bedtime.", citationId: citations[0].id },
-        { kind: "avoid_light", startMin: 22 * 60, endMin: 22 * 60 + 55, note: "Screens down — protect the earlier bedtime.", citationId: citations[3].id },
-        { kind: "sleep_window", startMin: 22 * 60 + 55, endMin: 5 * 60 + 45, note: "Bed 22:55, up 05:45.", citationId: citations[1].id },
+        { kind: "light_exposure", startMin: 7 * 60, endMin: 8 * 60, note: "Bright light from the 07:00 floor — the advance anchor Alex will actually do.", citationId: citations[2].id },
+        { kind: "caffeine_cutoff", startMin: 14 * 60 + 20, note: "Last coffee 8h before the new bedtime.", citationId: citations[0].id },
+        { kind: "avoid_light", startMin: 21 * 60 + 25, endMin: 22 * 60 + 25, note: "Screens down — protect the earlier bedtime.", citationId: citations[3].id },
+        { kind: "sleep_window", startMin: 22 * 60 + 25, endMin: 5 * 60 + 15, note: "Bed 22:25, up 05:15.", citationId: citations[1].id },
       ],
     },
     {
       dayIndex: 1,
       label: "D-2",
-      shiftMin: -75,
-      targetBedtimeMin: 21 * 60 + 40,
-      targetWakeMin: 4 * 60 + 30,
+      shiftMin: 0,
+      targetBedtimeMin: 22 * 60 + 25,
+      targetWakeMin: 5 * 60 + 15,
       interventions: [
-        { kind: "light_exposure", startMin: 5 * 60, endMin: 6 * 60 + 30, note: "Light at the wake anchor, clear of the 07:30 team breakfast.", citationId: citations[2].id },
-        { kind: "caffeine_cutoff", startMin: 13 * 60 + 40, note: "Cutoff tracks the earlier bedtime.", citationId: citations[0].id },
-        { kind: "avoid_light", startMin: 20 * 60 + 40, endMin: 21 * 60 + 40, note: "Evening light is the enemy of an advance.", citationId: citations[3].id },
-        { kind: "sleep_window", startMin: 21 * 60 + 40, endMin: 4 * 60 + 30, note: "Bed 21:40, up 04:30." },
+        { kind: "light_exposure", startMin: 8 * 60 + 30, endMin: 9 * 60 + 30, note: "Light after the 07:30 team breakfast — the only free ≥07:00 window.", citationId: citations[2].id },
+        { kind: "caffeine_cutoff", startMin: 14 * 60 + 20, note: "Cutoff tracks the earlier bedtime.", citationId: citations[0].id },
+        { kind: "avoid_light", startMin: 21 * 60 + 25, endMin: 22 * 60 + 25, note: "Evening light is the enemy of an advance.", citationId: citations[3].id },
+        { kind: "sleep_window", startMin: 22 * 60 + 25, endMin: 5 * 60 + 15, note: "Hold the line: bed 22:25, up 05:15 — earlier would break the 05:15 floor." },
       ],
     },
     {
       dayIndex: 2,
       label: "D-1",
-      shiftMin: -65,
-      targetBedtimeMin: 21 * 60 + 45,
-      targetWakeMin: 3 * 60 + 45,
+      shiftMin: 0,
+      targetBedtimeMin: 22 * 60 + 25,
+      targetWakeMin: 5 * 60 + 15,
       interventions: [
-        { kind: "light_exposure", startMin: 3 * 60 + 50, endMin: 4 * 60 + 50, note: "Last pre-flight anchor." },
-        { kind: "caffeine_cutoff", startMin: 13 * 60 + 45, note: "8h before the 21:45 bedtime." },
+        { kind: "light_exposure", startMin: 7 * 60, endMin: 8 * 60, note: "Last pre-flight anchor, from the 07:00 floor." },
+        { kind: "caffeine_cutoff", startMin: 14 * 60 + 20, note: "8h before the 22:25 bedtime." },
         { kind: "meal_timing", startMin: 19 * 60 + 30, endMin: 21 * 60 + 30, note: "Dinner with Sarah stays — it doubles as the last big meal, nothing after.", citationId: citations[0].id },
-        { kind: "avoid_light", startMin: 21 * 60 + 30, endMin: 21 * 60 + 45, note: "Straight home, lights low." },
-        { kind: "sleep_window", startMin: 21 * 60 + 45, endMin: 3 * 60 + 45, note: "Bed 21:45 — the dinner pushes it, but cancelling costs more than 15 minutes." },
+        { kind: "avoid_light", startMin: 21 * 60 + 40, endMin: 22 * 60 + 25, note: "Straight home, lights low." },
+        { kind: "sleep_window", startMin: 22 * 60 + 25, endMin: 5 * 60 + 15, note: "Bed 22:25 — the dinner holds the wind-down to 21:40." },
       ],
     },
     {
       dayIndex: 3,
       label: "Flight",
-      shiftMin: -90,
+      shiftMin: 0,
       targetBedtimeMin: 12 * 60 + 30,
       targetWakeMin: 18 * 60 + 30,
       interventions: [
@@ -72,11 +75,11 @@ export function scriptedDays(citations: Citation[]): DayPlan[] {
     {
       dayIndex: 4,
       label: "D+1",
-      shiftMin: -90,
+      shiftMin: 0,
       targetBedtimeMin: 21 * 60,
       targetWakeMin: 5 * 60,
       interventions: [
-        { kind: "light_exposure", startMin: 5 * 60, endMin: 7 * 60, note: "Outside within 30min of waking — destination daylight does the work now.", citationId: citations[2].id },
+        { kind: "light_exposure", startMin: 7 * 60, endMin: 8 * 60 + 30, note: "Outside from 07:00 destination-local — daylight does the work now.", citationId: citations[2].id },
         { kind: "caffeine_cutoff", startMin: 13 * 60, note: "Local-time cutoff, 8h before bed." },
         { kind: "exercise", startMin: 7 * 60 + 30, endMin: 8 * 60 + 15, note: "Light movement in daylight reinforces the anchor.", citationId: citations[0].id },
         { kind: "sleep_window", startMin: 21 * 60, endMin: 5 * 60, note: "First full night on destination time." },

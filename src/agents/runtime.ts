@@ -7,8 +7,9 @@ import { solveDay } from "@/domain/solver";
 import { ScopeGuard, scrub } from "@/domain/scope";
 import { ADHERENCE_PROFILE, DEMO_TRIP, GARMIN_BASELINE } from "@/domain/fixtures";
 import { foldCheckIns } from "@/domain/adherence";
-import { loadMemory, memoryBrief, recordRun } from "@/domain/memory";import type {
+import { loadMemory, memoryBriefWithCrossTrip, recordRun } from "@/domain/memory";import type {
   AdherenceProfile,
+  BaselineKind,
   CalendarEvent,
   CalendarMove,
   CheckIn,
@@ -17,6 +18,7 @@ import { loadMemory, memoryBrief, recordRun } from "@/domain/memory";import type
   CrewEvent,
   DayPlan,
   EvalResult,
+  WearableBaseline,
 } from "@/domain/types";
 import { CREW, type CrewMember } from "./crew";
 import { handoffLines } from "./handoff";
@@ -28,7 +30,7 @@ import { createPlanEvents, patchGoogleEvent } from "@/tools/calendar-google";
 import { searchScience } from "@/tools/science";
 import { searchTavily, tavilyEnabled } from "@/tools/tavily";
 import { destinationTaste, qlooEnabled } from "@/tools/qloo";
-import { getAdherenceProfile, getRecentNights, getWearableBaseline } from "@/tools/wearable";
+import { getAdherenceProfile, getRecentNights } from "@/tools/wearable";
 
 const ARTIFACTS_DIR = path.join(process.cwd(), "artifacts");
 const MAX_ATTEMPTS_PER_DAY = 2;
@@ -55,6 +57,12 @@ export function runCrew(opts?: {
   startDayIndex?: number;
   /** Tenant for graph memory isolation — `meridian:{tenant}` graph. */
   tenant?: string;
+  /** Wearable baseline — fixture unless the traveller answered the wake
+   *  question. Replay transcripts stay pinned to the fixture either way. */
+  baseline?: WearableBaseline;
+  /** Where the baseline came from — garmin / wake-band / demo-default —
+   *  carried through run_start so surfaces label numbers honestly. */
+  baselineKind?: BaselineKind;
 }): AsyncGenerator<CrewEvent> {
   const queue: CrewEvent[] = [];
   const notifier: { fn: (() => void) | null } = { fn: null };
@@ -84,6 +92,8 @@ export function runCrew(opts?: {
             opts?.startDayIndex ?? 0,
             kind,
             opts?.tenant,
+            opts?.baseline,
+            opts?.baselineKind,
           );
         const primary = providerKind();
         try {
@@ -151,9 +161,9 @@ interface RunState {
   briefingText: string;
 }
 
-async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[], calendarSource: "google" | "fixture" = "fixture", checkIns: CheckIn[] = [], startDayIndex: number = 0, kind: ProviderKind = providerKind(), tenant?: string) {
+async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[], calendarSource: "google" | "fixture" = "fixture", checkIns: CheckIn[] = [], startDayIndex: number = 0, kind: ProviderKind = providerKind(), tenant?: string, baseline: WearableBaseline = GARMIN_BASELINE, baselineKind?: BaselineKind) {
   const adherence = checkIns.length ? foldCheckIns(ADHERENCE_PROFILE, checkIns) : ADHERENCE_PROFILE;
-  const memory = await loadMemory();
+  const memory = await loadMemory(tenant);
   // Graph memory is offered as fixed tools, not prompt prose — the analyst
   // calls recallFindings/priorFailures and every answer carries the hop path.
   // Absent without FALKORDB_URL/HOST; a down DB returns "graph memory offline".
@@ -213,7 +223,8 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
     type: "run_start",
     provider: kind,
     trip,
-    baseline: GARMIN_BASELINE,
+    baseline,
+    baselineKind,
     calendar: state.calendar,
   });
   for (const checkIn of checkIns) emit({ type: "check_in", checkIn });
@@ -231,9 +242,9 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
     CREW.analyst,
     {
       prompt:
-        `Baseline + adherence profile are on your tools. Give the planner the constraints: chronotype, habitual window, and the compliance floor. Cross-run memory: ${memoryBrief(memory)}${Object.keys(graphTools).length ? " Before answering, you MUST consult the traveller's graph memory: call priorFailures('light_exposure') and priorFailures('caffeine_cutoff'), then recallFindings for any intervention or day you constrain. Cite what came from memory with its session. If a tool answers 'not in graph', say the graph doesn't know rather than guessing." : ""}`,
+        `Baseline + adherence profile are on your tools. Give the planner the constraints: chronotype, habitual window, and the compliance floor. Cross-run memory: ${memoryBriefWithCrossTrip(memory, { origin: trip.origin.code, destination: trip.destination.code })}${Object.keys(graphTools).length ? " Before answering, you MUST consult the traveller's graph memory: call priorFailures('light_exposure') and priorFailures('caffeine_cutoff'), then recallFindings for any intervention or day you constrain. Cite what came from memory with its session. If a tool answers 'not in graph', say the graph doesn't know rather than guessing." : ""}`,
       tools: {
-        getWearableBaseline: bare("Read the wearer's wearable baseline", () => getWearableBaseline()),
+        getWearableBaseline: bare("Read the wearer's wearable baseline", () => baseline),
         getRecentNights: bare("Read recent sleep nights", () => getRecentNights()),
         getAdherenceProfile: bare("Read the adherence profile", () => getAdherenceProfile()),
         ...graphTools,
@@ -294,7 +305,7 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
       lockedDays: state.lockedDays,
       calendar: state.calendar,
       adherence,
-      baseline: GARMIN_BASELINE,
+      baseline,
     });
     logLine(
       solved
@@ -415,7 +426,7 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
         calendar: state.calendar,
         adherence,
         citations: state.citations,
-        baseline: GARMIN_BASELINE,
+        baseline,
       });
       state.evals.push(result);
       emit({ type: "eval_result", result, attempt });
@@ -547,7 +558,7 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
   // locked days with moves folded in — if the negotiator created a collision
   // the scorer would have rejected, the entire move set is reverted and the
   // wearer keeps their original calendar rather than a broken one.
-  const verdict = verifyCommittedCalendar(state.calendar, state.lockedDays, trip, state.citations, adherence);
+  const verdict = verifyCommittedCalendar(state.calendar, state.lockedDays, trip, state.citations, adherence, baseline);
   if (verdict.length) {
     for (const e of state.calendar) delete e.movedTo;
     state.calendar = preNegotiation.map((e) => ({ ...e }));
@@ -600,13 +611,29 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
   });
   logLine(`briefing issued — score ${meanScore}, coverage ${Math.round(coverage.ratio * 100)}%`);
 
-  await recordRun({
-    at: Date.now(),
-    tripLabel: `${trip.origin.code}→${trip.destination.code}`,
-    lockedDays: state.lockedDays.length,
-    meanScore,
-  });
-  try {
+  // Everything past the briefing is optional bookkeeping, and none of it may
+  // hold the stream open. An unreachable FalkorDB used to block here forever:
+  // the briefing was delivered, `done` never was, and the client sat on a
+  // disabled button with no error to show for it. Bounded the same way the
+  // check-in intake route is — see api/crew/checkin/route.ts.
+  const optionalWrite = async (label: string, work: () => Promise<unknown>) => {
+    try {
+      await Promise.race([work(), new Promise((r) => setTimeout(r, 4000))]);
+    } catch {
+      logLine(`${label} unavailable — optional, skipped`);
+    }
+  };
+
+  await optionalWrite("crew memory", () =>
+    recordRun({
+      at: Date.now(),
+      tripLabel: `${trip.origin.code}→${trip.destination.code}`,
+      lockedDays: state.lockedDays.length,
+      meanScore,
+    }, tenant),
+  );
+
+  await optionalWrite("graph memory", async () => {
     const gm = await import("@/domain/graph-memory");
     if (gm.graphEnabled()) {
       await gm.recordFinding(
@@ -616,10 +643,9 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
         tenant,
       );
     }
-  } catch {
-    // FalkorDB is optional.
-  }
-  try {
+  });
+
+  await optionalWrite("supabase", async () => {
     const { persistRun } = await import("@/tools/supabase");
     await persistRun({
       savedAt: new Date().toISOString(),
@@ -634,10 +660,9 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
       days: state.lockedDays.map((d) => ({ label: d.label, shiftMin: d.shiftMin })),
       provider: kind,
     });
-  } catch {
-    // Optional Supabase persistence; file memory remains source of truth.
-  }
-  await persistArtifacts(state, trip, calendarSource, kind);
+  });
+
+  await optionalWrite("artifacts", () => persistArtifacts(state, trip, calendarSource, kind));
   emit({ type: "done" });
 }
 
@@ -717,10 +742,11 @@ function verifyCommittedCalendar(
   trip: Trip,
   citations: Citation[],
   adherence: AdherenceProfile,
+  wearable: WearableBaseline,
 ): string[] {
   if (!lockedDays.length) return [];
   const baseline = new Set([
-    ...evaluatePlan({ trip, days: lockedDays, calendar, adherence, citations, baseline: GARMIN_BASELINE }).violations.map((v) => v.message),
+    ...evaluatePlan({ trip, days: lockedDays, calendar, adherence, citations, baseline: wearable }).violations.map((v) => v.message),
     ...scheduleClashes(calendar, lockedDays),
   ]);
   const committed = [
@@ -730,7 +756,7 @@ function verifyCommittedCalendar(
       calendar: effectiveCalendar(calendar),
       adherence,
       citations,
-      baseline: GARMIN_BASELINE,
+      baseline: wearable,
     }).violations.map((v) => v.message),
     ...scheduleClashes(effectiveCalendar(calendar), lockedDays),
   ];

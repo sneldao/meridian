@@ -41,3 +41,18 @@ export function fmtUtcOffset(min: number): string {
   const m = a % 60;
   return `UTC${sign}${h}${m ? `:${String(m).padStart(2, "0")}` : ""}`;
 }
+
+/** "09:14" — the wall clock in `tz` at the instant `at`.
+ *
+ *  Formatting through Intl (rather than offset arithmetic + a formatter) so
+ *  the hour that prints is the hour a person in that city sees, including the
+ *  half-hours and the DST edge days. This is what the globe hover uses, so a
+ *  tourist-tapped city never shows a time its own clocks disagree with. */
+export function localClock(tz: string, at: Date): string {
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: tz,
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(at);
+}

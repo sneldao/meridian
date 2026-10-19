@@ -9,7 +9,7 @@ import type { AdherenceProfile, CalendarEvent, Citation, DayPlan, Intervention, 
 import { scriptedDays } from "./replay";
 
 const wrap = (m: number) => ((m % 1440) + 1440) % 1440;
-const SCRIPTED_TOTAL = 380; // sum of |shiftMin| in scriptedDays
+const SCRIPTED_TOTAL = 90; // sum of |shiftMin| in scriptedDays
 
 export interface ReplayPlan {
   days: DayPlan[];
@@ -46,9 +46,10 @@ function scriptedBadDrafts(days: DayPlan[]): Map<number, DayPlan> {
       1,
       {
         ...days[1],
+        shiftMin: -75,
         interventions: [
           { kind: "light_exposure", startMin: 6 * 60, endMin: 7 * 60 + 45, note: "Wide morning light block." },
-          { kind: "sleep_window", startMin: 21 * 60 + 40, endMin: 4 * 60 + 30, note: `Bed 21:40, up 04:30.` },
+          { kind: "sleep_window", startMin: 22 * 60 + 25, endMin: 5 * 60 + 15, note: `Bed 22:25, up 05:15.` },
         ],
       },
     ],
@@ -56,11 +57,12 @@ function scriptedBadDrafts(days: DayPlan[]): Map<number, DayPlan> {
       2,
       {
         ...days[2],
-        targetBedtimeMin: 20 * 60,
-        targetWakeMin: 3 * 60 + 5,
+        shiftMin: -120,
+        targetBedtimeMin: 19 * 60 + 30,
+        targetWakeMin: 3 * 60 + 30,
         interventions: [
-          { kind: "sleep_window", startMin: 20 * 60, endMin: 3 * 60 + 5, note: "Aggressive early night." },
-          { kind: "light_exposure", startMin: 3 * 60 + 30, endMin: 4 * 60 + 30, note: "Wake anchor." },
+          { kind: "sleep_window", startMin: 19 * 60 + 30, endMin: 3 * 60 + 30, note: "Bank the whole shift tonight." },
+          { kind: "light_exposure", startMin: 3 * 60 + 45, endMin: 4 * 60 + 45, note: "Wake anchor." },
         ],
       },
     ],

@@ -117,8 +117,12 @@ export function coverageOf(trip: Trip, days: DayPlan[]): ShiftCoverage {
 export function modelShiftMin(
   day: DayPlan,
   sleepRef?: { bedtimeMin: number; wakeMin: number },
+  phaseRef?: { wakeMin: number },
 ): number {
-  const cbt = wrapMin(day.targetWakeMin - CBT_BEFORE_WAKE_MIN);
+  // CBT follows the body's current phase, not the day's target schedule —
+  // after landing they're different clocks, and it's the phase that decides
+  // whether local light lands in the advance or delay zone.
+  const cbt = wrapMin((phaseRef?.wakeMin ?? day.targetWakeMin) - CBT_BEFORE_WAKE_MIN);
   let advance = 0;
   let delay = 0;
 
@@ -173,6 +177,13 @@ export function evaluatePlan(input: EvalInput): EvalResult {
   const notes: string[] = [];
   let adherencePenalty = 0;
 
+  // Body-clock phase chain: where the clock actually sits in each day's
+  // frame, carried forward by locked shifts and converted once across the
+  // flight boundary. Day 0's phase is the wearer's baseline.
+  let phase = input.baseline
+    ? { bedtimeMin: input.baseline.avgBedtimeMin, wakeMin: input.baseline.avgWakeMin }
+    : undefined;
+
   // --- Physiological feasibility -------------------------------------------
   input.days.forEach((day, i) => {
     if (Math.abs(day.shiftMin) > MAX_SHIFT_MIN_PER_DAY) {
@@ -182,12 +193,28 @@ export function evaluatePlan(input: EvalInput): EvalResult {
         message: `${day.label}: ${Math.abs(day.shiftMin)}min shift exceeds the ${MAX_SHIFT_MIN_PER_DAY}min/day physiological ceiling.`,
       });
     }
-    if (i > 0 && Math.sign(day.shiftMin) !== Math.sign(input.days[i - 1].shiftMin) && day.shiftMin !== 0) {
+    // A flip is a shift against the trip's direction — judged against the
+    // trip, not the previous shifted day: a day returning to the right
+    // direction after a flagged flip is the correction, not a second yo-yo.
+    // Holds are pauses and don't change the reference.
+    const referenceSign = input.trip.direction === "east" ? -1 : 1;
+    if (day.shiftMin !== 0 && Math.sign(day.shiftMin) !== referenceSign) {
       violations.push({
         code: "SHIFT_DIRECTION_FLIP",
         dayIndex: day.dayIndex,
         message: `${day.label}: shift direction flips — the clock cannot yo-yo.`,
       });
+    }
+
+    if (phase) {
+      const off =
+        day.dayIndex === input.trip.departureDayIndex
+          ? input.trip.destination.utcOffsetMin - input.trip.origin.utcOffsetMin
+          : 0;
+      phase = {
+        bedtimeMin: wrapMin(phase.bedtimeMin + day.shiftMin + off),
+        wakeMin: wrapMin(phase.wakeMin + day.shiftMin + off),
+      };
     }
 
     const sleepMin =
@@ -211,12 +238,16 @@ export function evaluatePlan(input: EvalInput): EvalResult {
     }
     for (const iv of day.interventions) {
       if (iv.kind === "light_exposure" && day.shiftMin < 0) {
-        const gap = Math.abs(iv.startMin - day.targetWakeMin);
+        // Anchor on the body's phase wake, not the schedule target — on
+        // post-flight days they're different clocks, and phase-anchored
+        // midday light is the correct advance lever, not "mistimed".
+        const anchorWake = phase?.wakeMin ?? day.targetWakeMin;
+        const gap = Math.abs(iv.startMin - anchorWake);
         if (gap > LIGHT_ANCHOR_WINDOW_MIN) {
           violations.push({
             code: "LIGHT_WRONG_WINDOW",
             dayIndex: day.dayIndex,
-            message: `${day.label}: light at ${fmtMin(iv.startMin)} is ${Math.round(gap / 60)}h from the ${fmtMin(day.targetWakeMin)} wake target — mistimed light can shift the wrong way.`,
+            message: `${day.label}: light at ${fmtMin(iv.startMin)} is ${Math.round(gap / 60)}h from the ${fmtMin(anchorWake)} body-clock wake — mistimed light can shift the wrong way.`,
           });
         }
       }
@@ -234,17 +265,13 @@ export function evaluatePlan(input: EvalInput): EvalResult {
 
     // --- Declared vs. modeled shift ------------------------------------------
     // The planner writes shiftMin; the model derives what the day's zeitgeber
-    // timing supports. The day after the flight has no schedule to shift from
-    // (in-flight sleep is transit, not an anchor), so no sleep reference.
+    // timing supports. `phase` is the body clock's position in this day's
+    // clock frame: baseline, plus every locked shift, converted once across
+    // the flight boundary. The schedule-move zeitgeber is measured against
+    // the phase (where the body is), not the previous day's targets (where
+    // the schedule was) — they diverge when days don't hit their targets.
     if (day.shiftMin !== 0) {
-      const prev = i > 0 ? input.days[i - 1] : undefined;
-      const sleepRef =
-        prev && prev.dayIndex !== input.trip.departureDayIndex
-          ? { bedtimeMin: prev.targetBedtimeMin, wakeMin: prev.targetWakeMin }
-          : i === 0 && input.baseline
-            ? { bedtimeMin: input.baseline.avgBedtimeMin, wakeMin: input.baseline.avgWakeMin }
-            : undefined;
-      const support = Math.sign(day.shiftMin) * modelShiftMin(day, sleepRef);
+      const support = Math.sign(day.shiftMin) * modelShiftMin(day, phase, phase);
       const gap = Math.abs(day.shiftMin) - support;
       if (gap > SHIFT_OVER_TOLERANCE_MIN) {
         violations.push({

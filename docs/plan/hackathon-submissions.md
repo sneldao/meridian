@@ -5,11 +5,14 @@ fit-to-effort. Researched 2026-10-15 via Tavily; verify rules pages before
 submitting — Devpost deadlines shift.
 
 **Already in flight:** Graph Hacks (FalkorDB × WeMakeDevs), deadline
-**2026-10-18** — see [graph-hackathon.md](graph-hackathon.md) and
-[graph-memory.md](../reference/graph-memory.md). Same-day deadline:
-**DEV Hacktoberfest Open-Source AI Challenge, Week 2 (Side Hustle)** —
-deliverable is a DEV post, not a Devpost package. Post draft:
-[dev-week2-post.md](dev-week2-post.md).
+**2026-10-18 23:59 IST (= 19:29 BST)** — see
+[graph-hackathon.md](../archive/graph-hackathon.md) and
+[graph-memory.md](../reference/graph-memory.md). Graph Hacks side prize:
+**best blog post wins AirPods 5** — "what you built, how it works, what you
+learned," submitted with the project. Same-day deadline: **DEV Hacktoberfest
+Open-Source AI Challenge, Week 2 (Side Hustle)**, 23:59 PDT. ONE post covers
+both: [dev-week2-post.md](dev-week2-post.md) — publish on DEV first, then
+link the live URL in the Graph Hacks submission.
 
 ## DEV Challenge — Hacktoberfest Week 2: Side Hustle
 
@@ -37,9 +40,15 @@ deliverable is a DEV post, not a Devpost package. Post draft:
   Claude (verified run: 18 tool calls, 2 rejections, score 0.91, 15
   citations) — "cheap model + deterministic verifier" IS the pitch.
 
-### Meridian angle — post drafted, actions open
+### Meridian angle — **PUBLISHED 2026-10-16**
 
-- [ ] Publish `docs/plan/dev-week2-post.md` before Oct 18 11:59 PM PDT
+- [x] Post live: https://dev.to/papajams/meridian-the-ai-travel-crew-that-learns-from-your-jet-lag-30o2
+      (tags ✓, repo embed ✓, Render + ElevenLabs categories declared,
+      Graph Hacks blog footer ✓ — doubles as its Track 2 blog entry.
+      NOTE: published text was rewritten in the author's voice; the local
+      draft `dev-week2-post.md` is the pre-edit version)
+- [ ] **Sunday:** paste the post URL into the Graph Hacks submission
+      (deadline 19:29 BST — binding, earlier than DEV's 23:59 PDT)
 - [ ] Decide: keep public URL on `AGENT_PROVIDER=replay`, or add a second
       Render service on `featherless` so judges hit live open-model
       inference (strengthens the Render claim; ~pennies/run risk)
@@ -151,12 +160,11 @@ the repo About**, text description.
   reference, 2026-10-15). Otto gets a `destinationTaste` tool grounding
   intervention notes in what the place actually offers — never touches timing
   or the scorer. Also MCP `destination_taste`.
-- ~~CRITICAL PATH~~ **key requested 2026-10-15** — provisioning is manual,
-  "a few business days". Keys only work against `hackathon.api.qloo.com`
-  (`X-Api-Key` header) — wired as `QLOO_API_KEY` + `QLOO_BASE_URL` in
-  `.env.local`, drop the key in when the email lands.
-- Once the key lands: smoke `destination_taste` for a real place list (params
-  verified; response fields still need a live check), one `plan_shift` run,
+- ~~CRITICAL PATH~~ **key landed + verified live (2026-10-15)** —
+  `destinationTaste("Tokyo")` returns real places (Tokyo Tower, Mori Art
+  Museum, Fuglen coffee, observation decks) via `hackathon.api.qloo.com`.
+  Key set on `.env.local` + Render service.
+- Remaining: one `plan_shift` run showing Otto's note grounded by Qloo,
   submission text.
 - **Action needed before submit:** add an OSI license file (repo currently
   private/unlicensed — confirm with team) and describe the Qloo delta in the
@@ -177,34 +185,47 @@ the repo About**, text description.
 ## One video for all
 
 Record a single ~3-min demo (PayPal's cap; safe everywhere) where every
-sponsor integration appears in one shot list. Record after Graph Hacks lands —
-the memory hop-path answer is the strongest beat.
+sponsor integration appears in one shot list. **Record after item 7 (the
+arrival surface) lands** — "the crew learned from your week" is the payoff,
+and a cut without it undersells. The depth dial still carries the arc:
+product first, agent infra underneath.
 
-Post-consolidation arc — the app now has three depths (`docs/plan/
-consolidation.md`): `/` consumer face, per-nudge evidence (Guided), `/crew`
-operator surface. The video walks the dial — product first, agent infra
-underneath, which is a stronger submission than dashboard-first.
+Refreshed 2026-10-17 for the shipped product. The new beats vs the old cut:
+the check-in loop is now real (per-step did/skip → ledger → replan), the
+flight picker actually plans, and memory is per-traveller — "the crew learns
+*you*", not whoever used the demo last.
 
-1. **Cold open** — landing at `/` (calm face): pick LHR→HND, crew run
-   starts. (5s)
-2. **The face** — day nudges appear; Guided ribbon: "Crew: drafted 2× ·
-   scorer rejected 1× · locked at 0.91". (10s)
-3. **Show your work** — tap a nudge's "Why & details": the evidence row —
-   gate score, rejection-and-retry, backing citation, memory hop path.
-   *This is the consolidation arc's signature shot.* (15s)
-4. **Crew feed** — flip to `/crew` (`?depth=operator` URL): Mara reads the
-   baseline; Jun calls `searchScience` then `searchWeb` (Tavily hit in the
-   feed). (20s)
-5. **The gate** — Otto's draft rejected by the scorer, evaluator explains,
-   retry locks. "Agents propose, code disposes." (30s)
-6. **Memory** — `recall_findings` answer with hop path in the ledger. (15s)
-7. **Taste** — Otto calls `destinationTaste`; a plan note grounds a light
-   break in a real Tokyo venue category. (15s)
-8. **Handoff** — briefing card + `.ics` download + calendar moves. (15s)
-9. **The MCP surface** — terminal split: `tools/call plan_shift` against
-   the live Render URL. (15s)
-10. **Close** — "agents that fly ahead of you" + provider badge visible
-    (`nebius` in the run header for the NVIDIA cut). (5s)
+1. **Cold open** — `/` (calm face): the trip's already there, "Land at 100%"
+   in the nav. (5s)
+2. **The face** — day rail with the hero "your next step", provenance tag
+   visible ("sample profile" on baseline before connect). (10s)
+3. **The loop** — tap Skip on the 05:30 light ask; the rail mutes it, the
+   check-in card shows "1 step marked" → "Check in →" → replan event, the
+   rest of the day re-solves. *The signature shot* — the product learning in
+   real time. (25s)
+4. **Show your work** — `?depth=guided`, a step's "Why & details": gate
+   score, revised-once chip, citation, memory hop path. (15s)
+5. **Crew feed** — `/crew`: Mara reads the baseline, Jun's `searchScience`/
+   `searchWeb` (Tavily) hits in the feed. (20s)
+6. **The gate** — Otto's draft rejected by the scorer, retry locks.
+   "Agents propose, code disposes." (25s)
+7. **Memory** — `recall_findings`/`prior_failures` answer with hop path;
+   name the per-traveller scoping ("this is your traveller's graph,
+   `meridian:{tid}` — not a shared pool"). (15s)
+8. **Flight picker** — Personalise → pick `evening-redeye`: the flight event
+   moves and the day's asks re-solve around it. (15s)
+9. **Handoff** — briefing card + `.ics` + calendar moves. (15s)
+10. **The MCP surface** — terminal split: `tools/call plan_shift` against
+    the live Render URL. (15s)
+11. **[Item 7] Landing** — arrival surface cashing "land at 100%": what the
+    week looked like, what the crew learned, link to `/outcome`. (20s)
+12. **Close** — "agents that fly ahead of you" + provider badge (`nebius`
+    in the header for the NVIDIA cut). (5s)
+
+Honesty notes for the voiceover: the public URL runs replay (zero-cost) —
+say "the same run replays deterministically; live open-model is one env
+var". FalkorDB off by default; a down graph degrades gracefully, which is
+itself a beat ("agents get 'not in graph', not a made-up answer").
 
 Tailoring per submission is just the voiceover + the last 10s frame — the
 footage never changes.

@@ -1,7 +1,10 @@
 import { NextRequest } from "next/server";
-import { buildTrip, isKnownCity } from "@/domain/fixtures";
+import { applyFlightChoice, buildTrip, horizonFor, isKnownCity, resolveBaselineState, type WakeBand } from "@/domain/fixtures";
+import { flightWindowFor } from "@/domain/nudges";
 import { fetchCalendar } from "@/tools/calendar";
 import { runCrew } from "@/agents/runtime";
+import { rateLimit, tooMany, RL_RUNS } from "@/lib/rateLimit";
+import { tenantOf } from "@/lib/tenant";
 import type { CheckIn } from "@/domain/types";
 
 export const dynamic = "force-dynamic";
@@ -29,12 +32,26 @@ export async function GET(req: NextRequest) {
 
   const startDayRaw = sp.get("startDay");
   const startDayIndex = startDayRaw === null ? 0 : Number(startDayRaw);
-  if (!Number.isInteger(startDayIndex) || startDayIndex < 0 || startDayIndex > 4) {
+
+  // Bounded spend: one full crew run costs real tokens — cap runs per IP.
+  const rl = rateLimit(req, "crew-run", { limit: RL_RUNS, windowMs: 3_600_000 });
+  if (!rl.ok) return tooMany(rl.retryAfterSec);
+
+  const draft = buildTrip(originRaw, destRaw, date);
+  const daysUntil = Math.round((new Date(date + "T00:00:00Z").getTime() - Date.now()) / 86400000);
+  const trip = buildTrip(originRaw, destRaw, date, horizonFor(draft.requiredShiftMin, Math.max(0, daysUntil)));
+  if (!Number.isInteger(startDayIndex) || startDayIndex < 0 || startDayIndex > trip.days.length - 1) {
     return new Response(JSON.stringify({ error: "invalid startDay" }), { status: 400 });
   }
-
-  const trip = buildTrip(originRaw, destRaw, date);
-  const { events: calendar, source: calendarSource } = await fetchCalendar(trip);
+  const wake = sp.get("wake");
+  const { baseline, kind: baselineKind } = resolveBaselineState(
+    wake === "before6" || wake === "6to8" || wake === "after8" ? (wake as WakeBand) : null,
+  );
+  const fetched = await fetchCalendar(trip);
+  // The flight picker's choice plans around the real departure window.
+  const flightWindow = flightWindowFor(trip, sp.get("flight"));
+  const calendar = flightWindow ? applyFlightChoice(fetched.events, flightWindow.departMin) : fetched.events;
+  const calendarSource = fetched.source;
 
   let checkIns: CheckIn[] = [];
   const rawCI = sp.get("checkins");
@@ -53,7 +70,7 @@ export async function GET(req: NextRequest) {
   const stream = new ReadableStream({
     async start(controller) {
       try {
-        for await (const event of runCrew({ trip, calendar, calendarSource, checkIns, startDayIndex, tenant: sp.get("tenant") ?? undefined })) {
+        for await (const event of runCrew({ trip, calendar, calendarSource, baseline, baselineKind, checkIns, startDayIndex, tenant: tenantOf(req) })) {
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
         }
       } catch (err) {

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { foldCheckIns, parseCheckInText } from "@/domain/adherence";
 import { listCheckIns, recordCheckIn } from "@/domain/memory";
 import { ADHERENCE_PROFILE } from "@/domain/fixtures";
+import { tenantOf } from "@/lib/tenant";
 import type { CheckInRequest } from "@/domain/types";
 
 export const dynamic = "force-dynamic";
@@ -22,27 +23,31 @@ export async function POST(req: Request) {
   }
 
   const checkIn = parseCheckInText(body);
-  const memory = await recordCheckIn(checkIn);
+  const tenant = tenantOf(req);
+  const memory = await recordCheckIn(checkIn, tenant);
   const adherence = foldCheckIns(ADHERENCE_PROFILE, memory.checkIns);
-  try {
-    const { persistCheckIn } = await import("@/tools/supabase");
-    await persistCheckIn(checkIn);
-  } catch {
-    // Supabase is optional.
-  }
-  try {
-    const { recordCheckInToGraph } = await import("@/domain/graph-memory");
-    const tenant = new URL(req.url).searchParams.get("tenant") ?? undefined;
-    await recordCheckInToGraph(checkIn, tenant);
-  } catch {
-    // FalkorDB is optional.
-  }
+  // Optional writes are bonus paths — bounded so a slow remote (a cold
+  // FalkorDB instance can take seconds) never holds the response hostage.
+  const bonusWrites: Promise<unknown>[] = [
+    (async () => {
+      const { persistCheckIn } = await import("@/tools/supabase");
+      await persistCheckIn(checkIn);
+    })(),
+    (async () => {
+      const { recordCheckInToGraph } = await import("@/domain/graph-memory");
+      await recordCheckInToGraph(checkIn, tenant);
+    })(),
+  ];
+  await Promise.race([
+    Promise.allSettled(bonusWrites),
+    new Promise((r) => setTimeout(r, 4000)),
+  ]);
 
   return NextResponse.json({ ok: true, checkIn, adherence, learned: memory.learned });
 }
 
-export async function GET() {
-  const checkIns = await listCheckIns();
+export async function GET(req: Request) {
+  const checkIns = await listCheckIns(tenantOf(req));
   const adherence = foldCheckIns(ADHERENCE_PROFILE, checkIns);
   return NextResponse.json({ checkIns, adherence });
 }

@@ -10,16 +10,19 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#07090f",
+  themeColor: "#D96B43",
 };
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className="antialiased">
         {children}
+        <Script id="theme-init" strategy="beforeInteractive">
+          {"try{var t=localStorage.getItem('meridian:theme')||'auto';var dark=t==='dark'||(t==='auto'&&((window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)||new Date().getHours()>=21||new Date().getHours()<6));document.documentElement.dataset.theme=dark?'night':''}catch(e){}"}
+        </Script>
         <Script id="sw-register" strategy="afterInteractive">
           {"if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(()=>{});}"}
         </Script>

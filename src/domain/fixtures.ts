@@ -1,5 +1,6 @@
 import type {
   AdherenceProfile,
+  BaselineKind,
   CalendarEvent,
   City,
   CityCode,
@@ -38,22 +39,36 @@ export function isKnownCity(code: string | null | undefined): code is CityCode {
  * (home on D-3, destination on arrival), and the shift wraps into ±12 h so
  * SFO → SIN is an 8 h delay, not a 16 h advance.
  */
-export function buildTrip(originCode: CityCode, destCode: CityCode, departureDate: string): Trip {
+export interface TripHorizon {
+  /** Days shown before the flight — the consumer page defaults to
+   *  min(3, days remaining). 0 = departs today. */
+  preFlightDays?: number;
+  /** Days shown after the flight — sized to the residual shift, bounded. */
+  postFlightDays?: number;
+}
+
+export function buildTrip(originCode: CityCode, destCode: CityCode, departureDate: string, horizon: TripHorizon = {}): Trip {
+  const pre = horizon.preFlightDays ?? 3;
+  const post = horizon.postFlightDays ?? 1;
   const flight = new Date(departureDate + "T00:00:00Z");
-  const days = ["D-3", "D-2", "D-1", "Flight", "D+1"].map((label, i) => {
+  const labels: string[] = [];
+  for (let i = pre; i >= 1; i--) labels.push(`D-${i}`);
+  labels.push("Flight");
+  for (let i = 1; i <= post; i++) labels.push(`D+${i}`);
+  const days = labels.map((label, i) => {
     const d = new Date(flight);
-    d.setUTCDate(d.getUTCDate() + (i - 3));
+    d.setUTCDate(d.getUTCDate() + (i - pre));
     return { dayIndex: i, label, date: d.toISOString().slice(0, 10) };
   });
   const origin = cityOn(originCode, days[0].date);
-  const destination = cityOn(destCode, days[4].date);
+  const destination = cityOn(destCode, days[days.length - 1].date);
   const requiredShiftMin = wrapShiftMin(origin.utcOffsetMin - destination.utcOffsetMin); // negative = eastward advance
   const direction: Trip["direction"] = requiredShiftMin <= 0 ? "east" : "west";
   return {
     origin,
     destination,
     requiredShiftMin,
-    departureDayIndex: 3,
+    departureDayIndex: pre,
     direction,
     days,
   };
@@ -63,8 +78,44 @@ export const DEMO_TRIP: Trip = buildTrip("LHR", "HND", DEMO_DEPARTURE);
 
 /** The fixture calendar with the flight retitled for the trip's route. */
 export function calendarFor(trip: Trip): CalendarEvent[] {
-  return CALENDAR.map((e) =>
-    e.id === "ev-flight" ? { ...e, title: `Flight ${trip.origin.code} → ${trip.destination.code}` } : { ...e },
+  // Events are stored on the canonical 5-day shape (departureDayIndex 3);
+  // re-anchor them to this trip's flight day so pre-flight events stay
+  // relative to departure and the D+1 commitment lands the day after.
+  const shift = trip.departureDayIndex - 3;
+  return CALENDAR.map((e) => {
+    const dayIndex = e.dayIndex + shift;
+    if (dayIndex < 0 || dayIndex >= trip.days.length) return null;
+    const moved = { ...e, dayIndex };
+    return e.id === "ev-flight"
+      ? { ...moved, title: `Flight ${trip.origin.code} → ${trip.destination.code}` }
+      : moved;
+  }).filter((e): e is CalendarEvent => e !== null);
+}
+
+/** Applies a chosen flight window: the flight event keeps its duration and
+ *  moves to the picked departure, so fixed asks route around the real slot
+ *  instead of the fixture's 11:20. Returns the events unchanged when there is
+ *  no flight to move.
+ *
+ *  Ids alone are not enough. The fixture and the neutral calendar use
+ *  `ev-flight`/`n-flight`, but a connected Google calendar hands back hash ids
+ *  and a real carrier title ("BA005 LHR → HND"), so an id check silently
+ *  matched nothing and the picker became decorative again — while the API
+ *  still echoed the id back as valid. Recognise the event by shape as well:
+ *  a route pair between IATA codes, or the word "flight". */
+export function applyFlightChoice(events: CalendarEvent[], departMin: number): CalendarEvent[] {
+  const isFlight = (e: CalendarEvent) =>
+    e.id === "ev-flight" ||
+    e.id === "n-flight" ||
+    /\b[A-Z]{3}\s*(?:→|->|-)\s*[A-Z]{3}\b/.test(e.title) ||
+    /\bflights?\b/i.test(e.title);
+  const flight = events.find(isFlight);
+  // Nothing that looks like a flight — leave the calendar alone rather than
+  // inventing a slot to move.
+  if (!flight) return events;
+  const duration = flight.endMin - flight.startMin;
+  return events.map((e) =>
+    isFlight(e) ? { ...e, startMin: departMin, endMin: departMin + duration } : e,
   );
 }
 
@@ -112,3 +163,90 @@ export const CALENDAR: CalendarEvent[] = [
   { id: "ev-deep-1", title: "Deep work", dayIndex: 1, startMin: 14 * 60, endMin: 16 * 60, movable: true },
   { id: "ev-pack", title: "Pack + drop bags", dayIndex: 2, startMin: 16 * 60, endMin: 17 * 60 + 30, movable: true },
 ];
+
+/** The one consumer personalisation question (consumer-appeal): the wearer's
+ * natural wake anchor. Missing → the fixture profile, sample tag stays. */
+export type WakeBand = "before6" | "6to8" | "after8";
+
+export const WAKE_BAND_ANCHORS: Record<WakeBand, { wakeMin: number; chronotype: WearableBaseline["chronotype"] }> = {
+  before6: { wakeMin: 5 * 60 + 45, chronotype: "early" },
+  "6to8": { wakeMin: 6 * 60 + 45, chronotype: "neutral" },
+  after8: { wakeMin: 8 * 60, chronotype: "late" },
+};
+
+/** Merges a self-reported wake band over a baseline. Keeps the same sleep
+ * duration; bedtime follows the wake anchor. Returns `base` unchanged when
+ * the question was skipped — never invents a profile. 
+ *
+ *  Bedtime is `wake - sleep`, wrapped into a day. It used to be
+ *  `wake + sleep - 1440`, which is 24 hours out: waking at 06:45 after a 410
+ *  minute night put bedtime at 13:35 in the afternoon instead of 23:55. Every
+ *  band produced a profile the solver could not place anything against, so
+ *  answering the wake question silently emptied that day's plan. The fixture's
+ *  own three numbers are mutually consistent (`wake - sleep === bedtime`) and
+ *  that is the invariant to preserve. */
+export function resolveBaseline(band: WakeBand | null | undefined, base: WearableBaseline = GARMIN_BASELINE): WearableBaseline {
+  if (!band || !(band in WAKE_BAND_ANCHORS)) return base;
+  const { wakeMin, chronotype } = WAKE_BAND_ANCHORS[band];
+  return {
+    ...base,
+    avgWakeMin: wakeMin,
+    avgBedtimeMin: ((wakeMin - base.avgSleepMin) % 1440 + 1440) % 1440,
+    chronotype,
+    source: `${base.source} + self-report`,
+  };
+}
+
+/** The same resolution with provenance attached — the three states the UI
+ *  can honestly name: a connected wearable's numbers, a profile derived from
+ *  the traveller's own wake answer, or the sample persona. `source` mirrors
+ *  the trip payload's `baselineSource`; it defaults to the fixture, which is
+ *  what every caller passes until the wearable connector lands. */
+export function resolveBaselineState(
+  band: WakeBand | null | undefined,
+  base: WearableBaseline = GARMIN_BASELINE,
+  source: "garmin" | "fixture" = "fixture",
+): { baseline: WearableBaseline; kind: BaselineKind } {
+  if (source === "garmin") {
+    return { baseline: resolveBaseline(band, base), kind: "garmin" };
+  }
+  if (band && band in WAKE_BAND_ANCHORS) {
+    return { baseline: resolveBaseline(band, base), kind: "wake-band" };
+  }
+  return { baseline: base, kind: "demo-default" };
+}
+
+/** Horizon for a *live* trip: pre-flight capped by days actually left
+ * (depart tomorrow → 1 pre-flight day), post-flight sized to the shift
+ * owed after the ~90 min/day floor-capped bank, bounded 1–5. Callers that
+ * don't pass it (tests, replay, DEMO_TRIP) keep the canonical 5-day shape. */
+export function horizonFor(requiredShiftMin: number, daysUntilDeparture: number): Required<TripHorizon> {
+  const pre = Math.min(3, Math.max(0, daysUntilDeparture));
+  const owed = Math.max(0, Math.abs(requiredShiftMin) - 90);
+  const post = Math.min(5, Math.max(1, Math.ceil(owed / 60)));
+  return { preFlightDays: pre, postFlightDays: post };
+}
+
+/** Neutral traveller calendar for any route — generic commitments, no
+ * demo names. The canonical `CALENDAR`/`calendarFor` stays Alex-flavoured
+ * for DEMO_TRIP, tests and replay; the consumer path gets this when the
+ * route isn't the demo's and no real calendar is connected. */
+export function neutralCalendarFor(trip: Trip): CalendarEvent[] {
+  const dep = trip.departureDayIndex;
+  const out: CalendarEvent[] = [];
+  trip.days.forEach((d, i) => {
+    if (i === dep) {
+      out.push({ id: "n-flight", title: `Flight ${trip.origin.code} → ${trip.destination.code}`, dayIndex: i, startMin: 11 * 60 + 20, endMin: 11 * 60 + 50, movable: false, blocksInterventions: false });
+      return;
+    }
+    if (i > dep) {
+      if (i === dep + 1) out.push({ id: "n-arrival-mtg", title: "Client meeting", dayIndex: i, startMin: 14 * 60, endMin: 15 * 60 + 30, movable: false });
+      return;
+    }
+    out.push({ id: `n-standup-${i}`, title: "Team standup", dayIndex: i, startMin: 9 * 60 + 30, endMin: 10 * 60, movable: true });
+    out.push({ id: `n-deep-${i}`, title: "Deep work", dayIndex: i, startMin: 14 * 60, endMin: 16 * 60, movable: true });
+    if (i === 0) out.push({ id: "n-review", title: "Weekly review", dayIndex: i, startMin: 9 * 60, endMin: 10 * 60 + 30, movable: false });
+    if (i === dep - 1) out.push({ id: "n-dinner", title: "Dinner", dayIndex: i, startMin: 19 * 60 + 30, endMin: 21 * 60 + 30, movable: false });
+  });
+  return out;
+}

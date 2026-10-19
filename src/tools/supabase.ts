@@ -13,7 +13,11 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 interface RunPayload {
-  id?: number;
+  /** Local runs stamp `Date.now()`; rows read back out of Supabase carry the
+   *  table's uuid. Both are stable within a list, so either works as a React
+   *  key — but they are different types, and the uuid is only here because
+   *  `listRuns` selects it (see below). */
+  id?: number | string;
   savedAt: string;
   trip?: { origin: { code: string }; destination: { code: string }; requiredShiftMin: number; direction: string } | null;
   score: number;
@@ -84,14 +88,23 @@ export async function listRuns(limit = 20): Promise<RunPayload[]> {
   if (!c) return [];
   const { data, error } = await c
     .from("meridian_events")
-    .select("payload, created_at")
+    .select("id, payload, created_at")
     .eq("kind", "run")
     .order("created_at", { ascending: false })
     .limit(limit);
   if (error || !data) return [];
   return data.map((row) => {
     const payload = (row.payload ?? {}) as RunPayload;
-    return { ...payload, savedAt: payload.savedAt ?? row.created_at };
+    // `id` was not selected here, so every row came back with
+    // `id: undefined` and /history rendered them under a shared undefined
+    // key — React's "each child in a list should have a unique key" warning,
+    // on every load, for anyone with cloud persistence on. The payload's own
+    // id is the localStorage one and stays authoritative when present.
+    return {
+      ...payload,
+      id: payload.id ?? row.id,
+      savedAt: payload.savedAt ?? row.created_at,
+    };
   });
 }
 

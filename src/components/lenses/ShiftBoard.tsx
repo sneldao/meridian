@@ -34,6 +34,8 @@ export interface ShiftBoardProps {
   /** Static artifact mode (used by /review): the run is finished, so the
    * legend drops the draft / scan keys and the board reads as a swimlane. */
   readOnly?: boolean;
+  /** Plain row name in readOnly mode (e.g. "Thu 22 Oct" instead of "D-2"). */
+  rowLabel?: (spec: DaySpec) => string;
 }
 
 type RowState = "queued" | "draft" | "scanning" | "rejected" | "locked";
@@ -89,7 +91,7 @@ const STATE_COLOR: Record<RowState, string> = {
   locked: "var(--color-pass)",
 };
 
-export function ShiftBoard({ days, drafts, verdicts, locked, activeLabel, activeAgent, readOnly }: ShiftBoardProps) {
+export function ShiftBoard({ days, drafts, verdicts, locked, activeLabel, activeAgent, readOnly, rowLabel }: ShiftBoardProps) {
   const reduce = useReducedMotion();
   // Morning dissolve: a replan drops a day's plan and the row snaps to queued
   // instantly. Keep the vanished plan for a beat and let it fade out, so the
@@ -161,7 +163,7 @@ export function ShiftBoard({ days, drafts, verdicts, locked, activeLabel, active
             </span>
           ))}
         </div>
-        <span className="text-right text-xs text-dim">staircase</span>
+        <span className="text-right text-xs text-dim">{readOnly ? "Adjusted" : "staircase"}</span>
       </div>
 
       {days.map((d) => {
@@ -178,11 +180,13 @@ export function ShiftBoard({ days, drafts, verdicts, locked, activeLabel, active
           <div key={d.dayIndex} className="grid grid-cols-[96px_1fr_84px] items-center gap-3">
             <div className="flex flex-col">
               <span className="text-xs font-bold" style={{ color: STATE_COLOR[state] }}>
-                {d.label}
+                {readOnly && rowLabel ? rowLabel(d) : d.label}
               </span>
-              <span className="text-xs" style={{ color: STATE_COLOR[state] }}>
-                {STATE_TEXT[state]}
-              </span>
+              {!readOnly && (
+                <span className="text-xs" style={{ color: STATE_COLOR[state] }}>
+                  {STATE_TEXT[state]}
+                </span>
+              )}
             </div>
 
             {/* the 24h row. Re-keyed on attempt so a new verdict re-triggers the bounce. */}
@@ -324,7 +328,13 @@ export function ShiftBoard({ days, drafts, verdicts, locked, activeLabel, active
 
             {/* staircase + rule code */}
             <div className="flex flex-col items-end">
-              {state === "locked" ? (
+              {readOnly ? (
+                plan ? (
+                  <span className="text-xs font-bold text-pass">
+                    {Math.abs(plan.shiftMin)} min
+                  </span>
+                ) : null
+              ) : state === "locked" ? (
                 <>
                   <span className="text-xs font-bold text-pass">
                     {cumulative.get(d.label)}m

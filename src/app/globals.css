@@ -29,6 +29,26 @@
   --color-sleep: #b8a8ff;
   --color-dim: #4a5470;
 
+  /* The cream scale — the app's primary surface (html/body are var(--m-bg)).
+     These are the tokens to reach for on any cream background.
+     The ink/paper set above belongs to the *dark* islands — .arr, Card,
+     the crew nav pills — where `text-paper` is correct. Reaching for
+     `text-paper` on bare cream renders near-white on cream and vanishes,
+     which is how TRIP HISTORY and HANDOFF REVIEW lost their headings.
+     Text on cream is `clay`; the dark set stays for dark panels. */
+  --color-clay: #1e1b18;        /* primary text on cream — body ink */
+  --color-clay-2: var(--m-muted);      /* secondary text on cream */
+  --color-clay-3: var(--m-faint);      /* tertiary / spent, e.g. a done row */
+  --color-clay-line: var(--m-border-2);   /* hairline on cream */
+  --color-cream: #f5efe6;       /* the page surface */
+  --color-cream-card: var(--m-card);  /* raised cream card */
+  --color-terracotta: #d96b43;  /* the accent, and time-of-day in the rail */
+  /* State on cream. The dark set's pass/fail are tuned for ink; on cream the
+     lime reads washed out and the salmon reads pink. These are the deep
+     values of the same two meanings, both >= 4.5:1 on var(--m-bg). */
+  --color-clay-pass: #2a6f4e;
+  --color-clay-fail: #b23a2e;
+
   /* Typography: a fluid ramp so the UI breathes across viewports. */
   --text-2xs: clamp(0.65rem, 0.7vw, 0.7rem);
   --text-xs: clamp(0.7rem, 0.85vw, 0.8rem);
@@ -66,28 +86,30 @@
   --opacity-80: 0.80;
 
   /* Focus ring colour. */
-  --color-focus: var(--color-sun-dest);
+  --color-focus: var(--color-paper);
 }
 
 html,
 body {
-  background: #F5EFE6;
-  color: #1E1B18;
-  font-family: "Figtree", ui-rounded, "SF Pro Rounded", "Avenir Next Rounded", system-ui, -apple-system, sans-serif;
+  background: var(--m-bg);
+  color: var(--m-ink);
+  font-family: "Figtree", ui-rounded, "SF Pro Rounded", "Avenir Next Rounded", "Helvetica Neue", system-ui, -apple-system, sans-serif;
   min-height: 100%;
   margin: 0;
 }
 
-/* Sunlit Horizon design system & behavior contract */
+/* Sunlit Horizon design system & behavior contract.
+   Desktop measure (1140px) gives both the two-column dawn hero and the 24h
+   circadian dial breathing room on laptops while collapsing cleanly below 720px. */
 .root {
   width: 100%;
-  max-width: 868px;
+  max-width: 1140px;
   min-height: 100vh;
   margin: 0 auto;
   position: relative;
-  background: #F5EFE6;
-  color: #1E1B18;
-  font-family: "Figtree", ui-rounded, "SF Pro Rounded", "Avenir Next Rounded", system-ui, -apple-system, sans-serif;
+  background: var(--m-bg);
+  color: var(--m-ink);
+  font-family: "Figtree", ui-rounded, "SF Pro Rounded", "Avenir Next Rounded", "Helvetica Neue", system-ui, -apple-system, sans-serif;
   padding: 0 0 56px;
   overflow: hidden;
 }
@@ -148,43 +170,80 @@ body {
 }
 .brand span {
   font-size: 12px;
-  color: #7a6a5c;
+  color: var(--m-muted);
 }
 .pill {
   display: inline-flex;
   gap: 2px;
-  background: #fff8ef;
-  border: 1px solid #e3d5c3;
+  background: var(--m-card);
+  border: 1px solid var(--m-border);
   border-radius: 999px;
   padding: 4px;
+}
+.pill button {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  border: 0;
+  background: none;
+  padding: 7px 14px;
+  border-radius: 999px;
+  color: var(--m-muted);
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s;
 }
 .pill a {
   font-size: 12px;
   font-weight: 700;
   padding: 7px 14px;
   border-radius: 999px;
-  color: #7a6a5c;
+  color: var(--m-muted);
   cursor: pointer;
   transition: color 0.2s, background 0.2s;
   text-decoration: none;
 }
-.pill a.on {
-  background: #1E1B18;
-  color: #F5EFE6;
+.pill a.on,
+.pill button.on {
+  background: var(--m-ink);
+  color: var(--m-bg);
 }
-.pill a:hover {
+.pill a:hover,
+.pill button:hover {
   color: #D96B43;
 }
 .pill a.on:hover {
-  color: #F5EFE6;
+  color: var(--m-bg);
+}
+.journey {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 8px 4px 0;
+  padding: 0;
+  font-size: 11px;
+  font-weight: 700;
+}
+.journey-step {
+  color: var(--m-muted);
+}
+.journey-step.now {
+  color: #D96B43;
+}
+.journey-step.later {
+  opacity: 0.55;
+}
+.journey-check {
+  margin-right: 3px;
+  color: var(--m-text);
 }
 .btn {
   font: inherit;
   font-size: 12px;
   font-weight: 700;
-  border: 1px solid #e3d5c3;
-  background: #fff8ef;
-  color: #1E1B18;
+  border: 1px solid var(--m-border);
+  background: var(--m-card);
+  color: var(--m-ink);
   border-radius: 999px;
   padding: 8px 14px;
   cursor: pointer;
@@ -211,58 +270,359 @@ body {
   right: 32px;
   top: 66px;
   width: 210px;
-  background: #fff8ef;
-  border: 1px solid #e3d5c3;
+  background: var(--m-card);
+  border: 1px solid var(--m-border);
   border-radius: 14px;
   padding: 8px;
   box-shadow: 0 14px 34px rgba(30, 27, 24, 0.18);
   z-index: 20;
 }
 .menu div,
-.menu a {
+.menu a,
+.menu button {
   display: block;
+  font: inherit;
   font-size: 12px;
+  width: 100%;
   padding: 7px 10px;
+  border: none;
+  background: none;
   border-radius: 8px;
-  color: #1E1B18;
+  color: var(--m-ink);
   cursor: pointer;
   transition: background 0.2s;
+  text-align: left;
   text-decoration: none;
 }
 .menu div:hover,
-.menu a:hover {
+.menu a:hover,
+.menu button:hover {
   background: #efe2d0;
 }
 .menu div.m,
-.menu a.m {
-  color: #7a6a5c;
+.menu a.m,
+.menu button.m {
+  color: var(--m-muted);
 }
-.titlebar {
+/* A crew run that died mid-stream. Deliberately not an `.evchip`-shaped thing:
+   this is a report about the app, not a finding about the traveller's day. */
+.run-error {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 16px;
-  margin: 12px 0 18px;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 11px 13px;
+  border: 1px solid #e0b9a8;
+  border-left: 3px solid #b04523;
+  border-radius: 10px;
+  background: var(--m-card);
+  color: #7a3a1c;
+  font-size: 12.5px;
+  line-height: 1.5;
 }
-.titlebar h1 {
-  font-size: 32px;
-  line-height: 1.1;
+.run-error span {
+  flex: 1 1 auto;
+}
+.run-error button {
+  flex: none;
+  padding: 0 2px;
+  border: none;
+  background: none;
+  color: #b04523;
+  font: inherit;
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+}
+.run-error button:hover {
+  color: #7a3a1c;
+}
+
+/* The route error boundary (src/app/error.tsx). Same surface as the landing
+   card so a crash reads as part of the product, not a browser error page. */
+/* The arrival surface — item 7, the payoff for "Land at 100%". Warmer and
+   calmer than Today, because there is nothing to do here: this is the screen
+   you land on when there is nothing left to do. Dark ink for the same reason
+   `/crew` is dark — it is the after-hours surface. */
+/* The trip-complete card on Today, in the hero's right column — the same
+   invitation as the arrival surface, one step earlier in the journey. */
+.arrival-nudge {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 16px;
+  border: 1px solid var(--m-border);
+  border-left: 3px solid #D96B43;
+  border-radius: 14px;
+  background: var(--m-card);
+}
+.arrival-nudge h2 {
+  font-size: 20px;
+}
+.arrival-nudge-btns {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.arrival-nudge-btns a {
+  text-decoration: none;
+}
+.arrival-nudge-btns .p2 {
+  display: inline-block;
+}
+
+.arr {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #07090f 0%, #0b1018 52%, #1c1512 100%);
+  color: #e8eaf2;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+.arr-in {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 72px 28px 64px;
+}
+.arr-kicker {
+  display: block;
+  font-size: 10.5px;
   font-weight: 800;
-  letter-spacing: -0.01em;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #ffc46b;
 }
-.titlebar p {
+.arr h1 {
+  margin: 14px 0 0;
+  font-size: 27px;
+  line-height: 1.25;
+  font-weight: 800;
+  color: #f6f2ec;
+  max-width: 30ch;
+}
+.arr-lede {
+  margin: 14px 0 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #9aa3b5;
+  max-width: 56ch;
+}
+.arr-loading {
   font-size: 13px;
-  color: #7a6a5c;
-  margin-top: 6px;
-  max-width: 470px;
-  line-height: 1.4;
+  color: #8b93a7;
 }
+.arr-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+  margin: 26px 0 8px;
+}
+/* A second `.arr-grid` follows the section label, so reset its top margin. */
+.arr-grid + .arr-section-label {
+  margin-top: 28px;
+}
+.arr-section-label {
+  display: block;
+  margin: 22px 0 0;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #8b93a7;
+}
+.arr-cell {
+  padding: 14px 15px;
+  border: 1px solid #1e2637;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+}
+/* The "what actually happened" cells — the traveller's own account, not the
+   crew's promise. A cooler tint and a thinner border separates them from the
+   promise above so the page reads in two passes. */
+.arr-cell.account {
+  border-color: #2a3346;
+  background: rgba(255, 255, 255, 0.015);
+}
+.arr-cell.account em {
+  color: #c8d1e3;
+}
+.arr-cell em {
+  display: block;
+  font-style: normal;
+  font-size: 25px;
+  font-weight: 800;
+  color: #ffd98a;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+.arr-cell span {
+  display: block;
+  margin-top: 6px;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #8b93a7;
+}
+.arr-cell small {
+  display: block;
+  margin-top: 5px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: #6f7789;
+}
+.arr-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 22px;
+}
+.arr-btn {
+  display: inline-block;
+  padding: 11px 20px;
+  border: 1px solid #ffd98a;
+  border-radius: 999px;
+  background: #ffd98a;
+  color: #1a1408;
+  font-size: 12.5px;
+  font-weight: 800;
+  text-decoration: none;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+.arr-btn:hover {
+  background: #fff0c2;
+  border-color: #fff0c2;
+}
+.arr-btn.ghost {
+  background: transparent;
+  color: #ffd98a;
+}
+.arr-btn.ghost:hover {
+  background: rgba(255, 217, 138, 0.12);
+}
+.arr-btn:focus-visible {
+  outline: 2px solid #ffd98a;
+  outline-offset: 3px;
+}
+.arr-foot {
+  margin: 34px 0 0;
+  font-size: 11px;
+  line-height: 1.6;
+  color: #6f7789;
+}
+
+.errpage {
+  position: relative;
+  min-height: 100vh;
+  background: #f5efe6;
+  overflow: hidden;
+}
+.errcard {
+  max-width: 460px;
+  margin: 0 auto;
+  padding: 72px 32px 48px;
+}
+.errcard h1 {
+  font-size: 27px;
+  font-weight: 800;
+  line-height: 1.15;
+  margin: 10px 0 12px;
+  color: #1e1b18;
+}
+.errcard p.s {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--m-text);
+  margin: 0 0 22px;
+}
+.errbtns {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.errbtns .p1 {
+  cursor: pointer;
+}
+.errbtns .p2 {
+  display: inline-block;
+  text-decoration: none;
+}
+.errdigest {
+  margin: 22px 0 0;
+  font-size: 11px;
+  color: var(--m-muted);
+}
+.errdigest code {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+/* The one question (vision Rule 1). Sits directly under the demo tag that
+   admits the numbers are invented — same honesty, next step forward. Warm
+   rather than cautionary: this is an invitation, not a warning. */
+.ask {
+  margin: 0;
+  padding: 12px 13px;
+  border: 1px solid var(--m-border);
+  border-radius: 12px;
+  background: var(--m-card);
+}
+.ask p {
+  margin: 0 0 10px;
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.45;
+  color: #3d332b;
+}
+.ask p span {
+  font-weight: 500;
+  color: var(--m-muted);
+}
+.ask-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.ask .ask-title {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--m-text);
+}
+.ask-foot {
+  margin: 8px 0 0;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--m-muted);
+}
+.ask-chip {
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 7px 13px;
+  border: 1px solid var(--m-border);
+  border-radius: 999px;
+  background: var(--m-card);
+  color: var(--m-text);
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+.ask-chip:hover {
+  background: #D96B43;
+  border-color: #D96B43;
+  color: var(--m-on-accent);
+}
+.ask-chip:focus-visible {
+  outline: 2px solid #D96B43;
+  outline-offset: 2px;
+}
+
 .hero {
   display: grid;
   grid-template-columns: 1.05fr 0.95fr;
   gap: 0;
-  background: #fff8ef;
-  border: 1px solid #e3d5c3;
+  background: var(--m-card);
+  border: 1px solid var(--m-border);
   border-radius: 28px;
   overflow: hidden;
   box-shadow: 0 24px 50px -20px rgba(120, 60, 30, 0.35);
@@ -270,7 +630,8 @@ body {
 .hl {
   position: relative;
   padding: 26px;
-  min-height: 470px;
+  min-height: 540px;
+  min-width: 0;
   color: #F5EFE6;
   display: flex;
   flex-direction: column;
@@ -287,6 +648,82 @@ body {
   position: absolute;
   inset: 0;
   background: linear-gradient(180deg, rgba(30, 27, 24, 0.35), rgba(30, 27, 24, 0.78));
+}
+/* The ghost-terminator hero: the crew surface's ink + terminator gold living
+   inside the sunlit card — the brand's day/night line as the hero visual. */
+.hl .bg.term {
+  background:
+    radial-gradient(120% 90% at 78% 74%, rgba(217, 107, 67, 0.55), transparent 55%),
+    linear-gradient(180deg, #0b0e16 0%, #10141f 46%, #241a1c 66%, #3a2118 82%, #D96B43 120%);
+}
+
+/* Evidence chips — the crew's gate output as badges, not prose. */
+.evrow { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.evchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  background: rgba(217, 107, 67, 0.1);
+  color: #a35a35;
+  border: 1px solid rgba(217, 107, 67, 0.25);
+}
+.evchip.pass { background: rgba(140, 160, 90, 0.14); color: #5a7030; border-color: rgba(140, 160, 90, 0.3); }
+.evchip.warn { background: rgba(217, 107, 67, 0.16); color: #b04523; border-color: rgba(217, 107, 67, 0.4); }
+.evchip.cite { background: rgba(157, 184, 255, 0.16); color: #4a6492; border-color: rgba(157, 184, 255, 0.4); }
+.evchip.mem  { background: rgba(184, 168, 255, 0.16); color: #6a5a9c; border-color: rgba(184, 168, 255, 0.4); }
+
+/* Day-chip terminator glyph — a 7px day/night line bisecting a circle, the
+   brand's motif riding inside every day button. */
+.day::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, #241a1c 0 50%, var(--color-ghost) 50% 100%);
+  vertical-align: 1px;
+}
+
+/* Dawn-crossing into /crew: the hero's terminator horizon expands to fill
+   the screen, then resolves to the ink surface — the same dawn seen from
+   inside the mission. Pure CSS, one-shot on mount. */
+.dawnIn {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 90% at 78% 74%, rgba(217, 107, 67, 0.55), transparent 55%),
+    linear-gradient(180deg, #0b0e16 0%, #10141f 46%, #241a1c 66%, #3a2118 82%, #D96B43 120%);
+  animation: dawnIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.dawnIn::after {
+  /* the line itself — a hair of ghost gold crossing the frame at the horizon */
+  content: "";
+  position: absolute;
+  left: -5%;
+  right: -5%;
+  top: 63%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--color-ghost) 30%, var(--color-ghost) 70%, transparent);
+  filter: drop-shadow(0 0 8px rgba(255, 217, 138, 0.7));
+  animation: tlineSweep 0.9s ease-out both;
+}
+@keyframes tlineSweep {
+  from { transform: translateY(24px); opacity: 0; }
+  35% { opacity: 1; }
+  to { transform: translateY(-6px); opacity: 0.9; }
+}
+@keyframes dawnIn {
+  from { opacity: 1; }
+  40% { opacity: 1; }
+  to { opacity: 0; }
 }
 .hl > *:not(.bg):not(.sc) {
   position: relative;
@@ -355,11 +792,28 @@ body {
   background: rgba(245, 239, 230, 0.92);
   border: none;
 }
+/* The card's right half: the demo-fixture tag over the day's next step. */
+.hr-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.hr-col .demo-tag {
+  margin: 0;
+}
 .hr {
   padding: 26px;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  flex: 1 1 auto;
+}
+/* Inside the hero the CTA follows the step it belongs to. The global .cta
+   pins to its container's bottom edge, which on a card stretched to match the
+   globe left a void halfway down the column. */
+.hr .cta {
+  margin-top: 2px;
 }
 .mini {
   font-size: 10px;
@@ -395,10 +849,10 @@ body {
 .hr p.s {
   font-size: 13px;
   line-height: 1.5;
-  color: #5b4d41;
+  color: var(--m-text);
 }
 .drawer {
-  background: #f1e6d6;
+  background: var(--m-card-2);
   border-radius: 14px;
   padding: 12px 14px;
 }
@@ -411,7 +865,7 @@ body {
 }
 .drawer p {
   font-size: 12px;
-  color: #5b4d41;
+  color: var(--m-text);
   margin-top: 4px;
   line-height: 1.45;
 }
@@ -454,7 +908,7 @@ body {
   background: #a8431e;
 }
 .p1:focus-visible {
-  outline: 2px solid #1E1B18;
+  outline: 2px solid var(--m-ink);
   outline-offset: 2px;
 }
 .p2 {
@@ -462,16 +916,16 @@ body {
   font-size: 12px;
   font-weight: 800;
   background: transparent;
-  color: #1E1B18;
-  border: 1.5px solid #1E1B18;
+  color: var(--m-ink);
+  border: 1.5px solid var(--m-ink);
   border-radius: 14px;
   padding: 11px 14px;
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
 }
 .p2:hover {
-  background: #1E1B18;
-  color: #F5EFE6;
+  background: var(--m-ink);
+  color: var(--m-bg);
 }
 .p2:focus-visible {
   outline: 2px solid #D96B43;
@@ -497,9 +951,9 @@ body {
   max-width: 150px;
   text-align: center;
   border-radius: 16px;
-  background: #fff8ef;
-  border: 1px solid #e3d5c3;
-  color: #5b4d41;
+  background: var(--m-card);
+  border: 1px solid var(--m-border);
+  color: var(--m-text);
   cursor: pointer;
   transition: background 0.25s, color 0.25s, box-shadow 0.25s;
 }
@@ -513,11 +967,8 @@ body {
   box-shadow: 0 10px 22px -8px rgba(217, 107, 67, 0.7);
 }
 .day:focus-visible {
-  outline: 2px solid #1E1B18;
+  outline: 2px solid var(--m-ink);
   outline-offset: 2px;
-}
-.chips {
-  margin-top: 14px;
 }
 .chip {
   font: inherit;
@@ -527,7 +978,7 @@ body {
   border-radius: 999px;
   background: transparent;
   border: 1.5px solid #d8c6ae;
-  color: #5b4d41;
+  color: var(--m-text);
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
 }
@@ -536,61 +987,13 @@ body {
   color: #D96B43;
 }
 .chip.on {
-  background: #1E1B18;
-  color: #F5EFE6;
-  border-color: #1E1B18;
+  background: var(--m-ink);
+  color: var(--m-bg);
+  border-color: var(--m-ink);
 }
 .chip:focus-visible {
   outline: 2px solid #D96B43;
   outline-offset: 2px;
-}
-.view {
-  margin-left: auto;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  color: #7a6a5c;
-}
-.deck {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-top: 20px;
-}
-.tile {
-  background: #fff8ef;
-  border: 1px solid #e3d5c3;
-  border-radius: 22px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 14px 30px -18px rgba(120, 60, 30, 0.4);
-  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-.tile .ph {
-  height: 112px;
-  width: 100%;
-  object-fit: cover;
-  display: block;
-}
-.tile .tb {
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-  flex: 1;
-}
-.tile .ph0 {
-  height: 112px;
-  background: linear-gradient(135deg, #f3c9a8, #D96B43);
-}
-.tile .ph1 {
-  height: 112px;
-  background: linear-gradient(135deg, #2A6F4E, #9fc3a8);
-}
-.tile .ph2 {
-  height: 112px;
-  background: linear-gradient(135deg, #1E1B18, #5a4636);
 }
 .cat {
   display: flex;
@@ -605,16 +1008,6 @@ body {
 .cat.g {
   color: #2A6F4E;
 }
-.tile h3 {
-  font-size: 15px;
-  line-height: 1.25;
-  font-weight: 800;
-}
-.tile p {
-  font-size: 12px;
-  line-height: 1.5;
-  color: #5b4d41;
-}
 .meter {
   display: flex;
   flex-direction: column;
@@ -624,13 +1017,13 @@ body {
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.12em;
-  color: #1E1B18;
+  color: var(--m-ink);
 }
 .bar.g i {
   background: linear-gradient(90deg, #2A6F4E, #62a583);
 }
 .bar.d i {
-  background: linear-gradient(90deg, #5a4636, #1E1B18);
+  background: linear-gradient(90deg, #5a4636, var(--m-ink));
 }
 .tk {
   margin-top: auto;
@@ -672,13 +1065,13 @@ body {
   transform: rotate(-45deg) translate(1px, -1px);
 }
 .chk input:focus-visible {
-  outline: 2px solid #1E1B18;
+  outline: 2px solid var(--m-ink);
   outline-offset: 2px;
 }
 .sheet {
   margin-top: 22px;
-  background: #1E1B18;
-  color: #F5EFE6;
+  background: var(--m-ink);
+  color: var(--m-bg);
   border-radius: 28px;
   padding: 26px;
   box-shadow: 0 30px 60px -24px rgba(30, 27, 24, 0.7);
@@ -705,7 +1098,16 @@ body {
   gap: 12px;
   margin-top: 16px;
 }
+.sheet-title {
+  margin: 0 0 10px;
+  font-size: 16px;
+  font-weight: 800;
+  color: #F5EFE6;
+}
 .fo {
+  font: inherit;
+  color: inherit;
+  text-align: left;
   border-radius: 18px;
   padding: 14px;
   background: #2b2621;
@@ -742,8 +1144,8 @@ body {
   margin-top: 16px;
 }
 .card {
-  background: #fff8ef;
-  border: 1px solid #e3d5c3;
+  background: var(--m-card);
+  border: 1px solid var(--m-border);
   border-radius: 22px;
   padding: 20px;
 }
@@ -763,19 +1165,19 @@ body {
   font-weight: 800;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #7a6a5c;
+  color: var(--m-muted);
 }
 .f div,
 .f input,
 .f select {
-  background: #f1e6d6;
+  background: var(--m-card-2);
   border: 1px solid transparent;
   border-radius: 12px;
   padding: 10px 12px;
   font: inherit;
   font-size: 13px;
   font-weight: 700;
-  color: #1E1B18;
+  color: var(--m-ink);
   width: 100%;
 }
 .m3 {
@@ -785,16 +1187,16 @@ body {
   margin-top: 8px;
 }
 .m3 div {
-  background: #f1e6d6;
+  background: var(--m-card-2);
   border-radius: 14px;
   padding: 10px;
   font-size: 11px;
-  color: #5b4d41;
+  color: var(--m-text);
 }
 .m3 b {
   display: block;
   font-size: 15px;
-  color: #1E1B18;
+  color: var(--m-ink);
   margin-top: 2px;
 }
 .ex {
@@ -811,16 +1213,29 @@ body {
   .hero {
     grid-template-columns: 1fr;
   }
-  .deck {
-    grid-template-columns: 1fr;
+  /* Stacked, the question and the next step come first — the globe is the
+     illustration, not the job. */
+  .hr-col {
+    order: -1;
   }
-  .deck .tile.sleep-span {
-    grid-column: span 1 !important;
-    flex-direction: column !important;
+  /* The tags and the ask sit outside .hr's padding — on a phone they would
+     otherwise touch the card's edges. */
+  .hr-col > .demo-tag,
+  .hr-col > .ask {
+    margin-left: 18px;
+    margin-right: 18px;
   }
-  .deck .tile.sleep-span .ph {
-    width: 100% !important;
-    height: 140px !important;
+  /* Stacked, the fixed panel height stops earning its keep — and the scrubber's
+     three-column lane wants the full card width. */
+  .hl {
+    min-height: 0;
+    padding: 18px;
+  }
+  .hl-stats {
+    margin-top: 16px;
+  }
+  .hr {
+    padding: 18px;
   }
   .fl {
     grid-template-columns: 1fr;
@@ -828,14 +1243,26 @@ body {
   .two {
     grid-template-columns: 1fr;
   }
-  .day {
-    width: calc(20% - 7px);
-    min-width: 56px;
-    font-size: 12px;
+  /* Eight day pills cannot fit a phone, and the old `width: calc(20% - 7px)`
+     floor of 56px each pushed the row ~150px past the viewport, where
+     `.root`'s overflow:hidden silently ate the last days. Make it a strip you
+     swipe instead of a row that loses two buttons. */
+  .days {
+    overflow-x: auto;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding-bottom: 2px;
   }
-  .titlebar {
-    flex-direction: column;
-    align-items: flex-start;
+  .days::-webkit-scrollbar {
+    display: none;
+  }
+  .day {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 92px;
+    font-size: 12px;
   }
 }
 
@@ -887,4 +1314,965 @@ textarea:focus-visible,
 .scroll-thin::-webkit-scrollbar-thumb {
   background: var(--color-line);
   border-radius: 2px;
+}
+
+/* ── lane: shell ─────────────────────────────────────────────────────────
+   Dev 3 owns this block. New classes go inside it; only Dev 3 deletes
+   obsolete classes, and only after lanes 1–2 have merged. (Task 3.2) */
+
+/* Marks numbers that came from the demo fixture rather than a measurement. */
+.demo-tag {
+  margin: 0 0 12px;
+  padding: 7px 11px;
+  border: 1px solid var(--color-line);
+  border-left: 3px solid var(--color-ghost);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-ghost) 7%, transparent);
+  color: var(--color-mist);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+/* The trip identity line above Today — replaces the old setup screen title.
+   Type on the paper surface, not a dark chip: this sits on the sunlit page, and
+   borrowing the crew lens's ink palette here read as disabled chrome. The old
+   70px top margin also pushed the card a full third of a viewport down. */
+.trip-summary {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 8px 0 16px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 13px;
+  color: #6b5b4d;
+}
+.trip-summary .route {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--m-ink);
+  letter-spacing: 0.08em;
+}
+.trip-summary .when,
+.trip-summary .shift {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: #efe3d2;
+  color: #6b5b4d;
+  font-size: 11px;
+  font-weight: 700;
+}
+.trip-summary .edit {
+  margin-left: auto;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border: 1px solid var(--m-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--m-text);
+  cursor: pointer;
+}
+.trip-summary .edit:hover {
+  border-color: #D96B43;
+  color: #D96B43;
+}
+.trip-summary .edit:focus-visible {
+  outline: 2px solid #D96B43;
+  outline-offset: 2px;
+}
+
+/* Visually hidden, still announced — used to spell out the "→" in the route. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Setup as an overlay on Today rather than a screen you navigate to. */
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 8vh 16px 16px;
+  background: color-mix(in srgb, var(--color-ink) 70%, transparent);
+  backdrop-filter: blur(4px);
+  overflow-y: auto;
+}
+.sheet-panel {
+  position: relative;
+  width: 100%;
+  max-width: 860px;
+  padding: 22px;
+  border: 1px solid var(--color-line);
+  border-radius: 16px;
+  background: var(--color-ink-2);
+}
+.sheet-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font: inherit;
+  font-size: 22px;
+  line-height: 1;
+  padding: 4px 10px;
+  border: 1px solid var(--color-line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-mist);
+  cursor: pointer;
+}
+.sheet-close:hover {
+  color: var(--color-paper);
+  border-color: #D96B43;
+}
+
+/* ── lane: today ─────────────────────────────────────────────────────────
+   Dev 2 owns this block. Timeline is the only Calm view (task 2.5), so the
+   day renders as one rail. Dev 3 deletes the orphaned deck / chip / view-mode
+   classes at 3.10 — nothing here depends on them. */
+
+/* The hero's left panel keeps only the terminator and honest numbers. */
+.hl-stats {
+  margin-top: auto;
+}
+
+/* P1 — the dawn panel. The map takes the slack in the card; the caption gives
+   the same read in words, so reduced motion and Guided lose nothing. */
+.hl-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.dawn-map {
+  flex: 1 1 auto;
+  align-self: center;
+  min-height: 190px;
+  width: 100%;
+  animation: dawnFade var(--duration-slow) var(--ease-smooth-out) both;
+}
+/* The graduated WebGL globe occupies the same stage slot as the SVG disc.
+   The canvas fills the flexed box; the transparent clear colour lets the
+   panel's terminator gradient show through as space. */
+.dawn-globe {
+  position: relative;
+  overflow: hidden;
+  min-height: 260px;
+}
+/* OrbitControls stamps touch-action:none on the canvas at connect, on every
+   device, even with controls disabled — which would swallow a swipe meant to
+   scroll the page. pan-y gives the vertical gesture back to the document;
+   horizontal drags still reach the pointer handlers, and mouse orbit on a
+   fine pointer is untouched by touch-action anyway. !important is what beats
+   an inline style, nothing weaker does. */
+.dawn-globe canvas {
+  touch-action: pan-y !important;
+}
+/* Drag-to-recentre only binds on a fine pointer — see the component's gesture
+   note. The cursor advertises that, and nothing else. */
+.dawn-map.grab {
+  cursor: grab;
+}
+.dawn-map.grab:active {
+  cursor: grabbing;
+}
+.dawn-map .pin {
+  cursor: pointer;
+}
+@keyframes dawnFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ── the scrubber ────────────────────────────────────────────────────────
+   Two native range inputs. Keyboard arrows, Home/End, screen-reader value
+   text and touch dragging all work because they are real form controls. */
+.scrub {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+.scrub-lane {
+  display: grid;
+  /* minmax(0, 1fr) rather than 1fr: a bare 1fr track floors at the range
+     input's intrinsic width, which together with the nowrap label can push the
+     whole hero card wider than a narrow viewport. */
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+.scrub-label {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-mist);
+  white-space: nowrap;
+}
+.scrub-val {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--color-paper);
+  font-variant-numeric: tabular-nums;
+  min-width: 36px;
+  text-align: right;
+}
+.scrub-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 16px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.scrub-range::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--color-line);
+}
+.scrub-range::-moz-range-track {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--color-line);
+}
+.scrub-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 13px;
+  height: 13px;
+  margin-top: -5px;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-ghost);
+  box-shadow: 0 0 8px rgba(255, 217, 138, 0.45);
+}
+.scrub-range::-moz-range-thumb {
+  width: 13px;
+  height: 13px;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-ghost);
+  box-shadow: 0 0 8px rgba(255, 217, 138, 0.45);
+}
+.scrub-range.shift::-webkit-slider-thumb {
+  background: var(--color-sun-dest);
+  box-shadow: 0 0 8px rgba(255, 196, 107, 0.4);
+}
+.scrub-range.shift::-moz-range-thumb {
+  background: var(--color-sun-dest);
+  box-shadow: 0 0 8px rgba(255, 196, 107, 0.4);
+}
+.scrub-range:focus-visible {
+  outline: 2px solid var(--color-ghost);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+.scrub-reset {
+  align-self: flex-start;
+  margin-top: 1px;
+  padding: 3px 9px;
+  border: 1px solid var(--color-line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-mist);
+  font: inherit;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.scrub-reset:hover {
+  border-color: var(--color-ghost);
+  color: var(--color-paper);
+}
+
+.dawn-cap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+}
+/* City cells are the keyboard and touch equivalent of hovering a pin on the
+   disc, so both routes reach the same focus state. */
+.dawn-cities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.city-cell {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  padding: 5px 11px;
+  border: 1px solid var(--color-line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-mist);
+  font: inherit;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+.city-cell b {
+  font-weight: 800;
+  color: var(--color-paper);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+.city-cell i {
+  font-style: normal;
+  font-size: 8.5px;
+  letter-spacing: 0.1em;
+  opacity: 0.9;
+}
+.city-cell i.day {
+  color: var(--color-sun-dest);
+}
+.city-cell i.night {
+  color: var(--color-sun-home);
+}
+.city-cell:hover {
+  border-color: var(--color-ghost);
+}
+.city-cell.on {
+  background: rgba(255, 217, 138, 0.14);
+  border-color: var(--color-ghost);
+  color: var(--color-paper);
+}
+.city-cell:focus-visible {
+  outline: 2px solid var(--color-ghost);
+  outline-offset: 2px;
+}
+.dawn-gap {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--color-paper);
+}
+.dawn-gap b {
+  font-weight: 800;
+  white-space: nowrap;
+}
+.dawn-gap.hot b {
+  color: var(--color-ghost);
+}
+.dawn-note {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--color-mist);
+}
+
+.tl {
+  display: flex;
+  flex-direction: column;
+  margin-top: 16px;
+  padding: 4px 20px 12px;
+  border: 1px solid var(--m-border);
+  border-radius: 22px;
+  background: var(--m-card);
+}
+.cal-summary {
+  /* Three numbers the run produces before the rail: how much of the day the
+     crew could move, how much it had to keep, and how many post-flight
+     meetings already clear the sleep window. */
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 20px 0 2px;
+}
+.cal-summary-num {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 11px 13px;
+  border: 1px solid var(--m-border-2);
+  border-radius: 12px;
+  background: var(--m-card);
+}
+.cal-summary-num b {
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 1.1;
+  color: #D96B43;
+  font-variant-numeric: tabular-nums;
+}
+.cal-summary-num span {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  line-height: 1.35;
+  color: var(--m-muted);
+}
+.cal-summary-line {
+  margin: 0;
+  padding: 11px 13px;
+  border: 1px solid var(--m-border-2);
+  border-radius: 12px;
+  background: var(--m-card);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--m-text);
+}
+/* Preview honesty: example plans announce themselves on the hero and the
+   day rail dims — Done/Skip still move (dry run), but nothing reads as live. */
+.preview-pill {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 1px 7px;
+  border: 1px solid var(--m-border);
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--m-faint);
+  vertical-align: 1px;
+}
+.tl.preview .tl-row {
+  opacity: 0.55;
+}
+@media (max-width: 420px) {
+  .cal-summary {
+    gap: 7px;
+  }
+  .cal-summary-num {
+    padding: 9px 9px;
+  }
+  .cal-summary-num b {
+    font-size: 16px;
+  }
+  .cal-summary-num span {
+    font-size: 10px;
+    letter-spacing: 0.04em;
+  }
+}
+.tl-row {
+  display: grid;
+  grid-template-columns: 22px 78px 1fr;
+  gap: 14px;
+  align-items: start;
+  padding: 14px 0;
+  border-top: 1px solid var(--m-border-2);
+}
+.tl-row:first-of-type {
+  border-top: none;
+}
+.tl-time b {
+  display: block;
+  font-size: 15px;
+  font-weight: 800;
+  color: #D96B43;
+  font-variant-numeric: tabular-nums;
+}
+.tl-time span {
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--m-muted);
+}
+.tl-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--m-ink);
+  /* The title carries its calendar tag inline. Laying the row out as a
+     baseline-aligned flex line is what keeps "dinner by 19:25" and its
+     `placed` pill from running together as one word. */
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+/* The strike on a spent row belongs to the title text only — text-decoration
+   propagates to descendants and cannot be undone by them, so the tag needs
+   its own element to stay clean. */
+.tl-row.done .tl-title-text {
+  color: var(--m-faint);
+  text-decoration: line-through;
+}
+/* `movable` / `placed` — the rail carrying the solver's own vocabulary.
+   Solid chip = the crew chose this slot against your floor. Dashed outline =
+   negotiable, the crew can move it. Differentiated by border treatment
+   rather than a second hue, so it survives at a glance on cream. */
+.tl-tag {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  line-height: 1.5;
+}
+.tl-tag.placed {
+  background: var(--m-tag);
+  color: #9c4a2a;
+}
+.tl-tag.movable {
+  background: transparent;
+  border: 1px dashed #d9c9b6;
+  color: var(--m-muted);
+}
+.tl-row.done .tl-tag {
+  opacity: 0.55;
+}
+.tl-row.done .tl-time b,
+.tl-row.done .tl-time span {
+  color: var(--m-faint);
+}
+.tl-acts {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+.tl-done {
+  padding: 6px 16px;
+  border: 1px solid #D96B43;
+  border-radius: 999px;
+  background: #D96B43;
+  color: var(--m-on-accent);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+}
+.tl-done[aria-pressed="true"] {
+  border-color: #b04523;
+  background: #b04523;
+  color: var(--m-on-accent);
+}
+/* Before a plan exists the Done tap is a preview — the outline keeps it
+   secondary to "Make my plan" without reading as disabled. */
+.tl-done.alt {
+  border-color: #D96B43;
+  background: transparent;
+  color: var(--m-text);
+}
+.tl-done.alt[aria-pressed="true"] {
+  border-color: #b04523;
+  background: rgba(217, 107, 67, 0.12);
+  color: #b04523;
+}
+.tl-skip {
+  padding: 6px 14px;
+  border: 1px solid var(--m-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--m-muted);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+}
+.tl-skip[aria-pressed="true"] {
+  border-color: #b04523;
+  background: rgba(217, 107, 67, 0.12);
+  color: #b04523;
+}
+/* Skipped is muted, not struck through — the step wasn't done, it was
+   reported as missed. Distinct from .done on purpose. */
+.tl-row.skipped .tl-title-text {
+  color: var(--m-faint);
+}
+.tl-row.skipped .tl-time b,
+.tl-row.skipped .tl-time span {
+  color: #cfc2b2;
+}
+.tl-why {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--m-muted);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.tl-drawer {
+  margin-top: 10px;
+}
+.tl-empty {
+  padding: 14px 0 4px;
+  font-size: 12px;
+  color: var(--m-muted);
+}
+
+@media (max-width: 720px) {
+  .tl {
+    padding: 4px 14px 10px;
+  }
+  .tl-row {
+    grid-template-columns: 22px 60px 1fr;
+    gap: 10px;
+  }
+}
+
+/* R3 — calm Simple view */
+.hero.slim {
+  grid-template-columns: 1fr;
+}
+.trip-chip {
+  font: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  border: 1px solid var(--m-border);
+  border-radius: 999px;
+  background: var(--m-card);
+  color: var(--m-text);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+}
+.trip-chip-change {
+  color: #D96B43;
+  font-size: 11px;
+  font-weight: 800;
+}
+.day-step {
+  font: inherit;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid var(--m-border);
+  background: var(--m-card);
+  color: var(--m-text);
+  font-size: 16px;
+  cursor: pointer;
+}
+.day-step:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.tl-check {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin-top: 2px;
+  border-radius: 999px;
+  border: 1.5px solid #D96B43;
+  background: transparent;
+  color: var(--m-on-accent);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+  align-self: flex-start;
+}
+.tl-check.on {
+  background: #D96B43;
+}
+
+/* Round 4 A — 44px taps, sentence-case labels */
+.day-step {
+  width: 44px;
+  height: 44px;
+  font-size: 20px;
+}
+.tl-check {
+  position: relative;
+}
+.tl-check::after {
+  content: "";
+  position: absolute;
+  inset: -11px;
+}
+.ask-chip {
+  min-height: 44px;
+  padding: 10px 16px;
+  font-size: 13px;
+}
+.pill button,
+.pill a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+.trip-chip {
+  min-height: 44px;
+}
+.cta button,
+.tl-skip,
+.hero-actions button {
+  min-height: 44px;
+}
+.mini {
+  font-size: 12px;
+  letter-spacing: normal;
+  text-transform: none;
+}
+.tl-time span {
+  font-size: 11px;
+  letter-spacing: normal;
+  text-transform: none;
+}
+.cal-summary-num span {
+  font-size: 11px;
+  letter-spacing: normal;
+  text-transform: none;
+}
+@media (max-width: 720px) {
+  .hero .s,
+  .drawer p,
+  .ask p,
+  .demo-tag,
+  .journey-step,
+  .hr .hr-stat {
+    font-size: 14px;
+  }
+}
+
+/* Round 4 I — night mode */
+:root {
+  --m-bg: #F5EFE6;
+  --m-card: #fff8ef;
+  --m-text: #3a2e23;
+  --m-ink: #1E1B18;
+  --m-muted: #7a6a5c;
+  --m-border: #e3d5c3;
+  --m-border-2: #eee3d6;
+  --m-faint: #a39282;
+  --m-card-2: #f3e9dc;
+  --m-tag: rgba(217, 107, 67, 0.12);
+  --m-accent: #D96B43;
+  --m-on-accent: #fff8ef;
+}
+html[data-theme="night"] {
+  --m-bg: #201a14;
+  --m-card: #2b231b;
+  --m-text: #F5EFE6;
+  --m-ink: #F5EFE6;
+  --m-muted: #a89383;
+  --m-border: #4a3d30;
+  --m-border-2: #3d332a;
+  --m-faint: #6f6055;
+  --m-card-2: #332a20;
+  --m-tag: rgba(217, 107, 67, 0.18);
+  --m-accent: #D96B43;
+  --m-on-accent: #fff8ef;
+}
+html[data-theme="night"] body,
+html[data-theme="night"] .root {
+  background: var(--m-bg);
+  color: var(--m-ink);
+}
+html[data-theme="night"] .pill,
+html[data-theme="night"] .trip-chip,
+html[data-theme="night"] .day-step,
+html[data-theme="night"] .ask-chip,
+html[data-theme="night"] .chip,
+html[data-theme="night"] .cal-summary-num,
+html[data-theme="night"] .hero-meeting,
+html[data-theme="night"] .sheet-panel,
+html[data-theme="night"] .card,
+html[data-theme="night"] .ask,
+html[data-theme="night"] .hr,
+html[data-theme="night"] .day,
+html[data-theme="night"] .drawer,
+html[data-theme="night"] .demo-tag {
+  background: var(--m-card);
+  border-color: var(--m-border);
+  color: var(--m-text);
+}
+html[data-theme="night"] .tl-row,
+html[data-theme="night"] .cal-summary-num,
+html[data-theme="night"] .demo-tag {
+  border-color: var(--m-border-2);
+}
+html[data-theme="night"] .tl-title,
+html[data-theme="night"] .sheet-title,
+html[data-theme="night"] h1,
+html[data-theme="night"] h2,
+html[data-theme="night"] h3 {
+  color: var(--m-ink);
+}
+html[data-theme="night"] .tl-time span,
+html[data-theme="night"] .journey-step,
+html[data-theme="night"] .journey-step.later,
+html[data-theme="night"] .ask-foot,
+html[data-theme="night"] .sub,
+html[data-theme="night"] p {
+  color: var(--m-muted);
+}
+html[data-theme="night"] .journey-step.now,
+html[data-theme="night"] .pill a:hover,
+html[data-theme="night"] .pill button:hover {
+  color: var(--m-accent);
+}
+html[data-theme="night"] .tl-tag.placed {
+  color: #e99a6f;
+}
+
+/* Swipe rows: horizontal drags, vertical scrolling untouched. */
+.tl-row {
+  touch-action: pan-y;
+}
+
+/* P1 — loading skeleton, themed */
+.skel {
+  background: var(--m-card);
+  border: 1px solid var(--m-border);
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+}
+.skel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+  animation: skel-shimmer 1.4s ease-in-out infinite;
+}
+html[data-theme="night"] .skel::after {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+}
+@keyframes skel-shimmer {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skel::after { animation: none; }
+}
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0);
+  white-space: nowrap; border: 0;
+}
+
+/* P2f — one focus ring everywhere on Home */
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid #D96B43;
+  outline-offset: 2px;
+}
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  border: 1px solid var(--m-border);
+  background: var(--m-card);
+  color: var(--m-muted);
+  cursor: pointer;
+}
+.icon-btn:hover {
+  border-color: #D96B43;
+  color: #D96B43;
+}
+
+/* P3 — small moments of delight (all ≤250ms unless noted) */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes done-pop {
+    0% { transform: scale(0.85); }
+    55% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+  .tl-check.on {
+    animation: done-pop 0.22s ease-out;
+  }
+  .tl-row.done .tl-title-text {
+    color: var(--m-muted);
+    transition: color 0.2s ease-out;
+  }
+  @keyframes nudge-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .nudge-in {
+    animation: nudge-in 0.22s ease-out;
+  }
+  @keyframes celebrate-rise {
+    from { opacity: 0.4; transform: translateY(10px) scale(0.9); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes celebrate-glow {
+    0%,100% { box-shadow: 0 0 0 0 rgba(217,107,67,0); }
+    50% { box-shadow: 0 0 24px 6px rgba(217,107,67,0.35); }
+  }
+  .celebrate .badge {
+    animation: celebrate-rise 0.35s ease-out, celebrate-glow 0.4s ease-out 0.05s;
+  }
+  @keyframes toast-in {
+    from { opacity: 0; transform: translate(-50%, 12px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+  }
+  .toast-in { animation: toast-in 0.2s ease-out; }
+  .toast-out { opacity: 0; transform: translate(-50%, 8px); transition: opacity .2s ease-out, transform .2s ease-out; }
+  @keyframes check-draw {
+    from { stroke-dashoffset: 10; }
+    to { stroke-dashoffset: 0; }
+  }
+  .journey-check path {
+    stroke-dasharray: 10;
+    animation: check-draw 0.25s ease-out;
+  }
+  .tl-expander {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.25s ease-out;
+  }
+  .tl-expander.open {
+    grid-template-rows: 1fr;
+  }
+  .tl-expander > div {
+    overflow: hidden;
+    min-height: 0;
+  }
+  .ask.collapsing {
+    max-height: 0;
+    opacity: 0;
+    margin: 0;
+    padding: 0 14px;
+    overflow: hidden;
+    transition: max-height 0.25s ease-out, opacity 0.2s ease-out, padding 0.25s ease-out;
+  }
+}
+.ask {
+  max-height: 400px;
 }

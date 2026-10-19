@@ -1,5 +1,5 @@
 import { fmtMin } from "@/domain/circadian";
-import { CALENDAR } from "@/domain/fixtures";
+import { CALENDAR, calendarFor, neutralCalendarFor } from "@/domain/fixtures";
 import type { CalendarEvent, CalendarMove, Trip } from "@/domain/types";
 import { fetchGoogleCalendar, googleCalendarEnabled } from "./calendar-google";
 
@@ -95,10 +95,9 @@ export function buildIcs(events: CalendarEvent[], trip: Trip): string {
 }
 
 export function buildCalendar(trip: Trip): CalendarEvent[] {
-  return CALENDAR.map((e) => {
-    if (e.id === "ev-flight") {
-      return { ...e, title: `${trip.origin.code} → ${trip.destination.code}` };
-    }
-    return { ...e };
-  });
+  // The canonical demo route keeps Alex's fixture (tests, replay, the
+  // recorded demo all depend on it). Any other route gets the neutral
+  // traveller calendar — generic commitments, never Alex's names.
+  const isDemoRoute = trip.origin.code === "LHR" && trip.destination.code === "HND";
+  return isDemoRoute ? calendarFor(trip) : neutralCalendarFor(trip);
 }

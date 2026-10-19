@@ -1,13 +1,24 @@
 import { fmtMin } from "./circadian";
 import type {
+  AdherenceProfile,
   CalendarEvent,
   CalendarMove,
   Citation,
   DayPlan,
   EvalResult,
+  Intervention,
   Trip,
   WearableBaseline,
 } from "./types";
+
+/** Intervention kinds that own exclusive time — a movable event sitting on
+ *  one is what earns a calendar-move suggestion. */
+const PROTECTED_KINDS = new Set<Intervention["kind"]>([
+  "light_exposure",
+  "avoid_light",
+  "sleep_window",
+  "exercise",
+]);
 
 export type NudgeCategory =
   | "sunlight"
@@ -25,6 +36,9 @@ export interface TravelerNudge {
   title: string;
   timeWindow: string;
   startMin: number;
+  /** Minutes since local midnight when the step's window ends. Wrap-aware:
+   *  endMin < startMin means the window crosses midnight. */
+  endMin: number;
   durationLabel: string;
   actionSummary: string;
   whyItHelps: string;
@@ -47,14 +61,16 @@ export interface TravelerNudge {
 
 export interface FlightOptionRecommendation {
   id: string;
-  badge: "Best for Zero Jet Lag" | "Good Alternative" | "Hardest on Body Clock";
+  badge: "Best" | "Workable" | "Hardest";
   recommended: boolean;
-  flightNumberExample: string;
   departsLocal: string;
   arrivesDest: string;
+  /** The window as minutes — what the solver actually plans around. */
+  departMin: number;
+  arriveMin: number;
+  /** One line — who this window suits, e.g. "Lands in morning daylight". */
+  bestFor: string;
   cabinSleepWindow: string;
-  landingReadinessPct: number;
-  headline: string;
   whyChoose: string;
   firstNudgeOnLanding: string;
 }
@@ -68,35 +84,33 @@ const wrap = (m: number) => ((m % 1440) + 1440) % 1440;
 export function getFlightRecommendations(trip: Trip): FlightOptionRecommendation[] {
   const east = trip.direction === "east";
   const shiftHours = Math.max(1, Math.round(Math.abs(trip.requiredShiftMin) / 60));
-  const orig = trip.origin.code;
-  const dest = trip.destination.code;
 
   if (east) {
     return [
       {
         id: "midday-afternoon",
-        badge: "Best for Zero Jet Lag",
+        badge: "Best",
         recommended: true,
-        flightNumberExample: `${orig} → ${dest} · Late Morning / Midday`,
         departsLocal: "11:20",
         arrivesDest: "07:50 (+1)",
+        departMin: 11 * 60 + 20,
+        arriveMin: 7 * 60 + 50,
+        bestFor: "Lands in morning daylight — anchor day one outdoors",
         cabinSleepWindow: "Sleep hrs 2–7 of flight (13:00–18:00 body time)",
-        landingReadinessPct: 92,
-        headline: "Land in morning daylight & lock in your new clock on Day 1",
         whyChoose: `Going ${shiftHours}h east requires advancing your clock. A midday departure lets you dim the cabin early, sleep during ${trip.destination.name}'s night, and step straight into morning sunlight on arrival.`,
         firstNudgeOnLanding:
           "No sunglasses at arrival — get 30 min of outdoor daylight + an easy 20-min shakeout jog before 10:30 local.",
       },
       {
         id: "evening-redeye",
-        badge: "Good Alternative",
+        badge: "Workable",
         recommended: false,
-        flightNumberExample: `${orig} → ${dest} · Evening Departure`,
         departsLocal: "19:15",
         arrivesDest: "15:45 (+1)",
+        departMin: 19 * 60 + 15,
+        arriveMin: 15 * 60 + 45,
+        bestFor: "Easier to sleep on board; lands near dusk",
         cabinSleepWindow: "Sleep first 6h immediately after takeoff",
-        landingReadinessPct: 78,
-        headline: "Easier to fall asleep on board, but lands near dusk",
         whyChoose:
           "Your body naturally wants to sleep at 20:30, so boarding tired feels easy—but landing late afternoon gives you only ~90 minutes of daylight before your first local night.",
         firstNudgeOnLanding:
@@ -104,16 +118,16 @@ export function getFlightRecommendations(trip: Trip): FlightOptionRecommendation
       },
       {
         id: "early-morning",
-        badge: "Hardest on Body Clock",
+        badge: "Hardest",
         recommended: false,
-        flightNumberExample: `${orig} → ${dest} · Early Morning`,
         departsLocal: "06:30",
         arrivesDest: "02:50 (+1)",
+        departMin: 6 * 60 + 30,
+        arriveMin: 2 * 60 + 50,
+        bestFor: "Pre-dawn airport start; lands in the middle of the night",
         cabinSleepWindow: "Hard to sleep — cabin aligns with peak daytime alertness",
-        landingReadinessPct: 54,
-        headline: "4:00 AM airport wake-up builds sleep debt before you even board",
         whyChoose:
-          "Waking at 04:00 exposes you to bright airport light during your circadian dead-zone (which pushes your clock the wrong way) and lands you tired with a full day still ahead.",
+          "Waking at 04:00 exposes you to bright airport light in the hours your body most wants sleep (which pushes your clock the wrong way) and lands you tired with a full day still ahead.",
         firstNudgeOnLanding:
           "Wear dark glasses until 07:00 local, take a 20-min recovery nap max, then anchor with outdoor light at 08:30.",
       },
@@ -124,28 +138,28 @@ export function getFlightRecommendations(trip: Trip): FlightOptionRecommendation
   return [
     {
       id: "afternoon-west",
-      badge: "Best for Zero Jet Lag",
+      badge: "Best",
       recommended: true,
-      flightNumberExample: `${orig} → ${dest} · Afternoon Departure`,
       departsLocal: "14:30",
       arrivesDest: "17:40 (same day)",
+      departMin: 14 * 60 + 30,
+      arriveMin: 17 * 60 + 40,
+      bestFor: "Arrive for dinner and sleep through your first night",
       cabinSleepWindow: "Stay awake whole flight · 25m power nap only",
-      landingReadinessPct: 95,
-      headline: "Arrive for dinner, get evening light, and sleep straight through the night",
       whyChoose: `Going ${shiftHours}h west means delaying your clock. An afternoon flight lands you in ${trip.destination.name} early evening: your built-up sleep drive carries you to a 22:00 local bedtime without waking at 03:00.`,
       firstNudgeOnLanding:
         "Get 25 min of late-afternoon sunlight on arrival, eat dinner at 19:30 local, and hold bedtime until at least 21:45.",
     },
     {
       id: "morning-west",
-      badge: "Good Alternative",
+      badge: "Workable",
       recommended: false,
-      flightNumberExample: `${orig} → ${dest} · Morning Departure`,
       departsLocal: "09:15",
       arrivesDest: "12:25 (same day)",
+      departMin: 9 * 60 + 15,
+      arriveMin: 12 * 60 + 25,
+      bestFor: "Half a day at destination; watch the late-afternoon dip",
       cabinSleepWindow: "No cabin sleep — stay hydrated & active",
-      landingReadinessPct: 80,
-      headline: "Gives you a half-day at destination, but watch the 17:00 crash",
       whyChoose:
         "Good if you have an afternoon meeting, provided you use timed afternoon outdoor light and an easy run at 16:30 to push past your home bedtime.",
       firstNudgeOnLanding:
@@ -153,20 +167,29 @@ export function getFlightRecommendations(trip: Trip): FlightOptionRecommendation
     },
     {
       id: "late-night-west",
-      badge: "Hardest on Body Clock",
+      badge: "Hardest",
       recommended: false,
-      flightNumberExample: `${orig} → ${dest} · Late Evening`,
       departsLocal: "20:45",
       arrivesDest: "23:55 (same day)",
+      departMin: 20 * 60 + 45,
+      arriveMin: 23 * 60 + 55,
+      bestFor: "Boards near your bedtime; risks a 03:30 wake-up",
       cabinSleepWindow: "Avoid deep sleep — 45m nap max on board",
-      landingReadinessPct: 62,
-      headline: "Sleeping on the plane steals the sleep drive you need at your hotel",
       whyChoose:
         "Because you board near your home bedtime, it's tempting to sleep 5 hours on the plane—which guarantees you'll wake up wide awake at 03:30 AM in your hotel.",
       firstNudgeOnLanding:
         "Go straight to bed on arrival with a blackout mask, and avoid bright morning light before 08:30 local.",
     },
   ];
+}
+
+/** Resolves a picker id against this trip's options — direction-scoped, so a
+ *  west id on an eastbound trip (or a stale default like "midday-afternoon")
+ *  returns null rather than silently planning around the wrong direction. */
+export function flightWindowFor(trip: Trip, id: string | null | undefined): { departMin: number; arriveMin: number } | null {
+  if (!id) return null;
+  const rec = getFlightRecommendations(trip).find((r) => r.id === id);
+  return rec ? { departMin: rec.departMin, arriveMin: rec.arriveMin } : null;
 }
 
 /**
@@ -190,113 +213,183 @@ export function buildDailyNudgesForDay(params: {
   /** Latest graph-memory hop path the crew consulted this run — evidence that
    *  cross-run memory shaped the plan. Only set when a recall tool really ran. */
   memoryPath?: string;
+  /** Compliance floor for placing asks; wired in a follow-up. */
+  adherence?: AdherenceProfile;
 }): TravelerNudge[] {
-  const { trip, dayIndex, plan, baseline, calendarEvents, moves, citations, verdicts, dayRejected, memoryPath } = params;
+  const { trip, dayIndex, plan, calendarEvents, moves, citations, verdicts, dayRejected, memoryPath, adherence } = params;
+
+  // No plan → no steps. The feed renders "not placed yet — personalise";
+  // nothing here may invent times from a synthetic wake schedule.
+  if (!plan) return [];
+
   const spec = trip.days[dayIndex] ?? { dayIndex, label: `Day ${dayIndex + 1}`, date: "" };
   const east = trip.direction === "east";
   const isFlightDay = dayIndex === trip.departureDayIndex;
   const isArrivalDay = dayIndex > trip.departureDayIndex;
   const citationMap = new Map(citations.map((c) => [c.id, c]));
+  const floor = adherence?.ignoresInterventionsBeforeMin ?? 0;
+  const wakeMin = plan.targetWakeMin;
+  const bedMin = plan.targetBedtimeMin;
 
-  // Derive realistic wake & bed targets even before the crew stream finishes
-  const stepMin = (east ? -65 : 65) * (dayIndex + 1);
-  const baseWake = baseline?.avgWakeMin ?? 6 * 60 + 45;
-  const baseBed = baseline?.avgBedtimeMin ?? 23 * 60 + 30;
-  const wakeMin = plan ? plan.targetWakeMin : wrap(baseWake + stepMin);
-  const bedMin = plan ? plan.targetBedtimeMin : wrap(baseBed + stepMin);
+  // Placement helpers — every suggested ask dodges the day's blocking
+  // calendar events and lands at/after the compliance floor.
+  const blocking = calendarEvents.filter(
+    (e) => e.dayIndex === dayIndex && e.blocksInterventions !== false,
+  );
+  const eventClash = (s: number, e: number, ignoreId?: string) =>
+    blocking.some((ev) => ev.id !== ignoreId && s < ev.endMin && ev.startMin < e);
+  /** First 15-minute-step slot of `duration` minutes starting at/after
+   *  `earliest`, ending by `latestEnd`, overlapping no blocking event. */
+  const freeSlot = (earliest: number, latestEnd: number, duration: number): number | null => {
+    for (let s = earliest; s + duration <= latestEnd; s += 15) {
+      if (!eventClash(s, s + duration)) return s;
+    }
+    return null;
+  };
+  const ivSpan = (iv: Intervention): { s: number; e: number } => {
+    const e = iv.endMin ?? iv.startMin + 60;
+    return { s: iv.startMin, e: e <= iv.startMin ? e + 1440 : e };
+  };
 
   const nudges: TravelerNudge[] = [];
 
-  // 1. SUNLIGHT ON YOUR FACE NUDGE
-  const lightIv = plan?.interventions.find((iv) => iv.kind === "light_exposure");
-  const lightStart = lightIv ? lightIv.startMin : east ? wrap(wakeMin + 15) : wrap(bedMin - 180);
-  const lightEnd = lightIv?.endMin ?? wrap(lightStart + 35);
-  nudges.push({
-    id: `${spec.label}-sunlight`,
-    dayIndex,
-    dayLabel: spec.label,
-    category: "sunlight",
-    title: isFlightDay
-      ? `Cabin & Arrival Light Anchor (${fmtMin(lightStart)})`
-      : east
-        ? "Get Direct Morning Sunlight on Your Face"
-        : "Get Late-Afternoon Outdoor Sunlight",
-    timeWindow: `${fmtMin(lightStart)} – ${fmtMin(lightEnd)}`,
-    startMin: lightStart,
-    durationLabel: "30 min outdoors · no sunglasses",
-    actionSummary: isFlightDay
-      ? `Turn cabin overhead light on & open window shade at ${fmtMin(lightStart)} — signals dawn in ${trip.destination.name}.`
-      : east
-        ? `Step outside within 20 min of waking (${fmtMin(lightStart)}). Get 30 min of natural sky light on your eyes—even overcast sky is 10x stronger than indoor bulbs.`
-        : `Step outside at ${fmtMin(lightStart)} for 30 min of late-day sun on your face to push your melatonin onset later tonight.`,
-    whyItHelps: east
-      ? `Morning blue-spectrum light hits melanopsin receptors at your peak phase-advance window, pulling your clock ~65–90 min toward ${trip.destination.name}.`
-      : `Evening light delays your master clock so you don't wake up at 04:00 AM in ${trip.destination.name}.`,
-    citation: lightIv?.citationId ? citationMap.get(lightIv.citationId) : citations[2],
-  });
-
-  // 2. RUN & WORKOUT PLANNING NUDGE
-  const exerciseIv = plan?.interventions.find((iv) => iv.kind === "exercise");
-  const runStart = exerciseIv
-    ? exerciseIv.startMin
-    : isFlightDay
-      ? wrap(lightStart - 90)
-      : east
-        ? wrap(wakeMin + 45)
-        : wrap(bedMin - 240);
-  const runEnd = exerciseIv?.endMin ?? wrap(runStart + 40);
-  nudges.push({
-    id: `${spec.label}-run`,
-    dayIndex,
-    dayLabel: spec.label,
-    category: "run",
-    title: isFlightDay
-      ? "Pre-Boarding Mobility & Terminal Walk"
-      : isArrivalDay
-        ? `Arrival Shakeout Run in ${trip.destination.name} Daylight`
+  // 1. OUTSIDE LIGHT — only when the plan carries a light block. Never fall
+  // back to wakeMin: a step at the wake target reads as "get light at 05:15"
+  // when the scorer actually placed it at the 07:00 floor.
+  const lightIv = plan.interventions.find((iv) => iv.kind === "light_exposure");
+  const lightStart = lightIv?.startMin;
+  const lightEnd =
+    lightIv !== undefined ? (lightIv.endMin ?? wrap(lightIv.startMin + 60)) : undefined;
+  if (lightIv && lightStart !== undefined && lightEnd !== undefined) {
+    nudges.push({
+      id: `${spec.label}-sunlight`,
+      dayIndex,
+      dayLabel: spec.label,
+      category: "sunlight",
+      title: isFlightDay
+        ? "Cabin light and arrival daylight"
         : east
-          ? "Easy Outdoor Morning Run (Zone 2)"
-          : "Late-Afternoon Tempo / Progression Run",
-    timeWindow: `${fmtMin(runStart)} – ${fmtMin(runEnd)}`,
-    startMin: runStart,
-    durationLabel: isFlightDay ? "20 min brisk walk" : "35–45 min run",
-    actionSummary: isFlightDay
-      ? "Skip heavy evening lifting today. Do a 20-min brisk walk + calf/hip openers before boarding to boost circulation and sleep pressure."
-      : isArrivalDay
-        ? `Keep pace conversational (Zone 2, 35 min) outdoors at ${fmtMin(runStart)}. Doubles your outdoor light dose and clears travel stiffness.`
+          ? "Get outside light"
+          : "Late-afternoon light outside",
+      timeWindow: `${fmtMin(lightStart)} – ${fmtMin(lightEnd)}`,
+      startMin: lightStart,
+      endMin: lightEnd,
+      durationLabel: "30 min outdoors · no sunglasses",
+      actionSummary: isFlightDay
+        ? `Open the shade and keep the cabin bright at ${fmtMin(lightStart)} — it reads as morning in ${trip.destination.name}.`
         : east
-          ? `Move your run out of the evening to ${fmtMin(runStart)}. Running outdoors in morning light accelerates your circadian advance by ~1.4x vs. light alone.`
-          : `Schedule your run at ${fmtMin(runStart)}. Raising core body temperature late afternoon helps delay evening drowsiness.`,
-    whyItHelps:
-      "Skeletal muscle has its own peripheral circadian clock—timed aerobic movement plus outdoor daylight locks in your new timezone without spiking late-night cortisol.",
-    citation: exerciseIv?.citationId ? citationMap.get(exerciseIv.citationId) : citations[0],
-  });
+          ? `Outside by ${fmtMin(lightStart)} — even an overcast sky beats indoor light.`
+          : `Outside at ${fmtMin(lightStart)} — late-day light is what keeps you up tonight.`,
+      whyItHelps: east
+        ? `Daylight at this time of morning pulls your body clock toward ${trip.destination.name} — the strongest lever you have.`
+        : `Evening light pushes your body clock later so you don't wake at 04:00 in ${trip.destination.name}.`,
+      citation: lightIv.citationId ? citationMap.get(lightIv.citationId) : undefined,
+    });
+  }
 
-  // 3. EAT, HYDRATE & CAFFEINE CUTOFF NUDGE
-  const cafIv = plan?.interventions.find((iv) => iv.kind === "caffeine_cutoff");
-  const mealIv = plan?.interventions.find((iv) => iv.kind === "meal_timing");
-  const cafMin = cafIv ? cafIv.startMin : wrap(bedMin - 8 * 60 - 15);
-  const dinnerMin = mealIv ? mealIv.startMin : wrap(bedMin - 3 * 60);
-  nudges.push({
-    id: `${spec.label}-nutrition`,
-    dayIndex,
-    dayLabel: spec.label,
-    category: "nutrition",
-    title: isFlightDay
-      ? "In-Flight Hydration & Destination Meal Anchor"
-      : `Hard Caffeine Cutoff (${fmtMin(cafMin)}) & Meal Timing`,
-    timeWindow: isFlightDay ? `Cutoff ${fmtMin(cafMin)} · Hydrate 500ml/3h` : `Last coffee ${fmtMin(cafMin)} · Last meal ${fmtMin(dinnerMin)}`,
-    startMin: cafMin,
-    durationLabel: "Nutrition & caffeine nudge",
-    actionSummary: isFlightDay
-      ? `Drink 500ml water with electrolytes on boarding, skip cabin alcohol, and decline the first meal if it falls during ${trip.destination.name} night—eat a protein-rich breakfast when cabin lights come up.`
-      : `Enjoy coffee after your morning light window, then cut all caffeine at ${fmtMin(cafMin)} (8h before bed). Eat a protein-rich breakfast within 60 min of waking and finish a lighter dinner by ${fmtMin(dinnerMin)}.`,
-    whyItHelps:
-      "Caffeine has a 5–6 hour half-life that blocks adenosine and flattens nocturnal melatonin; finishing dinner 3 hours before bed lets core temperature drop for deep slow-wave sleep.",
-    citation: cafIv?.citationId ? citationMap.get(cafIv.citationId) : citations[0],
-  });
+  // 2. RUN — the plan's exercise block if it has one. Otherwise the outdoor
+  // run doubles as the light dose (paired at the light block), or the first
+  // free slot at/after the floor. Flight day gets no run without an exercise
+  // intervention.
+  const exerciseIv = plan.interventions.find((iv) => iv.kind === "exercise");
+  let runStart: number | null = null;
+  let runEnd = 0;
+  if (exerciseIv) {
+    runStart = exerciseIv.startMin;
+    runEnd = exerciseIv.endMin ?? wrap(runStart + 40);
+  } else if (!isFlightDay) {
+    if (east) {
+      if (lightIv && lightIv.startMin >= floor && !eventClash(lightIv.startMin, lightIv.startMin + 40)) {
+        runStart = lightIv.startMin;
+        runEnd = wrap(lightIv.startMin + 40);
+      } else {
+        const s = freeSlot(Math.max(floor, lightEnd ?? floor), bedMin - 180, 40);
+        if (s !== null) {
+          runStart = s;
+          runEnd = wrap(s + 40);
+        }
+      }
+    } else {
+      const s = freeSlot(wrap(bedMin - 240), bedMin - 180, 40);
+      if (s !== null) {
+        runStart = s;
+        runEnd = wrap(s + 40);
+      }
+    }
+  }
+  if (runStart !== null) {
+    // 5B4 — the run pairs with light by design (outdoor run doubles as the
+    // light dose), so back-to-back 07:00 windows are intentional, not a
+    // placement bug. Name the pairing when it fires so simultaneity reads
+    // as deliberate: "Run + light together". No solver change — the
+    // physiology wants them together.
+    const pairedWithLight =
+      east && !isFlightDay && !isArrivalDay && lightIv && runStart === lightIv.startMin;
+    nudges.push({
+      id: `${spec.label}-run`,
+      dayIndex,
+      dayLabel: spec.label,
+      category: "run",
+      title: isFlightDay
+        ? "Pre-boarding walk"
+        : isArrivalDay
+          ? `Easy run outside in ${trip.destination.name}`
+          : pairedWithLight
+            ? "Run + light together"
+            : east
+              ? "Easy run outside"
+              : "Afternoon run",
+      timeWindow: `${fmtMin(runStart)} – ${fmtMin(runEnd)}`,
+      startMin: runStart,
+      endMin: runEnd,
+      durationLabel: isFlightDay ? "20 min brisk walk" : "35–45 min easy",
+      actionSummary: isFlightDay
+        ? "A brisk 20-min walk and a few hip openers before boarding — save heavy training for after landing."
+        : isArrivalDay
+          ? `Conversational pace outside at ${fmtMin(runStart)} — doubles as your daylight dose.`
+          : east
+            ? `Run at ${fmtMin(runStart)} — outdoors, easy pace.`
+            : `Run at ${fmtMin(runStart)} — an afternoon session helps you stay up to the new bedtime.`,
+      whyItHelps:
+        "Moving at the right time of day reinforces the new schedule — and an outdoor run counts toward your daylight.",
+      citation: exerciseIv?.citationId ? citationMap.get(exerciseIv.citationId) : undefined,
+    });
+  }
 
-  // 4. CALENDAR TWEAKS NUDGE (what to move on your calendar)
+  // 3. FOOD & CAFFEINE — cutoff from the plan; dinner anchor when the plan
+  // carries one, else 3h before the plan's bedtime.
+  const cafIv = plan.interventions.find((iv) => iv.kind === "caffeine_cutoff");
+  const mealIv = plan.interventions.find((iv) => iv.kind === "meal_timing");
+  if (cafIv) {
+    const cafMin = cafIv.startMin;
+    const dinnerMin = mealIv ? mealIv.startMin : wrap(bedMin - 3 * 60);
+    nudges.push({
+      id: `${spec.label}-nutrition`,
+      dayIndex,
+      dayLabel: spec.label,
+      category: "nutrition",
+      title: isFlightDay
+        ? "In-flight food and water"
+        : `Last coffee ${fmtMin(cafMin)} · dinner by ${fmtMin(dinnerMin)}`,
+      timeWindow: isFlightDay
+        ? `Cutoff ${fmtMin(cafMin)} · hydrate through the flight`
+        : `Last coffee ${fmtMin(cafMin)} · dinner by ${fmtMin(dinnerMin)}`,
+      startMin: cafMin,
+      endMin: isFlightDay ? bedMin : dinnerMin,
+      durationLabel: "Food and caffeine",
+      actionSummary: isFlightDay
+        ? `Water on boarding, skip the alcohol, and eat to ${trip.destination.name}'s morning — not the cabin's.`
+        : `Coffee's fine after your light; stop at ${fmtMin(cafMin)}. Finish dinner by ${fmtMin(dinnerMin)}.`,
+      whyItHelps:
+        "Late caffeine lingers for hours and late eating keeps the body switched on — both fight tonight's bedtime.",
+      citation: cafIv.citationId ? citationMap.get(cafIv.citationId) : undefined,
+    });
+  }
+
+  // 4. CALENDAR — the crew's committed moves first; otherwise a suggestion,
+  // but only for a movable event that actually sits on a protected block,
+  // moved to a slot that's free of events, protected interventions and the
+  // compliance floor.
   const dayMoves = moves.filter((m) => m.from.dayIndex === dayIndex || m.to.dayIndex === dayIndex);
   const movableEvents = calendarEvents.filter((e) => e.dayIndex === dayIndex && e.movable);
 
@@ -307,13 +400,16 @@ export function buildDailyNudgesForDay(params: {
       dayIndex,
       dayLabel: spec.label,
       category: "calendar",
-      title: `Move "${firstMove.title}" to Protect Your Rhythm`,
+      title: `Move "${firstMove.title}" to protect the plan`,
       timeWindow: `${fmtMin(firstMove.from.startMin)} → ${fmtMin(firstMove.to.startMin)}`,
       startMin: firstMove.to.startMin,
-      durationLabel: `${dayMoves.length} calendar ${dayMoves.length === 1 ? "tweak" : "tweaks"}`,
+      endMin:
+        firstMove.to.endMin ??
+        wrap(firstMove.to.startMin + (firstMove.from.endMin - firstMove.from.startMin)),
+      durationLabel: `${dayMoves.length} calendar ${dayMoves.length === 1 ? "move" : "moves"}`,
       actionSummary: `${firstMove.reason} Fixed meetings stay untouched.`,
       whyItHelps:
-        "Shifting flexible 1:1s, deep work, and gym blocks out of your light & wind-down windows means you never have to choose between work and feeling 100%.",
+        "Moves keep the calendar out of your light and wind-down windows so you never have to choose between work and sleep.",
       calendarMove: {
         eventTitle: firstMove.title,
         fromTime: fmtMin(firstMove.from.startMin),
@@ -321,34 +417,51 @@ export function buildDailyNudgesForDay(params: {
         movable: true,
       },
     });
-  } else if (movableEvents.length > 0) {
-    const ev = movableEvents[0];
-    const suggestedStart = east ? wrap(wakeMin + 180) : wrap(wakeMin + 240);
-    nudges.push({
-      id: `${spec.label}-calendar`,
-      dayIndex,
-      dayLabel: spec.label,
-      category: "calendar",
-      title: `Keep "${ev.title}" inside Peak Alertness`,
-      timeWindow: `${fmtMin(ev.startMin)} → ${fmtMin(suggestedStart)}`,
-      startMin: ev.startMin,
-      durationLabel: "Smart calendar nudge",
-      actionSummary: isArrivalDay
-        ? `Your client pitch is during ${trip.destination.name} afternoon—your pre-flight shift puts your body in its peak alertness zone.`
-        : `Nudge "${ev.title}" from ${fmtMin(ev.startMin)} to ${fmtMin(suggestedStart)} so your morning sunlight + run and evening wind-down stay completely clear.`,
-      whyItHelps:
-        "Aligning deep work and flexible meetings with your shifted alertness peak prevents cognitive drag while your clock moves.",
-      calendarMove: {
-        eventTitle: ev.title,
-        fromTime: fmtMin(ev.startMin),
-        toTime: fmtMin(suggestedStart),
-        movable: true,
-      },
-    });
+  } else {
+    const protectedIvs = plan.interventions
+      .filter((iv) => PROTECTED_KINDS.has(iv.kind))
+      .map(ivSpan);
+    const suggestion = movableEvents
+      .filter((ev) => protectedIvs.some((p) => ev.startMin < p.e && p.s < ev.endMin))
+      .map((ev) => {
+        const dur = ev.endMin - ev.startMin;
+        for (let s = Math.max(floor, lightEnd ?? floor); s + dur <= 17 * 60; s += 15) {
+          const evClash = calendarEvents.some(
+            (o) => o.dayIndex === dayIndex && o.id !== ev.id && s < o.endMin && o.startMin < s + dur,
+          );
+          const ivClash = protectedIvs.some((p) => s < p.e && p.s < s + dur);
+          if (!evClash && !ivClash) return { ev, start: s };
+        }
+        return null;
+      })
+      .find((s) => s !== null);
+    if (suggestion) {
+      const { ev, start } = suggestion;
+      nudges.push({
+        id: `${spec.label}-calendar`,
+        dayIndex,
+        dayLabel: spec.label,
+        category: "calendar",
+        title: `Move "${ev.title}" off a protected block`,
+        timeWindow: `${fmtMin(ev.startMin)} → ${fmtMin(start)}`,
+        startMin: start,
+        endMin: wrap(start + (ev.endMin - ev.startMin)),
+        durationLabel: "Suggested move",
+        actionSummary: `"${ev.title}" sits on a protected block — ${fmtMin(start)} keeps it clear of light, wind-down and sleep.`,
+        whyItHelps:
+          "Moves keep the calendar out of your light and wind-down windows so you never have to choose between work and sleep.",
+        calendarMove: {
+          eventTitle: ev.title,
+          fromTime: fmtMin(ev.startMin),
+          toTime: fmtMin(start),
+          movable: true,
+        },
+      });
+    }
   }
 
-  // 5. WIND-DOWN & TARGET SLEEP WINDOW NUDGE
-  const avoidIv = plan?.interventions.find((iv) => iv.kind === "avoid_light");
+  // 5. SLEEP — the plan's bedtime and wake, plus the wind-down start.
+  const avoidIv = plan.interventions.find((iv) => iv.kind === "avoid_light");
   const windDownMin = avoidIv ? avoidIv.startMin : wrap(bedMin - 60);
   nudges.push({
     id: `${spec.label}-sleep`,
@@ -356,16 +469,20 @@ export function buildDailyNudgesForDay(params: {
     dayLabel: spec.label,
     category: "sleep",
     title: isFlightDay
-      ? `Cabin Sleep Window (${fmtMin(bedMin)} – ${fmtMin(wakeMin)})`
-      : `Dim Lights at ${fmtMin(windDownMin)} · Sleep by ${fmtMin(bedMin)}`,
+      ? `Cabin sleep ${fmtMin(bedMin)}–${fmtMin(wakeMin)}`
+      : `Lights down ${fmtMin(windDownMin)} · bed ${fmtMin(bedMin)}`,
     timeWindow: `${fmtMin(bedMin)} – ${fmtMin(wakeMin)}`,
     startMin: bedMin,
+    endMin: wakeMin,
     durationLabel: isFlightDay ? "Eye mask + earplugs" : "Target sleep window",
     actionSummary: isFlightDay
-      ? `Put your eye mask on at ${fmtMin(windDownMin)} and sleep ${fmtMin(bedMin)}–${fmtMin(wakeMin)} so your brain experiences a true night synced to ${trip.destination.name}.`
-      : `Turn off overhead lights and screens at ${fmtMin(windDownMin)}, cool bedroom to 18°C (65°F), and target lights-out at ${fmtMin(bedMin)} until ${fmtMin(wakeMin)}.`,
-    whyItHelps: `Shifts your sleep midpoint by ${Math.abs(plan?.shiftMin ?? 65)} min today without triggering circadian whiplash or losing REM sleep.`,
-    citation: citations[1],
+      ? `Mask and earplugs at ${fmtMin(windDownMin)}; sleep ${fmtMin(bedMin)}–${fmtMin(wakeMin)} — that's night in ${trip.destination.name}.`
+      : `Overheads and screens off at ${fmtMin(windDownMin)}; lights out ${fmtMin(bedMin)}, up ${fmtMin(wakeMin)}.`,
+    whyItHelps:
+      plan.shiftMin === 0
+        ? "Holds tonight's schedule so the shift stays banked."
+        : `Moves tonight ${Math.abs(plan.shiftMin)}min toward ${trip.destination.name} time without a heroic bedtime.`,
+    citation: undefined,
   });
 
   // Evidence chain: the day's actual scorer verdicts — shared by every nudge
@@ -389,4 +506,71 @@ export function buildDailyNudgesForDay(params: {
         : {}),
     }))
     .sort((a, b) => a.startMin - b.startMin);
+}
+
+/**
+ * Rough minutes of the day's scorer-verified shift that a given step
+ * carries. Honest attribution only: the scorer validates shiftMin for the
+ * whole day — light + sleep do the bulk of the work, the rest share the
+ * remainder. Returns 0 on hold days; Dev 2's feed copy ("~20 min closer")
+ * uses this so it never invents precision the model doesn't have.
+ */
+// --- Taste strip ---------------------------------------------------------------
+// "Spend your daylight here": venues Qloo's taste graph ranks for the
+// destination, shown on the arrival day so the plan feels personal. Notes
+// only — never feeds the scorer or timing (same boundary as Otto's tool).
+// Null when there is nothing worth naming: no key, no places, or the wrong
+// day. The renderer shows nothing rather than a filler card.
+
+export interface TastePlace {
+  name: string;
+  categories: string[];
+}
+
+export interface TasteStrip {
+  destination: string;
+  places: TastePlace[];
+}
+
+/** Shape the surface needs — duck-typed so it composes with the Qloo
+ *  `destinationTaste()` rows without depending on the tools module. */
+export interface TasteSource {
+  destination?: string;
+  places?: { name?: string; categories?: string[] }[] | null;
+  note?: string;
+}
+
+/** Arrival day only, max five, named venues with at least a name. Anything
+ *  else is null — the strip never renders filler. */
+export function tasteStrip(
+  source: TasteSource | null | undefined,
+  dayIndex: number,
+  departureDayIndex: number,
+  destinationName: string,
+  limit = 5,
+): TasteStrip | null {
+  if (!source || dayIndex <= departureDayIndex) return null;
+  const places = (source.places ?? [])
+    .filter((p): p is TastePlace => typeof p?.name === "string" && p.name.length > 0)
+    .map((p) => ({ name: p.name, categories: (p.categories ?? []).filter(Boolean).slice(0, 3) }))
+    .slice(0, limit);
+  if (!places.length) return null;
+  return { destination: source.destination || destinationName, places };
+}
+
+export function stepImpactMin(plan: DayPlan, category: NudgeCategory): number {
+  const shift = Math.abs(plan.shiftMin);
+  if (shift === 0) return 0;
+  const has = (kind: string) => plan.interventions.some((iv) => iv.kind === kind);
+  const W: [NudgeCategory, number][] = [
+    ["sunlight", has("light_exposure") ? 0.5 : 0],
+    ["sleep", has("sleep_window") ? 0.3 : 0],
+    ["run", has("exercise") ? 0.1 : 0],
+    ["nutrition", has("caffeine_cutoff") || has("meal_timing") ? 0.1 : 0],
+    ["calendar", 0],
+  ];
+  const w = W.find(([c]) => c === category)?.[1] ?? 0;
+  const total = W.reduce((s, [, x]) => s + x, 0);
+  if (total === 0 || w === 0) return 0;
+  return Math.round((shift * (w / total)) / 5) * 5;
 }

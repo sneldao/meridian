@@ -13,3 +13,17 @@ artifacts/proof/
 *.mp4
 *.webm
 *.mov
+artifacts/share/
+artifacts/feeds/
+.qoder/
+# Tool session state, same category as .qoder/ above
+.commandcode/
+
+# Recording stills are regenerable output, not source — and a `git add -A`
+# sweep kept dragging them in. The film itself (video/ scripts, audio,
+# index.html) stays tracked; only the captures are ignored.
+artifacts/video/
+
+# The film is local-only — compositions, audio, renders, lockfiles and agent
+# docs all stay out of git. Nothing in the app build reads from video/.
+video/

@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
 import Link from "next/link";
+import { useRef, useState } from "react";
 import {
   CalendarPlus,
   CheckCircle2,
@@ -11,10 +11,14 @@ import {
   X,
 } from "lucide-react";
 import { fmtMin } from "@/domain/circadian";
+import { planSummaryLine } from "@/lib/plan-copy";
+import { SubscribeCalendar } from "@/components/SubscribeCalendar";
 import { speakDialogue, speakOnce } from "@/lib/voice/engine";
-import type { Citation, DayPlan, ShiftCoverage, VoiceLine } from "@/domain/types";
+import type { Citation, DayPlan, ShiftCoverage, Trip, VoiceLine } from "@/domain/types";
 
 interface HandoffBannerProps {
+  /** Needed to publish the webcal feed. */
+  trip?: Trip | null;
   summary: string;
   score: number;
   citations: Citation[];
@@ -24,26 +28,37 @@ interface HandoffBannerProps {
   coverage?: ShiftCoverage;
   fallback?: boolean;
   voiceAvailable?: boolean;
+  /** Destination display name ("Tokyo") for the plain-language read. */
+  destinationName?: string;
+  /** Maps a domain day label ("D-2") to a friendly name ("Thu 22 Oct"). */
+  dayName?: (label: string) => string;
   onDismiss?: () => void;
 }
 
 export function HandoffBanner({
+  trip,
   summary,
-  citations,
   days,
+  citations,
   ics,
   lines,
   coverage,
   fallback,
   voiceAvailable,
+  destinationName,
+  dayName,
   onDismiss,
 }: HandoffBannerProps) {
   const [voiceState, setVoiceState] = useState<"idle" | "loading" | "playing" | "error">("idle");
   const playGen = useRef(0);
 
-  const firstMove = days
-    .flatMap((d) => d.interventions.map((iv) => ({ day: d, iv })))
-    .find(({ iv }) => iv.kind === "light_exposure" || iv.kind === "sleep_window");
+  const firstMove = (() => {
+    for (const day of days) {
+      const iv = day.interventions[0];
+      if (iv) return { day, iv };
+    }
+    return null;
+  })();
 
   const downloadIcs = () => {
     const blob = new Blob([ics], { type: "text/calendar" });
@@ -76,6 +91,7 @@ export function HandoffBanner({
   const shiftHoursSummary = coverage
     ? `${(coverage.achievedMin / 60).toFixed(1)}h of ${(coverage.requiredMin / 60).toFixed(1)}h planned shift scheduled`
     : `${days.length} days checked against constraints`;
+  const planLine = planSummaryLine(coverage, destinationName, citations.length);
 
   return (
     <section
@@ -107,13 +123,18 @@ export function HandoffBanner({
 
           {fallback && (
             <div className="mt-2 rounded-xl border border-[#B91C1C]/30 bg-[#FEF2F2] px-3 py-1.5 text-xs font-semibold text-[#7F1D1D]">
-              Used verified deterministic fallback schedule mid-run — review times before exporting.
+              Part of this plan used a verified backup schedule — double-check the times before adding it to your calendar.
             </div>
           )}
 
           <p className="mt-2.5 text-base font-semibold leading-relaxed text-[#1E1B18]">
-            {summary}
+            {summary || planLine}
           </p>
+          {summary && planLine && summary !== planLine && (
+            <p className="mt-1 text-xs leading-relaxed text-[#5b4d41]">
+              {planLine}
+            </p>
+          )}
 
           {firstMove && (
             <div className="mt-3 inline-flex flex-wrap items-center gap-2 rounded-xl border border-[#e3d5c3] bg-[#f5efe6] px-3 py-2 text-xs">
@@ -122,7 +143,7 @@ export function HandoffBanner({
                 First Action
               </span>
               <span className="font-mono2 font-bold text-[#1E1B18]">
-                {firstMove.day.label} at {fmtMin(firstMove.iv.startMin)}
+                {dayName ? dayName(firstMove.day.label) : firstMove.day.label} at {fmtMin(firstMove.iv.startMin)}
               </span>
               <span className="text-[#5b4d41]">— {firstMove.iv.note}</span>
             </div>
@@ -137,8 +158,16 @@ export function HandoffBanner({
             className="inline-flex items-center gap-2 rounded-full bg-[#D96B43] px-4 py-2.5 text-xs font-extrabold text-white shadow-sm transition-colors hover:bg-[#c45a34]"
           >
             <CalendarPlus size={14} />
-            Add to Calendar (.ics)
+            Add to my calendar
           </button>
+          {trip && days && (
+            <SubscribeCalendar
+              ics={ics}
+              trip={trip}
+              days={days}
+              className="inline-flex items-center gap-2 rounded-full border border-[#d8c6ae] bg-[#f5efe6] px-3.5 py-2 text-xs font-bold text-[#1E1B18] transition-colors hover:border-[#D96B43]"
+            />
+          )}
 
           {voiceAvailable && (
             <button
@@ -151,10 +180,10 @@ export function HandoffBanner({
               {voiceState === "loading"
                 ? "Preparing audio…"
                 : voiceState === "playing"
-                  ? "Playing briefing…"
+                  ? "Playing…"
                   : voiceState === "error"
                     ? "Audio unavailable"
-                    : "Listen to Briefing"}
+                    : "Listen"}
             </button>
           )}
 

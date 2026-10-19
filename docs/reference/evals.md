@@ -78,3 +78,7 @@ Add a scenario: push another `{ name, trip }` onto `SCENARIOS` in
 antimeridian. Add a metric: it's just another field read off the
 `CrewEvent` stream in `runScenario` and the `EvalPayload` shape in
 `src/tools/supabase.ts`.
+
+## Trend notes
+
+- **2026-10-16** (replay provider, `REPLAY_BEAT_MS=1`): LHR→HND went 5/5 · 0.90 · 79% shift (pre-overhaul, `origin/main`) → 5/5 · 0.95 · **19%** shift (floor-cap engine) → 5/5 · 0.95 · 19% (after the hold→resume flip fix). LHR→JFK and LHR→MEX flat at 5/5 · 0.91 / 0.90 throughout. The eastward drop is intentional — the solver now caps shifts at the compliance floor instead of drafting 03:45 wakes; the flip fix removed `SHIFT_DIRECTION_FLIP` from the scripted rejection but the scripted days hold, so coverage stays honest.

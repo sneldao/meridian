@@ -93,3 +93,54 @@ export function shouldSplit(
 ): boolean {
   return radiusDeg * pxPerDeg > thresholdPx;
 }
+
+/**
+ * The brightness of a city light at this solar zenith, in 0..1.
+ *
+ * This is the same curve the lens keys its SVG dots on (`WorldLens` line ~216):
+ * fully off in daylight at the 90° terminator, full at deep night, ramping over
+ * the 12° of post-dusk civil-ish sky in between. Keeping the curve in one
+ * exported place is what lets the WebGL lights make the honesty claim in their
+ * own comment — "a dot is night-dimmed here exactly when the lens makes it dim"
+ * — testable rather than asserted.
+ *
+ * The WebGL copy multiplies a *pixel alpha*, so its ramp reads as light
+ * appearing out of the disc as the terminator passes, instead of the SVG's ink
+ * fading in. Same curve, different medium.
+ */
+export function dotBrightness(solarZenithDeg: number): number {
+  return Math.min(1, Math.max(0, (solarZenithDeg - 90) / 12));
+}
+
+/**
+ * Resolve the per-frame draw set: dense groups split into their members, sparse
+ * groups stay one light.
+ *
+ * The decision is made *per cluster* — a group splits or holds on the size that
+ * group covers on screen, not on some global zoom figure. This matters twice:
+ * first because the buy is the SVG fixture's own behaviour (rows of taxiways
+ * resolving around a metro while countryside still glows as a single dot), and
+ * second because it removes the wrong global fix entirely: with one global
+ * figure any branch off `clusters[0]` is order-dependent, keyed to whatever
+ * cluster Map insertion happens to be first.
+ *
+ * The output is the union of members from split groups and the centroids of
+ * held ones, every visible dot having a lat/lon to place. Order-independent on
+ * set membership except where grid cell order already is — the same contract as
+ * `clusterAirports`.
+ */
+export function resolveLightSet<T extends Dot>(
+  clusters: Cluster<T>[],
+  pxPerDeg: number,
+  thresholdPx: number = EXPAND_PX,
+): Dot[] {
+  const out: Dot[] = [];
+  for (const c of clusters) {
+    if (shouldSplit(c.radiusDeg, pxPerDeg, thresholdPx)) {
+      for (const m of c.members) out.push(m);
+    } else {
+      out.push(c);
+    }
+  }
+  return out;
+}

@@ -1,4 +1,6 @@
 import {
+  CBT_BEFORE_WAKE_MIN,
+  LIGHT_DELAY_HORIZON_MIN,
   CAFFEINE_CUTOFF_BEFORE_BED_MIN,
   MAX_SHIFT_MIN_PER_DAY,
   coverageOf,
@@ -48,6 +50,12 @@ export interface SolvedDay {
 const wrap = (m: number) => ((m % 1440) + 1440) % 1440;
 const overlaps = (aS: number, aE: number, bS: number, bE: number) => aS < bE && bS < aE;
 
+/** Furthest the light block may start after the wake target — also the
+ *  eastbound wake margin below the compliance floor (floor − this is the
+ *  earliest wake a shift may produce, so the anchor can still open at the
+ *  floor). */
+const LIGHT_START_MAX_OFFSET_MIN = 105;
+
 /** First duration-min slot from `starts` that no blocking event on that day
  *  overlaps, or null. */
 function placeBlock(
@@ -79,9 +87,17 @@ function lightStarts(
   if (trip.direction === "east") {
     // Prefer the first light the wearer will actually get up for: the
     // compliance floor, when it lands inside the anchor window.
-    const preferred = Math.max(day.targetWakeMin, Math.min(floorMin, day.targetWakeMin + 105));
+    const preferred = Math.max(
+      day.targetWakeMin,
+      Math.min(floorMin, day.targetWakeMin + LIGHT_START_MAX_OFFSET_MIN),
+    );
     const starts = [preferred];
-    for (let off = 0; off <= 105; off += 15) starts.push(day.targetWakeMin + off);
+    // Floor band next, then the anchor window: a legal slot at/after the floor
+    // always beats an earlier one — "no ask before the floor when a legal one
+    // exists". Below-floor anchor candidates stay last for days where every
+    // ≥floor slot is genuinely blocked.
+    for (let off = 0; off <= LIGHT_START_MAX_OFFSET_MIN; off += 15) starts.push(floorMin + off);
+    for (let off = 0; off <= LIGHT_START_MAX_OFFSET_MIN; off += 15) starts.push(day.targetWakeMin + off);
     for (const off of [-15, -30, -45, -60]) starts.push(day.targetWakeMin + off);
     return { starts: [...new Set(starts.map(wrap))], duration: 60 };
   }
@@ -98,6 +114,87 @@ function draftDay(
 ): DayPlan | null {
   const { trip, spec, calendar, adherence, lockedDays, baseline } = input;
   const prev = lockedDays[lockedDays.length - 1];
+  const postFlight = spec.dayIndex > trip.departureDayIndex;
+
+  // Post-flight: the body's phase — baseline + every locked shift, converted
+  // to the destination frame once — decides where zeitgebers land, NOT the
+  // sleep window. The schedule it shifts from is still the phase (that's
+  // what the scorer now measures against), but the *targets* are local-night
+  // times: after landing you sleep when the city sleeps, and zeitgebers do
+  // the shifting.
+  if (postFlight) {
+    if (!baseline) return null;
+    const off = trip.destination.utcOffsetMin - trip.origin.utcOffsetMin;
+    let phaseBed = baseline.avgBedtimeMin + off;
+    let phaseWake = baseline.avgWakeMin + off;
+    for (const d of lockedDays) {
+      phaseBed = wrap(phaseBed + d.shiftMin);
+      phaseWake = wrap(phaseWake + d.shiftMin);
+    }
+    const east = trip.direction === "east";
+    const bed = baseline.avgBedtimeMin;
+    const wake = baseline.avgWakeMin;
+    const cbt = wrap(phaseWake - CBT_BEFORE_WAKE_MIN);
+    const interventions: Intervention[] = east
+      ? [
+          // A lagging body's CBT sits mid-morning local: keep it dark until
+          // then (that light delays), light right after it advances.
+          {
+            kind: "avoid_light",
+            startMin: wrap(cbt - LIGHT_DELAY_HORIZON_MIN / 2),
+            endMin: cbt,
+            note: `Shade and indoors until ${fmtMin(cbt)} — this light would push you back.`,
+          },
+          {
+            kind: "light_exposure",
+            startMin: wrap(cbt + 30),
+            endMin: wrap(cbt + 90),
+            note: `Bright light from ${fmtMin(wrap(cbt + 30))} — body's dawn zone, the advance lever.`,
+          },
+          {
+            kind: "caffeine_cutoff",
+            startMin: wrap(bed - CAFFEINE_CUTOFF_BEFORE_BED_MIN - 5),
+            note: `Last caffeine 8h before the ${fmtMin(bed)} bedtime.`,
+          },
+          {
+            kind: "melatonin",
+            startMin: wrap(bed - 270),
+            note: `Melatonin timing window ~4–5h before bed (timing only, no dose).`,
+          },
+          { kind: "sleep_window", startMin: bed, endMin: wake, note: `Bed ${fmtMin(bed)}, up ${fmtMin(wake)} — local night.` },
+        ]
+      : [
+          // Ahead body (westward): CBT sits early-morning local — dark until
+          // then, evening light delays.
+          {
+            kind: "avoid_light",
+            startMin: wake,
+            endMin: wrap(wake + 120),
+            note: `Dark glasses until ${fmtMin(wrap(wake + 120))} — morning light undoes the delay.`,
+          },
+          {
+            kind: "light_exposure",
+            startMin: wrap(bed - 210),
+            endMin: wrap(bed - 150),
+            note: `Evening light ~2h before bed — the delay lever.`,
+          },
+          {
+            kind: "caffeine_cutoff",
+            startMin: wrap(bed - CAFFEINE_CUTOFF_BEFORE_BED_MIN - 5),
+            note: `Last caffeine 8h before the ${fmtMin(bed)} bedtime.`,
+          },
+          { kind: "sleep_window", startMin: bed, endMin: wake, note: `Bed ${fmtMin(bed)}, up ${fmtMin(wake)} — local night.` },
+        ];
+    return {
+      dayIndex: spec.dayIndex,
+      label: spec.label,
+      shiftMin,
+      targetBedtimeMin: bed,
+      targetWakeMin: wake,
+      interventions,
+    };
+  }
+
   const ref = prev
     ? { bed: prev.targetBedtimeMin, wake: prev.targetWakeMin }
     : baseline
@@ -122,6 +219,22 @@ function draftDay(
     if (lightStart === null) return null;
   }
 
+  // The wind-down block wants the last hour before bed; when a fixed event
+  // eats into it (a late dinner), take the latest start that still clears it.
+  const avoidStart = east
+    ? [60, 45, 30, 15]
+      .map((b) => wrap(bed - b))
+      .find(
+        (s) =>
+          !calendar.some(
+            (e) =>
+              e.dayIndex === spec.dayIndex &&
+              e.blocksInterventions !== false &&
+              overlaps(s, bed, e.startMin, e.endMin),
+          ),
+      )
+    : undefined;
+
   const interventions: Intervention[] = east
     ? [
         {
@@ -137,7 +250,7 @@ function draftDay(
         },
         {
           kind: "avoid_light",
-          startMin: wrap(bed - 60),
+          startMin: avoidStart ?? wrap(bed - 60),
           endMin: bed,
           note: "Lights low for the last hour — evening light works against the advance.",
         },
@@ -198,7 +311,26 @@ export function solveDay(input: SolveDayInput): SolvedDay | null {
   const spread = Math.ceil(remaining / Math.max(1, daysLeft) / 5) * 5;
   const target = Math.min(MAX_SHIFT_MIN_PER_DAY, remaining, Math.max(spread, 15));
 
+  // East, the compliance floor caps the shift: never pick a wake earlier
+  // than floor − LIGHT_START_MAX_OFFSET_MIN, so the light anchor can still
+  // open at the floor. Unwrapped arithmetic on purpose — wrapped wakes in
+  // the early-morning range must compare as small numbers, not ~23:xx. A
+  // hold (s = 0) is always allowed.
+  const prev = lockedDays[lockedDays.length - 1];
+  const frameOffMin =
+    prev && spec.dayIndex > trip.departureDayIndex && prev.dayIndex <= trip.departureDayIndex
+      ? trip.destination.utcOffsetMin - trip.origin.utcOffsetMin
+      : 0;
+  const refWake = prev ? prev.targetWakeMin + frameOffMin : baseline?.avgWakeMin;
+
   for (let s = target; s >= 0; s -= 15) {
+    if (
+      trip.direction === "east" &&
+      s > 0 &&
+      refWake !== undefined &&
+      refWake - s < adherence.ignoresInterventionsBeforeMin - LIGHT_START_MAX_OFFSET_MIN
+    )
+      continue;
     const plan = draftDay(input, sign * s);
     if (!plan) continue;
     const result = evaluatePlan({
@@ -211,4 +343,26 @@ export function solveDay(input: SolveDayInput): SolvedDay | null {
     if (passes(result)) return { plan, result };
   }
   return null;
+}
+
+/** Solves every day of the trip in order — the pre-run preview runs the same
+ *  chain the crew would lock, so what the preview shows is what the scorer
+ *  accepts. Days the solver can't place stay null (the honest "not placed"
+ *  signal) and don't advance the chain; later days solve from the last
+ *  locked plan. Keyed by DaySpec.label, like run.locked / run.drafts. */
+export function previewPlan(input: {
+  trip: Trip;
+  calendar: CalendarEvent[];
+  adherence: AdherenceProfile;
+  baseline?: { avgBedtimeMin: number; avgWakeMin: number };
+}): Map<string, SolvedDay | null> {
+  const { trip, calendar, adherence, baseline } = input;
+  const lockedDays: DayPlan[] = [];
+  const out = new Map<string, SolvedDay | null>();
+  for (const spec of trip.days) {
+    const solved = solveDay({ trip, spec, lockedDays, calendar, adherence, baseline });
+    out.set(spec.label, solved);
+    if (solved) lockedDays.push(solved.plan);
+  }
+  return out;
 }

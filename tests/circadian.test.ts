@@ -75,6 +75,65 @@ describe("evidence integrity", () => {
   });
 });
 
+describe("SHIFT_DIRECTION_FLIP", () => {
+  const d = (i: number, shiftMin: number): DayPlan => ({
+    dayIndex: i,
+    label: `Day ${i}`,
+    shiftMin,
+    targetBedtimeMin: 23 * 60,
+    targetWakeMin: 7 * 60,
+    interventions: [],
+  });
+  const flips = (days: DayPlan[]) =>
+    evaluatePlan({ trip, days, calendar: CALENDAR, adherence: ADHERENCE_PROFILE })
+      .violations.filter((v) => v.code === "SHIFT_DIRECTION_FLIP");
+
+  test("a hold day does not block resuming the same direction", () => {
+    expect(flips([d(0, -90), d(1, 0), d(2, -60)])).toEqual([]);
+  });
+
+  test("a hold day does not hide a real flip", () => {
+    const v = flips([d(0, -90), d(1, 0), d(2, 60)]);
+    expect(v.length).toBe(1);
+    expect(v[0].dayIndex).toBe(2);
+  });
+
+  test("adjacent opposite shifts still flip", () => {
+    const v = flips([d(0, -90), d(1, 30)]);
+    expect(v.length).toBe(1);
+    expect(v[0].dayIndex).toBe(1);
+  });
+
+  test("a hold then a wrong-way shift flips against trip direction", () => {
+    const v = flips([d(0, 0), d(1, 60)]);
+    expect(v.length).toBe(1);
+    expect(v[0].dayIndex).toBe(1);
+  });
+
+  test("a first-day wrong-way shift flips against trip direction", () => {
+    const v = flips([d(0, 30)]);
+    expect(v.length).toBe(1);
+    expect(v[0].dayIndex).toBe(0);
+  });
+
+  test("returning to the right direction is the correction, not a second flip", () => {
+    const v = flips([d(0, 0), d(1, 60), d(2, -30)]);
+    expect(v.length).toBe(1);
+    expect(v[0].dayIndex).toBe(1);
+  });
+
+  test("a first-day with-direction shift does not flip", () => {
+    const west = buildTrip("LHR", "JFK", "2026-10-18");
+    const v = evaluatePlan({
+      trip: west,
+      days: [d(0, 0), d(1, 60)],
+      calendar: [],
+      adherence: ADHERENCE_PROFILE,
+    }).violations.filter((x) => x.code === "SHIFT_DIRECTION_FLIP");
+    expect(v).toEqual([]);
+  });
+});
+
 describe("coverage", () => {
   const dayAt = (shiftMin: number): DayPlan => ({
     dayIndex: 0,

@@ -54,9 +54,10 @@ export function parseCheckInText(req: CheckInRequest): CheckIn {
   }
 
   // Pull a clock time if one is present — "couldn't do the 5am light" pins the
-  // check-in to a specific intervention start.
-  let startMin: number | undefined;
-  const m = text.match(CLOCK_RE);
+  // check-in to a specific intervention start. A structured caller can pass it
+  // directly.
+  let startMin: number | undefined = req.startMin;
+  const m = startMin === undefined ? text.match(CLOCK_RE) : null;
   if (m) {
     let h = parseInt(m[1], 10);
     const mm = m[2] ? parseInt(m[2], 10) : 0;

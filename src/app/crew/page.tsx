@@ -14,9 +14,10 @@ import type {
   WearableBaseline,
 } from "@/domain/types";
 import { CREW } from "@/agents/crew";
-import { Button, Card, KeyHint, AgentChip } from "@/components/ui";
+import { Button, Card, Badge, KeyHint, AgentChip } from "@/components/ui";
 import { BriefingCard } from "@/components/BriefingCard";
 import { MorningCheckin } from "@/components/MorningCheckin";
+import { AnchoredPopover } from "@/components/AnchoredPopover";
 import { LensShell, type LensId } from "@/components/lenses/LensShell";
 import { WorldLens } from "@/components/lenses/WorldLens";
 import { CrewFeed, type LogEntry } from "@/components/CrewFeed";
@@ -52,11 +53,21 @@ function clockAt(offsetMin: number, now = new Date()): string {
   return fmtMin(now.getUTCHours() * 60 + now.getUTCMinutes() + offsetMin);
 }
 
+/** Same default as `/`: three days out in the viewer's local date, so a visit
+ *  after 18 Oct doesn't open on a trip that already happened. Derived in the
+ *  mount effect, not at render, to avoid a server/browser hydration mismatch. */
+function defaultDepartureDate(now = new Date()): string {
+  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 3);
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
+
 export default function CrewOperatorPage() {
   const reduce = useReducedMotion();
   const [origin, setOrigin] = useState("LHR");
   const [dest, setDest] = useState("HND");
-  const [departureDate, setDepartureDate] = useState("2026-10-18");
+  const [departureDate, setDepartureDate] = useState("");
   const [checkInsParam, setCheckInsParam] = useState("");
   const [startDayParam, setStartDayParam] = useState(0);
   const tripQuery = `?origin=${origin}&dest=${dest}&date=${departureDate}`;
@@ -67,16 +78,20 @@ export default function CrewOperatorPage() {
   const lens = autoDirector ? ((run.focus ?? selectedLens) as LensId) : selectedLens;
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [briefingDismissed, setBriefingDismissed] = useState(false);
-
+  const [hasSavedPlan, setHasSavedPlan] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [runCount, setRunCount] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
   const trip = (run.trip ?? data?.trip ?? null) as Trip | null;
 
   const esRef = useRef<EventSource | null>(null);
-  const [voiceOn, setVoiceOn] = useState(true);
-  const voiceOnRef = useRef(true);
+  const [voiceOn, setVoiceOn] = useState(false);
+  const voiceOnRef = useRef(false);
   const [voiceAvail, setVoiceAvail] = useState(false);
-  const uttRef = useRef<
-    Record<string, { uId: string; total: number; sent: number; pending: string; last: string }>
-  >({});
+  // Per-agent utterance state: pending token buffer, chars already dispatched
+  // to TTS, total display chars, and the current utterance id (karaoke key).
+  const uttRef = useRef<Record<string, { uId: string; total: number; sent: number; pending: string; last: string }>>({});
   const uSeqRef = useRef(0);
 
   const stopVoice = useCallback(() => {
@@ -85,11 +100,12 @@ export default function CrewOperatorPage() {
   }, []);
 
   useEffect(() => {
+    if (!departureDate) return;
     fetch("/api/trip" + tripQuery)
       .then((r) => r.json())
       .then((d: TripData) => setData(d))
       .catch(() => {});
-  }, [tripQuery]);
+  }, [tripQuery, departureDate]);
 
   const hook = trip
     ? { body: clockAt(trip.origin.utcOffsetMin), dest: clockAt(trip.destination.utcOffsetMin) }
@@ -99,11 +115,27 @@ export default function CrewOperatorPage() {
     const t = setTimeout(() => {
       try {
         initVoice().then(setVoiceAvail);
+        const savedVoice = localStorage.getItem("meridian:crewVoice");
+        const on = savedVoice === "on";
+        voiceOnRef.current = on;
+        setVoiceOn(on);
+        setVoiceEnabled(on);
+        setHasSavedPlan(Boolean(localStorage.getItem("meridian:lastPlan")));
+        setShowOnboarding(!localStorage.getItem("meridian:onboarded"));
+        fetch("/api/memory")
+          .then((r) => r.json())
+          .then((d) => setRunCount(Array.isArray(d?.runs) ? d.runs.length : 0))
+          .catch(() => {});
         if (typeof window !== "undefined") {
           const sp = new URLSearchParams(window.location.search);
           if (sp.get("origin")) setOrigin(sp.get("origin")!);
           if (sp.get("dest")) setDest(sp.get("dest")!);
-          if (sp.get("date")) setDepartureDate(sp.get("date")!);
+          const qDate = sp.get("date");
+          setDepartureDate(
+            qDate && /^\d{4}-\d{2}-\d{2}$/.test(qDate) && !Number.isNaN(Date.parse(qDate))
+              ? qDate
+              : defaultDepartureDate(),
+          );
           if (sp.get("checkins")) setCheckInsParam(sp.get("checkins")!);
           const sd = Number(sp.get("startDay"));
           if (!Number.isNaN(sd)) setStartDayParam(sd);
@@ -138,6 +170,7 @@ export default function CrewOperatorPage() {
           stopVoice();
           setEntries([{ kind: "system", text: "shift started — crew assembling" }]);
           setBriefingDismissed(false);
+          setShowOnboarding(false);
           try {
             localStorage.setItem("meridian:onboarded", "1");
             localStorage.setItem("meridian:lastTrip", JSON.stringify(e.trip));
@@ -177,13 +210,7 @@ export default function CrewOperatorPage() {
             const { chunks, rest } = takeChunks(u.pending);
             const base = u.sent;
             for (const c of chunks) {
-              speakSentence({
-                uId: u.uId,
-                agent: e.agent,
-                text: c.text,
-                charBase: base + c.start,
-                prev: u.last || undefined,
-              });
+              speakSentence({ uId: u.uId, agent: e.agent, text: c.text, charBase: base + c.start, prev: u.last || undefined });
               u.last = c.text;
             }
             u.sent += u.pending.length - rest.length;
@@ -208,13 +235,7 @@ export default function CrewOperatorPage() {
               u.last = c.text;
             });
             if (!chunks.length) {
-              speakSentence({
-                uId: u.uId,
-                agent: e.agent,
-                text: "",
-                charBase: base,
-                utterTotal: u.total,
-              });
+              speakSentence({ uId: u.uId, agent: e.agent, text: "", charBase: base, utterTotal: u.total });
             }
           }
           delete uttRef.current[e.agent];
@@ -244,8 +265,18 @@ export default function CrewOperatorPage() {
           });
           break;
         case "briefing":
-          if (e.lines?.length) speakDialogue(e.lines);
-          else speakOnce(e.summary, "handoff");
+          if (voiceOnRef.current) {
+            if (e.lines?.length) speakDialogue(e.lines);
+            else speakOnce(e.summary, "handoff");
+          }
+          setHasSavedPlan(true);
+          try {
+            if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
+              new Notification("Meridian handoff ready", { body: e.summary });
+            }
+          } catch {
+            /* ignore */
+          }
           try {
             localStorage.setItem(
               "meridian:lastPlan",
@@ -256,8 +287,27 @@ export default function CrewOperatorPage() {
                 days: e.days,
                 ics: e.ics,
                 lines: e.lines,
+                coverage: e.coverage,
+                savedAt: new Date().toISOString(),
               }),
             );
+            const entry = {
+              id: Date.now(),
+              savedAt: new Date().toISOString(),
+              trip: (() => {
+                try { return JSON.parse(localStorage.getItem("meridian:lastTrip") || "null"); } catch { return null; }
+              })(),
+              score: e.score,
+              summary: e.summary,
+              days: e.days,
+              provider: data?.provider,
+              fallback: run.errors.length > 0,
+            };
+            const prev = (() => {
+              try { return JSON.parse(localStorage.getItem("meridian:history") || "[]"); } catch { return []; }
+            })();
+            prev.unshift(entry);
+            localStorage.setItem("meridian:history", JSON.stringify(prev.slice(0, 20)));
           } catch {
             /* ignore */
           }
@@ -272,7 +322,7 @@ export default function CrewOperatorPage() {
           break;
       }
     },
-    [push, stopVoice],
+    [push, stopVoice, data?.provider, run.errors.length],
   );
 
   const cancelShift = useCallback(() => {
@@ -285,6 +335,9 @@ export default function CrewOperatorPage() {
   const beginStream = useCallback(
     (extra?: { checkins?: string; startDay?: number }) => {
       if (run.phase === "running") return;
+      if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "default") {
+        Notification.requestPermission().catch(() => {});
+      }
       esRef.current?.close();
       reset();
       setEntries([]);
@@ -332,10 +385,13 @@ export default function CrewOperatorPage() {
   }, []);
 
   const providerFallback = run.errors.length > 0;
+  const journey = data?.provider;
+  const providerLabel = journey ?? run.provider ?? process.env.NEXT_PUBLIC_AGENT_PROVIDER;
   const baseline = run.baseline ?? data?.baseline;
 
   return (
     <main className="flex min-h-screen flex-col bg-ink p-4 text-paper lg:h-screen">
+      <div className="dawnIn" aria-hidden="true" />
       <header className="mb-4 flex flex-wrap items-center gap-3">
         <div className="shrink-0">
           <div className="flex items-baseline gap-3">
@@ -343,23 +399,47 @@ export default function CrewOperatorPage() {
               href="/"
               className="rounded-full border border-line bg-ink-2 px-3 py-1 text-xs font-semibold text-mist transition hover:border-paper hover:text-paper"
             >
-              ← 24h Dial
+              ← Back to plan
             </Link>
             <h1 className="text-lg font-bold tracking-[0.3em] text-paper">MERIDIAN</h1>
-            <span className="rounded-full border border-sun-dest/40 bg-sun-dest/10 px-2.5 py-0.5 font-mono2 text-[11px] text-sun-dest">
-              Operator Lens · Simulated Agent Trace
+            <span className="hidden rounded-full border border-sun-dest/40 bg-sun-dest/10 px-2.5 py-0.5 font-mono2 text-[11px] text-sun-dest sm:inline">
+              Operator Lens · Agent &amp; Solver Trace
             </span>
           </div>
         </div>
 
+        {/* Depth switcher across the dial */}
+        <nav
+          aria-label="Primary screens"
+          className="inline-flex shrink-0 items-center rounded-full border border-line bg-ink-2 p-1"
+        >
+          <Link
+            href="/"
+            className="rounded-full px-3.5 py-1.5 text-xs font-semibold text-mist transition-all hover:text-paper"
+          >
+            Calm
+          </Link>
+          <Link
+            href="/?depth=guided"
+            className="rounded-full px-3.5 py-1.5 text-xs font-semibold text-mist transition-all hover:text-paper"
+          >
+            Guided
+          </Link>
+          <span
+            aria-current="page"
+            className="rounded-full bg-paper px-3.5 py-1.5 text-xs font-semibold text-ink shadow-sm"
+          >
+            Operator
+          </span>
+        </nav>
+
         {baseline && (
           <div
             className="hidden shrink-0 items-center gap-1.5 rounded-lg border border-line bg-ink-2 px-3 py-1.5 font-mono2 text-xs text-mist xl:flex"
-            title="Habitual sleep baseline"
+            title="From the wearable baseline — who this plan is shaped around"
           >
             <MoonStar size={12} className="text-sleep" />
-            <span className="text-paper">{baseline.chronotype}</span> ·{" "}
-            {fmtMin(baseline.avgBedtimeMin)}→{fmtMin(baseline.avgWakeMin)}
+            <span className="text-paper">{baseline.chronotype}</span> · {fmtMin(baseline.avgBedtimeMin)}→{fmtMin(baseline.avgWakeMin)}
           </div>
         )}
 
@@ -384,15 +464,15 @@ export default function CrewOperatorPage() {
           variant="primary"
         >
           {run.phase === "running"
-            ? "shift in progress…"
+            ? "Building your plan…"
             : run.phase === "done"
-              ? "run it again"
-              : "start the night shift"}
+              ? "Run it again"
+              : "Make my plan"}
         </Button>
 
         {run.phase === "running" && (
           <Button variant="danger" onClick={cancelShift}>
-            cancel
+            Cancel
           </Button>
         )}
 
@@ -404,37 +484,101 @@ export default function CrewOperatorPage() {
           onCheckIn={(extra) => beginStream(extra)}
         />
 
-        <div className="ml-auto flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              const next = !voiceOn;
-              voiceOnRef.current = next;
-              setVoiceOn(next);
-              setVoiceEnabled(next);
-              if (!next) stopVoice();
-            }}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-ink-2 px-3 py-1.5 text-xs text-mist transition hover:text-paper"
+        <button
+          type="button"
+          aria-pressed={voiceOn}
+          disabled={!voiceAvail}
+          title={voiceAvail ? undefined : "Voice isn't set up"}
+          onClick={() => {
+            const next = !voiceOn;
+            voiceOnRef.current = next;
+            setVoiceOn(next);
+            try { localStorage.setItem("meridian:crewVoice", next ? "on" : "off"); } catch { /* ignore */ }
+            setVoiceEnabled(next);
+            if (!next) stopVoice();
+          }}
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-line bg-ink-2 px-3 py-1.5 text-xs font-semibold text-mist transition-colors hover:text-paper disabled:opacity-40"
+        >
+          {voiceOn ? (
+            <Volume2 size={13} className="text-sun-dest" />
+          ) : (
+            <VolumeX size={13} />
+          )}
+          <span>{voiceOn ? "Voice on" : "Voice off"}</span>
+        </button>
+
+        <div className="relative ml-auto shrink-0" ref={menuRef}>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setMenuOpen((v) => !v)}
+            aria-expanded={menuOpen}
+            aria-haspopup="menu"
           >
-            {voiceOn ? (
-              <Volume2 size={13} className="text-sun-dest" />
-            ) : (
-              <VolumeX size={13} />
-            )}
-            <span>{voiceOn ? "Voice" : "Muted"}</span>
-          </button>
-          <Link
-            href="/review"
-            className="rounded-lg border border-line bg-ink-2 px-3 py-1.5 text-xs text-mist transition hover:text-paper"
-          >
-            Review →
-          </Link>
+            Menu
+          </Button>
+          {menuOpen && (
+            <AnchoredPopover anchorRef={menuRef}>
+              <Card className="w-52 p-2 shadow-xl">
+                <div className="space-y-1">
+                  {hasSavedPlan && (
+                    <Link href="/review" className="block rounded-lg px-3 py-1.5 text-xs text-paper hover:bg-line focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-paper focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
+                      Saved plan
+                    </Link>
+                  )}
+                  <Link href="/history" className="block rounded-lg px-3 py-1.5 text-xs text-mist hover:bg-line focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-paper focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
+                    Past trips{runCount > 0 ? ` (${runCount})` : ""}
+                  </Link>
+                  {providerLabel && (
+                    <div className="rounded-lg px-3 py-1.5 text-xs text-dim">
+                      {providerLabel}{providerFallback ? " · fallback" : ""}
+                    </div>
+                  )}
+                </div>
+              </Card>
+            </AnchoredPopover>
+          )}
         </div>
       </header>
+
+      {showOnboarding && (
+        <motion.div
+          initial={reduce ? false : { opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25, ease: easeSmoothOut }}
+          className="mb-3"
+        >
+          <Card className="flex flex-wrap items-center gap-3 px-4 py-2">
+            <Badge>First run?</Badge>
+            <span className="hidden text-xs text-mist md:inline">
+              Agents propose; the deterministic scorer disposes.
+            </span>
+            <span className="hidden text-xs text-mist lg:inline">
+              Press space to send the crew out, then watch the plan lock day by day.
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                try { localStorage.setItem("meridian:onboarded", "1"); } catch { /* ignore */ }
+                setShowOnboarding(false);
+              }}
+              className="ml-auto"
+            >
+              got it
+            </Button>
+          </Card>
+        </motion.div>
+      )}
 
       {providerFallback && (
         <div className="mb-3 rounded-lg border border-fail/20 bg-fail/10 px-4 py-2 text-xs text-fail">
           Crew fell back mid-run — review the plan before acting.
+        </div>
+      )}
+      {data?.calendarSource === "fixture" && (
+        <div className="mb-3 rounded-lg border border-line bg-ink-2 px-4 py-2 text-xs text-mist">
+          Sample calendar in use — your live Google Calendar isn&apos;t being read.
         </div>
       )}
 
@@ -481,11 +625,7 @@ export default function CrewOperatorPage() {
                   <CalendarLens
                     days={trip.days}
                     events={calendarWithMoves(run)}
-                    readiness={meetingReadiness(
-                      trip,
-                      calendarWithMoves(run),
-                      [...run.locked.values()],
-                    )}
+                    readiness={meetingReadiness(trip, calendarWithMoves(run), [...run.locked.values()])}
                     ics={run.briefing?.ics}
                   />
                 )}
@@ -511,8 +651,7 @@ export default function CrewOperatorPage() {
                         It&apos;s {hook.body} in your body.
                       </p>
                       <p className="mt-1 font-mono2 text-xs text-mist">
-                        It&apos;s {hook.dest} in{" "}
-                        {trip?.destination.name ?? "your destination"}.
+                        It&apos;s {hook.dest} in {trip?.destination.name ?? "your destination"}.
                       </p>
                     </>
                   ) : (
@@ -522,7 +661,7 @@ export default function CrewOperatorPage() {
                   )}
                   <p className="mt-4 text-xs leading-relaxed text-mist">
                     {data
-                      ? "Simulated multi-agent trace: inspect deterministic constraint solving, FalkorDB provenance, and schedule verification."
+                      ? "Five agents read your baseline, pull the science, then verify your week against deterministic circadian constraints."
                       : "reading your calendar…"}
                   </p>
 
@@ -533,7 +672,9 @@ export default function CrewOperatorPage() {
                   </div>
 
                   <div className="mt-5 flex justify-center">
-                    <Button onClick={startShift}>Start the night shift</Button>
+                    <Button onClick={startShift}>
+                      Make my plan
+                    </Button>
                   </div>
 
                   <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 font-mono2 text-xs text-dim">
@@ -541,10 +682,7 @@ export default function CrewOperatorPage() {
                       <KeyHint>space</KeyHint> to start
                     </span>
                     <span className="inline-flex items-center gap-1">
-                      <KeyHint>1</KeyHint>
-                      <KeyHint>2</KeyHint>
-                      <KeyHint>3</KeyHint>
-                      <KeyHint>4</KeyHint> to switch views
+                      <KeyHint>1</KeyHint><KeyHint>2</KeyHint><KeyHint>3</KeyHint><KeyHint>4</KeyHint> to switch views
                     </span>
                   </div>
                 </Card>

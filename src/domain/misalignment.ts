@@ -299,7 +299,7 @@ export function computeTripTrajectory(input: TrajectoryInput): DayMisalignmentPo
           conflictWith: "sleep",
           tradeOffNote: ev.movable
             ? `Flexible "${ev.title}" runs close to your ${formatClock(targetBedMin)} sleep target.`
-            : `Fixed "${ev.title}" ends at ${formatClock(evEnd)}, capping tonight's advance so your komitmen stays intact.`,
+            : `Fixed "${ev.title}" ends at ${formatClock(evEnd)}, capping tonight's advance so your commitment stays intact.`,
         });
       }
     }

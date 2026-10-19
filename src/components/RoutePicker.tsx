@@ -10,7 +10,10 @@ import { Card } from "@/components/ui";
 // and a live readout of the real (DST-aware, wrapped) shift.
 //
 //   <RoutePicker origin={origin} dest={dest} date={date}
+//     surface="cream"
 //     onChange={({ origin, dest, date }) => ...} />
+
+type Surface = "default" | "cream";
 
 interface Props {
   origin: string;
@@ -18,9 +21,60 @@ interface Props {
   date: string;
   onChange: (next: { origin: string; dest: string; date: string }) => void;
   disabled?: boolean;
+  /** `default` keeps the dark `Card` chrome that lives well on /crew and
+   *  other ink-2 surfaces; `cream` swaps to a cream pill that matches the
+   *  home surface (white-ish ground, warm border, dark text). The listbox
+   *  stays dark either way — list items on a cream ground are unreadable. */
+  surface?: Surface;
 }
 
-export function RoutePicker({ origin, dest, date, onChange, disabled }: Props) {
+const SURFACE_CLASSES: Record<Surface, string> = {
+  default:
+    "rounded-xl border border-line bg-ink-2 px-3 py-2 font-mono2 text-xs",
+  cream:
+    "rounded-2xl border border-[#e3d5c3] bg-[#fff8ef] px-3 py-2 font-mono2 text-xs shadow-[0_1px_0_rgba(0,0,0,0.02)]",
+};
+
+const SWAP_CLASSES: Record<Surface, string> = {
+  default: "px-1 text-sun-dest hover:text-paper disabled:opacity-40",
+  cream: "px-1 text-[#D96B43] hover:text-[#a8512f] disabled:opacity-40",
+};
+
+const DATE_INPUT_CLASSES: Record<Surface, string> = {
+  default: "min-w-0 bg-transparent text-mist [color-scheme:dark]",
+  cream: "min-w-0 bg-transparent text-[#7a6a5c] [color-scheme:light]",
+};
+
+const SHIFT_BADGE: Record<Surface, string> = {
+  default: "text-paper",
+  cream: "text-[#3a2e23]",
+};
+
+const SHIFT_LABEL: Record<Surface, string> = {
+  default: "text-mist",
+  cream: "text-[#7a6a5c]",
+};
+
+const FIELD_LABEL: Record<Surface, string> = {
+  default: "text-[9px] font-bold uppercase tracking-wider text-dim",
+  cream: "text-[9px] font-bold uppercase tracking-wider text-[#a89a8a]",
+};
+
+const AIRPORT_INPUT: Record<Surface, string> = {
+  default:
+    "w-14 bg-transparent text-paper uppercase placeholder:normal-case placeholder:text-dim focus:w-36",
+  cream:
+    "w-14 bg-transparent text-[#3a2e23] uppercase placeholder:normal-case placeholder:text-[#a89a8a] focus:w-36",
+};
+
+export function RoutePicker({
+  origin,
+  dest,
+  date,
+  onChange,
+  disabled,
+  surface = "default",
+}: Props) {
   const shift = useMemo(() => {
     try {
       return origin !== dest ? buildTrip(origin, dest, date) : null;
@@ -29,38 +83,64 @@ export function RoutePicker({ origin, dest, date, onChange, disabled }: Props) {
     }
   }, [origin, dest, date]);
 
-  return (
-    <Card className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 font-mono2 text-xs">
-      <div className="flex items-center gap-1.5">
-        <AirportField label="from" value={origin} date={date} disabled={disabled} onPick={(c) => onChange({ origin: c, dest, date })} />
+  // The default surface uses the shared `Card` so it inherits the ink-2
+  // chrome and the line border; the cream surface has its own pill so the
+  // home page can sit on the warm ground without dark surface imports.
+  const surfaceClass = SURFACE_CLASSES[surface];
+
+  const destCity = findAirport(dest)?.name ?? dest;
+  const fields = (
+    <>
+      <div className="flex items-end gap-1.5">
+        <div className="flex flex-col gap-0.5">
+          <span className={FIELD_LABEL[surface]}>From</span>
+          <AirportField label="From" value={origin} date={date} disabled={disabled} onPick={(c) => onChange({ origin: c, dest, date })} surface={surface} />
+        </div>
         <button
           type="button"
           disabled={disabled}
           onClick={() => onChange({ origin: dest, dest: origin, date })}
-          className="px-1 text-sun-dest hover:text-paper disabled:opacity-40"
+          className={SWAP_CLASSES[surface]}
           aria-label="Swap origin and destination"
           title="Swap"
         >
           →
         </button>
-        <AirportField label="to" value={dest} date={date} disabled={disabled} onPick={(c) => onChange({ origin, dest: c, date })} />
+        <div className="flex flex-col gap-0.5">
+          <span className={FIELD_LABEL[surface]}>To</span>
+          <AirportField label="To" value={dest} date={date} disabled={disabled} onPick={(c) => onChange({ origin, dest: c, date })} surface={surface} />
+        </div>
       </div>
-      <div className="flex items-center gap-2">
-        <input
-          type="date"
-          value={date}
-          disabled={disabled}
-          onChange={(e) => e.target.value && onChange({ origin, dest, date: e.target.value })}
-          className="min-w-0 bg-transparent text-mist [color-scheme:dark]"
-          aria-label="Departure date"
-        />
+      <div className="flex items-end gap-2">
+        <div className="flex flex-col gap-0.5">
+          <span className={FIELD_LABEL[surface]}>Departs</span>
+          <input
+            type="date"
+            value={date}
+            disabled={disabled}
+            onChange={(e) => e.target.value && onChange({ origin, dest, date: e.target.value })}
+            className={DATE_INPUT_CLASSES[surface]}
+            aria-label="Departure date"
+          />
+        </div>
         {shift && (
-          <span className="whitespace-nowrap text-mist" title="Real offsets on these dates, DST included">
-            <span className="text-paper">{Math.abs(shift.requiredShiftMin / 60)}h</span> {shift.direction}
+          <span className={`whitespace-nowrap ${SHIFT_LABEL[surface]}`} title="Real offsets on these dates, DST included">
+            {destCity} is <span className={SHIFT_BADGE[surface]}>{Math.abs(shift.requiredShiftMin / 60)}h</span>{" "}
+            {shift.direction === "east" ? "ahead" : "behind"}
           </span>
         )}
       </div>
+    </>
+  );
+
+  return surface === "default" ? (
+    <Card className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 font-mono2 text-xs">
+      {fields}
     </Card>
+  ) : (
+    <div className={`${surfaceClass} flex flex-wrap items-center justify-between gap-2`}>
+      {fields}
+    </div>
   );
 }
 
@@ -70,12 +150,14 @@ function AirportField({
   date,
   onPick,
   disabled,
+  surface,
 }: {
   label: string;
   value: string;
   date: string;
   onPick: (code: string) => void;
   disabled?: boolean;
+  surface: Surface;
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -122,7 +204,7 @@ function AirportField({
         placeholder={open ? "city or code" : value}
         aria-label={`${label} airport`}
         title={current ? `${current.airport} · ${current.tz}` : undefined}
-        className="w-14 bg-transparent text-paper uppercase placeholder:normal-case placeholder:text-dim focus:w-36"
+        className={AIRPORT_INPUT[surface]}
       />
       {open && results.length > 0 && (
         <ul

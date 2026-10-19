@@ -19,7 +19,7 @@ Pacing knob: `REPLAY_BEAT_MS` env var (default `60`, read in `replay.ts` and
 `morning-replay.ts`) — ms between streamed events. Default is too fast to
 narrate (~7.5 s for a full night shift); set `REPLAY_BEAT_MS=300` in
 `.env.local` on the stage machine (~40 s, narratable). Keep the default for
-tests and fixture recording — see `docs/plan/hackathon-plan.md` §11.
+tests and fixture recording — see `docs/archive/hackathon-plan.md` §11.
 
 ## The morning replan (replay)
 
@@ -73,8 +73,12 @@ per day and may need tuning.
 
 ## Routes for the pitch
 
-- `/pitch` — the slide deck (scrollytelling, self-contained)
-- `/` — the run: sun-track scene + crew feed + eval verdict cards
+- `/` — Today: the one step to do now, the day timeline, readiness. Pre-run
+  days show the solver's own preview (scorer-checked, compliance-floor-capped —
+  the eastward demo banks ~90 min pre-flight and says so, ~6.5h still owed at
+  landing). Post-flight days are planned after landing. `?depth=guided` adds
+  the deep-dive visuals; `/crew` is the operator rung (lens shell + crew feed
+  + eval verdict cards).
 - `/review` — the artifact: plan, citations, `.ics` download (persists via
   localStorage, survives refresh)
 - `/history` — past runs (`meridian:history` localStorage capped at 20, plus
@@ -91,13 +95,26 @@ per day and may need tuning.
 | `meridian:onboarded` | `/` onboarding dismiss |
 | `meridian:outcomes` | `/outcome` submissions |
 | `meridian:checkins` | `/outcome` (structured via `/api/crew/checkin`) → read by replan runs |
+| `meridian:wakeBand` | the inline wake question on `/` → the wake-band baseline |
+| `meridian:lastPlan.coverage` | the gate's promise, read back by `/arrival` to score the trip |
+| `meridian:completedNudges:<origin>-<dest>-<date>` | per-step did/skip marks, trip-scoped |
+| `meridian:depth` | Calm / Guided depth dial |
+| `meridian:voice` | voice toggle |
+
+Per-traveller memory is **not** localStorage — a `meridian-tid` cookie scopes
+`artifacts/crew-memory-<tid>.json`, the adherence fold, graph writes and run
+records. Clearing localStorage does not reset a traveller's memory; see
+`reset all` on `/history`.
 
 ## Troubleshooting
 
 | Symptom | Fix |
 |---|---|
 | Stream dies instantly | Provider misconfigured → check `.env.local`; replay needs nothing |
-| Plan stuck locked at 0 | `bun run replay:check` — prints every eval verdict |
+| Plan stuck locked at 0 | `bun run replay:check` — prints every eval verdict. If `.env.local` points at a provider with no key, every day fails this way; `AGENT_PROVIDER=replay` runs with zero keys |
+| CTA stuck on "Checking your plan" | The client watchdog resets after 60s idle (12s once a briefing lands). If it never clears, a post-briefing write is blocking `done` — all four are now bounded to 4s, so a slow FalkorDB can't do it |
+| No evidence chips in a step | By design — evidence only exists after a real crew run. On a machine whose provider is failing there is no plan, so there is nothing to show evidence about |
+| `/arrival` says "still London time" | It judges arrival at the **destination's** clock, which is correct. Pass a past `?date=` to see the payoff: `/arrival?date=YYYY-MM-DD`, and `&arrived=1` to pretend the trip is over |
 | Fresh clone, hooks silent | `git config core.hooksPath .githooks` |
 | Stage wifi dead | `replay` needs no network at all — that's the point |
 | Morning replan shows the night script | URL has no `startDay` or `checkins` — add them |
