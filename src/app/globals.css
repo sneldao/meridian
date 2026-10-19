@@ -2279,3 +2279,227 @@ select:focus-visible {
 .ask {
   max-height: 400px;
 }
+
+/* --- The 24-hour dial (Phase 2) --------------------------------------------
+   The dial is a picture of a clock, so it needs its own colours — and they
+   have to work on the cream card and on the night card. They are declared as
+   variables here (not hardcoded in the component) and flipped in the night
+   theme, the same way --m-* works: a colour that means one thing, readable
+   on both surfaces. */
+:root {
+  --dial-target: #b45309;   /* the night this plan is aiming at */
+  --dial-ghost: #a39282;    /* the usual sleep, the ghost arc */
+  --dial-sleep: #6b5bd6;    /* the sleep the plan asks for */
+  --dial-body: #2a6f4e;     /* the modelled body clock */
+  --dial-body-soft: rgba(42, 111, 78, 0.22);
+  --dial-committed: #b23a2e;
+  --dial-movable: #7a6a5c;
+}
+html[data-theme="night"] {
+  --dial-target: #ffc46b;
+  --dial-ghost: #6f6055;
+  --dial-sleep: #b8a8ff;
+  --dial-body: #7adfff;
+  --dial-body-soft: rgba(122, 223, 255, 0.18);
+  --dial-committed: #ff7a7a;
+  --dial-movable: #a89383;
+}
+
+.dial {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--m-card);
+  border: 1px solid var(--m-border);
+  border-radius: 22px;
+  padding: 18px;
+  color: var(--m-text);
+}
+.dial-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.dial-title {
+  font-family: var(--font-voice);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--m-ink);
+}
+.dial-figure {
+  font-family: var(--font-mono2, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--m-ink);
+}
+.dial-sub {
+  font-size: 11px;
+  color: var(--m-muted);
+}
+.dial-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+}
+@media (min-width: 520px) {
+  .dial-body { grid-template-columns: minmax(0, 260px) minmax(0, 1fr); }
+}
+.dial-svg { width: 100%; height: auto; display: block; }
+.dial-ring { fill: none; stroke: var(--m-border); stroke-width: 1; }
+.dial-tick { stroke: var(--m-border); stroke-width: 1; }
+.dial-tick-major { stroke: var(--m-muted); stroke-width: 1.5; }
+.dial-label { fill: var(--m-muted); font-size: 9px; font-weight: 600; }
+.dial-arc-target { fill: none; stroke: var(--dial-target); stroke-width: 3; stroke-linecap: round; }
+.dial-arc-ghost { fill: none; stroke: var(--dial-ghost); stroke-width: 6; stroke-linecap: round; opacity: .5; }
+.dial-arc-sleep { fill: none; stroke: var(--dial-sleep); stroke-width: 9; stroke-linecap: round; opacity: .9; }
+.dial-band { fill: var(--dial-body-soft); }
+.dial-body-arc { fill: none; stroke: var(--dial-body); stroke-width: 4; stroke-linecap: round; }
+.dial-notch-committed { stroke: var(--dial-committed); stroke-width: 3; stroke-linecap: round; }
+.dial-notch-movable { stroke: var(--dial-movable); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 3 3; }
+.dial-mark { fill: var(--m-muted); }
+.dial-mark-primary { fill: var(--m-accent); }
+.dial-sun { fill: var(--dial-target); }
+.dial-moon { fill: var(--dial-sleep); }
+.dial-center {
+  background: var(--m-card-2);
+  border: 1px solid var(--m-border);
+  border-radius: 16px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.dial-legend { display: flex; flex-direction: column; gap: 6px; }
+.dial-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--m-text);
+}
+.dial-swatch { width: 14px; height: 4px; border-radius: 2px; flex: none; }
+.dial-swatch-target { background: var(--dial-target); }
+.dial-swatch-ghost { background: var(--dial-ghost); opacity: .6; }
+.dial-swatch-sleep { background: var(--dial-sleep); }
+.dial-swatch-body { background: var(--dial-body); }
+.dial-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.dial-list-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--m-text);
+  border-bottom: 1px solid var(--m-border-2);
+  padding-bottom: 5px;
+}
+.dial-list-row span:last-child {
+  font-family: var(--font-mono2, ui-monospace, SFMono-Regular, Menlo, monospace);
+  color: var(--m-ink);
+}
+.dial-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.dial-btn {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--m-border);
+  background: var(--m-card-2);
+  color: var(--m-text);
+  cursor: pointer;
+}
+.dial-btn:hover { border-color: var(--m-accent); color: var(--m-ink); }
+.dial-btn[aria-pressed="true"] { background: var(--m-ink); color: var(--m-bg); border-color: var(--m-ink); }
+.dial-btn:focus-visible { outline: 2px solid var(--m-accent); outline-offset: 2px; }
+
+/* The daily action card — one action, one reason, one pair of buttons. */
+.dac {
+  background: var(--m-card);
+  border: 1px solid var(--m-border);
+  border-radius: 22px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  color: var(--m-text);
+}
+.dac-top { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.dac-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--m-border);
+  color: var(--m-muted);
+}
+.dac-pill-clock { border-color: var(--dial-body); color: var(--dial-body); }
+.dac-pill-comfort { border-color: var(--m-accent); color: var(--m-accent); }
+.dac-pill-checked { border-color: var(--dial-body); color: var(--dial-body); }
+.dac-pill-proposed { border-color: var(--m-border); color: var(--m-muted); }
+.dac-pill-failed { border-color: var(--dial-committed); color: var(--dial-committed); }
+.dac-time {
+  font-family: var(--font-mono2, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--m-ink);
+}
+.dac-action {
+  font-family: var(--font-voice);
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--m-ink);
+}
+.dac-reason { font-size: 13px; line-height: 1.45; color: var(--m-text); }
+.dac-note {
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--m-muted);
+  border-left: 2px solid var(--m-border);
+  padding-left: 8px;
+}
+.dac-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.dac-done {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--m-border);
+  background: var(--m-card-2);
+  color: var(--m-text);
+  cursor: pointer;
+}
+.dac-done[aria-pressed="true"] { background: var(--dial-body); border-color: var(--dial-body); color: #fff; }
+.dac-done:focus-visible { outline: 2px solid var(--m-accent); outline-offset: 2px; }
+.dac-evidence {
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--m-muted);
+  background: var(--m-card-2);
+  border: 1px solid var(--m-border-2);
+  border-radius: 14px;
+  padding: 10px 12px;
+}
+.dac-evidence a { color: var(--m-ink); text-decoration: underline; text-underline-offset: 2px; }
+.dac-evidence b { color: var(--m-ink); }
+
+/* The mascot — half sun, half moon, and the space between them. */
+.mascot { display: flex; gap: 10px; align-items: flex-start; }
+.mascot-art { flex: none; }
+.mascot-say {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--m-text);
+  font-family: var(--font-voice);
+}
+.mascot-serious .mascot-say { font-family: var(--font-sans); }
