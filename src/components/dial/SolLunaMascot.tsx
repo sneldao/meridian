@@ -123,10 +123,10 @@ export function SolLunaMascot({
             {/* Sun rays on left semicircle */}
             {[150, 180, 210, 240, 120].map((deg) => {
               const rad = (deg * Math.PI) / 180;
-              const x1 = 60 + Math.cos(rad) * 38;
-              const y1 = 60 + Math.sin(rad) * 38;
-              const x2 = 60 + Math.cos(rad) * 47;
-              const y2 = 60 + Math.sin(rad) * 47;
+              const x1 = (60 + Math.cos(rad) * 38).toFixed(2);
+              const y1 = (60 + Math.sin(rad) * 38).toFixed(2);
+              const x2 = (60 + Math.cos(rad) * 47).toFixed(2);
+              const y2 = (60 + Math.sin(rad) * 47).toFixed(2);
               return (
                 <line
                   key={deg}

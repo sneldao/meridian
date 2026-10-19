@@ -37,6 +37,8 @@ export interface DailyActionCardProps {
   directionStrategy?: DirectionStrategyExplanation;
   extraCitations?: Citation[];
   postShiftSafetyWarning?: string;
+  defaultDetailsOpen?: boolean;
+  memoryPath?: string;
 }
 
 /**
@@ -65,8 +67,15 @@ export function DailyActionCard({
   onToggleAlcohol,
   directionStrategy,
   postShiftSafetyWarning,
+  defaultDetailsOpen = false,
+  memoryPath,
 }: DailyActionCardProps) {
-  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(defaultDetailsOpen);
+  const [prevDefaultOpen, setPrevDefaultOpen] = useState(defaultDetailsOpen);
+  if (prevDefaultOpen !== defaultDetailsOpen) {
+    setPrevDefaultOpen(defaultDetailsOpen);
+    setDetailsOpen(defaultDetailsOpen);
+  }
 
   const evidence = getEvidenceForKind(action.kind);
   const seedCitations = getCitationsForKind(action.kind);
@@ -297,6 +306,17 @@ export function DailyActionCard({
               </div>
               <p className="mt-1 text-[#5b4d41]">{directionStrategy.whyThisDirection}</p>
               <p className="mt-1 text-[#7a6a5c]">{directionStrategy.alternativeTradeOff}</p>
+            </div>
+          )}
+
+          {memoryPath && (
+            <div className="rounded-xl border border-[#e3d5c3] bg-[#FFF8EF] p-3">
+              <div className="text-[11px] font-extrabold uppercase tracking-wider text-[#2A6F4E]">
+                Graph Provenance Hop Path
+              </div>
+              <p className="mt-1 font-mono2 text-[11px] text-[#5b4d41]">
+                {memoryPath}
+              </p>
             </div>
           )}
 

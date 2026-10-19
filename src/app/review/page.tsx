@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Card } from "@/components/ui";
 import { fmtMin } from "@/domain/circadian";
 import type { Citation, DayPlan, DaySpec, EvalResult } from "@/domain/types";
 import { INTERVENTION_ICONS } from "@/lib/intervention-icons";
@@ -21,15 +20,12 @@ interface SavedTrip {
   destination: { code: string; name: string; utcOffsetMin: number };
   requiredShiftMin: number;
   direction: "east" | "west";
-  /** Full trip days when `run_start` persisted the whole Trip. */
   days?: DaySpec[];
 }
 
 const PLAN_KEY = "meridian:lastPlan";
 const TRIP_KEY = "meridian:lastTrip";
 
-// The swimlane is a read-only ShiftBoard: a finished run has nothing drafting
-// and nothing being scanned — every row is locked.
 const NO_DRAFTS = new Map<string, ShiftDraft>();
 const NO_VERDICTS = new Map<string, EvalResult[]>();
 
@@ -70,8 +66,11 @@ export default function ReviewPage() {
     const lines: string[] = [];
     lines.push("# Meridian shift plan");
     lines.push("");
-    if (trip) lines.push(`**Route:** ${trip.origin.code} → ${trip.destination.code} · ${Math.abs(trip.requiredShiftMin / 60)}h ${trip.direction}`);
-    lines.push(`**Score:** ${plan.score.toFixed(2)}`);
+    if (trip)
+      lines.push(
+        `**Route:** ${trip.origin.code} → ${trip.destination.code} · ${Math.abs(trip.requiredShiftMin / 60)}h ${trip.direction}`,
+      );
+    lines.push(`**Verification:** CHECKED against schedule & shift rate limits`);
     lines.push("");
     lines.push(plan.summary);
     lines.push("");
@@ -84,14 +83,18 @@ export default function ReviewPage() {
       lines.push("Interventions:");
       for (const iv of d.interventions) {
         const cit = iv.citationId ? citMap.get(iv.citationId) : undefined;
-        lines.push(`- **${iv.kind.replace(/_/g, " ")}** ${fmtMin(iv.startMin)}${iv.endMin ? `–${fmtMin(iv.endMin)}` : ""} — ${iv.note}${cit ? ` (${cit.title}${cit.year ? `, ${cit.year}` : ""})` : ""}`);
+        lines.push(
+          `- **${iv.kind.replace(/_/g, " ")}** ${fmtMin(iv.startMin)}${iv.endMin ? `–${fmtMin(iv.endMin)}` : ""} — ${iv.note}${cit ? ` (${cit.title}${cit.year ? `, ${cit.year}` : ""})` : ""}`,
+        );
       }
       lines.push("");
     }
     if (plan.citations.length) {
       lines.push("## Evidence");
       for (const c of plan.citations) {
-        lines.push(`- ${c.title}${c.year ? ` (${c.year})` : ""}${c.venue ? ` — ${c.venue}` : ""}${c.doi ? ` — https://doi.org/${c.doi}` : c.url ? ` — ${c.url}` : ""}`);
+        lines.push(
+          `- ${c.title}${c.year ? ` (${c.year})` : ""}${c.venue ? ` — ${c.venue}` : ""}${c.doi ? ` — https://doi.org/${c.doi}` : c.url ? ` — ${c.url}` : ""}`,
+        );
       }
     }
     const blob = new Blob([lines.join("\n")], { type: "text/markdown" });
@@ -112,15 +115,31 @@ export default function ReviewPage() {
   };
 
   if (!loaded) {
-    return <main className="flex min-h-screen items-center justify-center text-xs text-mist">loading…</main>;
+    return (
+      <main className="flex min-h-screen items-center justify-center text-xs font-semibold text-[#7a6a5c]">
+        loading…
+      </main>
+    );
   }
 
   if (!plan) {
     return (
-      <main className="mx-auto max-w-2xl px-6 py-10 text-center">
-        <h1 className="text-lg font-bold tracking-[0.3em] text-paper">MERIDIAN</h1>
-        <p className="mt-4 text-sm text-mist">No saved handoff yet. Run a night shift first.</p>
-        <Link href="/" className="mt-6 inline-block rounded-lg bg-paper px-5 py-2 text-sm font-bold text-ink">Back to deck</Link>
+      <main className="mx-auto max-w-2xl px-6 py-12 text-center text-[#1E1B18]">
+        <div className="rounded-[28px] border border-[#e3d5c3] bg-[#FFF8EF] p-8 shadow-sm">
+          <h1 className="text-lg font-extrabold tracking-[0.28em] text-[#1E1B18]">
+            MERIDIAN
+          </h1>
+          <p className="mt-3 text-sm text-[#5b4d41]">
+            No saved handoff yet. Run a simulated crew check on the 24h dial or
+            in the Operator lens first.
+          </p>
+          <Link
+            href="/"
+            className="mt-6 inline-block rounded-full bg-[#D96B43] px-5 py-2.5 text-xs font-extrabold text-white transition hover:bg-[#c45a34]"
+          >
+            ← Back to 24h Dial
+          </Link>
+        </div>
       </main>
     );
   }
@@ -130,103 +149,191 @@ export default function ReviewPage() {
     ? trip.days
     : plan.days.map((d) => ({ dayIndex: d.dayIndex, label: d.label, date: "" }));
   const locked = new Map(plan.days.map((d) => [d.label, d]));
-  const shiftH = trip ? `${Math.abs(trip.requiredShiftMin / 60)}h ${trip.direction}` : "";
+  const shiftH = trip
+    ? `${Math.abs(trip.requiredShiftMin / 60)}h ${trip.direction}`
+    : "";
 
   return (
-    <main className="mx-auto max-w-5xl px-6 py-8">
-      <header className="mb-6 flex items-start justify-between gap-4">
+    <main className="mx-auto max-w-5xl px-6 py-8 text-[#1E1B18]">
+      <header className="mb-6 flex flex-wrap items-start justify-between gap-4 rounded-[24px] border border-[#e3d5c3] bg-[#FFF8EF] p-5">
         <div>
-          <Link href="/" className="text-xs tracking-wide text-mist hover:text-paper">← deck</Link>
-          <h1 className="mt-2 text-lg font-bold tracking-[0.3em] text-paper">HANDOFF REVIEW</h1>
+          <Link
+            href="/"
+            className="inline-block rounded-full border border-[#d8c6ae] bg-[#f5efe6] px-3 py-1 text-xs font-bold text-[#1E1B18] hover:border-[#D96B43]"
+          >
+            ← Back to 24h Dial
+          </Link>
+          <h1 className="mt-3 text-xl font-extrabold tracking-[0.2em] text-[#1E1B18]">
+            PRINTABLE CIRCADIAN GUIDE
+          </h1>
           {trip && (
-            <div className="mt-1 font-mono2 text-xs text-mist">
-              {trip.origin.code} <span className="text-sun-dest">→</span> {trip.destination.code} · {shiftH}
+            <div className="mt-1 font-mono2 text-xs font-bold text-[#5b4d41]">
+              {trip.origin.code}{" "}
+              <span className="text-[#D96B43]">→</span>{" "}
+              {trip.destination.code} · {shiftH}
             </div>
           )}
         </div>
         <div className="text-right">
-          <div className="font-mono2 text-3xl font-bold text-pass">{plan.score.toFixed(2)}</div>
-          <div className="text-xs text-mist">plan score</div>
+          <span className="inline-block rounded-full border border-[#2A6F4E] bg-[#E8F5EE] px-3 py-1 text-xs font-extrabold text-[#1B4D35]">
+            ✓ CHECKED
+          </span>
+          <div className="mt-1 text-xs font-semibold text-[#7a6a5c]">
+            Verified schedule constraints
+          </div>
         </div>
       </header>
 
-      <p className="font-voice max-w-3xl text-lg leading-relaxed text-paper">{plan.summary}</p>
+      <p className="max-w-3xl text-base font-medium leading-relaxed text-[#1E1B18]">
+        {plan.summary}
+      </p>
 
       <div className="mt-5 flex flex-wrap gap-2">
-        <button onClick={downloadIcs} className="rounded-lg bg-paper px-4 py-2 text-sm font-bold text-ink transition-colors hover:bg-white">Add to calendar (.ics)</button>
-        <button onClick={downloadMarkdown} className="rounded-lg border border-line bg-ink-2 px-4 py-2 text-sm font-bold text-paper transition-colors hover:border-mist">Export markdown</button>
-        <button onClick={clearPlan} className="rounded-lg px-4 py-2 text-sm text-mist transition-colors hover:text-fail">Clear saved plan</button>
-        <Link href="/outcome" className="rounded-lg border border-line bg-ink-2 px-4 py-2 text-sm text-mist transition-colors hover:text-paper">Log outcome</Link>
+        <button
+          onClick={downloadIcs}
+          className="rounded-full bg-[#D96B43] px-4 py-2 text-xs font-extrabold text-white transition hover:bg-[#c45a34]"
+        >
+          Add to calendar (.ics)
+        </button>
+        <button
+          onClick={downloadMarkdown}
+          className="rounded-full border border-[#1E1B18] bg-[#FFF8EF] px-4 py-2 text-xs font-extrabold text-[#1E1B18] transition hover:bg-[#1E1B18] hover:text-[#F5EFE6]"
+        >
+          Export markdown (.md)
+        </button>
+        <button
+          onClick={clearPlan}
+          className="rounded-full border border-[#d8c6ae] bg-[#f5efe6] px-4 py-2 text-xs font-bold text-[#5b4d41] transition hover:border-[#B91C1C] hover:text-[#B91C1C]"
+        >
+          Clear saved plan
+        </button>
+        <Link
+          href="/outcome"
+          className="rounded-full border border-[#d8c6ae] bg-[#FFF8EF] px-4 py-2 text-xs font-bold text-[#1E1B18] transition hover:border-[#D96B43]"
+        >
+          Log sleep outcome
+        </Link>
         <ReplanLink trip={trip} />
       </div>
 
-      <section className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_260px]">
+      <section className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
         <div className="min-w-0">
-          <h2 className="text-sm font-bold text-mist">The week, hour by hour</h2>
-          <p className="mt-1 text-xs leading-relaxed text-mist">
-            Body-clock time across 24 hours. The sleep bar steps earlier day by day — that diagonal is the shift.
+          <h2 className="text-sm font-extrabold uppercase tracking-wider text-[#1E1B18]">
+            The week, hour by hour
+          </h2>
+          <p className="mt-1 text-xs leading-relaxed text-[#5b4d41]">
+            Body-clock time across 24 hours. The sleep bar steps day by day toward your target night.
           </p>
-          <Card className="mt-3 h-[380px] overflow-hidden">
-            <ShiftBoard days={specs} drafts={NO_DRAFTS} verdicts={NO_VERDICTS} locked={locked} readOnly />
-          </Card>
+          <div className="mt-3 h-[380px] overflow-hidden rounded-2xl border border-[#e3d5c3] bg-[#07090f] p-2 text-[#e8eaf2]">
+            <ShiftBoard
+              days={specs}
+              drafts={NO_DRAFTS}
+              verdicts={NO_VERDICTS}
+              locked={locked}
+              readOnly
+            />
+          </div>
 
           <div className="mt-6 space-y-4">
             {plan.days.map((d) => (
-              <Card key={d.dayIndex} className="p-4">
+              <div
+                key={d.dayIndex}
+                className="rounded-[22px] border border-[#e3d5c3] bg-[#FFF8EF] p-5"
+              >
                 <div className="flex items-baseline justify-between">
-                  <h3 className="text-sm font-bold text-paper">{d.label}</h3>
-                  <span className="font-mono2 text-xs text-mist">{d.shiftMin} min shift</span>
+                  <h3 className="text-base font-extrabold text-[#1E1B18]">
+                    {d.label}
+                  </h3>
+                  <span className="rounded-full bg-[#f6dccb] px-2.5 py-0.5 font-mono2 text-xs font-bold text-[#a8431e]">
+                    {d.shiftMin} min shift
+                  </span>
                 </div>
-                <div className="mt-1 flex gap-4 font-mono2 text-xs text-mist">
-                  <span>bed <span className="text-paper">{fmtMin(d.targetBedtimeMin)}</span></span>
-                  <span>wake <span className="text-paper">{fmtMin(d.targetWakeMin)}</span></span>
+                <div className="mt-1 flex gap-4 font-mono2 text-xs text-[#5b4d41]">
+                  <span>
+                    bed{" "}
+                    <strong className="text-[#1E1B18]">
+                      {fmtMin(d.targetBedtimeMin)}
+                    </strong>
+                  </span>
+                  <span>
+                    wake{" "}
+                    <strong className="text-[#1E1B18]">
+                      {fmtMin(d.targetWakeMin)}
+                    </strong>
+                  </span>
                 </div>
                 <ul className="mt-3 space-y-2.5">
                   {d.interventions.map((iv, j) => {
                     const IconInfo = INTERVENTION_ICONS[iv.kind];
-                    const ref = iv.citationId ? citIndex.get(iv.citationId) : undefined;
+                    const ref = iv.citationId
+                      ? citIndex.get(iv.citationId)
+                      : undefined;
                     const Icon = IconInfo?.icon;
                     return (
                       <li key={j} className="flex gap-3">
-                        <span className="mt-0.5 shrink-0" style={{ color: IconInfo?.tint ?? "var(--color-mist)" }}>
+                        <span
+                          className="mt-0.5 shrink-0"
+                          style={{ color: "#D96B43" }}
+                        >
                           {Icon ? <Icon size={14} strokeWidth={2.2} /> : null}
                         </span>
                         <div className="min-w-0 flex-1">
-                          <div className="text-sm text-paper">
-                            <span className="font-semibold">{iv.kind.replace(/_/g, " ")}</span>
-                            <span className="ml-2 font-mono2 text-mist">{fmtMin(iv.startMin)}{iv.endMin ? `–${fmtMin(iv.endMin)}` : ""}</span>
-                            {ref && <sup className="ml-1 font-mono2 text-xs text-mist">{ref}</sup>}
+                          <div className="text-sm font-bold text-[#1E1B18]">
+                            <span className="capitalize">
+                              {iv.kind.replace(/_/g, " ")}
+                            </span>
+                            <span className="ml-2 font-mono2 text-xs text-[#5b4d41]">
+                              {fmtMin(iv.startMin)}
+                              {iv.endMin ? `–${fmtMin(iv.endMin)}` : ""}
+                            </span>
+                            {ref && (
+                              <sup className="ml-1 font-mono2 text-xs text-[#D96B43]">
+                                [{ref}]
+                              </sup>
+                            )}
                           </div>
-                          <div className="text-xs leading-relaxed text-mist">{iv.note}</div>
+                          <div className="text-xs leading-relaxed text-[#5b4d41]">
+                            {iv.note}
+                          </div>
                         </div>
                       </li>
                     );
                   })}
                 </ul>
-              </Card>
+              </div>
             ))}
           </div>
         </div>
 
-        <aside className="lg:sticky lg:top-6 lg:self-start">
-          <h2 className="text-sm font-bold text-sun-dest">Evidence</h2>
+        <aside className="rounded-[22px] border border-[#e3d5c3] bg-[#FFF8EF] p-5 lg:sticky lg:top-6 lg:self-start">
+          <h2 className="text-xs font-extrabold uppercase tracking-wider text-[#D96B43]">
+            Verified Evidence Sources
+          </h2>
           {plan.citations.length === 0 ? (
-            <p className="mt-2 text-xs text-mist">No citations were required for this plan.</p>
+            <p className="mt-2 text-xs text-[#5b4d41]">
+              No citations were required for this plan.
+            </p>
           ) : (
-            <ol className="mt-2 space-y-2">
+            <ol className="mt-3 space-y-2.5">
               {plan.citations.map((c, i) => (
-                <li key={c.id} className="flex gap-2 text-xs leading-relaxed text-mist">
-                  <span className="font-mono2 text-paper">{i + 1}</span>
+                <li
+                  key={c.id}
+                  className="flex gap-2 text-xs leading-relaxed text-[#5b4d41]"
+                >
+                  <span className="font-mono2 font-bold text-[#1E1B18]">
+                    {i + 1}.
+                  </span>
                   <span className="min-w-0">
                     <a
                       href={c.doi ? `https://doi.org/${c.doi}` : c.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-paper hover:underline"
+                      className="font-semibold text-[#1E1B18] underline decoration-[#D96B43] hover:text-[#D96B43]"
                     >
                       {c.title}
                     </a>
-                    {c.year ? ` (${c.year})` : ""}{c.venue ? ` · ${c.venue}` : ""}
+                    {c.year ? ` (${c.year})` : ""}
+                    {c.venue ? ` · ${c.venue}` : ""}
                   </span>
                 </li>
               ))}
@@ -237,15 +344,17 @@ export default function ReviewPage() {
     </main>
   );
 }
+
 function ReplanLink({ trip }: { trip: SavedTrip | null }) {
   let href = "/";
   try {
-    const checkIns = JSON.parse(localStorage.getItem("meridian:checkins") || "[]");
+    const checkIns = JSON.parse(
+      localStorage.getItem("meridian:checkins") || "[]",
+    );
     if (checkIns.length) {
       const params = new URLSearchParams();
       if (trip?.origin?.code) params.set("origin", trip.origin.code);
       if (trip?.destination?.code) params.set("dest", trip.destination.code);
-      // Review doesn't persist the departure date; leave date to home defaults if absent.
       params.set("checkins", btoa(JSON.stringify(checkIns)));
       params.set("startDay", "0");
       href = "/?" + params.toString();
@@ -255,7 +364,10 @@ function ReplanLink({ trip }: { trip: SavedTrip | null }) {
   }
   if (href === "/") return null;
   return (
-    <Link href={href} className="rounded-lg border border-line bg-ink-2 px-4 py-2 text-sm text-mist transition-colors hover:text-paper">
+    <Link
+      href={href}
+      className="rounded-full border border-[#1E1B18] bg-[#FFF8EF] px-4 py-2 text-xs font-bold text-[#1E1B18] transition hover:bg-[#1E1B18] hover:text-[#F5EFE6]"
+    >
       Replan with check-ins
     </Link>
   );

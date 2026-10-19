@@ -110,6 +110,10 @@ function describeClockArc(
   return `M ${startPt.x.toFixed(2)} ${startPt.y.toFixed(2)} A ${r} ${r} 0 ${largeArcFlag} 1 ${endPt.x.toFixed(2)} ${endPt.y.toFixed(2)}`;
 }
 
+function fmtPt(n: number): string {
+  return n.toFixed(2);
+}
+
 /**
  * Section 1 — The Signature 24-Hour Dial.
  * - Midnight at the top, noon at the bottom. Moon near midnight, sun near noon.
@@ -248,10 +252,10 @@ export function CircadianDial({
             return (
               <line
                 key={hour}
-                x1={p1.x}
-                y1={p1.y}
-                x2={p2.x}
-                y2={p2.y}
+                x1={fmtPt(p1.x)}
+                y1={fmtPt(p1.y)}
+                x2={fmtPt(p2.x)}
+                y2={fmtPt(p2.y)}
                 stroke={isMajor ? "#1E1B18" : "#C9B79C"}
                 strokeWidth={isMajor ? 2 : 1}
               />
@@ -420,8 +424,8 @@ export function CircadianDial({
                   strokeLinecap="butt"
                 />
                 <circle
-                  cx={badgePos.x}
-                  cy={badgePos.y}
+                  cx={fmtPt(badgePos.x)}
+                  cy={fmtPt(badgePos.y)}
                   r={c.blocksWindow ? 6.5 : 5}
                   fill={
                     c.blocksWindow
@@ -461,16 +465,16 @@ export function CircadianDial({
                 onClick={() => setSelectedItem({ type: "mark", item: m })}
               >
                 <circle
-                  cx={pos.x}
-                  cy={pos.y}
+                  cx={fmtPt(pos.x)}
+                  cy={fmtPt(pos.y)}
                   r={m.isPrimary ? 10 : 7.5}
                   fill={fill}
                   stroke="#FFF8EF"
                   strokeWidth="2.5"
                 />
                 <text
-                  x={pos.x}
-                  y={pos.y + 3.5}
+                  x={fmtPt(pos.x)}
+                  y={fmtPt(pos.y + 3.5)}
                   textAnchor="middle"
                   fontSize="9"
                   fontWeight="800"

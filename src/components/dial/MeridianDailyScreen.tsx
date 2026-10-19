@@ -24,6 +24,10 @@ import {
   type DialMark,
 } from "./CircadianDial";
 import { DailyActionCard, type PrimaryActionItem } from "./DailyActionCard";
+import {
+  MascotOnboardingModal,
+  type OnboardingProfile,
+} from "./MascotOnboardingModal";
 
 export interface MeridianDailyScreenProps {
   mode: "TRIP" | "SHIFT";
@@ -41,6 +45,8 @@ export interface MeridianDailyScreenProps {
   citations: Citation[];
   onOpenTripSetup: () => void;
   onStartCrewSync: () => void;
+  depth?: string | null;
+  memoryPath?: string;
 }
 
 /**
@@ -62,6 +68,8 @@ export function MeridianDailyScreen({
   citations,
   onOpenTripSetup,
   onStartCrewSync,
+  depth,
+  memoryPath,
 }: MeridianDailyScreenProps) {
   const [tone, setTone] = useState<MascotTone>("cheeky");
   const [completedKeys, setCompletedKeys] = useState<Set<string>>(new Set());
@@ -76,6 +84,26 @@ export function MeridianDailyScreen({
   const [shiftDayIndex, setShiftDayIndex] = useState<number>(3); // Default to Thu (Night 3 where childcare trade-off is sharpest)
   const [forceProposedPreview, setForceProposedPreview] =
     useState<boolean>(false);
+  const [onboardingOpen, setOnboardingOpen] = useState<boolean>(false);
+  const [customSleep, setCustomSleep] = useState<{
+    bedMin: number;
+    wakeMin: number;
+    chronotype: "early" | "neutral" | "late";
+  } | null>(null);
+
+  const handleApplyOnboarding = (profile: OnboardingProfile) => {
+    onChangeMode(profile.mode);
+    setTone(profile.tone);
+    setTripCommitmentMoved(profile.tripCommitmentMoved);
+    setShiftPartnerCoversPickup(profile.shiftPartnerCoversPickup);
+    setWearableOptedIn(profile.wearableOptedIn);
+    setCustomSleep({
+      bedMin: profile.usualBedMin,
+      wakeMin: profile.usualWakeMin,
+      chronotype: profile.chronotype,
+    });
+    setOnboardingOpen(false);
+  };
 
   // --- TRIP MODE DATA ---
   const tripDays = trip?.days ?? [
@@ -95,8 +123,10 @@ export function MeridianDailyScreen({
   // Build effective day plans for TRIP (incorporating interactive commitment adaptation)
   const effectiveTripPlans = useMemo<DayPlan[]>(() => {
     const sign = trip?.direction === "west" ? 1 : -1;
-    const baseBed = baseline?.avgBedtimeMin ?? 23 * 60 + 55;
-    const baseWake = baseline?.avgWakeMin ?? 6 * 60 + 45;
+    const baseBed =
+      customSleep?.bedMin ?? baseline?.avgBedtimeMin ?? 23 * 60 + 55;
+    const baseWake =
+      customSleep?.wakeMin ?? baseline?.avgWakeMin ?? 6 * 60 + 45;
 
     return tripDays.map((spec, idx) => {
       const fromRun =
@@ -183,22 +213,27 @@ export function MeridianDailyScreen({
     });
   }, [calendarEvents, tripCommitmentMoved]);
 
-  const effectiveBaseline: WearableBaseline = useMemo(
-    () =>
-      baseline ?? {
-        wearer: "Alex Rivera",
-        source: "Self-reported usual sleep",
-        avgBedtimeMin: 23 * 60 + 55,
-        avgWakeMin: 6 * 60 + 45,
-        avgSleepMin: 410,
-        hrvMs: 48,
-        hrvTrend: "stable",
-        restingHr: 58,
-        chronotype: "late",
-        nights: [],
-      },
-    [baseline],
-  );
+  const effectiveBaseline: WearableBaseline = useMemo(() => {
+    const base = baseline ?? {
+      wearer: "Alex Rivera",
+      source: "Self-reported usual sleep",
+      avgBedtimeMin: 23 * 60 + 55,
+      avgWakeMin: 6 * 60 + 45,
+      avgSleepMin: 410,
+      hrvMs: 48,
+      hrvTrend: "stable",
+      restingHr: 58,
+      chronotype: "late" as const,
+      nights: [],
+    };
+    if (!customSleep) return base;
+    return {
+      ...base,
+      avgBedtimeMin: customSleep.bedMin,
+      avgWakeMin: customSleep.wakeMin,
+      chronotype: customSleep.chronotype,
+    };
+  }, [baseline, customSleep]);
 
   const tripTrajectory = useMemo(() => {
     if (!trip) return [];
@@ -220,6 +255,24 @@ export function MeridianDailyScreen({
     alcoholDays,
     wearableOptedIn,
   ]);
+
+  const onboardingModalElement = (
+    <MascotOnboardingModal
+      open={onboardingOpen}
+      initialProfile={{
+        mode,
+        usualBedMin: effectiveBaseline.avgBedtimeMin,
+        usualWakeMin: effectiveBaseline.avgWakeMin,
+        chronotype: effectiveBaseline.chronotype,
+        tripCommitmentMoved,
+        shiftPartnerCoversPickup,
+        wearableOptedIn,
+        tone,
+      }}
+      onComplete={handleApplyOnboarding}
+      onClose={() => setOnboardingOpen(false)}
+    />
+  );
 
   // --- SHIFT MODE DATA ---
   const shiftWeek = useMemo(
@@ -311,6 +364,15 @@ export function MeridianDailyScreen({
               {shiftPartnerCoversPickup
                 ? "✓ Partner covers 15:30 pickup (+75m sleep)"
                 : "↔ Adapt commitment: Partner covers 15:30 pickup"}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setOnboardingOpen(true)}
+              data-testid="open-onboarding-btn"
+              className="rounded-full border border-[#d8c6ae] bg-[#FFF8EF] px-3.5 py-2 text-xs font-bold text-[#1E1B18] hover:border-[#D96B43]"
+            >
+              ✨ 5-Step Mascot Setup
             </button>
           </div>
         </div>
@@ -423,6 +485,8 @@ export function MeridianDailyScreen({
             });
           }}
           postShiftSafetyWarning={sDay.postShiftSafetyWarning}
+          defaultDetailsOpen={depth === "guided"}
+          memoryPath={memoryPath}
         />
 
         {/* 2. Signature 24-Hour Dial + Mascot */}
@@ -458,6 +522,7 @@ export function MeridianDailyScreen({
           isShiftPostNightWarning={Boolean(sDay.postShiftSafetyWarning)}
           wearableOptedIn={wearableOptedIn}
         />
+        {onboardingModalElement}
       </div>
     );
   }
@@ -620,6 +685,15 @@ export function MeridianDailyScreen({
 
           <button
             type="button"
+            onClick={() => setOnboardingOpen(true)}
+            data-testid="open-onboarding-btn"
+            className="rounded-full border border-[#d8c6ae] bg-[#FFF8EF] px-3.5 py-2 text-xs font-bold text-[#1E1B18] hover:border-[#D96B43]"
+          >
+            ✨ 5-Step Mascot Setup
+          </button>
+
+          <button
+            type="button"
             onClick={onOpenTripSetup}
             className="rounded-full border border-[#d8c6ae] bg-[#FFF8EF] px-3.5 py-2 text-xs font-bold text-[#1E1B18] hover:border-[#D96B43]"
           >
@@ -732,6 +806,8 @@ export function MeridianDailyScreen({
         }}
         directionStrategy={directionStrategy}
         extraCitations={citations}
+        defaultDetailsOpen={depth === "guided"}
+        memoryPath={memoryPath}
       />
 
       {/* 2. Signature 24-Hour Dial + Mascot */}
@@ -825,6 +901,7 @@ export function MeridianDailyScreen({
           </p>
         </div>
       </div>
+      {onboardingModalElement}
     </div>
   );
 }

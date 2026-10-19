@@ -512,6 +512,50 @@ export default function Home() {
           </div>
 
           <div className="right">
+            {/* Visible Depth Dial (Calm / Guided / Operator) */}
+            <div
+              className="pill"
+              role="group"
+              aria-label="Depth dial: Calm, Guided, Operator"
+            >
+              <a
+                role="button"
+                tabIndex={0}
+                className={!depth || depth === "calm" ? "on" : ""}
+                onClick={() => setDepth(null)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setDepth(null);
+                  }
+                }}
+                title="Calm consumer view: action & dial first, evidence on tap"
+              >
+                Calm
+              </a>
+              <a
+                role="button"
+                tabIndex={0}
+                className={depth === "guided" ? "on" : ""}
+                onClick={() => setDepth("guided")}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setDepth("guided");
+                  }
+                }}
+                title="Guided view: auto-expands two-part evidence & provenance"
+              >
+                Guided
+              </a>
+              <Link
+                href="/crew"
+                title="Operator view: full 4-lens crew & deterministic solver trace"
+              >
+                Operator ↗
+              </Link>
+            </div>
+
             <button
               type="button"
               className="btn"
@@ -628,6 +672,8 @@ export default function Home() {
               citations={activeCitations}
               onOpenTripSetup={goSetup}
               onStartCrewSync={startShift}
+              depth={depth}
+              memoryPath={memoryPath}
             />
           </div>
         ) : (

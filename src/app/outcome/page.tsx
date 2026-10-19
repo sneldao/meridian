@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import type { CrewMemory } from "@/domain/types";
 import Link from "next/link";
-import { Card } from "@/components/ui";
 
 interface Outcome {
   savedAt: string;
@@ -27,95 +26,154 @@ export default function OutcomePage() {
   }, []);
 
   const save = async () => {
-    const o: Outcome = { savedAt: new Date().toISOString(), adherence, jetlag, notes };
+    const o: Outcome = {
+      savedAt: new Date().toISOString(),
+      adherence,
+      jetlag,
+      notes,
+    };
     try {
-      const prev = JSON.parse(localStorage.getItem("meridian:outcomes") || "[]");
+      const prev = JSON.parse(
+        localStorage.getItem("meridian:outcomes") || "[]",
+      );
       prev.unshift(o);
-      localStorage.setItem("meridian:outcomes", JSON.stringify(prev.slice(0, 50)));
+      localStorage.setItem(
+        "meridian:outcomes",
+        JSON.stringify(prev.slice(0, 50)),
+      );
     } catch {}
-    // Structure the free text into a CheckIn that later runs can fold into
-    // the adherence profile (morning-shift replan).
     try {
       const res = await fetch("/api/crew/checkin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: notes, status: adherence <= 1 ? "skipped" : adherence >= 4 ? "done" : "partial" }),
+        body: JSON.stringify({
+          text: notes,
+          status:
+            adherence <= 1 ? "skipped" : adherence >= 4 ? "done" : "partial",
+        }),
       });
       const data = (await res.json()) as { checkIn?: unknown };
       if (data.checkIn) {
-        const prevCi = JSON.parse(localStorage.getItem("meridian:checkins") || "[]");
+        const prevCi = JSON.parse(
+          localStorage.getItem("meridian:checkins") || "[]",
+        );
         prevCi.unshift(data.checkIn);
-        localStorage.setItem("meridian:checkins", JSON.stringify(prevCi.slice(0, 100)));
+        localStorage.setItem(
+          "meridian:checkins",
+          JSON.stringify(prevCi.slice(0, 100)),
+        );
       }
     } catch {
-      /* ignore — check-in is best-effort */
+      /* ignore */
     }
     setSaved(true);
   };
 
   return (
-    <main className="mx-auto max-w-2xl px-6 py-8">
-      <header className="mb-6">
-        <Link href="/" className="text-xs text-mist hover:text-paper">← deck</Link>
-        <h1 className="mt-2 text-lg font-bold tracking-[0.3em] text-paper">POST-TRIP CHECK-IN</h1>
+    <main className="mx-auto max-w-2xl px-6 py-8 text-[#1E1B18]">
+      <header className="mb-6 rounded-[24px] border border-[#e3d5c3] bg-[#FFF8EF] p-5">
+        <Link
+          href="/"
+          className="inline-block rounded-full border border-[#d8c6ae] bg-[#f5efe6] px-3 py-1 text-xs font-bold text-[#1E1B18] hover:border-[#D96B43]"
+        >
+          ← Back to 24h Dial
+        </Link>
+        <h1 className="mt-3 text-lg font-extrabold tracking-[0.25em] text-[#1E1B18]">
+          SLEEP &amp; ADHERENCE CHECK-IN
+        </h1>
+        <p className="mt-1 text-xs leading-relaxed text-[#5b4d41]">
+          Close the loop ("You told us"). Your self-reported adherence feeds
+          the next run&apos;s replan without penalty.
+        </p>
       </header>
 
-      <p className="text-sm leading-relaxed text-mist">
-        Close the loop. These answers feed next run&apos;s adherence model.
-      </p>
+      <div className="space-y-5 rounded-[24px] border border-[#e3d5c3] bg-[#FFF8EF] p-6">
+        <label className="block text-xs font-bold text-[#1E1B18]">
+          How much of the planned windows did you follow? ({adherence}/5)
+          <input
+            type="range"
+            min={0}
+            max={5}
+            value={adherence}
+            onChange={(e) => setAdherence(Number(e.target.value))}
+            className="mt-2 w-full accent-[#D96B43]"
+          />
+        </label>
 
-      <label className="mt-6 block text-xs text-mist">
-        How much of the plan did you follow? ({adherence}/5)
-        <input type="range" min={0} max={5} value={adherence} onChange={(e) => setAdherence(Number(e.target.value))} className="mt-2 w-full" />
-      </label>
+        <label className="block text-xs font-bold text-[#1E1B18]">
+          Perceived circadian strain / jet lag ({jetlag}/10)
+          <input
+            type="range"
+            min={0}
+            max={10}
+            value={jetlag}
+            onChange={(e) => setJetlag(Number(e.target.value))}
+            className="mt-2 w-full accent-[#D96B43]"
+          />
+        </label>
 
-      <label className="mt-6 block text-xs text-mist">
-        Jet lag severity on arrival day ({jetlag}/10)
-        <input type="range" min={0} max={10} value={jetlag} onChange={(e) => setJetlag(Number(e.target.value))} className="mt-2 w-full" />
-      </label>
+        <label className="block text-xs font-bold text-[#1E1B18]">
+          Notes (e.g., &ldquo;Skipped morning light&rdquo; or &ldquo;Dinner ran late&rdquo;)
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={4}
+            className="mt-2 w-full rounded-xl border border-[#d8c6ae] bg-[#f5efe6] p-3 text-xs text-[#1E1B18]"
+          />
+        </label>
 
-      <label className="mt-6 block text-xs text-mist">
-        Notes
-        <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          rows={4}
-          className="mt-2 w-full rounded-lg border border-line bg-ink-2 p-2 text-xs text-paper"
-        />
-      </label>
-
-      <div className="mt-6 flex items-center gap-3">
-        <button onClick={save} className="rounded-lg bg-paper px-4 py-2 text-xs font-bold text-ink hover:bg-white">
-          Save check-in
-        </button>
-        {saved && <span className="text-xs text-pass">saved</span>}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={save}
+            className="rounded-full bg-[#D96B43] px-5 py-2.5 text-xs font-extrabold text-white transition hover:bg-[#c45a34]"
+          >
+            Save check-in
+          </button>
+          {saved && (
+            <span className="rounded-full bg-[#E8F5EE] px-3 py-1 text-xs font-extrabold text-[#1B4D35]">
+              ✓ Saved to adherence memory
+            </span>
+          )}
+        </div>
       </div>
 
       {memory?.learned && (
-        <Card className="mt-8 p-4">
-          <h2 className="text-sm font-bold text-paper">What Meridian has learned</h2>
+        <div className="mt-6 rounded-[24px] border border-[#e3d5c3] bg-[#FFF8EF] p-5">
+          <h2 className="text-sm font-extrabold text-[#1E1B18]">
+            What Meridian has learned (Graph Memory)
+          </h2>
           {memory.learned.skippedKinds?.length ? (
-            <div className="mt-2 text-xs text-mist">
-              Historically difficult: {memory.learned.skippedKinds.join(", ")}
+            <div className="mt-2 text-xs text-[#5b4d41]">
+              Historically difficult windows:{" "}
+              {memory.learned.skippedKinds.join(", ")}
             </div>
           ) : null}
           {memory.learned.earliestDoneMin !== undefined ? (
-            <div className="mt-1 text-xs text-mist">
-              Earliest ask ever completed: {String(Math.floor(memory.learned.earliestDoneMin / 60)).padStart(2, "0")}:
+            <div className="mt-1 text-xs text-[#5b4d41]">
+              Earliest window completed:{" "}
+              {String(Math.floor(memory.learned.earliestDoneMin / 60)).padStart(
+                2,
+                "0",
+              )}
+              :
               {String(memory.learned.earliestDoneMin % 60).padStart(2, "0")}
             </div>
           ) : null}
           {memory.learned.notes?.length ? (
             <ul className="mt-2 space-y-1">
               {memory.learned.notes.slice(-5).map((n: string, i: number) => (
-                <li key={i} className="text-xs text-mist">“{n}”</li>
+                <li key={i} className="text-xs text-[#5b4d41]">
+                  “{n}”
+                </li>
               ))}
             </ul>
           ) : null}
           {memory.runs?.length ? (
-            <div className="mt-2 text-xs text-mist">{memory.runs.length} prior shift(s) on file.</div>
+            <div className="mt-2 text-xs text-[#7a6a5c]">
+              {memory.runs.length} prior shift(s) on file.
+            </div>
           ) : null}
-        </Card>
+        </div>
       )}
     </main>
   );
