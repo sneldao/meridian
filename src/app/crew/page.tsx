@@ -107,6 +107,10 @@ export default function CrewOperatorPage() {
       .catch(() => {});
   }, [tripQuery, departureDate]);
 
+  // The opening hook — the wearer's body time against the destination's.
+  // Derived during render (no setState in an effect) and only reachable once
+  // the trip is known, which is always after hydration, so there is no clock
+  // on the server-rendered HTML.
   const hook = trip
     ? { body: clockAt(trip.origin.utcOffsetMin), dest: clockAt(trip.destination.utcOffsetMin) }
     : null;
@@ -154,6 +158,8 @@ export default function CrewOperatorPage() {
     setEntries((prev) => [...prev, e]);
   }, []);
 
+  // Voice failures surface in the feed instead of a mute crew — a dead quota
+  // or bad key is a state the operator should see, not silently absorb.
   useEffect(() => {
     return subscribeVoiceErrors((err) => {
       push({
@@ -170,6 +176,7 @@ export default function CrewOperatorPage() {
           stopVoice();
           setEntries([{ kind: "system", text: "shift started — crew assembling" }]);
           setBriefingDismissed(false);
+          // Never let the welcome modal cover a running shift (fresh browser on stage).
           setShowOnboarding(false);
           try {
             localStorage.setItem("meridian:onboarded", "1");
@@ -251,9 +258,13 @@ export default function CrewOperatorPage() {
           push({ kind: "citation", citation: e.citation });
           break;
         case "plan_candidate":
+          // Grid state is owned by run state; live progress follows the day_label.
           break;
         case "eval_result":
           push({ kind: "eval", result: e.result });
+          if (!e.result.feasible) {
+            // rhetorical no-op so the right-hand feed still tells the story.
+          }
           break;
         case "day_locked":
           push({ kind: "locked", label: e.day.label });
@@ -384,6 +395,7 @@ export default function CrewOperatorPage() {
     setAutoDirector(false);
   }, []);
 
+  // Director is derived below; no synchronous state update in an effect.
   const providerFallback = run.errors.length > 0;
   const journey = data?.provider;
   const providerLabel = journey ?? run.provider ?? process.env.NEXT_PUBLIC_AGENT_PROVIDER;

@@ -1070,6 +1070,13 @@ export default function Home() {
               </div>
             </div>
             <div className="skel" style={{ width: "100%", height: 44, borderRadius: 999, marginTop: 22 }} />
+            {[0, 1, 2].map((i) => (
+              <div key={i} style={{ display: "flex", gap: 14, marginTop: 18, alignItems: "center" }}>
+                <div className="skel" style={{ width: 22, height: 22, borderRadius: 999 }} />
+                <div className="skel" style={{ width: 80, height: 14, borderRadius: 6 }} />
+                <div className="skel" style={{ flex: 1, height: 14, borderRadius: 6 }} />
+              </div>
+            ))}
           </div>
         ) : (
           <div ref={setupRef}>

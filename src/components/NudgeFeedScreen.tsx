@@ -796,7 +796,7 @@ export function NudgeFeedScreen({
             </div>
           )}
 
-      <div className={`hero rise${simple && !globeOpen ? " slim" : ""}`}>
+      <div className={`hero rise${simple && !globeOpen ? " slim" : ""}`} style={{ animationDelay: ".2s" }}>
         {trip && (!simple || globeOpen) && (
           <HeroDawnPanel
             trip={trip}
@@ -1391,7 +1391,7 @@ export function NudgeFeedScreen({
       {/* Day stepper — ‹ › through the days; the centre label opens the
           full list for a direct jump. Real trip days only. */}
       {days.length > 0 && activeDaySpec && (
-        <div className="rise" style={{ marginTop: "22px", position: "relative" }}>
+        <div className="rise" style={{ animationDelay: ".3s", marginTop: "22px", position: "relative" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
             <button
               type="button"
@@ -1602,7 +1602,7 @@ export function NudgeFeedScreen({
         </div>
       )}
 
-      <section className={`tl rise${previewMode ? " preview" : ""}`} aria-label={`${currentDayName} — steps`}>
+      <section className={`tl rise${previewMode ? " preview" : ""}`} style={{ animationDelay: ".4s" }} aria-label={`${currentDayName} — steps`}>
         {steps.map((step) => {
           const isDone = completedIds.has(step.id);
           const isSkip = isSkipped(step.id);
