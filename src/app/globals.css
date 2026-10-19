@@ -73,21 +73,21 @@ html,
 body {
   background: #F5EFE6;
   color: #1E1B18;
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: "Figtree", ui-rounded, "SF Pro Rounded", "Avenir Next Rounded", system-ui, -apple-system, sans-serif;
   min-height: 100%;
   margin: 0;
 }
 
-/* Sunlit Horizon Bento design system & behavior contract */
+/* Sunlit Horizon design system & behavior contract */
 .root {
   width: 100%;
   max-width: 868px;
-  min-height: 1543px;
+  min-height: 100vh;
   margin: 0 auto;
   position: relative;
   background: #F5EFE6;
   color: #1E1B18;
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: "Figtree", ui-rounded, "SF Pro Rounded", "Avenir Next Rounded", system-ui, -apple-system, sans-serif;
   padding: 0 0 56px;
   overflow: hidden;
 }

@@ -142,9 +142,10 @@ function draftDay(
           note: "Lights low for the last hour — evening light works against the advance.",
         },
         {
-          kind: "melatonin",
-          startMin: wrap(bed - 270),
-          note: `Melatonin timing window ~4–5h before bed (timing only, no dose).`,
+          kind: "exercise",
+          startMin: wrap(lightStart + lightDur + 15),
+          endMin: wrap(lightStart + lightDur + 45),
+          note: `Outdoor morning movement after light anchor — peripheral cue (for supplements like melatonin, ask a clinician).`,
         },
       ]
     : [
