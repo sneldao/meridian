@@ -2669,3 +2669,19 @@ html[data-theme="night"] {
   border: 1px solid var(--m-border);
   color: var(--m-muted);
 }
+
+/* The welcome-back moment: what you already told us, one line, and a single
+   way to continue. The pills show which steps are done, so "partway there" is
+   a picture rather than a claim. */
+.setup-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.setup-pill {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--m-border);
+  background: var(--m-card-2);
+  color: var(--m-faint);
+}
+.setup-pill.is-done { color: var(--m-ink); border-color: var(--m-border); background: var(--m-card); }
+.setup-reset { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }

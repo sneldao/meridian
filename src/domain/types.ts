@@ -284,3 +284,15 @@ export interface CrewMemory {
     notes: string[];
   };
 }
+
+/** The answers the setup collects. Persisted as they are given, so a reload
+ *  never loses one and the setup never asks a question twice. */
+export interface OnboardingState {
+  bedtimeMin?: number;
+  wakeMin?: number;
+  chronotype?: "early" | "neutral" | "late";
+  wearableOptedIn?: boolean;
+  tone?: "gentle" | "cheeky" | "direct";
+  /** The ids of the commitments the traveller wants protected. */
+  protect?: string[];
+}

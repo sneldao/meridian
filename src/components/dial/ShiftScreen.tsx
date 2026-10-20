@@ -8,7 +8,8 @@ import { buildShiftWeekPlan } from "@/domain/shift-work";
 import { CircadianDial, type DialCommitmentNotch, type DialMark } from "./CircadianDial";
 import { DailyActionCard, type DailyAction } from "./DailyActionCard";
 import { HoldToConfirm } from "./HoldToConfirm";
-import { MeridianOnboarding, type OnboardingState } from "./MeridianOnboarding";
+import { MeridianOnboarding } from "./MeridianOnboarding";
+import type { OnboardingState } from "@/domain/types";
 
 /**
  * The shift week, on its own screen.
@@ -237,12 +238,12 @@ export function ShiftScreen() {
           protect: [],
         }}
         onChange={(next: OnboardingState) => {
-          setTone(next.tone);
-          setWearableOptedIn(next.wearableOptedIn);
+          setTone(next.tone ?? "cheeky");
+          setWearableOptedIn(next.wearableOptedIn ?? false);
           setSelfReport({
-            bedtimeMin: next.bedtimeMin,
-            wakeMin: next.wakeMin,
-            chronotype: next.chronotype,
+            bedtimeMin: next.bedtimeMin ?? 23 * 60,
+            wakeMin: next.wakeMin ?? 7 * 60,
+            chronotype: next.chronotype ?? "neutral",
           });
         }}
         onClose={() => setOnboardingOpen(false)}
