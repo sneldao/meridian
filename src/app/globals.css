@@ -2503,3 +2503,110 @@ html[data-theme="night"] {
   font-family: var(--font-voice);
 }
 .mascot-serious .mascot-say { font-family: var(--font-sans); }
+
+/* --- The setup (Phase 2): scenes, not a form -------------------------------
+   A full-bleed sequence of scenes, one question each. The setup is a
+   sequence because a form is a wall and a sequence is a path: the traveller
+   can see how far in they are, step back, and never face two questions at
+   once. */
+.setup {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: var(--m-bg);
+  color: var(--m-text);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.setup-inner {
+  max-width: 520px;
+  margin: 0 auto;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 20px 18px 32px;
+}
+.setup-bar { display: flex; align-items: center; gap: 12px; }
+.setup-back {
+  width: 34px; height: 34px; flex: none;
+  border-radius: 999px;
+  border: 1px solid var(--m-border);
+  background: var(--m-card);
+  color: var(--m-text);
+  font-size: 15px;
+  cursor: pointer;
+}
+.setup-back:disabled { opacity: .3; cursor: default; }
+.setup-progress {
+  flex: 1;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--m-border);
+  overflow: hidden;
+}
+.setup-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--m-accent);
+  transition: width .3s ease;
+}
+.setup-count {
+  font-family: var(--font-mono2, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 11px;
+  color: var(--m-muted);
+  min-width: 28px;
+  text-align: right;
+}
+.setup-scene { display: flex; flex-direction: column; gap: 14px; }
+.setup-title {
+  font-family: var(--font-voice);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--m-ink);
+  margin: 0;
+}
+.setup-lede { font-size: 13px; line-height: 1.5; color: var(--m-muted); margin: 0; }
+.setup-choices { display: flex; flex-wrap: wrap; gap: 8px; }
+.setup-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.setup-list label { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: var(--m-text); }
+.setup-mascot { margin-top: 4px; }
+.setup-foot { margin-top: auto; display: flex; justify-content: flex-end; }
+.setup-handoff { display: flex; flex-direction: column; gap: 14px; align-items: flex-start; }
+.setup-handoff-arc .dial-body-arc { stroke: var(--m-accent); stroke-width: 4; stroke-linecap: round; }
+
+/* The sleep dial: the answer to the first question, given on the same
+   picture the rest of the app uses. */
+.sleep-dial { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.sleep-dial-svg { width: min(280px, 78vw); height: auto; touch-action: none; cursor: pointer; }
+.sleep-dial-ring { fill: none; stroke: var(--m-border); stroke-width: 1; }
+.sleep-dial-tick { stroke: var(--m-border); stroke-width: 1; }
+.sleep-dial-tick-major { stroke: var(--m-muted); stroke-width: 1.5; }
+.sleep-dial-label { fill: var(--m-muted); font-size: 9px; font-weight: 600; }
+.sleep-dial-arc {
+  fill: none;
+  stroke: var(--dial-sleep);
+  stroke-width: 12;
+  stroke-linecap: round;
+  opacity: .9;
+}
+.sleep-dial-handle {
+  fill: var(--m-bg);
+  stroke: var(--dial-sleep);
+  stroke-width: 3;
+  cursor: grab;
+}
+.sleep-dial-handle.is-focused { fill: var(--dial-sleep); }
+.sleep-dial-handle:focus-visible { outline: 2px solid var(--m-accent); outline-offset: 3px; }
+.sleep-dial-readout { font-size: 14px; color: var(--m-text); margin: 0; text-align: center; }
+.sleep-dial-readout strong { font-family: var(--font-mono2, ui-monospace, SFMono-Regular, Menlo, monospace); color: var(--m-ink); }
+.sleep-dial-insight {
+  font-family: var(--font-voice);
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--m-muted);
+  margin: 0;
+  text-align: center;
+  max-width: 42ch;
+}

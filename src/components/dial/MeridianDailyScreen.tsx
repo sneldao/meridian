@@ -156,6 +156,24 @@ export function MeridianDailyScreen({
     return trip.days.find((d) => d.dayIndex === idx)?.label ?? null;
   })();
 
+  /** The first thing to do, for the handoff scene. */
+  const firstAction = (() => {
+    const plan = locked.get(selectedDayLabel) ?? drafts.get(selectedDayLabel)?.plan;
+    const light = plan?.interventions.find((iv) => iv.kind === "light_exposure");
+    if (light) {
+      return {
+        title: "Step into bright light",
+        timeWindow: `${fmtMin(light.startMin)}–${fmtMin(light.endMin ?? light.startMin + 60)}`,
+      };
+    }
+    return {
+      title: "Keep the sleep window",
+      timeWindow: point
+        ? `${fmtMin(point.targetBedMin)}–${fmtMin(point.targetWakeMin)}`
+        : "",
+    };
+  })();
+
   const onboarding = (
     <>
       <div className="dial-actions">
@@ -170,6 +188,16 @@ export function MeridianDailyScreen({
       <MeridianOnboarding
         open={onboardingOpen}
         mode="TRIP"
+        direction={trip?.direction ?? null}
+        band={
+          selfReport
+            ? selfReport.chronotype === "early"
+              ? "before6"
+              : selfReport.chronotype === "late"
+                ? "after8"
+                : "6to8"
+            : null
+        }
         state={{
           bedtimeMin: selfReport?.bedtimeMin ?? baseline?.avgBedtimeMin ?? 23 * 60 + 55,
           wakeMin: selfReport?.wakeMin ?? baseline?.avgWakeMin ?? 6 * 60 + 45,
@@ -190,9 +218,11 @@ export function MeridianDailyScreen({
         }}
         onClose={() => setOnboardingOpen(false)}
         onComplete={() => setOnboardingOpen(false)}
+        firstAction={firstAction}
         commitments={calendarEvents.map((e) => ({
           id: e.id,
           title: e.title,
+          dayLabel: trip?.days.find((d) => d.dayIndex === e.dayIndex)?.label,
           startMin: e.startMin,
           endMin: e.endMin,
           movable: e.movable,
