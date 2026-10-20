@@ -50,6 +50,11 @@ export interface SolvedDay {
 const wrap = (m: number) => ((m % 1440) + 1440) % 1440;
 const overlaps = (aS: number, aE: number, bS: number, bE: number) => aS < bE && bS < aE;
 
+/** The sleep floor the plan must not go under — the same six hours the gate
+ *  enforces. When a fixed commitment lands inside it, the day is not
+ *  plannable around that commitment and the gate says so. */
+const SLEEP_FLOOR_MIN = 360;
+
 /** Furthest the light block may start after the wake target — also the
  *  eastbound wake margin below the compliance floor (floor − this is the
  *  earliest wake a shift may produce, so the anchor can still open at the
@@ -197,8 +202,29 @@ function draftDay(
       : null;
   if (!ref) return null;
   const bed = wrap(ref.bed + shiftMin);
-  const wake = wrap(ref.wake + shiftMin);
+  let wake = wrap(ref.wake + shiftMin);
   const east = trip.direction === "east";
+
+  // The sleep window has to clear the day's fixed commitments. A plan whose
+  // sleep runs into a 07:30 team breakfast is not a plan — the gate rejects
+  // it, and before this the solver had no way to say so except to give up on
+  // the day entirely, which lost a whole day of the shift over a conflict
+  // the traveller could have slept around.
+  const fixed = calendar.filter(
+    (e) =>
+      e.dayIndex === spec.dayIndex &&
+      e.blocksInterventions !== false &&
+      !e.movable,
+  );
+  for (const e of fixed) {
+    const len = wrap(wake - bed) || 1440;
+    const off = wrap(e.startMin - bed);
+    if (off >= len) continue; // the commitment is outside the sleep window
+    // Wake one minute before it, keeping as much sleep as that allows.
+    const newLen = Math.max(0, off - 1);
+    wake = newLen < SLEEP_FLOOR_MIN ? wrap(bed + SLEEP_FLOOR_MIN) : wrap(bed + newLen);
+    break;
+  }
 
   const { starts, duration } = lightStarts(
     trip,
@@ -230,6 +256,30 @@ function draftDay(
       )
     : undefined;
 
+  // The morning "dark glasses" block (a delay lever westward) is placed like
+  // the light: a cue that lands on a fixed commitment is not a cue. It is a
+  // small lever, so when the morning is too full to hold it, it is dropped
+  // rather than smuggled in — the evening light is the delay's real work.
+  const shadesStart = east
+    ? null
+    : placeBlock(
+        spec.dayIndex,
+        60,
+        [
+          wake,
+          wrap(wake + 15),
+          wrap(wake - 15),
+          wrap(wake + 30),
+          wrap(wake - 30),
+          wrap(wake + 60),
+          wrap(wake + 90),
+          wrap(wake + 120),
+          wrap(wake - 60),
+          wrap(wake - 90),
+        ],
+        calendar,
+      );
+
   const interventions: Intervention[] = east
     ? [
         {
@@ -259,12 +309,16 @@ function draftDay(
         // supports it when a plan carries it.
       ]
     : [
-        {
-          kind: "avoid_light",
-          startMin: wake,
-          endMin: wrap(wake + 60),
-          note: "Dark glasses for the first hour — morning light would undo the delay.",
-        },
+        ...(shadesStart === null
+          ? []
+          : [
+              {
+                kind: "avoid_light" as const,
+                startMin: shadesStart,
+                endMin: wrap(shadesStart + 60),
+                note: `Dark glasses from ${fmtMin(shadesStart)} — morning light would undo the delay.`,
+              },
+            ]),
         {
           kind: "caffeine_cutoff",
           startMin: wrap(bed - CAFFEINE_CUTOFF_BEFORE_BED_MIN - 5),
@@ -320,7 +374,12 @@ export function solveDay(input: SolveDayInput): SolvedDay | null {
       : 0;
   const refWake = prev ? prev.targetWakeMin + frameOffMin : baseline?.avgWakeMin;
 
-  for (let s = target; s >= 0; s -= 15) {
+  // Five-minute steps, which is the domain's own granularity for a shift.
+  // Coarser steps (15) could step *over* zero when the target was not a
+  // multiple of them, so a day that could only be a hold was never drafted
+  // and the solver gave up on it — losing a whole day of the trip to an
+  // arithmetic accident.
+  for (let s = target; s >= 0; s -= 5) {
     if (
       trip.direction === "east" &&
       s > 0 &&

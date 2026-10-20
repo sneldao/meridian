@@ -75,7 +75,10 @@ export async function* runMorningReplay(opts: {
   yield { type: "agent_end", agent: "analyst" };
 
   // --- Planner + evaluator, remaining days only ------------------------------
-  const scripted = replayPlanFor(trip, cal, citations, adherence).days;
+  // The remaining days are re-drafted against the updated profile, from
+  // where the replan starts: the body clock the plan is judged against
+  // starts here too.
+  const scripted = replayPlanFor(trip, cal, citations, adherence, opts.startDayIndex).days;
   for (const spec of specs) {
     const candidate = scripted.find((d) => d.dayIndex === spec.dayIndex);
     if (!candidate) continue;

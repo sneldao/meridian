@@ -29,6 +29,24 @@ passes(result) = result.feasible && result.score >= PASS_SCORE   // 0.75
 (`ADHERENCE_RISK` is declared in the `EvalViolation` code union but not
 currently emitted — adherence feeds the soft score below.)
 
+## The solver's placement rules
+
+The solver is the one that places the times, and its rules are worth stating
+because they are the difference between a plan and a wish:
+
+- **The sleep window clears the day's fixed commitments.** A plan whose sleep
+  runs into a 07:30 team breakfast is not a plan; the wake moves to just
+  before it, keeping as much sleep as the floor allows. Before this the
+  solver had no way to say so except to give up on the day, which lost a whole
+  day of the shift to a conflict the traveller could have slept around.
+- **The search steps in five-minute increments** — the domain's own
+  granularity for a shift. Coarser steps could step *over* zero when the
+  target was not a multiple of them, so a day that could only be a hold was
+  never drafted.
+- **A cue that cannot be placed is dropped, not smuggled in.** The morning
+  "dark glasses" block is a small lever; when the morning is too full to hold
+  it, it goes, and the evening light does the delay's real work.
+
 ## The model behind `WRONG_WAY_CUE`
 
 A day's declared shift is not the only thing that moves a clock: the light

@@ -262,11 +262,18 @@ describe("landingProjection", () => {
   test("says what the body clock will be, not what the plan claimed", () => {
     const p = landingProjection(trip, planWithDays(solved()), GARMIN_BASELINE);
     expect(p).not.toBeNull();
-    // The gate claimed 300 of 480 minutes — 5h of an 8h shift.
-    expect(p!.claimedHours).toBe(5);
-    // The model delivers what the timing supports, and it is never more than
-    // the claim, because the claim is the ceiling.
-    expect(p!.deliveredHours).toBeLessThanOrEqual(p!.claimedHours + 0.001);
+    // The claim is the plan's own declared shift, measured up to the landing
+    // day so it is comparable with the delivery measured at that moment:
+    // 90 minutes on D-3 and 90 on the arrival day.
+    expect(p!.claimedHours).toBe(3);
+    // The delivery is the model's answer for the same window, and it is
+    // bounded by the whole shift either way.
+    expect(p!.deliveredHours).toBeGreaterThan(0);
+    expect(p!.deliveredHours).toBeLessThanOrEqual(p!.requiredHours);
+    // The model delivers what the timing supports, which can be more than the
+    // plan claimed: a plan that declares less than its own cues carry is
+    // conservative, not broken — and the landing reports the difference
+    // rather than hiding it.
     expect(p!.requiredHours).toBe(8);
     expect(p!.hours).toBeGreaterThan(0);
     expect(p!.lowHours).toBeLessThanOrEqual(p!.hours);

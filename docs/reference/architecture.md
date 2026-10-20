@@ -170,6 +170,8 @@ src/domain/      types, circadian scorer + phase-response model, placement
 src/tools/       science (SMR → Firecrawl → static), tavily, qloo,
                  calendar (ICS), wearable
 src/agents/      providers, crew prompts, runtime, night replay, morning replay
+                 (the replay path's plan is the solver's plan — the same
+                 draft the live path hands the planner)
 src/components/  NudgeFeedScreen (the Calm `/` surface: next step, timeline,
                  readiness), dial/ (the clock view: CircadianDial, the mascot,
                  the daily action card, the five-step setup, the disclosure
