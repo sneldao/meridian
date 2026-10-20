@@ -45,7 +45,15 @@ other.
      circadian phase rather than the schedule target, and `draftDay` has a
      post-flight branch for local-night sleep. `null` is now the genuine
      fallback for "the solver could not place this", not a post-flight rule.
-   - Otto submits exactly one `DayPlan` via `submitDayPlan`.
+   - Otto submits exactly one `DayPlan` via `submitDayPlan`. The submission is
+     **merged over the draft** (`src/domain/draft.ts`): every field is
+     optional, so what Otto does not mention keeps the solver's value, and
+     moving a time is an explicit act rather than an omission. The merge
+     reports the **drift** — the shift difference, the minutes the cues
+     moved, the kinds added or dropped — on the `plan_candidate` event, so
+     the transcript and the eval harness can both see how much of the
+     solver's work survived the planner's intent. The drift is a number, not
+     a verdict: the gate still judges the plan.
    - The **deterministic scorer** (`src/domain/circadian.ts`) evaluates it —
     code, not judgment. It also re-derives the plausible shift from zeitgeber
     timing (`modelShiftMin`) and rejects a plan whose declared shift outruns
@@ -172,6 +180,8 @@ src/tools/       science (SMR → Firecrawl → static), tavily, qloo,
 src/agents/      providers, crew prompts, runtime, night replay, morning replay
                  (the replay path's plan is the solver's plan — the same
                  draft the live path hands the planner)
+src/domain/      draft (the planner's submission merged over the solver's
+                 draft, and the drift between them)
 src/components/  NudgeFeedScreen (the Calm `/` surface: next step, timeline,
                  readiness), dial/ (the clock view: CircadianDial, the mascot,
                  the daily action card, the five-step setup, the disclosure

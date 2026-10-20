@@ -4,6 +4,14 @@ import { stepCountIs, streamText, tool, type ToolSet } from "ai";
 import { z } from "zod";
 import { evaluatePlan, effectiveCalendar, fmtMin, coverageOf, passes, sunProgress, PROTECTED_KINDS } from "@/domain/circadian";
 import { solveDay } from "@/domain/solver";
+import {
+  describeDrift,
+  draftDrift,
+  mergeWithDraft,
+  planSubmissionSchema,
+  type DraftDrift,
+  type PlanSubmission,
+} from "@/domain/draft";
 import { ScopeGuard, scrub } from "@/domain/scope";
 import { ADHERENCE_PROFILE, DEMO_TRIP, GARMIN_BASELINE } from "@/domain/fixtures";
 import { foldCheckIns } from "@/domain/adherence";
@@ -18,6 +26,7 @@ import { loadMemory, memoryBriefWithCrossTrip, recordRun } from "@/domain/memory
   CrewEvent,
   DayPlan,
   EvalResult,
+  Intervention,
   WearableBaseline,
 } from "@/domain/types";
 import { CREW, type CrewMember } from "./crew";
@@ -157,6 +166,8 @@ interface RunState {
   evals: EvalResult[];
   log: { ts: string; entry: string }[];
   pendingPlan: DayPlan | null;
+  /** How far the planner's submission moved from the solver's draft. */
+  planDrift: DraftDrift | null;
   ics: string;
   briefingText: string;
 }
@@ -213,6 +224,7 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
     evals: [],
     log: [],
     pendingPlan: null,
+    planDrift: null,
     ics: "",
     briefingText: "",
   };
@@ -333,9 +345,10 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
               adherenceFloorMin: adherence.ignoresInterventionsBeforeMin,
               solverDraft: solved
                 ? solved.plan
-                : "no feasible template placement — draft from scratch",
-              solverNote:
-                "solverDraft is a feasible skeleton that already passed the scorer. Adopt its times; adjust shift, notes and citations to intent. The scorer re-checks whatever you submit.",
+                : "no feasible template placement — draft from scratch, with every time",
+              solverNote: solved
+                ? "solverDraft is a feasible skeleton that already passed the scorer, and it is the DEFAULT: submit only what you want to change — the shift, the notes, the citations. Leave a time out and it keeps the solver's value; move one and you are saying why. The scorer re-checks whatever you submit."
+                : "No feasible placement was found for this day: draft the plan yourself, with every time.",
               calendar: state.calendar
                 .filter((e) => e.dayIndex === spec.dayIndex)
                 .map((e) => ({
@@ -362,32 +375,32 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
           ),
           tools: {
             submitDayPlan: {
-              description: "Submit the plan for this single day. Exactly one call.",
-              inputSchema: z.object({
-                shiftMin: z.number(),
-                targetBedtimeMin: z.number(),
-                targetWakeMin: z.number(),
-                interventions: z.array(
-                  z.object({
-                    kind: z.enum([
-                      "light_exposure",
-                      "avoid_light",
-                      "sleep_window",
-                      "caffeine_cutoff",
-                      "melatonin",
-                      "exercise",
-                      "meal_timing",
-                      "nap",
-                    ]),
-                    startMin: z.number(),
-                    endMin: z.number().optional(),
-                    note: z.string(),
-                    citationId: z.string().optional(),
-                  }),
-                ),
-              }),
-              execute: async (input: Omit<DayPlan, "dayIndex" | "label">) => {
-                state.pendingPlan = { dayIndex: spec.dayIndex, label: spec.label, ...input };
+              description:
+                "Submit the plan for this single day. Exactly one call. The solver's draft is the default: submit only what you want to change — the shift, the notes, the citations. Anything you leave out keeps the draft's value, and moving a time is an explicit act.",
+              inputSchema: planSubmissionSchema,
+              execute: async (input: PlanSubmission) => {
+                // The draft is the default. With no draft (the solver found
+                // no feasible placement) the submission has to carry the plan
+                // itself, or there is no plan.
+                const merged = solved
+                  ? mergeWithDraft(solved.plan, input)
+                  : ({
+                      dayIndex: spec.dayIndex,
+                      label: spec.label,
+                      shiftMin: input.shiftMin ?? 0,
+                      targetBedtimeMin: input.targetBedtimeMin ?? 0,
+                      targetWakeMin: input.targetWakeMin ?? 0,
+                      interventions: (input.interventions ?? []) as Intervention[],
+                    } as DayPlan);
+                // With no draft, the submission has to carry the plan itself.
+                if (
+                  !solved &&
+                  (input.targetBedtimeMin === undefined || input.targetWakeMin === undefined)
+                ) {
+                  return "no solver draft and no times submitted — submit the whole plan";
+                }
+                state.pendingPlan = merged;
+                state.planDrift = solved ? draftDrift(solved.plan, merged) : null;
                 return "submitted";
               },
             },
@@ -415,7 +428,29 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
         emit({ type: "error", message: `planner submitted nothing for ${spec.label}`, recoverable: true });
         continue;
       }
-      emit({ type: "plan_candidate", day: candidate });
+      if (state.planDrift) {
+        const drift = state.planDrift;
+        logLine(
+          `plan ${spec.label}: ${describeDrift(drift)} (${drift.cuesKept} cue${drift.cuesKept === 1 ? "" : "s"} kept from the solver's draft)`,
+        );
+      }
+      const drift = state.planDrift;
+      state.planDrift = null;
+      emit({
+        type: "plan_candidate",
+        day: candidate,
+        ...(drift
+          ? {
+              drift: {
+                shiftChanged: drift.shiftChanged,
+                shiftDeltaMin: drift.shiftDeltaMin,
+                minutesMoved: drift.minutesMoved,
+                kindsChanged: drift.kindsChanged,
+                cuesKept: drift.cuesKept,
+              },
+            }
+          : {}),
+      });
 
       // Deterministic gate — the evaluator explains, the math decides.
       // `citations` is passed so the gate can reject a citationId that is not in
