@@ -50,11 +50,12 @@ Optional extras, all in `.env.local` — every one degrades gracefully when unse
 | Path | What |
 |---|---|
 | `/pitch` | *(removed — the deck retired with the pre-overhaul surface)* |
-| `/` | Today — the one step to do now, then the day timeline and readiness. No trip yet → setup; trip set → a trip chip with an Edit sheet. Asks one personalisation question inline when the baseline is still the demo one, and takes a departure window that the solver plans around. `?depth=guided` adds the deep-dive visuals. A **Clock** toggle (next to Simple/Detailed) opens the 24-hour dial, the daily action card, the shift week and the five-step setup — the projection, the do-nothing baseline and the uncertainty band, all from the same phase-response model the scorer gates with |
+| `/` | Today — the one step to do now, then the day timeline and readiness. Once the crew has locked days, the **Clock** becomes the default view (the dial, the daily action card, the projection and its uncertainty band); the timeline stays for the first landing and as the other view. No trip yet → setup; trip set → a trip chip with an Edit sheet. Asks one personalisation question inline when the baseline is still the demo one, and takes a departure window that the solver plans around. `?depth=guided` adds the deep-dive visuals. A **Clock** toggle (next to Simple/Detailed) opens the 24-hour dial, the daily action card, the shift week and the five-step setup — the projection, the do-nothing baseline and the uncertainty band, all from the same phase-response model the scorer gates with |
 | `/arrival` | The payoff — first morning in the destination, scored against what the gate promised. Reached from Today once the last planned day passes, or `?date=` to score any trip (`?arrived=1` to preview) |
 | `/review` | Saved plan: days, citations, .ics download |
 | `/history` | Past runs (with provider + fallback provenance) |
 | `/outcome` | Post-trip self-report (adherence, jetlag, notes); learned cross-run memory. Gated on a saved plan — no plan, nothing to grade |
+| `/shift` | Shift work — the rotating night-shift week on its own door: the anchor sleep window, the fixed and negotiable commitments, the one movable thing (the 15:30 pickup, behind a hold), and the post-night-shift driving warning |
 | `/team` | Travel-manager view: 12 travellers, 12 crews in parallel (stretch) |
 | `/dev` | Lens workbench + recorded-event fixture playback (dev only) |
 | `/api/*` | Server surface — run SSE, check-in, trip, wearable upload, team, persistence, memory, graph health, voice ([reference](docs/reference/architecture.md#api-surface)) |

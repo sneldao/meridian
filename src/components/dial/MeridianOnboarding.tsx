@@ -22,11 +22,14 @@ import { useEffect, useRef, useState } from "react";
 import { fmtMin } from "@/domain/circadian";
 import { type MascotTone } from "@/domain/mascot";
 import { useFocusTrap } from "@/lib/a11y";
+import { DisclosureSheet } from "./DisclosureSheet";
 import { MascotSyncReveal } from "./MascotSyncReveal";
-import type { MeridianMode } from "./MeridianDailyScreen";
+
+/** Which clock the setup is for. SHIFT is its own door (see /shift), so the
+ *  setup no longer asks: the surface you are on already knows. */
+export type MeridianMode = "TRIP" | "SHIFT";
 
 export interface OnboardingState {
-  mode: MeridianMode;
   bedtimeMin: number;
   wakeMin: number;
   chronotype: "early" | "neutral" | "late";
@@ -46,6 +49,8 @@ export interface OnboardingCommitment {
 
 export interface MeridianOnboardingProps {
   open: boolean;
+  /** Which clock this setup is for. */
+  mode: MeridianMode;
   state: OnboardingState;
   /** Live: every change lands on the model immediately. */
   onChange: (next: OnboardingState) => void;
@@ -65,10 +70,11 @@ export interface MeridianOnboardingProps {
   };
 }
 
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 4;
 
 export function MeridianOnboarding({
   open,
+  mode,
   state,
   onChange,
   onClose,
@@ -97,8 +103,7 @@ export function MeridianOnboarding({
 
   const set = (patch: Partial<OnboardingState>) => onChange({ ...state, ...patch });
   const stepTitles = [
-    "Which clock?",
-    "Your usual sleep",
+    mode === "SHIFT" ? "Your sleep, on shift days" : "Your usual sleep",
     "What should Meridian protect?",
     "Where your numbers come from",
     "The mascot's voice, and the small print",
@@ -134,28 +139,6 @@ export function MeridianOnboarding({
         </div>
 
         {step === 1 && (
-          <div className="dial-actions">
-            <button
-              type="button"
-              className="dial-btn"
-              aria-pressed={state.mode === "TRIP"}
-              onClick={() => set({ mode: "TRIP" })}
-            >
-              I&apos;m travelling
-            </button>
-            <button
-              type="button"
-              className="dial-btn"
-              aria-pressed={state.mode === "SHIFT"}
-              onClick={() => set({ mode: "SHIFT" })}
-            >
-              I work rotating shifts
-            </button>
-            <span className="dial-sub">You told us</span>
-          </div>
-        )}
-
-        {step === 2 && (
           <div className="dial-center">
             <label className="dac-reason">
               Usual bedtime (you told us) — {fmtMin(state.bedtimeMin)}
@@ -198,7 +181,7 @@ export function MeridianOnboarding({
           </div>
         )}
 
-        {step === 3 && (
+        {step === 2 && (
           <div className="dial-center">
             {commitments.length ? (
               <ul className="dial-list">
@@ -237,7 +220,7 @@ export function MeridianOnboarding({
           </div>
         )}
 
-        {step === 4 && (
+        {step === 3 && (
           <div className="dial-center">
             <p className="dac-reason">
               Every number Meridian shows carries a tag:{" "}
@@ -271,7 +254,7 @@ export function MeridianOnboarding({
           </div>
         )}
 
-        {step === 5 && (
+        {step === 4 && (
           <div className="dial-center">
             <div className="dial-actions">
               {(["gentle", "cheeky", "direct"] as const).map((t) => (
@@ -326,66 +309,7 @@ export function MeridianOnboarding({
         </div>
       </div>
 
-      {sheetOpen && (
-        <div
-          className="sheet-backdrop"
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(12, 10, 8, 0.6)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 16,
-            zIndex: 61,
-          }}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-label="What Meridian is, and is not"
-            className="dial"
-            style={{ maxWidth: 520, width: "100%", maxHeight: "85vh", overflow: "auto" }}
-          >
-            <h3 className="dial-title">What Meridian is, and is not</h3>
-            <div className="dac-evidence">
-              <p>
-                <b>What it is.</b> A deterministic circadian timing planner. It
-                reads your sleep baseline, your calendar and the literature, and
-                places the light and the dark so your body clock has somewhere to
-                go. Every number it shows is computed by a model, and the model
-                is the same one the crew&apos;s plans are judged against.
-              </p>
-              <p>
-                <b>What it is not.</b> Not a medical device. It does not diagnose
-                anything, it does not measure your melatonin phase directly, and
-                it never recommends a supplement, a medicine or a dose — the crew
-                advises on <i>when</i>, never on <i>how much</i>. It cannot tell
-                you whether you are fit to drive.
-              </p>
-              <p>
-                <b>What the papers mean.</b> The studies behind each step support
-                the mechanism. They do not validate Meridian&apos;s own
-                arithmetic, and the number on the dial is an estimate with an
-                uncertainty band, not a measurement.
-              </p>
-              <p>
-                <b>What happens to your data.</b> Your trip, calendar and answers
-                are kept in this browser so your plan is there when you come
-                back. If the deployment has persistence configured, the plan and
-                your check-ins are also stored in the project&apos;s database. The
-                wearable import is simulated in this build — nothing is read
-                from a wearable.
-              </p>
-            </div>
-            <div className="dial-actions">
-              <button type="button" className="dial-btn" onClick={() => setSheetOpen(false)}>
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DisclosureSheet open={sheetOpen} onClose={() => setSheetOpen(false)} />
     </div>
   );
 }
