@@ -95,7 +95,8 @@ export interface EvalViolation {
     | "DOSE_PRESCRIPTION"
     | "UNSAFE_CLAIM"
     | "UNKNOWN_CITATION"
-    | "SHIFT_OVERSTATED";
+    | "SHIFT_OVERSTATED"
+    | "WRONG_WAY_CUE";
   message: string;
   dayIndex?: number;
 }

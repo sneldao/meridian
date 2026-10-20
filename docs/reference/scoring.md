@@ -24,9 +24,29 @@ passes(result) = result.feasible && result.score >= PASS_SCORE   // 0.75
 | `UNSAFE_CLAIM` | Note makes a clinical claim (cure/treat/diagnose/proven-to-fix) |
 | `UNKNOWN_CITATION` | Intervention cites an id outside the research set Jun actually returned |
 | `SHIFT_OVERSTATED` | Declared shift exceeds what the phase-response model says the day's timing supports by more than 45 min |
+| `WRONG_WAY_CUE` | The day's *zeitgebers* push the clock against the trip by more than 45 min — light before the body's own trough on an eastward trip, or after it on a westward one |
 
 (`ADHERENCE_RISK` is declared in the `EvalViolation` code union but not
 currently emitted — adherence feeds the soft score below.)
+
+## The model behind `WRONG_WAY_CUE`
+
+A day's declared shift is not the only thing that moves a clock: the light
+does too, and it can move it the *wrong* way while the day claims nothing.
+Light before the body's own trough delays a traveller who needs to advance,
+and light after it advances a traveller who needs to delay — the classic
+eastward mistake, and the one the arrival morning is full of.
+
+The check is the phase-response model with the sleep-schedule term removed
+(the dark window is a legitimate adaptation, and the arrival day's move to the
+local night is the flight's doing rather than the plan's). It is signed the
+trip's way, and a day's cues more than 45 min against the trip fail the gate.
+The in-flight day is excluded for the same reason transit is not an anchor:
+the traveller is in the air and their light is an aircraft's.
+
+The tolerance is the gate's usual one (45 min), so the rule reads: *this
+day's light will move you more than the gate tolerates, and it is moving you
+the wrong way.*
 
 ## The model behind `SHIFT_OVERSTATED`
 
