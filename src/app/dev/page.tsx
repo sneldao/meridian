@@ -11,6 +11,7 @@ import { RoutePicker } from "@/components/RoutePicker";
 import { ShiftBoard } from "@/components/lenses/ShiftBoard";
 import { WorldLens } from "@/components/lenses/WorldLens";
 import { useFixturePlayback } from "@/state/playback";
+import { DevDial } from "@/components/dev/DialWorkbench";
 import { calendarAfter, ghostGapDeg } from "@/state/run";
 
 export default function DevLenses() {
@@ -71,6 +72,10 @@ export default function DevLenses() {
           ))}
         </Card>
       </section>
+
+      {/* The clock surfaces, on the demo route, with the real solver and the
+          real projection behind them. */}
+      <DevDial />
     </main>
   );
 }

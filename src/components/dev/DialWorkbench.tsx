@@ -1,9 +1,9 @@
 "use client";
 
-// Dial workbench: the 24-hour dial and the daily action card, on the demo
-// route, with the real solver and the real projection behind them. Not linked
-// from the app — this is where the surfaces get looked at before they are
-// wired into the product.
+// The dial workbench: the 24-hour dial and the daily action card, on the demo
+// route, with the real solver and the real projection behind them. It lives
+// inside the /dev workbench — one place for surfaces to be looked at before
+// they are wired into the product.
 
 import { useMemo, useState } from "react";
 import { CircadianDial, type DialCommitmentNotch, type DialMark } from "@/components/dial/CircadianDial";
@@ -22,7 +22,7 @@ import {
 import type { DayPlan } from "@/domain/types";
 import type { MascotTone } from "@/domain/mascot";
 
-export default function DevDial() {
+export function DevDial() {
   const [tone, setTone] = useState<MascotTone>("cheeky");
   const [dayIndex, setDayIndex] = useState(0);
   const [skipped, setSkipped] = useState<Set<number>>(new Set());
@@ -113,7 +113,7 @@ export default function DevDial() {
   const shiftWeek = buildShiftWeekPlan();
 
   return (
-    <main className="flex min-h-screen flex-col gap-4 p-4">
+    <section className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-mono2 text-xs text-mist">dial workbench</span>
         {DEMO_TRIP.days.map((d, i) => (
@@ -200,6 +200,6 @@ export default function DevDial() {
           {getEvidenceForKind("light_exposure").fieldGrade} field.
         </p>
       </section>
-    </main>
+    </section>
   );
 }

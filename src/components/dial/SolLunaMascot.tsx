@@ -59,13 +59,15 @@ export function SolLunaMascot({
 
   return (
     <div className={`mascot${state === "serious" ? " mascot-serious" : ""}`}>
+      {/* The picture is decorative: the words beside it are the message, and
+          announcing both would read the same line twice. */}
       <svg
         className="mascot-art"
         width={size}
         height={size}
         viewBox="0 0 56 56"
-        role="img"
-        aria-label={copy}
+        aria-hidden="true"
+        focusable="false"
       >
         {/* the sun half */}
         <g transform={`rotate(${-split / 2} 28 28)`}>
