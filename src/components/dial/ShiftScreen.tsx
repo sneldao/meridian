@@ -190,9 +190,15 @@ export function ShiftScreen() {
         <h3 className="dial-title">This week&apos;s commitments</h3>
         <ul className="dial-list">
           {day.commitments.map((c) => (
-            <li className="dial-list-row" key={c.id}>
+            <li className="dial-list-row" key={c.id} style={{ alignItems: "flex-start" }}>
               <span>
                 {c.title} ({c.negotiable ? "negotiable" : "fixed"})
+                {/* What keeping it costs, and what moving it buys. A
+                    commitment the traveller cannot move still has a price,
+                    and the price should be on the screen. */}
+                <span className="dial-sub" style={{ display: "block", marginTop: 2 }}>
+                  {c.active ? c.tradeOffIfKept : c.tradeOffIfMoved}
+                </span>
               </span>
               <span>
                 {fmtMin(c.startMin)}–{fmtMin(c.endMin)}

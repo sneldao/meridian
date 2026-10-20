@@ -19,6 +19,7 @@ import { fmtMin } from "@/domain/circadian";
 import { type MascotTone } from "@/domain/mascot";
 import type { EpistemicTag } from "@/domain/evidence";
 import { computeTripTrajectory, directionOptions } from "@/domain/misalignment";
+import { todayDayIndex } from "@/domain/today";
 import type {
   CalendarEvent,
   Citation,
@@ -146,6 +147,14 @@ export function MeridianDailyScreen({
 
   const spec = trip?.days.find((d) => d.label === selectedDayLabel) ?? trip?.days[0];
   const point = traj.find((t) => t.dayIndex === spec?.dayIndex) ?? traj[0];
+  /** The day the traveller is actually on, when the trip spans it. Judged at
+   *  the traveller's own clock, not the viewer's. */
+  const todayLabel = (() => {
+    if (!trip) return null;
+    const idx = todayDayIndex(trip, new Date());
+    if (idx === null) return null;
+    return trip.days.find((d) => d.dayIndex === idx)?.label ?? null;
+  })();
 
   const onboarding = (
     <>
@@ -326,6 +335,17 @@ export function MeridianDailyScreen({
           }}
         >
           ← Previous
+        </button>
+        {/* Today, when the trip spans it. The traveller who scrolled to
+            D+3 by accident should be able to get back without counting days. */}
+        <button
+          type="button"
+          className="dial-btn"
+          aria-label="Jump to today"
+          disabled={!todayLabel}
+          onClick={() => todayLabel && onSelectDay(todayLabel)}
+        >
+          Today
         </button>
         {trip.days.map((d) => (
           <button
