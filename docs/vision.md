@@ -203,6 +203,25 @@ Still open in this family:
 A control that looks load-bearing and isn't is worse than a missing one: it
 spends trust.
 
+### Closed: the setup was a form, and the phone had no way to navigate
+
+The setup was a modal with four steps of sliders, and the app on a phone was
+a document with a menu in the corner — out of thumb reach, on the surface
+people actually install it on.
+
+The setup is now a **sequence of scenes**: one question per screen, a progress
+bar, a back button, and the **dial itself as the answer** to the first
+question. The dial stops being decoration and becomes the interface — the
+same picture everywhere, learned once. And the mascot now reacts to the
+*traveller's answer* ("You sleep like most people, and that actually helps
+for a big eastward shift") instead of to a generic state, so a lark and a
+night owl are told different true things.
+
+The lesson generalises: **an answer you can only give with a mouse is an
+answer some people cannot give** — the dial's handles are focusable sliders,
+so the whole setup works from the keyboard. And a control that is out of reach
+is a control that does not exist, however good it looks on a desktop.
+
 ### Closed: the plan's claim and the body's position were different numbers
 
 The clock drew the body clock; the landing quoted the plan's declared shift.
