@@ -21,7 +21,8 @@ import type {
 } from "@/domain/types";
 import { type LogEntry } from "@/components/CrewFeed";
 import { NudgeFeedScreen } from "@/components/NudgeFeedScreen";
-import { MeridianDailyScreen, type MeridianMode } from "@/components/dial/MeridianDailyScreen";
+import { MeridianDailyScreen } from "@/components/dial/MeridianDailyScreen";
+import { DisclosureSheet } from "@/components/dial/DisclosureSheet";
 import dynamic from "next/dynamic";
 const RoutePicker = dynamic(
   () => import("@/components/RoutePicker").then((m) => m.RoutePicker),
@@ -147,8 +148,16 @@ export default function Home() {
   /** The two views of the same plan: the timeline (the default, and the calm
    *  one) and the clock — the dial, the action card and the shift week. The
    *  traveller picks; nothing is taken away from them. */
-  const [homeView, setHomeView] = useState<"timeline" | "clock">("timeline");
-  const [meridianMode, setMeridianMode] = useState<MeridianMode>("TRIP");
+  /**
+   * Which view of the plan the traveller is looking at.
+   *
+   * The default follows the plan: before there is one, the timeline is the
+   * calm surface and the one question and the one CTA; once the crew has
+   * locked days, the clock is the view that answers the question they are
+   * actually asking ("where is my body clock?"). An explicit choice sticks —
+   * the traveller's own preference outranks the default.
+   */
+  const [homeViewChoice, setHomeViewChoice] = useState<"timeline" | "clock" | null>(null);
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [briefingDismissed, setBriefingDismissed] = useState(false);
   /** A crew run that died mid-stream. Rendered on the Today surface, not only
@@ -180,6 +189,7 @@ export default function Home() {
     { savedAt: string; trip?: { origin?: { code?: string }; destination?: { code?: string }; requiredShiftMin?: number; direction?: "east" | "west" } | null; score: number }[]
   >([]);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [disclosureOpen, setDisclosureOpen] = useState(false);
   const [agentDrawerOpen, setAgentDrawerOpen] = useState(false);
   const [drawerUsed, setDrawerUsed] = useState(false);
   const [routeOpen, setRouteOpen] = useState(false);
@@ -638,6 +648,8 @@ export default function Home() {
   }, [origin, dest, departureDate, run.briefing]);
 
   const effectiveLocked = run.locked.size ? run.locked : (restoredLocked ?? EMPTY_LOCKED);
+  const homeView =
+    homeViewChoice ?? (effectiveLocked.size > 0 ? "clock" : "timeline");
   const effectivePhase =
     run.phase === "idle" && restoredLocked?.size ? "done" : run.phase;
 
@@ -775,6 +787,24 @@ export default function Home() {
             <Link href="/history" className="m" role="menuitem" onClick={() => setMenuOpen(false)}>
               Past trips{runCount > 0 ? ` (${runCount})` : ""}
             </Link>
+            <Link href="/shift" className="m" role="menuitem" onClick={() => setMenuOpen(false)}>
+              Shift work
+            </Link>
+            {/* The medical boundary and the privacy note, one tap from
+                anywhere. They used to live at the end of the five-step setup,
+                which meant a traveller who never opened the setup never read
+                them. */}
+            <button
+              type="button"
+              className="m"
+              role="menuitem"
+              onClick={() => {
+                setDisclosureOpen(true);
+                setMenuOpen(false);
+              }}
+            >
+              What Meridian is, and is not
+            </button>
             {/* Carries the trip being scored, so "Rate my trip" opens the
                 journey you were actually on rather than the default one. */}
             <Link
@@ -1043,7 +1073,7 @@ export default function Home() {
                   type="button"
                   className={homeView === "timeline" ? "on" : undefined}
                   aria-pressed={homeView === "timeline"}
-                  onClick={() => setHomeView("timeline")}
+                  onClick={() => setHomeViewChoice("timeline")}
                 >
                   Timeline
                 </button>
@@ -1051,7 +1081,7 @@ export default function Home() {
                   type="button"
                   className={homeView === "clock" ? "on" : undefined}
                   aria-pressed={homeView === "clock"}
-                  onClick={() => setHomeView("clock")}
+                  onClick={() => setHomeViewChoice("clock")}
                 >
                   Clock
                 </button>
@@ -1091,8 +1121,6 @@ export default function Home() {
             <div ref={guideRef}>
               {homeView === "clock" ? (
                 <MeridianDailyScreen
-                  mode={meridianMode}
-                  onChangeMode={setMeridianMode}
                   trip={trip}
                   locked={effectiveLocked}
                   drafts={run.drafts}
@@ -1396,6 +1424,8 @@ export default function Home() {
         toolCalls={run.toolCalls}
         lockedDays={run.locked.size}
       />}
+
+      <DisclosureSheet open={disclosureOpen} onClose={() => setDisclosureOpen(false)} />
     </div>
   );
 }

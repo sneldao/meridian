@@ -13,12 +13,12 @@
 // numbers come from `computeTripTrajectory`, the same place the rest of the
 // app gets them from.
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { fmtMin } from "@/domain/circadian";
 import { type MascotTone } from "@/domain/mascot";
 import type { EpistemicTag } from "@/domain/evidence";
 import { computeTripTrajectory, directionOptions } from "@/domain/misalignment";
-import { buildShiftWeekPlan } from "@/domain/shift-work";
 import type {
   CalendarEvent,
   Citation,
@@ -29,17 +29,12 @@ import type {
 } from "@/domain/types";
 import { CircadianDial, type DialCommitmentNotch, type DialMark } from "./CircadianDial";
 import { DailyActionCard, type DailyAction, type PlanStatus } from "./DailyActionCard";
-import { HoldToConfirm } from "./HoldToConfirm";
 import {
   MeridianOnboarding,
   type OnboardingState,
 } from "./MeridianOnboarding";
 
-export type MeridianMode = "TRIP" | "SHIFT";
-
 export interface MeridianDailyScreenProps {
-  mode: MeridianMode;
-  onChangeMode: (mode: MeridianMode) => void;
   trip: Trip | null;
   /** The locked plans, keyed by day label. */
   locked: Map<string, DayPlan>;
@@ -65,8 +60,6 @@ export interface MeridianDailyScreenProps {
 }
 
 export function MeridianDailyScreen({
-  mode,
-  onChangeMode,
   trip,
   locked,
   drafts,
@@ -84,7 +77,6 @@ export function MeridianDailyScreen({
   const [skippedDays, setSkippedDays] = useState<Set<number>>(new Set());
   const [alcoholDays, setAlcoholDays] = useState<Set<number>>(new Set());
   const [done, setDone] = useState(false);
-  const [partnerCovers, setPartnerCovers] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   /**
    * The traveller's own answers, when they have given any. Kept apart from
@@ -141,16 +133,6 @@ export function MeridianDailyScreen({
     });
   }, [trip, effectiveBaseline, plans, calendarEvents, skippedDays, alcoholDays]);
 
-  const shiftWeek = useMemo(
-    () =>
-      buildShiftWeekPlan({
-        partnerCoversAfternoonPickup: partnerCovers,
-        skippedDayIndices: skippedDays,
-        alcoholDayIndices: alcoholDays,
-      }),
-    [partnerCovers, skippedDays, alcoholDays],
-  );
-
 
   /** The tag on the dial's number: where the input came from. */
   const provenance: EpistemicTag =
@@ -178,8 +160,8 @@ export function MeridianDailyScreen({
       </div>
       <MeridianOnboarding
         open={onboardingOpen}
+        mode="TRIP"
         state={{
-          mode,
           bedtimeMin: selfReport?.bedtimeMin ?? baseline?.avgBedtimeMin ?? 23 * 60 + 55,
           wakeMin: selfReport?.wakeMin ?? baseline?.avgWakeMin ?? 6 * 60 + 45,
           chronotype: selfReport?.chronotype ?? baseline?.chronotype ?? "neutral",
@@ -190,7 +172,6 @@ export function MeridianDailyScreen({
         onChange={(next: OnboardingState) => {
           setTone(next.tone);
           setWearableOptedIn(next.wearableOptedIn);
-          if (next.mode !== mode) onChangeMode(next.mode);
           // The answers land on the model as they are given, not at the end.
           setSelfReport({
             bedtimeMin: next.bedtimeMin,
@@ -234,41 +215,6 @@ export function MeridianDailyScreen({
     </>
   );
 
-  if (mode === "SHIFT") {
-    return (
-      <>
-      <ShiftScreen
-        week={shiftWeek}
-        tone={tone}
-        onChangeTone={setTone}
-        partnerCovers={partnerCovers}
-        onPartnerCovers={setPartnerCovers}
-        onChangeMode={onChangeMode}
-        skippedDays={skippedDays}
-        alcoholDays={alcoholDays}
-        onToggleSkipped={(i) =>
-          setSkippedDays((prev) => {
-            const next = new Set(prev);
-            if (next.has(i)) next.delete(i);
-            else next.add(i);
-            return next;
-          })
-        }
-        onToggleAlcohol={(i) =>
-          setAlcoholDays((prev) => {
-            const next = new Set(prev);
-            if (next.has(i)) next.delete(i);
-            else next.add(i);
-            return next;
-          })
-        }
-        provenance={provenance}
-      />
-      {onboarding}
-      </>
-    );
-  }
-
   const plan = locked.get(selectedDayLabel) ?? drafts.get(selectedDayLabel)?.plan;
   const verdictList = verdicts.get(selectedDayLabel) ?? [];
   const verdict = verdictList[verdictList.length - 1];
@@ -285,9 +231,9 @@ export function MeridianDailyScreen({
           <button type="button" className="dial-btn" onClick={onStartCrewSync}>
             Run the crew
           </button>
-          <button type="button" className="dial-btn" onClick={() => onChangeMode("SHIFT")}>
+          <Link href="/shift" className="dial-btn">
             Working shifts instead?
-          </button>
+          </Link>
         </div>
       </section>
     );
@@ -361,27 +307,12 @@ export function MeridianDailyScreen({
   return (
     <div className="flex flex-col gap-4">
       <div className="dial-actions" role="group" aria-label="Plan mode">
-        <button
-          type="button"
-          className="dial-btn"
-          aria-pressed={true}
-          onClick={() => onChangeMode("TRIP")}
-        >
-          Travelling
-        </button>
-        <button
-          type="button"
-          className="dial-btn"
-          aria-pressed={false}
-          onClick={() => onChangeMode("SHIFT")}
-        >
-          Shift work
-        </button>
         <span className="dial-sub">
-          {options[0].executable
-            ? options[0].note
-            : options[1].note}
+          {options[0].executable ? options[0].note : options[1].note}
         </span>
+        <Link href="/shift" className="dial-btn">
+          Working shifts instead?
+        </Link>
       </div>
 
       <div className="dial-actions" role="group" aria-label="Day">
@@ -493,194 +424,3 @@ export function MeridianDailyScreen({
 }
 
 /** SHIFT mode: the rotating week, the commitments, and the one movable thing. */
-function ShiftScreen({
-  week,
-  tone,
-  onChangeTone,
-  partnerCovers,
-  onPartnerCovers,
-  onChangeMode,
-  skippedDays,
-  alcoholDays,
-  onToggleSkipped,
-  onToggleAlcohol,
-  provenance,
-}: {
-  week: ReturnType<typeof buildShiftWeekPlan>;
-  tone: MascotTone;
-  onChangeTone: (t: MascotTone) => void;
-  partnerCovers: boolean;
-  onPartnerCovers: (v: boolean) => void;
-  onChangeMode: (m: MeridianMode) => void;
-  skippedDays: Set<number>;
-  alcoholDays: Set<number>;
-  onToggleSkipped: (dayIndex: number) => void;
-  onToggleAlcohol: (dayIndex: number) => void;
-  provenance: EpistemicTag;
-}) {
-  const [dayIndex, setDayIndex] = useState(0);
-  const [doneDays, setDoneDays] = useState<Set<number>>(new Set());
-  const day = week[dayIndex] ?? week[0];
-
-  const commitments: DialCommitmentNotch[] = day.commitments
-    .filter((c) => c.active)
-    .map((c) => ({
-      id: c.id,
-      title: c.title,
-      startMin: c.startMin,
-      endMin: c.endMin,
-      fixed: !c.negotiable,
-      tradeOffNote: c.tradeOffIfKept,
-    }));
-
-  const marks: DialMark[] = day.secondaryMarks.map((m) => ({
-    id: m.id,
-    kind: m.kind,
-    label: m.label,
-    startMin: m.timeMin,
-    note: m.note,
-  }));
-
-  const action: DailyAction = {
-    id: day.primaryAction.id,
-    kind: day.primaryAction.kind,
-    title: day.primaryAction.title,
-    timeWindow: day.primaryAction.timeWindow,
-    startMin: day.primaryAction.startMin,
-    endMin: day.primaryAction.endMin,
-    shortReason: day.primaryAction.shortReason,
-    epistemicTag: "Recommended",
-    constraintNote: day.primaryAction.constraintNote,
-  };
-
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="dial-actions" role="group" aria-label="Plan mode">
-        <button
-          type="button"
-          className="dial-btn"
-          aria-pressed={false}
-          onClick={() => onChangeMode("TRIP")}
-        >
-          Travelling
-        </button>
-        <button
-          type="button"
-          className="dial-btn"
-          aria-pressed={true}
-          onClick={() => onChangeMode("SHIFT")}
-        >
-          Shift work
-        </button>
-      </div>
-
-      <div className="dial-actions" role="group" aria-label="Day">
-        {week.map((d, i) => (
-          <button
-            key={d.label}
-            type="button"
-            className="dial-btn"
-            aria-pressed={i === dayIndex}
-            onClick={() => setDayIndex(i)}
-          >
-            {d.label}
-          </button>
-        ))}
-      </div>
-
-      {day.postShiftSafetyWarning && (
-        <p
-          className="dac-note"
-          role="note"
-          style={{ borderColor: "var(--dial-committed)" }}
-        >
-          {day.postShiftSafetyWarning}
-        </p>
-      )}
-
-      <DailyActionCard
-        action={action}
-        status="proposed"
-        isDone={doneDays.has(day.dayIndex)}
-        onMarkDone={() =>
-          setDoneDays((prev) => {
-            const next = new Set(prev);
-            if (next.has(day.dayIndex)) next.delete(day.dayIndex);
-            else next.add(day.dayIndex);
-            return next;
-          })
-        }
-        isSkipped={skippedDays.has(day.dayIndex)}
-        onSkip={() => onToggleSkipped(day.dayIndex)}
-        alcoholActive={alcoholDays.has(day.dayIndex)}
-        onToggleAlcohol={() => onToggleAlcohol(day.dayIndex)}
-        citations={[]}
-      />
-
-      <CircadianDial
-        dayLabel={`${day.label} · ${day.dayTypeBadge}`}
-        mode="SHIFT"
-        plannedSleep={{
-          startMin: day.plannedSleepStartMin,
-          endMin: day.plannedSleepEndMin,
-        }}
-        targetNight={{ startMin: day.targetNightStartMin, endMin: day.targetNightEndMin }}
-        usualSleep={{
-          startMin: day.usualSleepStartMin,
-          endMin: day.usualSleepEndMin,
-        }}
-        estimatedBody={{
-          startMin: day.estimatedBodySleepStartMin,
-          endMin: day.estimatedBodySleepEndMin,
-        }}
-        uncertaintyHalfWidthMin={day.uncertaintyHalfWidthMin}
-        misalignmentHours={day.misalignmentHours}
-        metricLabel="of delay owed"
-        misalignmentLowHours={day.misalignmentLowHours}
-        misalignmentHighHours={day.misalignmentHighHours}
-        baselineMisalignmentHours={day.baselineMisalignmentHours}
-        commitments={commitments}
-        marks={marks}
-        epistemicTag={provenance}
-        tone={tone}
-        onChangeTone={onChangeTone}
-        skippedToday={false}
-        onRepairSkip={() => undefined}
-        isShiftPostNightWarning={Boolean(day.postShiftSafetyWarning)}
-      />
-
-      <section className="dial" aria-label="Commitments">
-        <h3 className="dial-title">This week&apos;s commitments</h3>
-        <ul className="dial-list">
-          {day.commitments.map((c) => (
-            <li className="dial-list-row" key={c.id}>
-              <span>
-                {c.title} ({c.negotiable ? "negotiable" : "fixed"})
-              </span>
-              <span>
-                {fmtMin(c.startMin)}–{fmtMin(c.endMin)}
-              </span>
-            </li>
-          ))}
-        </ul>
-        <p className="dial-sub">{day.honestTradeOffNote}</p>
-        <div className="dial-actions">
-          <HoldToConfirm
-            label={
-              partnerCovers
-                ? "✓ Partner covers the 15:30 pickup"
-                : "Hold to hand over the 15:30 pickup"
-            }
-            holdingLabel="Hold to hand over the pickup"
-            pressed={partnerCovers}
-            onConfirm={() => onPartnerCovers(!partnerCovers)}
-          />
-        </div>
-        <p className="dial-sub">
-          Handing the pickup over buys an hour of sleep before the last night
-          shift. It is a trade, so it takes a hold rather than a tap.
-        </p>
-      </section>
-    </div>
-  );
-}
