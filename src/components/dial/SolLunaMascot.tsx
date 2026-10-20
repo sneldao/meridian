@@ -25,6 +25,9 @@ export interface SolLunaMascotProps {
   baselineMisalignmentHours: number;
   skippedToday?: boolean;
   isShiftPostNightWarning?: boolean;
+  /** An explicit line, when the caller has something better to say than the
+   *  state copy — the setup's answer-aware insight, for instance. */
+  line?: string;
   size?: number;
 }
 
@@ -44,11 +47,12 @@ export function SolLunaMascot({
   baselineMisalignmentHours,
   skippedToday,
   isShiftPostNightWarning,
+  line,
   size = 56,
 }: SolLunaMascotProps) {
   const split = SPLIT_BY_STATE[state];
   const droop = state === "droop" ? 4 : 0;
-  const copy = getMascotCopy({
+  const copy = line ?? getMascotCopy({
     tone,
     state,
     misalignmentHours,

@@ -5,7 +5,7 @@ import {
   getEvidenceForKind,
 } from "../src/domain/evidence";
 import { CITATION_CATALOGUE, citationById, resolveCitations } from "../src/domain/citations";
-import { getMascotCopy } from "../src/domain/mascot";
+import { bandForWakeTime, getMascotCopy, getSleepInsight } from "../src/domain/mascot";
 import { POST_SHIFT_DRIVING_WARNING } from "../src/domain/shift-work";
 import type { InterventionKind } from "../src/domain/types";
 
@@ -143,6 +143,51 @@ describe("the mascot's voice", () => {
           baselineMisalignmentHours: 5.5,
         });
         expect(line.split(/\s+/).length).toBeLessThanOrEqual(20);
+      }
+    }
+  });
+});
+
+
+describe("the mascot reacts to the answer", () => {
+  test("no answer, no comment", () => {
+    expect(getSleepInsight({})).toBeNull();
+    expect(getSleepInsight({ band: null })).toBeNull();
+  });
+
+  test("the wake time says which band the traveller is in", () => {
+    expect(bandForWakeTime(5 * 60 + 45)).toBe("before6");
+    expect(bandForWakeTime(6 * 60 + 45)).toBe("6to8");
+    expect(bandForWakeTime(8 * 60)).toBe("after8");
+    expect(bandForWakeTime(23 * 60)).toBe("after8");
+  });
+
+  test("the line differs by chronotype", () => {
+    const lark = getSleepInsight({ band: "before6", direction: "east" })!;
+    const owl = getSleepInsight({ band: "after8", direction: "east" })!;
+    const middle = getSleepInsight({ band: "6to8", direction: "east" })!;
+    expect(new Set([lark, owl, middle]).size).toBe(3);
+  });
+
+  test("the direction changes what the answer means", () => {
+    const east = getSleepInsight({ band: "after8", direction: "east" })!;
+    const west = getSleepInsight({ band: "after8", direction: "west" })!;
+    expect(east).not.toBe(west);
+    expect(west).toContain("westward");
+  });
+
+  test("the sleep they said they get is worth a word", () => {
+    const short = getSleepInsight({ band: "6to8", direction: "east", sleepHours: 5.5 })!;
+    const long = getSleepInsight({ band: "6to8", direction: "east", sleepHours: 9.5 })!;
+    expect(short).toContain("short side");
+    expect(long).toContain("helps more than any light cue");
+  });
+
+  test("no line runs away from the traveller's answer", () => {
+    for (const band of ["before6", "6to8", "after8"] as const) {
+      for (const direction of ["east", "west"] as const) {
+        const line = getSleepInsight({ band, direction, sleepHours: 7 })!;
+        expect(line.split(/\s+/).length).toBeLessThanOrEqual(40);
       }
     }
   });

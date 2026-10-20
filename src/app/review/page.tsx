@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Card } from "@/components/ui";
+import { BottomNav } from "@/components/BottomNav";
 import { fmtMin } from "@/domain/circadian";
 import { scoreBand } from "@/domain/score";
 import type { Citation, DayPlan, DaySpec, EvalResult, ShiftCoverage } from "@/domain/types";
@@ -141,6 +142,7 @@ export default function ReviewPage() {
         <h1 className="text-lg font-bold text-clay">No saved plan yet.</h1>
         <p className="mt-4 text-sm text-clay-2">Make your plan on the home page and it&apos;ll be saved here.</p>
         <Link href="/" className="mt-6 inline-block rounded-lg bg-paper px-5 py-2 text-sm font-bold text-ink">Make my plan</Link>
+        <BottomNav />
       </main>
     );
   }
@@ -284,6 +286,7 @@ export default function ReviewPage() {
         </aside>
       </section>
       {toast}
+      <BottomNav />
     </main>
   );
 }

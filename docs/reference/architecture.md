@@ -197,10 +197,13 @@ src/agents/      providers, crew prompts, runtime, night replay, morning replay
                  (the replay path's plan is the solver's plan — the same
                  draft the live path hands the planner)
 src/components/  NudgeFeedScreen (the Calm `/` surface: next step, timeline,
-                 readiness), dial/ (the clock view: CircadianDial, the mascot,
-                 the daily action card, the five-step setup, the disclosure
-                 sheet, and ShiftScreen — the shift week, which has its own
-                 route at /shift),
+                 readiness), BottomNav (the phone's tab bar — hidden above
+                 480px, where the app is a document), dial/ (the clock view:
+                 CircadianDial, the mascot, the daily action card, the
+                 five-step setup and its scenes, SleepDial (the dial as the
+                 answer to the first question), the disclosure sheet, and
+                 ShiftScreen — the shift week, which has its own route at
+                 /shift),
                  TripSummary (trip chip + edit sheet),
                  HeroDawnPanel + DawnScrubber (the residual globe and its
                  clock/shift scrubber — hover, fine-pointer drag, and two native
