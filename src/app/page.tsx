@@ -159,6 +159,10 @@ export default function Home() {
    * the traveller's own preference outranks the default.
    */
   const [homeViewChoice, setHomeViewChoice] = useState<"timeline" | "clock" | null>(null);
+  /** The phone's tab: the same two views of the plan, switched in place by
+   *  the tab bar. On the desktop the in-page toggle governs and this is
+   *  ignored. */
+  const [phoneView, setPhoneView] = useState<"today" | "clock">("today");
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [briefingDismissed, setBriefingDismissed] = useState(false);
   /** A crew run that died mid-stream. Rendered on the Today surface, not only
@@ -299,6 +303,12 @@ export default function Home() {
           setDepartureDate(
             qDate && isValidDate(qDate) ? qDate : defaultDepartureDate(),
           );
+          // ?view=clock opens the dial straight away — the phone's tab bar
+          // links here from the other pages.
+          if (sp.get("view") === "clock") {
+            setHomeViewChoice("clock");
+            setPhoneView("clock");
+          }
           if (sp.get("checkins")) setCheckInsParam(sp.get("checkins")!);
           const sd = Number(sp.get("startDay"));
           if (!Number.isNaN(sd)) setStartDayParam(sd);
@@ -1074,7 +1084,7 @@ export default function Home() {
                 distance and what doing nothing would leave. */}
             {trip && (
               <div
-                className="pill depth"
+                className="pill depth view-toggle"
                 role="group"
                 aria-label="View"
                 style={{ margin: "10px 4px 0" }}
@@ -1436,7 +1446,13 @@ export default function Home() {
       />}
 
       <DisclosureSheet open={disclosureOpen} onClose={() => setDisclosureOpen(false)} />
-      <BottomNav />
+      <BottomNav
+        view={phoneView}
+        onViewChange={(v) => {
+          setPhoneView(v);
+          setHomeViewChoice(v === "clock" ? "clock" : "timeline");
+        }}
+      />
     </div>
   );
 }

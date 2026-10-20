@@ -261,3 +261,54 @@ describe("effectiveCalendar", () => {
     expect(moved[0]).toMatchObject({ dayIndex: 0, startMin: 600 }); // source untouched
   });
 });
+
+describe("the note about a schedule and its cues disagreeing", () => {
+  // The compliance floor means a day's light can move the body further than
+  // the sleep window can follow. That is not a failure — the plan is fine —
+  // but it is the reason the landing can say the plan banked more than it
+  // claimed, so it is named rather than silent.
+  const tripWithFloor = buildTrip("LHR", "HND", "2026-10-18");
+
+  test("a day that claims less than its cues deliver is a note, not a failure", () => {
+    const day: DayPlan = {
+      dayIndex: 0,
+      label: "D-3",
+      shiftMin: 0, // the schedule holds
+      targetBedtimeMin: 23 * 60 + 55,
+      targetWakeMin: 6 * 60 + 45,
+      interventions: [
+        { kind: "light_exposure", startMin: 7 * 60, endMin: 8 * 60, note: "morning light" },
+      ],
+    } as unknown as DayPlan;
+    const r = evaluatePlan({
+      trip: tripWithFloor,
+      days: [day],
+      calendar: CALENDAR,
+      adherence: ADHERENCE_PROFILE,
+      baseline: { avgBedtimeMin: 23 * 60 + 55, avgWakeMin: 6 * 60 + 45 },
+    });
+    expect(r.feasible).toBe(true);
+    expect(r.notes.some((n) => n.includes("further than the schedule shows"))).toBe(true);
+  });
+
+  test("a day whose cues match its claim says nothing", () => {
+    const day: DayPlan = {
+      dayIndex: 0,
+      label: "D-3",
+      shiftMin: -60,
+      targetBedtimeMin: 22 * 60 + 55,
+      targetWakeMin: 5 * 60 + 45,
+      interventions: [
+        { kind: "light_exposure", startMin: 5 * 60 + 45, endMin: 6 * 60 + 45, note: "morning light" },
+      ],
+    } as unknown as DayPlan;
+    const r = evaluatePlan({
+      trip: tripWithFloor,
+      days: [day],
+      calendar: CALENDAR,
+      adherence: ADHERENCE_PROFILE,
+      baseline: { avgBedtimeMin: 23 * 60 + 55, avgWakeMin: 6 * 60 + 45 },
+    });
+    expect(r.notes.some((n) => n.includes("further than the schedule shows"))).toBe(false);
+  });
+});

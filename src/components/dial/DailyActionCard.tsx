@@ -159,10 +159,13 @@ export function DailyActionCard({
             <b>{evidence.howItWorks}</b>
           </p>
           <p>{evidence.inRealTrips}</p>
-          <p>
-            Mechanism: <b>{evidence.mechanismGrade}</b> · Field evidence:{" "}
-            <b>{evidence.fieldGrade}</b>
-          </p>
+          {/* Two chips rather than a run-on line: the grade and the field
+              evidence are two different questions, and a traveller should be
+              able to take one in without reading the other. */}
+          <div className="dac-grades">
+            <span className="dac-grade">Mechanism: {evidence.mechanismGrade}</span>
+            <span className="dac-grade">Field evidence: {evidence.fieldGrade}</span>
+          </div>
           {papers.length ? (
             <>
               <p>
