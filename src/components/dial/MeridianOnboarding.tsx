@@ -228,7 +228,7 @@ export function MeridianOnboarding({
               </div>
               <button
                 type="button"
-                className="dac-done"
+                className="dac-done pressable"
                 onClick={() => setSceneIdx(1)}
               >
                 Continue to {resumeName} →

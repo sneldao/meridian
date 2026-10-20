@@ -129,9 +129,9 @@ acknowledges the finger before anything happens.
 **Buys:** the app feels alive under the hand.
 **Costs:** none, but it is one more thing to get right on every control.
 
-**Ours:** the buttons have hover and active states, but not a press scale.
-**Adoption plan:** the primary actions only (the Done button, the setup's
-continue).
+**Ours:** adopted — `.pressable` on the primary actions only (the Done
+button, the setup's continue). A page where everything presses is a page where
+nothing reads as primary.
 
 ### 11. Ambient depth
 
@@ -145,8 +145,9 @@ does not have. Keep it; do not add blobs on top.
 
 One media query that flattens every animation and transition.
 
-**Ours:** the globe and the voice honour `prefers-reduced-motion`; the CSS
-entrances mostly do not. **Adoption plan:** the same global rule.
+**Ours:** adopted — one global rule that flattens every animation and
+transition, and the press response opts out of its own transform. The globe
+and the voice already honoured it; the CSS entrances did not.
 
 ## What actually makes it feel easy
 

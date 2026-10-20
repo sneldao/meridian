@@ -1000,10 +1000,13 @@ export default function Home() {
                 aria-expanded={routeOpen}
               >
                 {trip.origin.name} → {trip.destination.name} ·{" "}
-                {trip.days.find((d) => d.dayIndex === trip.departureDayIndex)?.date
-                  ? new Date(`${trip.days.find((d) => d.dayIndex === trip.departureDayIndex)!.date}T12:00:00`).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })
-                  : departureDate}{" "}
-                · {trip.destination.name} is {Math.abs(trip.requiredShiftMin / 60)}h{" "}
+                <span className="trip-chip-date">
+                  {trip.days.find((d) => d.dayIndex === trip.departureDayIndex)?.date
+                    ? new Date(`${trip.days.find((d) => d.dayIndex === trip.departureDayIndex)!.date}T12:00:00`).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })
+                    : departureDate}
+                  {" · "}
+                </span>
+                {Math.abs(trip.requiredShiftMin / 60)}h{" "}
                 {trip.direction === "east" ? "ahead" : "behind"}{" "}
                 <span className="trip-chip-change">✎ Change</span>
               </button>
