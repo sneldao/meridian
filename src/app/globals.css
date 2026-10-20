@@ -136,6 +136,24 @@ body {
   from { transform: translateX(0); }
   to { transform: translateX(160px); }
 }
+/* --- Motion: three named levels --------------------------------------------
+   The reference build has a motion *vocabulary* — snappy, gentle, lazy — and
+   the same three everywhere, so the app feels like one thing moving in one
+   way. Ours had thirty-two ad-hoc durations. These are the three levels, and
+   the rule is that a surface picks one and stays with it:
+     · glide — a state change the traveller caused (hover, press, colour)
+     · settle — a panel arriving or leaving (a sheet, an expansion)
+     · drift — something arriving on its own (a run starting, a number
+       counting) */
+:root {
+  --ease-glide: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-settle: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-drift: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur-glide: 180ms;
+  --dur-settle: 320ms;
+  --dur-drift: 700ms;
+}
+
 @keyframes rise {
   from { opacity: 0; transform: translateY(18px); }
   to { opacity: 1; transform: none; }
@@ -150,7 +168,7 @@ body {
   padding: 0 32px;
 }
 .rise {
-  animation: rise 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: rise var(--dur-drift) var(--ease-drift) both;
 }
 .nav {
   display: flex;
@@ -198,7 +216,7 @@ body {
   border-radius: 999px;
   color: var(--m-muted);
   cursor: pointer;
-  transition: color 0.2s, background 0.2s;
+  transition: color var(--dur-glide) var(--ease-glide), background 0.2s;
 }
 .pill a {
   font-size: 12px;
@@ -207,7 +225,7 @@ body {
   border-radius: 999px;
   color: var(--m-muted);
   cursor: pointer;
-  transition: color 0.2s, background 0.2s;
+  transition: color var(--dur-glide) var(--ease-glide), background 0.2s;
   text-decoration: none;
 }
 .pill a.on,
@@ -255,7 +273,7 @@ body {
   border-radius: 999px;
   padding: 8px 14px;
   cursor: pointer;
-  transition: background 0.2s, box-shadow 0.2s;
+  transition: background var(--dur-glide) var(--ease-glide), box-shadow 0.2s;
 }
 .btn:hover {
   background: #fff;
@@ -298,7 +316,7 @@ body {
   border-radius: 8px;
   color: var(--m-ink);
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background var(--dur-glide) var(--ease-glide);
   text-align: left;
   text-decoration: none;
 }
@@ -500,7 +518,7 @@ body {
   font-size: 12.5px;
   font-weight: 800;
   text-decoration: none;
-  transition: background 0.18s ease, color 0.18s ease;
+  transition: background var(--dur-glide) var(--ease-glide), color var(--dur-glide) var(--ease-glide);
 }
 .arr-btn:hover {
   background: #fff0c2;
@@ -619,7 +637,7 @@ body {
   background: var(--m-card);
   color: var(--m-text);
   cursor: pointer;
-  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+  transition: background var(--dur-glide) var(--ease-glide), border-color var(--dur-glide) var(--ease-glide), color var(--dur-glide) var(--ease-glide);
 }
 .ask-chip:hover {
   background: #D96B43;
@@ -894,7 +912,7 @@ body {
   height: 100%;
   background: linear-gradient(90deg, #D96B43, #e99a6f);
   border-radius: 99px;
-  transition: width 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: width var(--dur-settle) var(--ease-settle);
 }
 .cta {
   display: flex;
@@ -912,7 +930,7 @@ body {
   border-radius: 14px;
   padding: 12px 16px;
   cursor: pointer;
-  transition: background 0.2s, box-shadow 0.2s;
+  transition: background var(--dur-glide) var(--ease-glide), box-shadow 0.2s;
 }
 .p1:hover {
   background: #c45a34;
@@ -935,7 +953,7 @@ body {
   border-radius: 14px;
   padding: 11px 14px;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s;
+  transition: background var(--dur-glide) var(--ease-glide), color 0.2s;
 }
 .p2:hover {
   background: var(--m-ink);
@@ -969,7 +987,7 @@ body {
   border: 1px solid var(--m-border);
   color: var(--m-text);
   cursor: pointer;
-  transition: background 0.25s, color 0.25s, box-shadow 0.25s;
+  transition: background var(--dur-glide) var(--ease-glide), color var(--dur-glide) var(--ease-glide), box-shadow var(--dur-glide) var(--ease-glide);
 }
 .day:hover {
   box-shadow: 0 6px 14px rgba(30, 27, 24, 0.1);
@@ -994,7 +1012,7 @@ body {
   border: 1.5px solid #d8c6ae;
   color: var(--m-text);
   cursor: pointer;
-  transition: background 0.2s, color 0.2s;
+  transition: background var(--dur-glide) var(--ease-glide), color 0.2s;
 }
 .chip:hover {
   border-color: #D96B43;
@@ -1063,7 +1081,7 @@ body {
   border: 2px solid #D96B43;
   background: transparent;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background var(--dur-glide) var(--ease-glide);
   display: grid;
   place-items: center;
 }
@@ -1130,7 +1148,7 @@ body {
   flex-direction: column;
   gap: 6px;
   cursor: pointer;
-  transition: background 0.2s, border-color 0.2s, transform 0.2s;
+  transition: background var(--dur-glide) var(--ease-glide), border-color 0.2s, transform 0.2s;
 }
 .fo.best {
   background: #D96B43;
@@ -1658,7 +1676,7 @@ textarea:focus-visible,
   letter-spacing: 0.07em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+  transition: background var(--dur-glide) var(--ease-glide), border-color var(--dur-glide) var(--ease-glide), color var(--dur-glide) var(--ease-glide);
 }
 .city-cell b {
   font-weight: 800;
@@ -2240,7 +2258,7 @@ select:focus-visible {
   }
   .tl-row.done .tl-title-text {
     color: var(--m-muted);
-    transition: color 0.2s ease-out;
+    transition: color var(--dur-glide) var(--ease-glide) ease-out;
   }
   @keyframes nudge-in {
     from { opacity: 0; transform: translateY(8px); }
@@ -2265,7 +2283,7 @@ select:focus-visible {
     to { opacity: 1; transform: translate(-50%, 0); }
   }
   .toast-in { animation: toast-in 0.2s ease-out; }
-  .toast-out { opacity: 0; transform: translate(-50%, 8px); transition: opacity .2s ease-out, transform .2s ease-out; }
+  .toast-out { opacity: 0; transform: translate(-50%, 8px); transition: opacity var(--dur-glide) var(--ease-glide), transform var(--dur-glide) var(--ease-glide); }
   @keyframes check-draw {
     from { stroke-dashoffset: 10; }
     to { stroke-dashoffset: 0; }
@@ -2277,7 +2295,7 @@ select:focus-visible {
   .tl-expander {
     display: grid;
     grid-template-rows: 0fr;
-    transition: grid-template-rows 0.25s ease-out;
+    transition: grid-template-rows var(--dur-settle) var(--ease-settle);
   }
   .tl-expander.open {
     grid-template-rows: 1fr;
@@ -2292,7 +2310,7 @@ select:focus-visible {
     margin: 0;
     padding: 0 14px;
     overflow: hidden;
-    transition: max-height 0.25s ease-out, opacity 0.2s ease-out, padding 0.25s ease-out;
+    transition: max-height var(--dur-settle) var(--ease-settle), opacity var(--dur-glide) var(--ease-glide), padding var(--dur-settle) var(--ease-settle);
   }
 }
 .ask {
@@ -2568,7 +2586,7 @@ html[data-theme="night"] {
   height: 100%;
   border-radius: 999px;
   background: var(--m-accent);
-  transition: width .3s ease;
+  transition: width var(--dur-settle) var(--ease-settle);
 }
 .setup-count {
   font-family: var(--font-mono2, ui-monospace, SFMono-Regular, Menlo, monospace);
@@ -2761,3 +2779,10 @@ html[data-theme="night"] {
    stretch to the width of the frame to hold three words. */
 .hero.slim { grid-template-columns: 1fr; }
 .hero.slim .hr-col { max-width: 720px; margin: 0 auto; width: 100%; }
+
+/* Secondary actions fold away on the phone. A handoff that asks for four
+   things at once is a handoff nobody finishes reading; the calendar
+   subscription is in the menu and the voice is in the header. */
+@media (max-width: 480px) {
+  .secondary-action { display: none; }
+}

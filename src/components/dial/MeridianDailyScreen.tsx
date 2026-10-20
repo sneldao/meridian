@@ -401,15 +401,6 @@ export function MeridianDailyScreen({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="dial-actions" role="group" aria-label="Plan mode">
-        <span className="dial-sub">
-          {options[0].executable ? options[0].note : options[1].note}
-        </span>
-        <Link href="/shift" className="dial-btn">
-          Working shifts instead?
-        </Link>
-      </div>
-
       <div className="dial-actions dial-days-row" role="group" aria-label="Day">
         <button
           type="button"
@@ -499,6 +490,18 @@ export function MeridianDailyScreen({
         }
         citations={citations}
       />
+
+      {/* The direction is an explanation, not an instruction: it says how the
+          plan is measured, and it belongs under the action rather than above
+          it. The link to the shift week is a door, not a step. */}
+      <div className="dial-actions" role="group" aria-label="Plan mode">
+        <span className="dial-sub">
+          {options[0].executable ? options[0].note : options[1].note}
+        </span>
+        <Link href="/shift" className="dial-btn">
+          Working shifts instead?
+        </Link>
+      </div>
 
       <CircadianDial
         dayLabel={spec.label}

@@ -1071,13 +1071,15 @@ export default function Home() {
                 the job is the question and the CTA, not a progress map or a
                 mode picker the traveller can't yet choose between. */}
             {effectiveLocked.size > 0 && (
-            <JourneySteps
-              current={
-                isTripFinished(trip, new Date())
-                  ? 3
-                  : 2
-              }
-            />
+              <div className="secondary-action">
+                <JourneySteps
+                  current={
+                    isTripFinished(trip, new Date())
+                      ? 3
+                      : 2
+                  }
+                />
+              </div>
             )}
 
             {/* Two views of the same plan: the timeline (the calm one, and
