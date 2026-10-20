@@ -520,6 +520,14 @@ because it is right: cheapest visual wins first.
 
 ### 5A. Shipping-blocker visual bugs (all verified — the classes are truly missing)
 
+> **Closed 2026-10-20, and they were closed before the dial work began.**
+> Re-checked against the code: `.tl-tag` has 5 rules in `globals.css` and
+> `.cal-summary` 12 (5A1, 5A2); the history score is banded — `✓ Passed
+> checks` / `Below our standard` / `Didn't pass` with matching colours (5A5);
+> the history rows key on a composite, not `it.id` (5A6); the zero-case
+> meetings copy and the light-on-light headings are gone (5A3, 5A4). The
+> items below are kept as the record of what the review found.
+
 - **5A1. `.tl-tag` undefined — "Get outside lightplaced" on every step.**
   `NudgeFeedScreen.tsx:1303` applies `tl-tag placed|movable`; `grep`
   finds zero `.tl-tag` rules in `globals.css` (the only stylesheet).
@@ -641,6 +649,63 @@ noticed. The hero is already a two-column grid that collapses below
 min-height dropped. Phones are unchanged (the root was 100% wide below
 868px anyway). The day-side cream / night-side ink split stays — the
 consistency fix is per surface, not one uniform chrome.
+
+## Round 8 — the clock, the loop, and one planner (shipped 2026-10-20)
+
+The four-phase dial brief, landed as six PRs in three groups, plus the two
+findings it produced. The commits on `main` are the record.
+
+**The phases.** The domain (the body-clock projection, the citation
+catalogue, the evidence seed table, the shift week), the surfaces (the
+24-hour dial, the mascot, the daily action card), the wiring (the Clock view,
+the mode switcher), and the setup (the five steps, the real provenance tags,
+the disclosure). The restyle that came with them was **dropped** — ~1,000
+lines of churn in files no phase asked for, with hardcoded hex that broke
+night mode and a green "CHECKED" pill on a failing plan.
+
+**The loop.** `/arrival` was repeating the plan's *declared* shift back at the
+traveller while the clock showed what the body clock would actually be — two
+models answering the same question, and the payoff using the weaker one. The
+landing now runs the same projection the clock does, from the same saved plan
+and the same baseline, and says the same number. The claim sits beside the
+model's answer rather than replacing it.
+
+**One planner.** The replay path — the no-API-key default, and the one the
+demo, the eval and the video run on — kept a second, weaker planner of its
+own. It could not place a day around a fixed commitment, could step over a
+hold, and put an arrival-morning light in the wrong phase zone. With one
+planner: shift delivered 50% → **56%** (LHR→HND), 62% → **76%** (LHR→JFK),
+64% → **96%** (LHR→MEX), and the landing gap 4.0h → **3.5h**, 1.9h → **1.2h**,
+2.5h → **0.3h**.
+
+**The gate.** A day that declares no shift was never checked for the wrong-way
+cues, so a light in the wrong phase zone could pass. `WRONG_WAY_CUE` closes
+it — and the eval is unchanged, which is what a stricter gate should look
+like when the plans in the repertoire are already right.
+
+**The draft is the default.** The live path hands Otto a solver draft, but a
+draft in a prompt is a suggestion an LLM can ignore, and nothing said whether
+the solver's work survived. The submission's fields are now all optional, so
+what the planner does not mention keeps the solver's value, and the drift
+rides the `plan_candidate` event for the transcript and the eval.
+
+**Still open, and it is the same kind of thing:**
+
+- **The live path's numbers are unmeasured here.** The `draft kept` column
+  needs a provider key to exist. Everything above was verified on the replay
+  path, where the plan *is* the solver's.
+- **The projection ignores the traveller's own marks.** The clock's
+  "Not tonight" changes the projection, but the *persisted* check-ins do not
+  feed it — so a traveller who missed the light on D-2 sees a dial that
+  still credits them with it. The two surfaces (the timeline's marks and the
+  clock's projection) are not yet one story.
+- **The shift mode's copy.** "15h of delay owed" is technically right and
+  reads like a bug; it wants a treatment, and the per-commitment trade-offs
+  only just landed.
+- **`SHIFT_OVERSTATED`'s 45-minute tolerance** still lets a plan over-claim
+  by three quarters of an hour, and a day's declared zero is still exempt
+  from that check. Left alone deliberately: the tolerance is the gate's
+  existing contract.
 
 ## Later / deferred
 

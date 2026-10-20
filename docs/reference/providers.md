@@ -28,6 +28,11 @@ In replay mode the transcript is the night script by default. A morning run
 (check-ins supplied or `startDay > 0`) streams the recorded replan instead
 (`src/agents/morning-replay.ts`).
 
+**The replay path's plan is the solver's plan** — the same `solveDay` the live
+path hands its planner, so the demo, the eval and the video run on the same
+placement the product does. The transcript is scripted; the *plan* is the
+deterministic solver's, and the verdicts are the real gate's.
+
 ## Models
 
 Two roles, env-overridable per provider:
