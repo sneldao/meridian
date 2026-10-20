@@ -2685,3 +2685,39 @@ html[data-theme="night"] {
 }
 .setup-pill.is-done { color: var(--m-ink); border-color: var(--m-border); background: var(--m-card); }
 .setup-reset { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+
+/* The day switcher: a label and the gap it leaves. The reference build does
+   this and it is the right idea — a row of labels says which day is which, a
+   row of gaps says where the trip is going. */
+.dial-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-width: 52px;
+  padding: 6px 8px;
+  line-height: 1.15;
+}
+.dial-day-label { font-size: 11px; font-weight: 700; }
+.dial-day-gap {
+  font-family: var(--font-mono2, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--m-faint);
+}
+.dial-btn[aria-pressed="true"] .dial-day-gap { color: inherit; }
+
+/* The days scroll sideways: a row that wraps is a row you have to read twice. */
+.dial-days {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.dial-days::-webkit-scrollbar { display: none; }
+
+/* The day row never wraps: the days scroll inside it. */
+.dial-days-row { flex-wrap: nowrap; align-items: center; }

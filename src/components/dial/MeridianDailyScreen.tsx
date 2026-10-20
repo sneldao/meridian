@@ -410,7 +410,7 @@ export function MeridianDailyScreen({
         </Link>
       </div>
 
-      <div className="dial-actions" role="group" aria-label="Day">
+      <div className="dial-actions dial-days-row" role="group" aria-label="Day">
         <button
           type="button"
           className="dial-btn"
@@ -433,17 +433,33 @@ export function MeridianDailyScreen({
         >
           Today
         </button>
-        {trip.days.map((d) => (
-          <button
-            key={d.label}
-            type="button"
-            className="dial-btn"
-            aria-pressed={d.label === selectedDayLabel}
-            onClick={() => onSelectDay(d.label)}
-          >
-            {d.label}
-          </button>
-        ))}
+        {/* Each day carries how far off it leaves you. The reference build
+            does this and it is the right idea: a row of labels tells you
+            which day is which, but a row of gaps tells you where the trip is
+            going — and the arrival day is the one that matters. */}
+        {/* The days scroll sideways rather than wrapping: on a phone a row
+            that wraps is a row you have to read twice. */}
+        <div className="dial-days">
+          {trip.days.map((d) => {
+            const day = traj.find((t) => t.dayIndex === d.dayIndex);
+            const gap = day ? `${day.misalignmentHours.toFixed(1)}h` : null;
+            return (
+              <button
+                key={d.label}
+                type="button"
+                className="dial-btn dial-day"
+                aria-pressed={d.label === selectedDayLabel}
+                aria-label={
+                  gap ? `${d.label}: ${gap} off the target night` : d.label
+                }
+                onClick={() => onSelectDay(d.label)}
+              >
+                <span className="dial-day-label">{d.label}</span>
+                {gap && <span className="dial-day-gap">{gap}</span>}
+              </button>
+            );
+          })}
+        </div>
         <button
           type="button"
           className="dial-btn"

@@ -222,6 +222,12 @@ answer some people cannot give** — the dial's handles are focusable sliders,
 so the whole setup works from the keyboard. And a control that is out of reach
 is a control that does not exist, however good it looks on a desktop.
 
+Two more came out of the same reference: the phone gets a **tab bar** rather
+than a corner menu, and the day switcher shows **how far off each day leaves
+you**, not just which day it is. A row of labels says which day is which; a
+row of gaps says where the trip is going — and the arrival day is the one
+that matters.
+
 ### Closed: the plan's claim and the body's position were different numbers
 
 The clock drew the body clock; the landing quoted the plan's declared shift.
