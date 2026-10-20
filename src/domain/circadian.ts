@@ -263,6 +263,34 @@ export function evaluatePlan(input: EvalInput): EvalResult {
       }
     }
 
+    // --- Wrong-way cues -------------------------------------------------------
+    // A day's *zeitgebers* can push the clock against the trip even when the
+    // day claims nothing: light before the body's own trough delays a
+    // traveller who needs to advance, and light after it advances a traveller
+    // who needs to delay. The declared shift is not the only thing that moves
+    // a clock, and a plan that quietly works against itself is the failure
+    // this product exists to catch.
+    //
+    // The sleep-schedule move is excluded: moving the dark window is a
+    // legitimate adaptation, and the arrival day's move to the local night is
+    // the flight's doing rather than the plan's. The in-flight day is
+    // excluded for the same reason transit is not an anchor — the traveller
+    // is in the air, and their light is an aircraft's.
+    if (day.dayIndex !== input.trip.departureDayIndex) {
+      const cueSupport =
+        modelShiftMin(day, phase, phase) -
+        modelShiftMin({ ...day, interventions: [] }, phase, phase);
+      // Signed the trip's way: positive means the cues help.
+      const cueSigned = referenceSign * cueSupport;
+      if (cueSigned < -SHIFT_OVER_TOLERANCE_MIN) {
+        violations.push({
+          code: "WRONG_WAY_CUE",
+          dayIndex: day.dayIndex,
+          message: `${day.label}: the day's light cues push the clock the wrong way for this ${input.trip.direction === "east" ? "eastward" : "westward"} trip — about ${Math.round(-cueSigned)}min against the shift. Move the light into the phase zone that does the job, or drop it.`,
+        });
+      }
+    }
+
     // --- Declared vs. modeled shift ------------------------------------------
     // The planner writes shiftMin; the model derives what the day's zeitgeber
     // timing supports. `phase` is the body clock's position in this day's

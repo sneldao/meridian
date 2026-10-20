@@ -134,6 +134,74 @@ describe("SHIFT_DIRECTION_FLIP", () => {
   });
 });
 
+describe("WRONG_WAY_CUE", () => {
+  // A day's zeitgebers can push the clock against the trip even when the day
+  // claims nothing. The declared shift is not the only thing that moves a
+  // clock — and the arrival morning is where travellers get it wrong.
+  const arrivalDay = (lightStartMin: number, lightEndMin: number): DayPlan => ({
+    dayIndex: 4,
+    label: "D+1",
+    shiftMin: 0,
+    targetBedtimeMin: 21 * 60,
+    targetWakeMin: 5 * 60,
+    interventions: [
+      { kind: "light_exposure", startMin: lightStartMin, endMin: lightEndMin, note: "morning light" },
+      { kind: "sleep_window", startMin: 21 * 60, endMin: 5 * 60, note: "" },
+    ],
+  } as unknown as DayPlan);
+
+  /** The days before the arrival day, as the demo scripts them. */
+  const upToArrival: DayPlan[] = [
+    { dayIndex: 0, label: "D-3", shiftMin: -90, targetBedtimeMin: 22 * 60 + 25, targetWakeMin: 5 * 60 + 15, interventions: [] } as unknown as DayPlan,
+    { dayIndex: 1, label: "D-2", shiftMin: 0, targetBedtimeMin: 22 * 60 + 25, targetWakeMin: 5 * 60 + 15, interventions: [] } as unknown as DayPlan,
+    { dayIndex: 2, label: "D-1", shiftMin: 0, targetBedtimeMin: 22 * 60 + 25, targetWakeMin: 5 * 60 + 15, interventions: [] } as unknown as DayPlan,
+    { dayIndex: 3, label: "Flight", shiftMin: 0, targetBedtimeMin: 12 * 60 + 30, targetWakeMin: 18 * 60 + 30, interventions: [] } as unknown as DayPlan,
+  ];
+
+  const score = (days: DayPlan[]) =>
+    evaluatePlan({
+      trip,
+      days,
+      calendar: CALENDAR,
+      adherence: ADHERENCE_PROFILE,
+      baseline: { avgBedtimeMin: 23 * 60 + 55, avgWakeMin: 6 * 60 + 45 },
+    });
+
+  test("light before the body's own trough fails an eastward trip", () => {
+    // 07:00 local, while the body's trough is later: this light pushes a
+    // traveller who needs to advance further behind. It is the single most
+    // common way to make eastward jet lag worse.
+    const r = score([...upToArrival, arrivalDay(7 * 60, 8 * 60 + 30)]);
+    const v = r.violations.find((x) => x.code === "WRONG_WAY_CUE");
+    expect(v).toBeDefined();
+    expect(v?.dayIndex).toBe(4);
+    expect(r.feasible).toBe(false);
+  });
+
+  test("light in the body's dawn zone passes the same day", () => {
+    const r = score([...upToArrival, arrivalDay(11 * 60 + 45, 12 * 60 + 45)]);
+    expect(r.violations.some((x) => x.code === "WRONG_WAY_CUE")).toBe(false);
+  });
+
+  test("the in-flight day is not judged — transit is not an anchor", () => {
+    const r = score([
+      ...upToArrival.slice(0, 3),
+      { dayIndex: 3, label: "Flight", shiftMin: 0, targetBedtimeMin: 12 * 60 + 30, targetWakeMin: 18 * 60 + 30,
+        interventions: [{ kind: "light_exposure", startMin: 7 * 60, endMin: 8 * 60, note: "cabin lights" }] } as unknown as DayPlan,
+    ]);
+    expect(r.violations.some((x) => x.code === "WRONG_WAY_CUE")).toBe(false);
+  });
+
+  test("the message tells the planner what to do about it", () => {
+    const r = score([...upToArrival, arrivalDay(7 * 60, 8 * 60 + 30)]);
+    const v = r.violations.find((x) => x.code === "WRONG_WAY_CUE");
+    // The violation string feeds the planner's retry prompt, so it has to say
+    // what to change, not just that something is wrong.
+    expect(v?.message).toContain("wrong way");
+    expect(v?.message).toContain("phase zone");
+  });
+});
+
 describe("coverage", () => {
   const dayAt = (shiftMin: number): DayPlan => ({
     dayIndex: 0,
