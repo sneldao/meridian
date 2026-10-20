@@ -135,13 +135,19 @@ export function HandoffBanner({
             <CalendarPlus size={14} />
             Add to my calendar
           </button>
+          {/* The secondary actions fold away on the phone: the calendar
+              subscription is in the menu and the crew's voice is in the
+              header, and a handoff that asks for four things at once is a
+              handoff nobody finishes reading. */}
           {trip && days && (
-            <SubscribeCalendar
-              ics={ics}
-              trip={trip}
-              days={days}
-              className="inline-flex items-center gap-2 rounded-xl border border-line bg-ink-3 px-3.5 py-2 text-xs font-semibold text-paper transition-colors hover:border-mist"
-            />
+            <div className="secondary-action">
+              <SubscribeCalendar
+                ics={ics}
+                trip={trip}
+                days={days}
+                className="inline-flex items-center gap-2 rounded-xl border border-line bg-ink-3 px-3.5 py-2 text-xs font-semibold text-paper transition-colors hover:border-mist"
+              />
+            </div>
           )}
 
           {voiceAvailable && (
@@ -149,7 +155,7 @@ export function HandoffBanner({
               type="button"
               onClick={listen}
               disabled={voiceState === "loading" || voiceState === "playing"}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-line bg-ink-3 px-3.5 py-2 text-xs font-semibold text-paper transition-colors hover:border-mist disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-line bg-ink-3 px-3.5 py-2 text-xs font-semibold text-paper transition-colors hover:border-mist disabled:opacity-50 secondary-action"
             >
               <Volume2 size={14} className="text-sun-dest" />
               {voiceState === "loading"
