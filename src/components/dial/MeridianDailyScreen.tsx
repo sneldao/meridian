@@ -501,7 +501,7 @@ export function MeridianDailyScreen({
       )}
       {markedSkips.size > 0 && (
         <p className="dial-sub">
-          The clock knows about {markedSkips.size} of your missed{" "}
+          The clock knows about {markedSkips.size} missed{" "}
           {markedSkips.size === 1 ? "step" : "steps"}: the days whose light you
           missed are no longer counted as shift you banked.
         </p>
