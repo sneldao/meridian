@@ -74,6 +74,12 @@ needs is an event: agent lifecycle, token deltas, tool calls/results,
 citations, plan candidates, eval verdicts, day locks, calendar moves,
 check-ins, replans, errors.
 
+`plan_candidate` carries an optional `drift`: how far the planner's
+submission moved from the solver's draft (the shift difference, the minutes
+the cues moved, the kinds added or dropped). It is a number, not a verdict —
+the gate judges the plan — but it is how the transcript and the eval harness
+both see that the draft is the default and how much of it survived.
+
 Errors are `recoverable: true` where the run can continue (e.g. planner
 submitted nothing → `continue`). A provider-level throw mid-run retries once on
 `AGENT_PROVIDER_FALLBACK`, then drains the replay transcript — see
@@ -110,12 +116,20 @@ array of `CheckIn`) and `startDay`; when either is set, `runCrew` folds the
 check-ins into the adherence profile and replans only the days from `startDay`
 onward. Each check-in streams as a `check_in` event, then a `replan` event
 drops the earlier days. In replay mode the morning beat runs
-`runMorningReplay` (`src/agents/morning-replay.ts`), which re-scores the
-scripted days under the folded profile with the same deterministic gate.
+`runMorningReplay` (`src/agents/morning-replay.ts`), which re-drafts the
+remaining days from the solver under the folded profile and re-scores them
+with the same deterministic gate — the days are re-planned against the body
+clock the replan starts from, not re-judged against the full run's chain.
 
 On `/`, per-step did/skip marks queue a trip-scoped ledger and flush as
 structured `CheckIn`s on "Tell the crew", with `startDay` derived from the last
 marked day (not a fixed index).
+
+**Not wired yet:** the clock's projection takes the traveller's *session* skips
+(`Not tonight` on the day) but not the *persisted* check-ins, so a traveller
+who missed the light on D-2 still sees a dial that credits them with it. The
+projection model already supports it (`skippedDayIndices`); the two surfaces
+are not yet one story.
 
 **Traveller scoping.** Middleware stamps a `meridian-tid` cookie per visitor
 and mirrors it as `x-meridian-tid` on `/api/*` requests (`src/middleware.ts`,
@@ -174,14 +188,14 @@ src/domain/      types, circadian scorer + phase-response model, placement
                  options), evidence (the seed table of grades + channels),
                  citations (the one catalogue of papers the app may cite),
                  mascot (the mascot's voice rules), shift-work (the rotating
-                 night-shift week: an authored seed, a computed clock)
+                 night-shift week: an authored seed, a computed clock),
+                 draft (the planner's submission merged over the solver's
+                 draft, and the drift between them)
 src/tools/       science (SMR → Firecrawl → static), tavily, qloo,
                  calendar (ICS), wearable
 src/agents/      providers, crew prompts, runtime, night replay, morning replay
                  (the replay path's plan is the solver's plan — the same
                  draft the live path hands the planner)
-src/domain/      draft (the planner's submission merged over the solver's
-                 draft, and the drift between them)
 src/components/  NudgeFeedScreen (the Calm `/` surface: next step, timeline,
                  readiness), dial/ (the clock view: CircadianDial, the mascot,
                  the daily action card, the five-step setup, the disclosure
@@ -200,7 +214,8 @@ src/components/  NudgeFeedScreen (the Calm `/` surface: next step, timeline,
 src/lib/         voice/ (engine, config, cache, split, align, huddle),
                  motion tokens, intervention icon vocabulary
 src/mcp/         MCP server: JSON-RPC dispatch + tool catalogue
-src/app/         pages + api routes
+src/app/         pages + api routes (/, /arrival, /review, /history, /outcome,
+                 /crew, /shift, /dev)
 artifacts/       runtime handoff artifacts (gitignored)
 scripts/         replay-check, provider-check, smoke (night + morning),
                  eval, seed-graph, verify-commit

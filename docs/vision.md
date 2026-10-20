@@ -196,10 +196,32 @@ Still open in this family:
 - **The wake question** is asked only in the Edit sheet, on a surface the landing
   never sends you to. Its domain half has landed; the surface half hasn't.
 - **`/dev` and `/team`** are complete routes with zero inbound links.
+  (`/shift` is the opposite case: it got its own door because a mode switch
+  inside the travel view made two products look like one.)
 - **`/crew`'s "Trip Setup"** links to `?screen=setup`; nothing reads `screen`.
 
 A control that looks load-bearing and isn't is worse than a missing one: it
 spends trust.
+
+### Closed: the plan's claim and the body's position were different numbers
+
+The clock drew the body clock; the landing quoted the plan's declared shift.
+Two models answering the same question — "how far off will you be?" — and the
+payoff using the weaker one. The landing now runs the same projection the
+clock does, from the same plan and the same baseline, and says the same
+number. The claim sits beside the model's answer rather than replacing it, so
+the gap is named: *the plan claimed 8.0h; its timing carried 5.5h*.
+
+The rule generalises past the landing: **a number a traveller acts on must
+come from the model that produced the thing they are acting on.** A claim
+and a measurement that disagree are not two facts — they are one fact and one
+arithmetic, and the arithmetic is the one that was wrong.
+
+The same rule caught a second instance in the plumbing: the replay path — the
+one the demo, the eval and the video run on — kept a *second* planner, weaker
+than the solver, and the two had drifted apart. The demo was quietly running
+the worse of the two. One planner now, and the delivery went from 50/62/64%
+to 56/76/96%.
 
 ### Closed: no question was ever asked
 
