@@ -1089,6 +1089,15 @@ export default function Home() {
                   drafts={run.drafts}
                   verdicts={run.verdicts}
                   baseline={baseline}
+                  baselineProvenance={
+                    data?.baselineSource === "garmin"
+                      ? "garmin"
+                      : data?.baselineKind === "wake-band"
+                        ? "self-reported"
+                        : data?.baselineKind === "demo-default"
+                          ? "demo"
+                          : "unknown"
+                  }
                   calendarEvents={currentEvents}
                   citations={activeCitations}
                   selectedDayLabel={selectedDayLabel}
