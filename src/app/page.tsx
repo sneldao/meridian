@@ -990,7 +990,7 @@ export default function Home() {
             not the setup sheet — the trip almost always exists. */}
         {trip ? (
           <>
-            <div ref={setupRef}>
+            <div ref={setupRef} className="reading">
               {/* The trip as one line; the full picker opens on tap and closes
                   after a pick. */}
               <button
@@ -1063,7 +1063,10 @@ export default function Home() {
               )}
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+            <div
+              className="reading"
+              style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}
+            >
             {/* Orientation chrome waits for a plan to exist — on first landing
                 the job is the question and the CTA, not a progress map or a
                 mode picker the traveller can't yet choose between. */}
@@ -1138,7 +1141,7 @@ export default function Home() {
             )}
             </div>
 
-            <div ref={guideRef}>
+            <div ref={guideRef} className="reading">
               {homeView === "clock" ? (
                 <MeridianDailyScreen
                   trip={trip}

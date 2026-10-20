@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { fmtMin } from "@/domain/circadian";
-import { arrivalHeadline, arrivalRead, tripDebrief } from "@/domain/arrival";
+import { arrivalHeadline, arrivalLede, arrivalRead, tripDebrief } from "@/domain/arrival";
 import { INTERVENTION_LABELS } from "@/lib/intervention-icons";
 import { dayPlace } from "@/domain/today";
 import type { CheckIn, Trip, WearableBaseline } from "@/domain/types";
@@ -191,6 +191,9 @@ export default function ArrivalPage() {
                 ? "You landed fully adjusted."
                 : `You landed ${(read.promise.coverage.residualMin / 60).toFixed(1)}h off ${dest.name} time — ${Math.round(read.promise.coverage.ratio * 100)}% of the adjustment happened before you flew.`}
         </h1>
+        {arrivalLede(read) && (
+          <p className="arr-lede">{arrivalLede(read)}</p>
+        )}
 
         {/* Two sections — what was promised at the gate, and what actually
             happened. Splitting them with a label makes the page read in two

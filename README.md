@@ -76,6 +76,7 @@ Reference (kept in sync with the code):
 - [Providers](docs/reference/providers.md) — featherless / nebius / anthropic / replay, env vars, fallback chain
 - [Demo runbook](docs/reference/demo.md) — stage path, pacing, localStorage keys, troubleshooting
 - [Evals](docs/reference/evals.md) — the harness that tracks plan quality over time (`bun run eval`), not a hillclimb yet, the shape of one
+- [Design primitives](docs/reference/design-primitives.md) — what the reference build does, what it buys, and what we took
 - [Backlog](docs/plan/backlog.md) — what's left, ranked
 - [Graph memory](docs/reference/graph-memory.md) — FalkorDB state + Graph Hacks sprint to the 2026-10-18 deadline
 

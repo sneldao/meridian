@@ -91,7 +91,12 @@
 
 html,
 body {
-  background: var(--m-bg);
+  /* A soft vertical ground rather than a flat field. The reference build does
+     this and it is worth stealing: the surface stops being a colour you can
+     see edges against, so the cards read as floating rather than stacked. */
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--m-bg) 100%, white 4%) 0%, var(--m-bg) 42%, color-mix(in srgb, var(--m-bg) 100%, black 3%) 100%);
+  background-attachment: fixed;
   color: var(--m-ink);
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
   min-height: 100%;
@@ -414,10 +419,16 @@ body {
   color: #8b93a7;
 }
 .arr-grid {
+  /* One column. A grid of five small cells reads as a dashboard to be decoded;
+     a short list of facts reads as a sentence about your trip. The landing is
+     a payoff, not a status page. */
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 10px;
+  grid-template-columns: 1fr;
+  gap: 8px;
   margin: 26px 0 8px;
+}
+@media (min-width: 900px) {
+  .arr-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 /* A second `.arr-grid` follows the section label, so reset its top margin. */
 .arr-grid + .arr-section-label {
@@ -1389,6 +1400,14 @@ textarea:focus-visible,
 }
 
 /* Visually hidden, still announced — used to spell out the "→" in the route. */
+/* One focus ring, everywhere, in a colour that is not the accent — so a
+   focused control is never mistaken for the primary action. */
+:focus-visible {
+  outline: 2px solid var(--m-focus, #85b1ed);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -2721,3 +2740,24 @@ html[data-theme="night"] {
 
 /* The day row never wraps: the days scroll inside it. */
 .dial-days-row { flex-wrap: nowrap; align-items: center; }
+
+/* --- The centred reading column -------------------------------------------
+   The reference build is a single centred column and a stack of calm
+   surfaces, and the difference is not decoration: when a card is 1100px wide
+   and holds three words, the eye has to travel a long way to read them, and
+   the page reads as a document to be decoded rather than a thing to be used.
+
+   So the *reading* content is capped and centred, and only the media (the
+   globe, the dial) is allowed to be as wide as the frame. The two-column
+   hero is untouched: the globe still has its side, and the collapse-to-one
+   case is the one that was stretching. */
+.reading {
+  max-width: 720px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* With the globe collapsed, the content is the whole card — and it must not
+   stretch to the width of the frame to hold three words. */
+.hero.slim { grid-template-columns: 1fr; }
+.hero.slim .hr-col { max-width: 720px; margin: 0 auto; width: 100%; }
