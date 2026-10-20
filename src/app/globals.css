@@ -1733,7 +1733,7 @@ textarea:focus-visible,
   display: flex;
   flex-direction: column;
   margin-top: 16px;
-  padding: 4px 20px 12px;
+  padding: 10px 20px 14px;
   border: 1px solid var(--m-border);
   border-radius: 22px;
   background: var(--m-card);
@@ -1814,19 +1814,38 @@ textarea:focus-visible,
     letter-spacing: 0.04em;
   }
 }
+/* The step list is a *day*, not a table: a rail down the times, the steps
+   hanging off it, and no rule between every row. Rules between rows are how
+   you make a sequence read as a form; a rail is how you make it read as a
+   plan, and it is the same line the hero's terminator draws. */
+.tl-rows {
+  position: relative;
+}
+.tl-rows::before {
+  content: "";
+  position: absolute;
+  /* Through the ticks, not beside them: the tick is a point on the day, and
+     the line is the day. Beside the times it would read as a divider. */
+  left: 11px;
+  top: 14px;
+  bottom: 18px;
+  width: 1px;
+  background: var(--m-border);
+}
 .tl-row {
   display: grid;
-  grid-template-columns: 22px 78px 1fr;
-  gap: 14px;
+  grid-template-columns: 22px 98px 1fr;
+  gap: 12px;
   align-items: start;
-  padding: 14px 0;
-  border-top: 1px solid var(--m-border-2);
+  padding: 10px 0;
+  position: relative;
 }
 .tl-row:first-of-type {
   border-top: none;
 }
 .tl-time b {
   display: block;
+  white-space: nowrap;
   font-size: 15px;
   font-weight: 800;
   color: #D96B43;
