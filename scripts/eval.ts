@@ -74,6 +74,11 @@ async function runScenario(name: string, trip: ReturnType<typeof buildTrip>): Pr
   let residualMin: number | null = null;
   let projectedHoursOff: number | null = null;
   let deliveredRatio: number | null = null;
+  // Did the planner keep the solver's draft? A live run's plans are the
+  // solver's by default now, so the drift is the measure of how much of that
+  // survived the planner's intent.
+  let cuesKept = 0;
+  let cuesTotal = 0;
   const violations: Record<string, number> = {};
 
   const stream = runCrew({ trip, calendar: calendarFor(trip), calendarSource: "fixture" }) as AsyncGenerator<CrewEvent>;
@@ -87,6 +92,10 @@ async function runScenario(name: string, trip: ReturnType<typeof buildTrip>): Pr
       for (const v of e.result.violations) violations[v.code] = (violations[v.code] ?? 0) + 1;
     }
     if (e.type === "day_locked") daysLocked++;
+    if (e.type === "plan_candidate" && e.drift) {
+      cuesKept += e.drift.cuesKept;
+      cuesTotal += e.drift.cuesKept + e.drift.kindsChanged.length;
+    }
     // briefing fires once at the end — score is the mean of every feasible
     // attempt this run (runtime.ts), our one source of truth for quality.
     if (e.type === "briefing") {
@@ -134,6 +143,7 @@ async function runScenario(name: string, trip: ReturnType<typeof buildTrip>): Pr
     residualMin,
     projectedHoursOff,
     deliveredRatio,
+    draftKeptRatio: cuesTotal > 0 ? cuesKept / cuesTotal : null,
     attempts,
     toolCalls,
     violations,
@@ -174,8 +184,12 @@ function printRow(r: EvalPayload) {
       ? `${Math.round(r.deliveredRatio * 100)}%`
       : "—";
   const lands = r.projectedHoursOff !== null && r.projectedHoursOff !== undefined ? `${r.projectedHoursOff.toFixed(1)}h` : "—";
+  const kept =
+    r.draftKeptRatio !== null && r.draftKeptRatio !== undefined
+      ? `${Math.round(r.draftKeptRatio * 100)}%`
+      : "—";
   console.log(
-    `  ${lockRate.padEnd(5)} score ${score.padEnd(5)} shift ${cov.padEnd(5)} delivered ${delivered.padEnd(5)} lands ${lands.padEnd(5)} attempts ${String(r.attempts).padEnd(2)} tools ${String(r.toolCalls).padEnd(3)} ${r.provider}${r.fallback ? "(fallback)" : ""}  violations: ${vio}`,
+    `  ${lockRate.padEnd(5)} score ${score.padEnd(5)} shift ${cov.padEnd(5)} delivered ${delivered.padEnd(5)} lands ${lands.padEnd(5)} draft ${kept.padEnd(5)} attempts ${String(r.attempts).padEnd(2)} tools ${String(r.toolCalls).padEnd(3)} ${r.provider}${r.fallback ? "(fallback)" : ""}  violations: ${vio}`,
   );
 }
 
@@ -200,6 +214,10 @@ async function report() {
     const meanDelivered = delivered.length
       ? delivered.reduce((s, r) => s + (r.deliveredRatio ?? 0), 0) / delivered.length
       : null;
+    const keptRows = runs.filter((r) => typeof r.draftKeptRatio === "number");
+    const meanKept = keptRows.length
+      ? keptRows.reduce((s, r) => s + (r.draftKeptRatio ?? 0), 0) / keptRows.length
+      : null;
     const landed = runs.filter((r) => typeof r.projectedHoursOff === "number");
     const meanLanded = landed.length
       ? landed.reduce((s, r) => s + (r.projectedHoursOff ?? 0), 0) / landed.length
@@ -215,7 +233,7 @@ async function report() {
 
     console.log(`${scenario}`);
     console.log(
-      `  ${runs.length} runs · avg lock rate ${(lockRate * 100).toFixed(0)}% · avg score ${meanScore?.toFixed(2) ?? "—"} · avg shift claimed ${meanCoverage !== null ? `${Math.round(meanCoverage * 100)}%` : "—"} · avg delivered ${meanDelivered !== null ? `${Math.round(meanDelivered * 100)}%` : "—"} · avg hours off at landing ${meanLanded !== null ? meanLanded.toFixed(1) : "—"}`,
+      `  ${runs.length} runs · avg lock rate ${(lockRate * 100).toFixed(0)}% · avg score ${meanScore?.toFixed(2) ?? "—"} · avg shift claimed ${meanCoverage !== null ? `${Math.round(meanCoverage * 100)}%` : "—"} · avg delivered ${meanDelivered !== null ? `${Math.round(meanDelivered * 100)}%` : "—"} · avg hours off at landing ${meanLanded !== null ? meanLanded.toFixed(1) : "—"} · avg draft kept ${meanKept !== null ? `${Math.round(meanKept * 100)}%` : "—"}`,
     );
     console.log(`  trend (oldest→newest): ${trend}`);
     console.log(`  top violations: ${topViolations}\n`);

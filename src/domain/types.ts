@@ -199,7 +199,20 @@ export type CrewEvent =
   | { type: "tool_call"; agent: AgentId; tool: string; detail: string }
   | { type: "tool_result"; agent: AgentId; tool: string; detail: string }
   | { type: "citation"; agent: AgentId; citation: Citation }
-  | { type: "plan_candidate"; day: DayPlan }
+  | {
+      type: "plan_candidate";
+      day: DayPlan;
+      /** How far the planner's submission moved from the solver's draft.
+       *  Absent when the provider is not the live planner (the replay path
+       *  submits the solver's plan itself, and there is no drift to report). */
+      drift?: {
+        shiftChanged: boolean;
+        shiftDeltaMin: number;
+        minutesMoved: number;
+        kindsChanged: string[];
+        cuesKept: number;
+      };
+    }
   | { type: "eval_result"; result: EvalResult; attempt: number }
   | { type: "day_locked"; day: DayPlan; sunProgress: number }
   | { type: "calendar_move"; move: CalendarMove }

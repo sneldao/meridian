@@ -49,6 +49,9 @@ export interface EvalPayload {
    *  0..1. The declared coverage above is the plan's claim; this is the
    *  model's answer to "can the zeitgebers carry it". */
   deliveredRatio?: number | null;
+  /** The share of the solver's cues the planner kept, 0..1. Absent on the
+   *  replay path, where the plan *is* the solver's. */
+  draftKeptRatio?: number | null;
   attempts: number;
   toolCalls: number;
   violations: Record<string, number>;
