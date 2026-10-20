@@ -298,6 +298,28 @@ export function evaluatePlan(input: EvalInput): EvalResult {
     // the flight boundary. The schedule-move zeitgeber is measured against
     // the phase (where the body is), not the previous day's targets (where
     // the schedule was) — they diverge when days don't hit their targets.
+    // The other direction. A day can claim *less* than its cues deliver, and
+    // that is not a failure — the compliance floor is the usual reason: the
+    // traveller will not get up before 07:00, so the sleep window cannot move
+    // as early as the light would move the body. It is still a mismatch
+    // between the schedule and the clock, and it is the reason the landing can
+    // say the plan banked more than it claimed. Named, not silent.
+    if (day.dayIndex !== input.trip.departureDayIndex) {
+      // The in-flight day is excluded for the same reason as the wrong-way
+      // check: transit is not an anchor, and the traveller's light on a plane
+      // is the aircraft's.
+      const cueSupport =
+        modelShiftMin(day, phase, phase) -
+        modelShiftMin({ ...day, interventions: [] }, phase, phase);
+      const declared = Math.abs(day.shiftMin);
+      const delivered = Math.abs(cueSupport);
+      if (delivered - declared > SHIFT_OVER_TOLERANCE_MIN) {
+        notes.push(
+          `${day.label}: the day's light would move your clock about ${Math.round(delivered - declared)}min further than the schedule shows — your compliance floor is why the sleep window cannot move earlier.`,
+        );
+      }
+    }
+
     if (day.shiftMin !== 0) {
       const support = Math.sign(day.shiftMin) * modelShiftMin(day, phase, phase);
       const gap = Math.abs(day.shiftMin) - support;

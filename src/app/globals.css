@@ -2616,6 +2616,11 @@ html[data-theme="night"] {
    the corner menu is out of thumb reach, so the three most-used surfaces get
    a tab bar. Above the width it is hidden, and the document stands. */
 .bottom-nav { display: none; }
+/* The in-page view toggle is redundant on the phone — the tab bar carries
+   the view there, and two controls for one choice is one too many. */
+@media (max-width: 480px) {
+  .view-toggle { display: none; }
+}
 
 @media (max-width: 480px) {
   .bottom-nav {
@@ -2650,3 +2655,33 @@ html[data-theme="night"] {
   /* Room for the bar, so the last thing on the page is never under it. */
   .root { padding-bottom: 78px; }
 }
+
+/* The two evidence grades, as chips — the grade and the field evidence are
+   two different questions, and one should be readable without the other. */
+.dac-grades { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.dac-grade {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--m-card-2);
+  border: 1px solid var(--m-border);
+  color: var(--m-muted);
+}
+
+/* The welcome-back moment: what you already told us, one line, and a single
+   way to continue. The pills show which steps are done, so "partway there" is
+   a picture rather than a claim. */
+.setup-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.setup-pill {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--m-border);
+  background: var(--m-card-2);
+  color: var(--m-faint);
+}
+.setup-pill.is-done { color: var(--m-ink); border-color: var(--m-border); background: var(--m-card); }
+.setup-reset { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }

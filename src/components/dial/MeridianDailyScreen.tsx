@@ -20,6 +20,7 @@ import { type MascotTone } from "@/domain/mascot";
 import type { EpistemicTag } from "@/domain/evidence";
 import { computeTripTrajectory, directionOptions } from "@/domain/misalignment";
 import { readCheckIns, skippedClockDays } from "@/domain/marks";
+import { loadSetup } from "@/domain/setup-state";
 import { todayDayIndex } from "@/domain/today";
 import type {
   CalendarEvent,
@@ -80,6 +81,10 @@ export function MeridianDailyScreen({
   const [alcoholDays, setAlcoholDays] = useState<Set<number>>(new Set());
   const [done, setDone] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
+  /** The answers already on file, read when the setup is opened, so the
+   *  setup can offer to resume rather than start again. */
+  const [setupSaved, setSetupSaved] = useState<Partial<OnboardingState> | null>(null);
+  const [setupProtect, setSetupProtect] = useState<string[]>([]);
   /**
    * The traveller's own answers, when they have given any. Kept apart from
    * the baseline prop so a self-report overrides a demo fixture instead of
@@ -212,13 +217,31 @@ export function MeridianDailyScreen({
         <button
           type="button"
           className="dial-btn"
-          onClick={() => setOnboardingOpen(true)}
+          onClick={() => {
+            const saved = loadSetup();
+            setSetupSaved(saved);
+            // The saved answers have to become the live ones, not just be
+            // shown: the setup writes its state as it is given, so opening it
+            // with the defaults would overwrite what was saved.
+            if (saved?.bedtimeMin !== undefined && saved?.wakeMin !== undefined) {
+              setSelfReport({
+                bedtimeMin: saved.bedtimeMin,
+                wakeMin: saved.wakeMin,
+                chronotype: saved.chronotype ?? "neutral",
+              });
+            }
+            if (saved?.wearableOptedIn !== undefined) setWearableOptedIn(saved.wearableOptedIn);
+            if (saved?.tone) setTone(saved.tone);
+            if (saved?.protect) setSetupProtect(saved.protect);
+            setOnboardingOpen(true);
+          }}
         >
           Set up your clock
         </button>
       </div>
       <MeridianOnboarding
         open={onboardingOpen}
+        saved={setupSaved}
         mode="TRIP"
         direction={trip?.direction ?? null}
         band={
@@ -236,17 +259,18 @@ export function MeridianDailyScreen({
           chronotype: selfReport?.chronotype ?? baseline?.chronotype ?? "neutral",
           wearableOptedIn,
           tone,
-          protect: [],
+          protect: setupProtect,
         }}
         onChange={(next: OnboardingState) => {
-          setTone(next.tone);
-          setWearableOptedIn(next.wearableOptedIn);
+          setTone(next.tone ?? "cheeky");
+          setWearableOptedIn(next.wearableOptedIn ?? false);
           // The answers land on the model as they are given, not at the end.
           setSelfReport({
-            bedtimeMin: next.bedtimeMin,
-            wakeMin: next.wakeMin,
-            chronotype: next.chronotype,
+            bedtimeMin: next.bedtimeMin ?? 23 * 60 + 55,
+            wakeMin: next.wakeMin ?? 6 * 60 + 45,
+            chronotype: next.chronotype ?? "neutral",
           });
+          setSetupProtect(next.protect ?? []);
         }}
         onClose={() => setOnboardingOpen(false)}
         onComplete={() => setOnboardingOpen(false)}
