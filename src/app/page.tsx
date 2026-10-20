@@ -204,11 +204,16 @@ export default function Home() {
    *  changes or a new briefing lands. */
   const [restoredLocked, setRestoredLocked] = useState<Map<string, DayPlan> | null>(null);
   const [restoredCitations, setRestoredCitations] = useState<Citation[]>([]);
+  /** The saved plan's own baseline and trip. With no network the API cannot
+   *  answer, and without these the clock has nothing to project — the plan
+   *  is in the browser, so its inputs should be too. */
+  const [restoredBaseline, setRestoredBaseline] = useState<WearableBaseline | null>(null);
+  const [restoredTrip, setRestoredTrip] = useState<Trip | null>(null);
 
   const guideRef = useRef<HTMLDivElement | null>(null);
   const setupRef = useRef<HTMLDivElement | null>(null);
 
-  const trip = (run.trip ?? data?.trip ?? null) as Trip | null;
+  const trip = (run.trip ?? data?.trip ?? restoredTrip ?? null) as Trip | null;
 
   // The departure window the crew should plan around. Deriving the default from
   // the trip rather than hardcoding an id is what makes the picker correct on
@@ -225,7 +230,9 @@ export default function Home() {
    *  the traveller's answer when they have given it, the demo fixture
    *  otherwise. Declared here rather than further down because the run's
    *  briefing saves it with the plan. */
-  const baseline = run.baseline ?? resolveBaseline(wakeBand, data?.baseline);
+  const baseline =
+    run.baseline ??
+    resolveBaseline(wakeBand, data?.baseline ?? restoredBaseline ?? undefined);
   const esRef = useRef<EventSource | null>(null);
   // Voice lives on /crew now; the first viewport no longer carries a voice
   // toggle (item 16 — Calm is "words + one number + one CTA"). We still
@@ -640,6 +647,8 @@ export default function Home() {
         );
         setRestoredLocked(r?.locked ?? null);
         setRestoredCitations(r?.citations ?? []);
+        setRestoredBaseline(r?.baseline ?? null);
+        setRestoredTrip(r?.trip ?? null);
       } catch {
         setRestoredLocked(null);
       }

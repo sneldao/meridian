@@ -101,6 +101,15 @@ export function HandoffBanner({
               <CheckCircle2 size={12} />
               Your plan is ready
             </span>
+            {/* How much of the shift was actually scheduled, in hours. The
+                gate already knows this and the plan line says it in prose;
+                the chip is the number you can hold on to. */}
+            {coverage && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-sun-dest/30 bg-sun-dest/10 px-2.5 py-0.5 text-xs font-bold text-sun-dest">
+                {(coverage.achievedMin / 60).toFixed(1)}h of{" "}
+                {(coverage.requiredMin / 60).toFixed(1)}h shift scheduled
+              </span>
+            )}
           </div>
 
           {fallback && (

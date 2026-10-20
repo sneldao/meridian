@@ -73,6 +73,25 @@ what the timing supports, and the projection shows the difference.
   projection slips toward the baseline on its own — there is no clamp and no
   hand-written "skips are never worse" rule.
 
+### The landing reads the same model
+
+`landingProjection` (domain/arrival.ts) runs the same projection from the
+saved plan and the baseline it was built on, so `/arrival` and the clock say
+the same number about the same trip. The plan's *claim* is kept beside the
+model's answer rather than replacing it: when they differ, the landing says
+so ("the plan claimed 8.0h; its timing carried 5.5h"). That gap is the thing
+the product exists to show.
+
+### The shift week's number is a delay, not a distance
+
+The shift model measures the delay still owed to working nights, and a delay
+is one-directional: a body reading 03:20 that needs to read 18:00 is fifteen
+hours of delay away, not nine hours the short way round the clock. So the
+number can exceed twelve hours, and it means "how much later your body clock
+has to get", not "how far around the circle". The travel model does not have
+this problem: a traveller is always within a half-day of their destination
+night, so there the circular distance is the honest measure.
+
 `directionOptions` returns the advance-vs-delay options for a trip. The
 trip's own direction is the executable one; the long way round is returned
 with `executable: false` and the reason attached, because the solver places

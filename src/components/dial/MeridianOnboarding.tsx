@@ -137,6 +137,11 @@ export function MeridianOnboarding({
             Step {step} of {TOTAL_STEPS}
           </span>
         </div>
+        {/* Moving to the next step changes the whole question, so it is
+            announced rather than left to be discovered. */}
+        <p className="sr-only" aria-live="polite">
+          Step {step} of {TOTAL_STEPS}: {stepTitles[step - 1]}
+        </p>
 
         {step === 1 && (
           <div className="dial-center">
