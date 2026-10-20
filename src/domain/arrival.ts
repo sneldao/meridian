@@ -91,13 +91,20 @@ export function landingProjection(
   if (!point) return null;
 
   const requiredHours = Math.abs(trip.requiredShiftMin) / 60;
+  // The claim is measured *up to the landing day*, because that is the moment
+  // the delivery is measured at. A plan that banks hours after touchdown has
+  // not delivered them by the time the traveller lands, and comparing the
+  // whole plan against the landing would make every plan look like a liar.
+  const claimedMin = days
+    .filter((d) => d.dayIndex <= arrivalIdx)
+    .reduce((sum, d) => sum + Math.abs(d.shiftMin), 0);
   return {
     hours: point.misalignmentHours,
     lowHours: point.misalignmentLowHours,
     highHours: point.misalignmentHighHours,
     baselineHours: point.baselineMisalignmentHours,
     deliveredHours: round1(Math.max(0, requiredHours - point.misalignmentHours)),
-    claimedHours: round1((plan.coverage?.achievedMin ?? 0) / 60),
+    claimedHours: round1(claimedMin / 60),
     requiredHours: round1(requiredHours),
   };
 }

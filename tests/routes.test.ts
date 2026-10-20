@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { replayPlanFor } from "../src/agents/replay-plan";
 import { searchAirports, findAirport } from "../src/domain/airports";
 import { evaluatePlan, passes } from "../src/domain/circadian";
-import { ADHERENCE_PROFILE, DEMO_TRIP, buildTrip, calendarFor } from "../src/domain/fixtures";
+import { ADHERENCE_PROFILE, DEMO_TRIP, GARMIN_BASELINE, buildTrip, calendarFor } from "../src/domain/fixtures";
 import { utcOffsetMinOn, wrapShiftMin } from "../src/domain/timezones";
 import { fallbackCitations } from "../src/tools/science";
 
@@ -79,8 +79,12 @@ describe("route-aware replay plans", () => {
       const locked = [];
       for (const day of plan.days) {
         const bad = plan.badFirstDrafts.get(day.dayIndex);
-        if (bad) expect(passes(evaluatePlan({ trip, days: [...locked, bad], calendar: cal, adherence: ADHERENCE_PROFILE }))).toBe(false);
-        const r = evaluatePlan({ trip, days: [...locked, day], calendar: cal, adherence: ADHERENCE_PROFILE });
+        if (bad) expect(passes(evaluatePlan({ trip, days: [...locked, bad], calendar: cal, adherence: ADHERENCE_PROFILE, baseline: GARMIN_BASELINE }))).toBe(false);
+        // The baseline is part of the contract: the scorer reads the body's
+        // phase from it, and the runtime always passes it. Judged without it,
+        // the scorer anchors the light window on the schedule instead of the
+        // body, and a plan the runtime would accept is rejected here.
+        const r = evaluatePlan({ trip, days: [...locked, day], calendar: cal, adherence: ADHERENCE_PROFILE, baseline: GARMIN_BASELINE });
         expect(passes(r)).toBe(true);
         locked.push(day);
       }
