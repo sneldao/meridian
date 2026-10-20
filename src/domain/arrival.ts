@@ -1,4 +1,11 @@
-import type { CheckIn, ShiftCoverage, Trip } from "@/domain/types";
+import { computeTripTrajectory } from "@/domain/misalignment";
+import type {
+  CheckIn,
+  DayPlan,
+  ShiftCoverage,
+  Trip,
+  WearableBaseline,
+} from "@/domain/types";
 
 // What landing actually looked like, scored against what the gate promised.
 //
@@ -26,6 +33,73 @@ export interface SavedPlanLike {
   coverage?: ShiftCoverage;
   savedAt?: string;
   days?: unknown[];
+  /** The wearer's baseline, saved with the plan so the landing can be scored
+   *  against the same model the clock was showing. Absent on plans saved
+   *  before it — those fall back to the gate's own numbers. */
+  baseline?: WearableBaseline;
+}
+
+/**
+ * What the body clock is projected to be when the traveller lands, and what
+ * the plan's timing actually delivered.
+ *
+ * This is the loop the whole product turns on: the gate scored the plan's
+ * *declared* shift, the clock shows the *modelled* one, and the landing says
+ * which of the two the traveller actually got. A plan that claimed 100% and
+ * delivered 40% is the case the page exists to name.
+ */
+export interface LandingProjection {
+  /** Hours the body clock is projected to be from the destination's night. */
+  hours: number;
+  lowHours: number;
+  highHours: number;
+  /** The same gap with no plan at all — what doing nothing would leave. */
+  baselineHours: number;
+  /** Hours of the required shift the plan's timing actually delivered. */
+  deliveredHours: number;
+  /** Hours of the required shift the plan claimed (the gate's coverage). */
+  claimedHours: number;
+  /** The required shift, in hours. */
+  requiredHours: number;
+}
+
+const round1 = (v: number) => Math.round(v * 10) / 10;
+
+/**
+ * The landing projection, from the saved plan and the baseline it was built
+ * on. Null when either is missing — an old plan, or a traveller who never
+ * gave a baseline, gets the gate's numbers and nothing invented.
+ */
+export function landingProjection(
+  trip: Trip,
+  planRaw: string | null,
+  baseline?: WearableBaseline,
+): LandingProjection | null {
+  if (!baseline || !planRaw) return null;
+  let plan: SavedPlanLike;
+  try {
+    plan = JSON.parse(planRaw) as SavedPlanLike;
+  } catch {
+    return null;
+  }
+  const days = Array.isArray(plan.days) ? (plan.days as DayPlan[]) : [];
+  if (!days.length) return null;
+
+  const traj = computeTripTrajectory({ trip, days, baseline, calendar: [] });
+  const arrivalIdx = trip.departureDayIndex + 1;
+  const point = traj.find((t) => t.dayIndex === arrivalIdx) ?? traj[traj.length - 1];
+  if (!point) return null;
+
+  const requiredHours = Math.abs(trip.requiredShiftMin) / 60;
+  return {
+    hours: point.misalignmentHours,
+    lowHours: point.misalignmentLowHours,
+    highHours: point.misalignmentHighHours,
+    baselineHours: point.baselineMisalignmentHours,
+    deliveredHours: round1(Math.max(0, requiredHours - point.misalignmentHours)),
+    claimedHours: round1((plan.coverage?.achievedMin ?? 0) / 60),
+    requiredHours: round1(requiredHours),
+  };
 }
 
 /** Reads the gate promise out of a saved plan, or null when there isn't one.
@@ -64,6 +138,9 @@ export interface ArrivalRead {
   /** 0..1 — followed over (followed + partial + missed). Null with no marks,
    *  because "nobody has said anything" is not 0%. */
   followRate: number | null;
+  /** What the body clock is projected to be at landing, when the plan and the
+   *  baseline are both on file. */
+  projection: LandingProjection | null;
 }
 
 /**
@@ -79,6 +156,7 @@ export function arrivalRead(
   planRaw: string | null,
   checkIns: CheckIn[],
   now: Date,
+  baseline?: WearableBaseline,
 ): ArrivalRead {
   const arrivalDayIndex = trip.departureDayIndex + 1;
   const arrivalSpec = trip.days.find((d) => d.dayIndex === arrivalDayIndex);
@@ -129,6 +207,7 @@ export function arrivalRead(
     missed,
     partial,
     followRate,
+    projection: landingProjection(trip, planRaw, baseline),
   };
 }
 
@@ -210,6 +289,19 @@ export function tripDebrief(
 /** One honest sentence for the arrival screen. Never rounds a shortfall up. */
 export function arrivalHeadline(read: ArrivalRead, destName: string): string {
   const { coverage } = read.promise ?? { coverage: null };
+  // The projection, when it exists, is the honest number: what the model says
+  // the body clock will be. The gate's coverage is what the plan *claimed*.
+  const p = read.projection;
+  if (p) {
+    const band = p.lowHours === p.highHours ? "" : ` (${p.lowHours.toFixed(1)}–${p.highHours.toFixed(1)}h)`;
+    const delivery = p.deliveredHours > 0
+      ? `Your plan's timing carried ${p.deliveredHours.toFixed(1)}h of the ${p.requiredHours.toFixed(1)}h shift`
+      : `Your plan's timing carried none of the ${p.requiredHours.toFixed(1)}h shift`;
+    const counterfactual = p.baselineHours > p.hours
+      ? `; doing nothing would have left you ${p.baselineHours.toFixed(1)}h off.`
+      : ".";
+    return `You landed about ${p.hours.toFixed(1)}h from ${destName} time${band}. ${delivery}${counterfactual}`;
+  }
   if (!coverage) {
     return `You're in ${destName}. This trip's plan wasn't saved, so there's nothing to score against — the self-report still counts.`;
   }

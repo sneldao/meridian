@@ -1,4 +1,11 @@
-import { coverageOf, evaluatePlan, fmtMin, passes, sunProgress } from "@/domain/circadian";
+import {
+  CBT_BEFORE_WAKE_MIN,
+  coverageOf,
+  evaluatePlan,
+  fmtMin,
+  passes,
+  sunProgress,
+} from "@/domain/circadian";
 import { ADHERENCE_PROFILE, DEMO_TRIP, GARMIN_BASELINE, calendarFor } from "@/domain/fixtures";
 import type { AgentId, Citation, CalendarEvent, CrewEvent, DayPlan, EvalResult, Trip } from "@/domain/types";
 import { buildIcs, proposeMove } from "@/tools/calendar";
@@ -17,7 +24,23 @@ const BEAT = Number(process.env.REPLAY_BEAT_MS ?? 60);
  *  Same policy as the solver: eastbound shifts never put a wake before
  *  floor − 105 (05:15), so only D-3 advances before the hold days; the rest of
  *  the shift is honestly owed at landing. */
-export function scriptedDays(citations: Citation[]): DayPlan[] {
+export function scriptedDays(citations: Citation[], trip: Trip = DEMO_TRIP): DayPlan[] {
+  // The arrival morning, anchored to the body rather than to the schedule.
+  //
+  // After an eastward flight the body is still on home time: its own trough
+  // lands in the late morning of the destination, and light *before* that
+  // trough pushes the clock backwards. A cue placed on the schedule (07:00
+  // "daylight does the work") is therefore in the wrong phase zone, and the
+  // projection shows the plan delivering less than it claims. The scripted
+  // day shades the morning and lights the body's own dawn zone, the way the
+  // solver does it.
+  const off = trip.destination.utcOffsetMin - trip.origin.utcOffsetMin;
+  const phaseWake = (GARMIN_BASELINE.avgWakeMin + off - 90 + 1440) % 1440; // the 90 min D-3 banks
+  const cbt = (phaseWake - CBT_BEFORE_WAKE_MIN + 1440) % 1440;
+  const arrivalLightStart = (cbt + 30) % 1440;
+  const arrivalLightEnd = (cbt + 90) % 1440;
+  const arrivalShadeStart = (cbt - 240 + 1440) % 1440;
+
   return [
     {
       dayIndex: 0,
@@ -79,9 +102,10 @@ export function scriptedDays(citations: Citation[]): DayPlan[] {
       targetBedtimeMin: 21 * 60,
       targetWakeMin: 5 * 60,
       interventions: [
-        { kind: "light_exposure", startMin: 7 * 60, endMin: 8 * 60 + 30, note: "Outside from 07:00 destination-local — daylight does the work now.", citationId: citations[2].id },
+        { kind: "avoid_light", startMin: arrivalShadeStart, endMin: cbt, note: `Shade and indoors until ${fmtMin(cbt)} — light before that would push your clock backwards.`, citationId: citations[3].id },
+        { kind: "light_exposure", startMin: arrivalLightStart, endMin: arrivalLightEnd, note: `Bright light from ${fmtMin(arrivalLightStart)} — the body's own dawn zone, and the advance lever.`, citationId: citations[2].id },
         { kind: "caffeine_cutoff", startMin: 13 * 60, note: "Local-time cutoff, 8h before bed." },
-        { kind: "exercise", startMin: 7 * 60 + 30, endMin: 8 * 60 + 15, note: "Light movement in daylight reinforces the anchor.", citationId: citations[0].id },
+        { kind: "exercise", startMin: arrivalLightStart, endMin: arrivalLightEnd, note: "Light movement in the daylight, in the same hour as the anchor.", citationId: citations[0].id },
         { kind: "sleep_window", startMin: 21 * 60, endMin: 5 * 60, note: "First full night on destination time." },
       ],
     },

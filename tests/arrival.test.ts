@@ -1,7 +1,16 @@
 import { describe, expect, test } from "bun:test";
-import { arrivalHeadline, arrivalRead, readGatePromise, tripDebrief } from "../src/domain/arrival";
-import { buildTrip } from "../src/domain/fixtures";
-import type { CheckIn, ShiftCoverage } from "../src/domain/types";
+import {
+  arrivalHeadline,
+  arrivalRead,
+  landingProjection,
+  readGatePromise,
+  tripDebrief,
+} from "../src/domain/arrival";
+import { arrivalRows } from "../src/domain/arrival-rows";
+import { buildTrip, GARMIN_BASELINE } from "../src/domain/fixtures";
+import { solveDay } from "../src/domain/solver";
+import { ADHERENCE_PROFILE, CALENDAR } from "../src/domain/fixtures";
+import type { CheckIn, DayPlan, ShiftCoverage } from "../src/domain/types";
 
 // The arrival screen is the only place the product makes a claim about the
 // traveller's own trip after the fact. Everything here is about it staying
@@ -213,5 +222,101 @@ describe("tripDebrief (bet 4 — retention made navigable)", () => {
       ],
     );
     expect(out.carriedFrom).toBeNull();
+  });
+});
+
+// The loop: the clock shows what the body clock will be, and the landing has
+// to say the same thing. Before this, the arrival page repeated the plan's
+// *claim* back at the traveller, which is the one number the model exists to
+// distrust.
+
+describe("landingProjection", () => {
+  const trip = buildTrip("LHR", "HND", "2026-10-18");
+
+  const planWithDays = (days: DayPlan[], c: ShiftCoverage = coverage()) =>
+    JSON.stringify({
+      summary: "s",
+      score: 0.8,
+      coverage: c,
+      days,
+      baseline: GARMIN_BASELINE,
+      savedAt: "2026-10-18T00:00:00Z",
+    });
+
+  const solved = (): DayPlan[] => {
+    const out: DayPlan[] = [];
+    for (const spec of trip.days) {
+      const r = solveDay({
+        trip,
+        spec,
+        lockedDays: out,
+        calendar: CALENDAR,
+        adherence: ADHERENCE_PROFILE,
+        baseline: GARMIN_BASELINE,
+      });
+      if (r) out.push(r.plan);
+    }
+    return out;
+  };
+
+  test("says what the body clock will be, not what the plan claimed", () => {
+    const p = landingProjection(trip, planWithDays(solved()), GARMIN_BASELINE);
+    expect(p).not.toBeNull();
+    // The gate claimed 300 of 480 minutes — 5h of an 8h shift.
+    expect(p!.claimedHours).toBe(5);
+    // The model delivers what the timing supports, and it is never more than
+    // the claim, because the claim is the ceiling.
+    expect(p!.deliveredHours).toBeLessThanOrEqual(p!.claimedHours + 0.001);
+    expect(p!.requiredHours).toBe(8);
+    expect(p!.hours).toBeGreaterThan(0);
+    expect(p!.lowHours).toBeLessThanOrEqual(p!.hours);
+    expect(p!.highHours).toBeGreaterThanOrEqual(p!.hours);
+  });
+
+  test("doing nothing is worse than the plan, when the plan is a plan", () => {
+    const p = landingProjection(trip, planWithDays(solved()), GARMIN_BASELINE);
+    expect(p!.baselineHours).toBeGreaterThan(p!.hours);
+  });
+
+  test("no plan, or no baseline, means no projection — never a zeroed one", () => {
+    expect(landingProjection(trip, null, GARMIN_BASELINE)).toBeNull();
+    expect(landingProjection(trip, planWithDays(solved()), undefined)).toBeNull();
+    expect(landingProjection(trip, "not json", GARMIN_BASELINE)).toBeNull();
+    // A plan with no days cannot be projected either.
+    expect(landingProjection(trip, planWithDays([]), GARMIN_BASELINE)).toBeNull();
+  });
+
+  test("the headline leads with the projection and names the counterfactual", () => {
+    const days = solved();
+    const read = arrivalRead(
+      trip,
+      planWithDays(days),
+      [],
+      new Date("2026-10-25T00:00:00Z"),
+      GARMIN_BASELINE,
+    );
+    expect(read.projection).not.toBeNull();
+    const headline = arrivalHeadline(read, "Tokyo");
+    expect(headline).toContain("You landed about");
+    expect(headline).toContain("Tokyo time");
+    expect(headline).toContain("doing nothing would have left");
+  });
+
+  test("the rows name the body clock, and the overclaim when there is one", () => {
+    const days = solved();
+    const read = arrivalRead(
+      trip,
+      planWithDays(days),
+      [],
+      new Date("2026-10-25T00:00:00Z"),
+      GARMIN_BASELINE,
+    );
+    const rows = arrivalRows(read, trip, []);
+    const clock = rows.find((r) => r.label === "your body clock at landing");
+    expect(clock).toBeDefined();
+    expect(clock!.note).toContain("doing nothing would have left");
+    const shift = rows.find((r) => r.label === "the shift before you flew");
+    expect(shift).toBeDefined();
+    expect(shift!.value).toContain("of 8.0h");
   });
 });

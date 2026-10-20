@@ -22,7 +22,29 @@ export function arrivalRows(read: ArrivalRead, trip: Trip, checkIns: CheckIn[]):
   const rows: ArrivalRow[] = [];
   const { coverage } = read.promise ?? { coverage: null };
 
-  if (coverage) {
+  const projection = read.projection;
+
+  if (projection) {
+    // The model first, the claim second. The traveller landed with a body
+    // clock, not with a percentage.
+    rows.push({
+      label: "your body clock at landing",
+      value: `${projection.hours.toFixed(1)}h`,
+      note:
+        projection.lowHours === projection.highHours
+          ? `from ${projection.requiredHours.toFixed(1)}h away · doing nothing would have left ${projection.baselineHours.toFixed(1)}h`
+          : `${projection.lowHours.toFixed(1)}–${projection.highHours.toFixed(1)}h · doing nothing would have left ${projection.baselineHours.toFixed(1)}h`,
+    });
+    const overclaimed = projection.claimedHours - projection.deliveredHours;
+    rows.push({
+      label: "the shift before you flew",
+      value: `${projection.deliveredHours.toFixed(1)}h of ${projection.requiredHours.toFixed(1)}h`,
+      note:
+        overclaimed > 0.2
+          ? `the plan claimed ${projection.claimedHours.toFixed(1)}h; its timing carried ${projection.deliveredHours.toFixed(1)}h`
+          : "what the plan's timing actually carried",
+    });
+  } else if (coverage) {
     rows.push({
       label: "banked before you flew",
       value: `${Math.round(coverage.ratio * 100)}%`,

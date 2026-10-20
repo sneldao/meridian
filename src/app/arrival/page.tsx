@@ -3,10 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { fmtMin } from "@/domain/circadian";
-import { arrivalRead, tripDebrief } from "@/domain/arrival";
+import { arrivalHeadline, arrivalRead, tripDebrief } from "@/domain/arrival";
 import { INTERVENTION_LABELS } from "@/lib/intervention-icons";
 import { dayPlace } from "@/domain/today";
-import type { CheckIn, Trip } from "@/domain/types";
+import type { CheckIn, Trip, WearableBaseline } from "@/domain/types";
 import { arrivalRows, destClockMin } from "@/domain/arrival-rows";
 import { scoreBand } from "@/domain/score";
 import { friendlyDayLabel } from "@/lib/day-label";
@@ -39,6 +39,7 @@ export default function ArrivalPage() {
     planRaw: string | null;
     checkIns: CheckIn[];
     now: Date;
+    baseline?: WearableBaseline;
   } | null>(null);
 
   useEffect(() => {
@@ -67,9 +68,15 @@ export default function ArrivalPage() {
           if (cancelled) return;
           let planRaw: string | null = null;
           let checkIns: CheckIn[] = [];
+          let baseline: WearableBaseline | undefined;
           try {
             planRaw = localStorage.getItem("meridian:lastPlan");
             checkIns = JSON.parse(localStorage.getItem("meridian:checkins") || "[]");
+            // The baseline travels with the saved plan. It is what lets the
+            // landing say what the body clock will be, rather than repeating
+            // the plan's claim back at the traveller.
+            const saved = planRaw ? (JSON.parse(planRaw) as { baseline?: WearableBaseline }) : null;
+            baseline = saved?.baseline;
           } catch {
             /* corrupt storage is an absent plan, not a crash */
           }
@@ -81,6 +88,7 @@ export default function ArrivalPage() {
             trip: d2.trip,
             planRaw,
             checkIns,
+            baseline,
             now: pretend ? new Date(Date.now() + 12 * 86400000) : new Date(),
           });
         }, 0);
@@ -93,7 +101,10 @@ export default function ArrivalPage() {
   }, []);
 
   const read = useMemo(
-    () => (state?.trip ? arrivalRead(state.trip, state.planRaw, state.checkIns, state.now) : null),
+    () =>
+      state?.trip
+        ? arrivalRead(state.trip, state.planRaw, state.checkIns, state.now, state.baseline)
+        : null,
     [state],
   );
 
@@ -172,11 +183,13 @@ export default function ArrivalPage() {
           {dest.name} · {fmtMin(destClock)} · day {read.daysSinceArrival + 1} in {dest.name}
         </span>
         <h1>
-          {!read.promise?.coverage
-            ? `You're in ${dest.name}. Your plan wasn't saved, so there's nothing to compare — you can still tell us how you felt.`
-            : read.promise.coverage.residualMin <= 0
-              ? "You landed fully adjusted."
-              : `You landed ${(read.promise.coverage.residualMin / 60).toFixed(1)}h off ${dest.name} time — ${Math.round(read.promise.coverage.ratio * 100)}% of the adjustment happened before you flew.`}
+          {read.projection
+            ? arrivalHeadline(read, dest.name)
+            : !read.promise?.coverage
+              ? `You're in ${dest.name}. Your plan wasn't saved, so there's nothing to compare — you can still tell us how you felt.`
+              : read.promise.coverage.residualMin <= 0
+                ? "You landed fully adjusted."
+                : `You landed ${(read.promise.coverage.residualMin / 60).toFixed(1)}h off ${dest.name} time — ${Math.round(read.promise.coverage.ratio * 100)}% of the adjustment happened before you flew.`}
         </h1>
 
         {/* Two sections — what was promised at the gate, and what actually

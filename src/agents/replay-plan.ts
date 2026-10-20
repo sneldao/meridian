@@ -3,7 +3,13 @@
 // planner that drafts each day from the wearer's baseline and searches until
 // the real scorer passes it. The drama is scripted; the verdicts are honest.
 
-import { evaluatePlan, fmtMin, MAX_SHIFT_MIN_PER_DAY, passes } from "@/domain/circadian";
+import {
+  CBT_BEFORE_WAKE_MIN,
+  evaluatePlan,
+  fmtMin,
+  MAX_SHIFT_MIN_PER_DAY,
+  passes,
+} from "@/domain/circadian";
 import { GARMIN_BASELINE } from "@/domain/fixtures";
 import type { AdherenceProfile, CalendarEvent, Citation, DayPlan, Intervention, Trip } from "@/domain/types";
 import { scriptedDays } from "./replay";
@@ -25,8 +31,15 @@ export function replayPlanFor(
   adherence: AdherenceProfile,
 ): ReplayPlan {
   const total = Math.abs(trip.requiredShiftMin);
-  if (trip.direction === "east" && total >= SCRIPTED_TOTAL) {
-    const days = scriptedDays(citations).map((d) => ({
+  // The scripted days are a five-day story with three days before the
+  // flight — D-3 to D+1. A trip whose shape is different (a departure today
+  // has no pre-flight days to plan) must not be handed them: the locked days
+  // would not be the trip's days, and every number computed from them —
+  // the coverage, the projection, the landing — would be about a trip that
+  // does not exist. Those trips get the route-aware planner instead.
+  const scriptedShape = trip.days.length === 5 && trip.departureDayIndex === 3;
+  if (trip.direction === "east" && total >= SCRIPTED_TOTAL && scriptedShape) {
+    const days = scriptedDays(citations, trip).map((d) => ({
       ...d,
       interventions: d.interventions.map((iv) => ({
         ...iv,
@@ -125,6 +138,47 @@ function draftDay(
   const wake = wall;
   const east = trip.direction === "east";
   const cite = (i: number) => citations[i % Math.max(1, citations.length)]?.id;
+
+  // After the flight, the schedule and the body are different clocks: the
+  // body is still on home time, and the target night is in local time. A cue
+  // placed on the *schedule* then lands in the wrong phase zone — for an
+  // eastward arrival, morning light before the body's own trough pushes the
+  // clock backwards, which is the classic way to make jet lag worse. So the
+  // arrival day is anchored to the body's phase, the way the solver does it.
+  const postFlight = dayIndex > trip.departureDayIndex;
+  if (postFlight && east) {
+    const off = trip.destination.utcOffsetMin - trip.origin.utcOffsetMin;
+    const phaseWake = wrap(GARMIN_BASELINE.avgWakeMin + off + cumulative);
+    const cbt = wrap(phaseWake - CBT_BEFORE_WAKE_MIN);
+    const lightStart = wrap(cbt + 30);
+    const lightEnd = wrap(cbt + 90);
+    return {
+      dayIndex,
+      label: spec.label,
+      shiftMin,
+      targetBedtimeMin: bed,
+      targetWakeMin: wake,
+      interventions: [
+        {
+          kind: "avoid_light",
+          startMin: wrap(cbt - 240),
+          endMin: cbt,
+          note: `Shade and indoors until ${fmtMin(cbt)} — light before that would push your clock backwards.`,
+          citationId: cite(3),
+        },
+        {
+          kind: "light_exposure",
+          startMin: lightStart,
+          endMin: lightEnd,
+          note: `Bright light from ${fmtMin(lightStart)} — the body's own dawn zone, and the advance lever.`,
+          citationId: cite(2),
+        },
+        { kind: "caffeine_cutoff", startMin: wrap(bed - 8 * 60 - 5), note: "Local-time cutoff, 8h before bed.", citationId: cite(0) },
+        { kind: "sleep_window", startMin: bed, endMin: wake, note: `Bed ${fmtMin(bed)}, up ${fmtMin(wake)}.` },
+      ],
+    };
+  }
+
   const ivs: Intervention[] = east
     ? [
         { kind: "light_exposure", startMin: wrap(wake + 5), endMin: wrap(wake + 65), note: "Bright light within an hour of the new wake target — the advance anchor.", citationId: cite(2) },

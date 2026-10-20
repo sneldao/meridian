@@ -19,7 +19,8 @@
 // unreachable it used to stall silently with no output. Each scenario now
 // runs under a timeout and says which provider stalled.
 
-import { buildTrip, calendarFor } from "../src/domain/fixtures";
+import { landingProjection } from "../src/domain/arrival";
+import { buildTrip, calendarFor, GARMIN_BASELINE } from "../src/domain/fixtures";
 import { runCrew } from "../src/agents/runtime";
 import { providerKind } from "../src/agents/providers";
 import { persistEval, listEvals, supabaseEnabled, type EvalPayload } from "../src/tools/supabase";
@@ -71,6 +72,8 @@ async function runScenario(name: string, trip: ReturnType<typeof buildTrip>): Pr
   let meanScore: number | null = null;
   let coverageRatio: number | null = null;
   let residualMin: number | null = null;
+  let projectedHoursOff: number | null = null;
+  let deliveredRatio: number | null = null;
   const violations: Record<string, number> = {};
 
   const stream = runCrew({ trip, calendar: calendarFor(trip), calendarSource: "fixture" }) as AsyncGenerator<CrewEvent>;
@@ -90,6 +93,26 @@ async function runScenario(name: string, trip: ReturnType<typeof buildTrip>): Pr
       meanScore = e.days.length ? e.score : null;
       coverageRatio = e.days.length ? e.coverage.ratio : null;
       residualMin = e.coverage.residualMin;
+      // What the traveller will actually feel at landing, as opposed to what
+      // the plan claimed. The two are different numbers, and only one of them
+      // is a promise: a plan can lock every day and still leave the wearer
+      // hours out of sync, because the declared shift is not what the
+      // zeitgeber timing carries. The arrival page shows this number, so the
+      // harness tracks the same one.
+      if (e.days.length) {
+        const projection = landingProjection(
+          trip,
+          JSON.stringify({ days: e.days, coverage: e.coverage }),
+          GARMIN_BASELINE,
+        );
+        if (projection) {
+          projectedHoursOff = projection.hours;
+          deliveredRatio =
+            projection.requiredHours > 0
+              ? Math.min(1, projection.deliveredHours / projection.requiredHours)
+              : null;
+        }
+      }
     }
   }
   })();
@@ -109,6 +132,8 @@ async function runScenario(name: string, trip: ReturnType<typeof buildTrip>): Pr
     // cannot see that, so coverage is a first-class column.
     coverageRatio,
     residualMin,
+    projectedHoursOff,
+    deliveredRatio,
     attempts,
     toolCalls,
     violations,
@@ -144,8 +169,13 @@ function printRow(r: EvalPayload) {
     .map(([k, n]) => `${k}×${n}`)
     .join(", ") || "none";
   const cov = r.coverageRatio !== null && r.coverageRatio !== undefined ? `${Math.round(r.coverageRatio * 100)}%` : "—";
+  const delivered =
+    r.deliveredRatio !== null && r.deliveredRatio !== undefined
+      ? `${Math.round(r.deliveredRatio * 100)}%`
+      : "—";
+  const lands = r.projectedHoursOff !== null && r.projectedHoursOff !== undefined ? `${r.projectedHoursOff.toFixed(1)}h` : "—";
   console.log(
-    `  ${lockRate.padEnd(5)} score ${score.padEnd(5)} shift ${cov.padEnd(5)} attempts ${String(r.attempts).padEnd(2)} tools ${String(r.toolCalls).padEnd(3)} ${r.provider}${r.fallback ? "(fallback)" : ""}  violations: ${vio}`,
+    `  ${lockRate.padEnd(5)} score ${score.padEnd(5)} shift ${cov.padEnd(5)} delivered ${delivered.padEnd(5)} lands ${lands.padEnd(5)} attempts ${String(r.attempts).padEnd(2)} tools ${String(r.toolCalls).padEnd(3)} ${r.provider}${r.fallback ? "(fallback)" : ""}  violations: ${vio}`,
   );
 }
 
@@ -166,6 +196,14 @@ async function report() {
     const meanCoverage = covered.length
       ? covered.reduce((s, r) => s + (r.coverageRatio ?? 0), 0) / covered.length
       : null;
+    const delivered = runs.filter((r) => typeof r.deliveredRatio === "number");
+    const meanDelivered = delivered.length
+      ? delivered.reduce((s, r) => s + (r.deliveredRatio ?? 0), 0) / delivered.length
+      : null;
+    const landed = runs.filter((r) => typeof r.projectedHoursOff === "number");
+    const meanLanded = landed.length
+      ? landed.reduce((s, r) => s + (r.projectedHoursOff ?? 0), 0) / landed.length
+      : null;
     const allViolations: Record<string, number> = {};
     for (const r of runs) for (const [k, n] of Object.entries(r.violations)) allViolations[k] = (allViolations[k] ?? 0) + n;
     const topViolations = Object.entries(allViolations)
@@ -176,7 +214,9 @@ async function report() {
     const trend = runs.map((r) => (r.daysLocked === r.daysTotal ? "●" : r.daysLocked >= r.daysTotal - 1 ? "◐" : "○")).join("");
 
     console.log(`${scenario}`);
-    console.log(`  ${runs.length} runs · avg lock rate ${(lockRate * 100).toFixed(0)}% · avg score ${meanScore?.toFixed(2) ?? "—"} · avg shift covered ${meanCoverage !== null ? `${Math.round(meanCoverage * 100)}%` : "—"}`);
+    console.log(
+      `  ${runs.length} runs · avg lock rate ${(lockRate * 100).toFixed(0)}% · avg score ${meanScore?.toFixed(2) ?? "—"} · avg shift claimed ${meanCoverage !== null ? `${Math.round(meanCoverage * 100)}%` : "—"} · avg delivered ${meanDelivered !== null ? `${Math.round(meanDelivered * 100)}%` : "—"} · avg hours off at landing ${meanLanded !== null ? meanLanded.toFixed(1) : "—"}`,
+    );
     console.log(`  trend (oldest→newest): ${trend}`);
     console.log(`  top violations: ${topViolations}\n`);
   }
