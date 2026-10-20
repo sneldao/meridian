@@ -159,7 +159,14 @@ src/domain/      types, circadian scorer + phase-response model, placement
                  arrival-rows (the `/arrival` cells, kept out of the component
                  so the numbers can be asserted), fixtures (trip horizon via
                  horizonFor; Alex fixture for the demo route,
-                 neutralCalendarFor elsewhere)
+                 neutralCalendarFor elsewhere),
+                 misalignment (the body-clock projection the dial shows:
+                 circular time, the modelled trajectory, the do-nothing
+                 baseline, the uncertainty band, the advance-vs-delay
+                 options), evidence (the seed table of grades + channels),
+                 citations (the one catalogue of papers the app may cite),
+                 mascot (the mascot's voice rules), shift-work (the rotating
+                 night-shift week: an authored seed, a computed clock)
 src/tools/       science (SMR → Firecrawl → static), tavily, qloo,
                  calendar (ICS), wearable
 src/agents/      providers, crew prompts, runtime, night replay, morning replay

@@ -39,6 +39,59 @@ against this *derived* support — a plan can no longer claim a 90-minute
 advance while placing its light in the delay zone. When the claim outruns the
 model within tolerance, the gap surfaces as a note, not a failure.
 
+The solver no longer inserts a melatonin window of its own. The model still
+understands a melatonin timing cue — the planner may propose one, and the
+gate still scores it — but a standing supplement prompt reads as a standing
+recommendation, and the crew advises on timing, not medication.
+
+## The projection behind the dial (`src/domain/misalignment.ts`)
+
+The gate judges a plan; the dial shows where the body clock will actually
+end up. Both use the same machinery, so the number on screen is never the
+planner's own claim.
+
+`computeTripTrajectory` walks the days and steps a **body-clock phase** by
+`modelShiftMin` — the same phase-response model the gate uses — capped at the
+90 min/day physiological ceiling and never capped at the declared `shiftMin`.
+A plan that claims 90 minutes and places its light badly gets credited with
+what the timing supports, and the projection shows the difference.
+
+- **The gap** is the circular distance between the modelled body sleep
+  midpoint and the destination's night (pre-flight, the destination night
+  expressed in the origin's clock frame; after the flight, local time).
+- **The baseline** is the same chain with no plan: the traveller keeps their
+  habitual schedule until the flight, then lives in the destination under
+  whatever daylight it has (`daylightWindowMin`, from the sun model). The
+  comparison "your plan is 1.4h better than doing nothing" is two runs of the
+  same model.
+- **The band** is the model's own error, stated in three parts: how well the
+  baseline phase is known (30 min self-reported, 20 min from a wearable), each
+  day's support error (15 min, accumulated as a random walk because the days
+  are independent), plus 15 min for a skipped action and 20 min for drinking.
+  Never narrower than the model deserves, never wider than 90 min.
+- **A skipped action** removes that day's light cues from the chain, so the
+  projection slips toward the baseline on its own — there is no clamp and no
+  hand-written "skips are never worse" rule.
+
+`directionOptions` returns the advance-vs-delay options for a trip. The
+trip's own direction is the executable one; the long way round is returned
+with `executable: false` and the reason attached, because the solver places
+zeitgebers for one direction and the scorer rejects a flip
+(`SHIFT_DIRECTION_FLIP`). It is context, not a setting.
+
+## The evidence seed table (`src/domain/evidence.ts`)
+
+Every nudge the app can show is graded in one table: does it *move the clock*
+(`moves_clock`) or only *help you feel better* (`helps_feel_better`), and how
+well is the mechanism and the field evidence. Grades come from the table, never
+from a prompt or an LLM's memory, so a nudge the table does not cover is
+visibly "Limited / Unknown" rather than quietly confident.
+
+The table's `citationIds` point into the shared catalogue
+(`src/domain/citations.ts`) — the same objects the research agent returns and
+the `UNKNOWN_CITATION` gate resolves. One id space, so a paper cannot be
+"verified" in one module and invisible in another.
+
 ## Soft score (`feasible = true`)
 
 ```

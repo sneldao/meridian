@@ -27,3 +27,6 @@ artifacts/video/
 # The film is local-only — compositions, audio, renders, lockfiles and agent
 # docs all stay out of git. Nothing in the app build reads from video/.
 video/
+
+# stray screenshot dumps land here when a tool writes to the repo root
+--timeout
