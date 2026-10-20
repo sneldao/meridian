@@ -694,11 +694,9 @@ rides the `plan_candidate` event for the transcript and the eval.
 - **The live path's numbers are unmeasured here.** The `draft kept` column
   needs a provider key to exist. Everything above was verified on the replay
   path, where the plan *is* the solver's.
-- **The projection ignores the traveller's own marks.** The clock's
-  "Not tonight" changes the projection, but the *persisted* check-ins do not
-  feed it — so a traveller who missed the light on D-2 sees a dial that
-  still credits them with it. The two surfaces (the timeline's marks and the
-  clock's projection) are not yet one story.
+- ~~**The projection ignores the traveller's own marks.**~~ — **shipped**: the
+  clock reads the persisted check-ins (`domain/marks.ts`) and a day whose
+  light was missed is no longer counted as shift banked.
 - **The shift mode's copy.** "15h of delay owed" is technically right and
   reads like a bug; it wants a treatment, and the per-commitment trade-offs
   only just landed.

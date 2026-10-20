@@ -14,11 +14,12 @@
 // app gets them from.
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { fmtMin } from "@/domain/circadian";
 import { type MascotTone } from "@/domain/mascot";
 import type { EpistemicTag } from "@/domain/evidence";
 import { computeTripTrajectory, directionOptions } from "@/domain/misalignment";
+import { readCheckIns, skippedClockDays } from "@/domain/marks";
 import { todayDayIndex } from "@/domain/today";
 import type {
   CalendarEvent,
@@ -91,6 +92,29 @@ export function MeridianDailyScreen({
     chronotype: WearableBaseline["chronotype"];
   } | null>(null);
   const [wearableOptedIn, setWearableOptedIn] = useState(false);
+  /**
+   * The traveller's own marks, read back from the browser. The projection has
+   * to know what they actually did: a day whose light was missed is a day
+   * whose light did not happen, and a dial that credits it is lying.
+   */
+  const [markedSkips, setMarkedSkips] = useState<Set<number>>(new Set());
+
+  useEffect(() => {
+    const read = () => {
+      try {
+        setMarkedSkips(
+          skippedClockDays(readCheckIns(localStorage.getItem("meridian:checkins"))),
+        );
+      } catch {
+        setMarkedSkips(new Set());
+      }
+    };
+    read();
+    // The marks are flushed on "Tell the crew", which can happen on another
+    // surface, so the list is re-read when the tab regains focus.
+    window.addEventListener("focus", read);
+    return () => window.removeEventListener("focus", read);
+  }, []);
 
   // Every plan we have, in day order — the input the projection needs.
   const plans: DayPlan[] = useMemo(() => {
@@ -129,10 +153,18 @@ export function MeridianDailyScreen({
       days: plans,
       baseline: effectiveBaseline,
       calendar: calendarEvents,
-      skippedDayIndices: skippedDays,
+      skippedDayIndices: new Set([...skippedDays, ...markedSkips]),
       alcoholDayIndices: alcoholDays,
     });
-  }, [trip, effectiveBaseline, plans, calendarEvents, skippedDays, alcoholDays]);
+  }, [
+    trip,
+    effectiveBaseline,
+    plans,
+    calendarEvents,
+    skippedDays,
+    markedSkips,
+    alcoholDays,
+  ]);
 
 
   /** The tag on the dial's number: where the input came from. */
@@ -465,6 +497,13 @@ export function MeridianDailyScreen({
         <p className="dial-sub">
           These are sample numbers until you answer the wake question, so the clock
           is showing the demo baseline, not yours.
+        </p>
+      )}
+      {markedSkips.size > 0 && (
+        <p className="dial-sub">
+          The clock knows about {markedSkips.size} of your missed{" "}
+          {markedSkips.size === 1 ? "step" : "steps"}: the days whose light you
+          missed are no longer counted as shift you banked.
         </p>
       )}
 

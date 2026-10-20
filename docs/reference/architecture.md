@@ -125,11 +125,13 @@ On `/`, per-step did/skip marks queue a trip-scoped ledger and flush as
 structured `CheckIn`s on "Tell the crew", with `startDay` derived from the last
 marked day (not a fixed index).
 
-**Not wired yet:** the clock's projection takes the traveller's *session* skips
-(`Not tonight` on the day) but not the *persisted* check-ins, so a traveller
-who missed the light on D-2 still sees a dial that credits them with it. The
-projection model already supports it (`skippedDayIndices`); the two surfaces
-are not yet one story.
+**The clock listens.** The projection takes the traveller's *session* skips
+(`Not tonight`) **and** the persisted marks (`meridian:checkins`, read back by
+`domain/marks.ts`): a day whose light was missed is a day whose light did not
+happen, and the dial says so instead of crediting the shift. Only a *skipped*
+clock-moving cue counts — missing the caffeine does not move a body clock, and
+a free-text note about the whole day cannot be attributed to one cue, so
+neither moves the projection.
 
 **Traveller scoping.** Middleware stamps a `meridian-tid` cookie per visitor
 and mirrors it as `x-meridian-tid` on `/api/*` requests (`src/middleware.ts`,
@@ -187,6 +189,8 @@ src/domain/      types, circadian scorer + phase-response model, placement
                  baseline, the uncertainty band, the advance-vs-delay
                  options), evidence (the seed table of grades + channels),
                  citations (the one catalogue of papers the app may cite),
+                 marks (the traveller's own skips, read back for the
+                 projection),
                  mascot (the mascot's voice rules), shift-work (the rotating
                  night-shift week: an authored seed, a computed clock),
                  draft (the planner's submission merged over the solver's
