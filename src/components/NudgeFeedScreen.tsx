@@ -1606,11 +1606,17 @@ export function NudgeFeedScreen({
       )}
 
       <section className={`tl rise${previewMode ? " preview" : ""}`} style={{ animationDelay: ".4s" }} aria-label={`${currentDayName} — steps`}>
-        {steps.map((step) => {
+        <div className="tl-rows">
+        {steps.map((step, stepIdx) => {
           const isDone = completedIds.has(step.id);
           const isSkip = isSkipped(step.id);
           const isOpen = !!expandAllWhy || expandedWhyId === step.id;
           const city = cityFor(step.dayIndex);
+          // The city is worth a line only where it changes — which is exactly
+          // when it matters, because that is the moment the trip crosses into
+          // a new clock.
+          const prevCity = stepIdx > 0 ? cityFor(steps[stepIdx - 1].dayIndex) : null;
+          const cityChanged = city !== prevCity;
           return (
             <div
               key={step.id}
@@ -1671,7 +1677,7 @@ export function NudgeFeedScreen({
                 <b>
                   {fmtMin(step.startMin)}–{fmtMin(step.endMin)}
                 </b>
-                <span>{city}</span>
+                {cityChanged && <span>{city}</span>}
               </div>
               <div
                 className="tl-body"
@@ -1787,6 +1793,7 @@ export function NudgeFeedScreen({
             </div>
           );
         })}
+        </div>
         {steps.length === 0 && (
           <p className="tl-empty">
             {isPostFlightDay
