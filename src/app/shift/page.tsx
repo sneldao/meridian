@@ -16,6 +16,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ShiftScreen } from "@/components/dial/ShiftScreen";
 import { DisclosureSheet } from "@/components/dial/DisclosureSheet";
+import { BottomNav } from "@/components/BottomNav";
 
 export default function ShiftPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -48,6 +49,7 @@ export default function ShiftPage() {
       </div>
       <ShiftScreen />
       <DisclosureSheet open={sheetOpen} onClose={() => setSheetOpen(false)} />
+      <BottomNav />
     </main>
   );
 }

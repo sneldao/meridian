@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Card } from "@/components/ui";
+import { BottomNav } from "@/components/BottomNav";
 import { PageHeader } from "@/components/PageHeader";
 import { useUndoToast } from "@/components/UndoToast";
 import { secondTripCopy, secondTripProof } from "@/domain/second-trip";
@@ -98,6 +99,7 @@ export default function HistoryPage() {
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-8">
+      <BottomNav />
       <PageHeader
         title="Past trips"
         actions={

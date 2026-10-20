@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { CrewMemory } from "@/domain/types";
 import Link from "next/link";
 import { Card } from "@/components/ui";
+import { BottomNav } from "@/components/BottomNav";
 import { PageHeader } from "@/components/PageHeader";
 import { INTERVENTION_LABELS } from "@/lib/intervention-icons";
 
@@ -200,6 +201,7 @@ export default function OutcomePage() {
           ) : null}
         </Card>
       )}
+      <BottomNav />
     </main>
   );
 }

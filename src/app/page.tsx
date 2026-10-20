@@ -23,6 +23,7 @@ import { type LogEntry } from "@/components/CrewFeed";
 import { NudgeFeedScreen } from "@/components/NudgeFeedScreen";
 import { MeridianDailyScreen } from "@/components/dial/MeridianDailyScreen";
 import { DisclosureSheet } from "@/components/dial/DisclosureSheet";
+import { BottomNav } from "@/components/BottomNav";
 import dynamic from "next/dynamic";
 const RoutePicker = dynamic(
   () => import("@/components/RoutePicker").then((m) => m.RoutePicker),
@@ -1435,6 +1436,7 @@ export default function Home() {
       />}
 
       <DisclosureSheet open={disclosureOpen} onClose={() => setDisclosureOpen(false)} />
+      <BottomNav />
     </div>
   );
 }
