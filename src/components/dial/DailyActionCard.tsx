@@ -121,7 +121,7 @@ export function DailyActionCard({
       <div className="dac-actions">
         <button
           type="button"
-          className="dac-done"
+          className="dac-done pressable"
           aria-pressed={isDone}
           onClick={onMarkDone}
         >

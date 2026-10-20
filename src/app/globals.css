@@ -2786,3 +2786,52 @@ html[data-theme="night"] {
 @media (max-width: 480px) {
   .secondary-action { display: none; }
 }
+
+/* --- A press response -------------------------------------------------------
+   The reference build acknowledges the finger before anything happens
+   (`scale(0.98)` on mouse-down, back on release). It is one line per
+   control and it is the difference between a control that answers and a
+   control that only reacts once the whole action has run. Applied to the
+   primary actions only — a page where everything presses is a page where
+   nothing reads as primary. */
+.pressable {
+  transition: transform var(--dur-glide) var(--ease-glide);
+}
+.pressable:active {
+  transform: scale(0.98);
+}
+@media (prefers-reduced-motion: reduce) {
+  /* The whole app, in one rule: no motion is motion nobody asked for. The
+     globe and the voice already honoured this; the CSS entrances did not. */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .pressable:active {
+    transform: none;
+  }
+}
+
+/* On the phone the trip is a caption, not a card: the route and the shift,
+   with the change affordance reduced to a glyph. The date is on the day
+   pills. */
+@media (max-width: 480px) {
+  .trip-chip {
+    padding: 6px 10px;
+    font-size: 12px;
+    gap: 4px;
+  }
+  .trip-chip-date { display: none; }
+  .trip-chip-change::after { content: " ✎"; }
+  .trip-chip-change { font-size: 0; }
+  .trip-chip-change::before { content: "✎"; font-size: 12px; }
+  /* The three numbers before the rail read as a dashboard on a phone; one
+     line, in the same voice as the rest. */
+  .cal-summary { grid-template-columns: 1fr; gap: 6px; }
+  .cal-summary-num { flex-direction: row; align-items: baseline; gap: 8px; }
+  .cal-summary-num b { font-size: 15px; }
+}
