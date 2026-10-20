@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   arrivalHeadline,
+  arrivalLede,
   arrivalRead,
   landingProjection,
   readGatePromise,
@@ -293,7 +294,7 @@ describe("landingProjection", () => {
     expect(landingProjection(trip, planWithDays([]), GARMIN_BASELINE)).toBeNull();
   });
 
-  test("the headline leads with the projection and names the counterfactual", () => {
+  test("the headline is one sentence and the rest is the lede", () => {
     const days = solved();
     const read = arrivalRead(
       trip,
@@ -306,7 +307,12 @@ describe("landingProjection", () => {
     const headline = arrivalHeadline(read, "Tokyo");
     expect(headline).toContain("You landed about");
     expect(headline).toContain("Tokyo time");
-    expect(headline).toContain("doing nothing would have left");
+    // One sentence for the headline: the payoff opens with the number, and the
+    // detail is the line under it.
+    expect(headline.split(". ").length).toBeLessThanOrEqual(2);
+    const lede = arrivalLede(read);
+    expect(lede).toContain("carried");
+    expect(lede).toContain("doing nothing would have left");
   });
 
   test("the rows name the body clock, and the overclaim when there is one", () => {

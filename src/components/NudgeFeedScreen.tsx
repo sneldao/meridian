@@ -796,7 +796,10 @@ export function NudgeFeedScreen({
             </div>
           )}
 
-      <div className={`hero rise${simple && !globeOpen ? " slim" : ""}`} style={{ animationDelay: ".2s" }}>
+      <div
+        className={`hero rise${simple && !globeOpen ? " slim" : ""}`}
+        style={{ animationDelay: ".2s" }}
+      >
         {trip && (!simple || globeOpen) && (
           <HeroDawnPanel
             trip={trip}

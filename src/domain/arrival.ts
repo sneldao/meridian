@@ -293,6 +293,26 @@ export function tripDebrief(
   };
 }
 
+/**
+ * The supporting line under the headline: what the plan's timing carried,
+ * and what doing nothing would have left. The headline is one sentence
+ * (above); this is the rest of the sentence, said after the reader knows
+ * what they are looking at.
+ */
+export function arrivalLede(read: ArrivalRead): string | null {
+  const p = read.projection;
+  if (!p) return null;
+  const delivery =
+    p.deliveredHours > 0
+      ? `Your plan's timing carried ${p.deliveredHours.toFixed(1)}h of the ${p.requiredHours.toFixed(1)}h shift`
+      : `Your plan's timing carried none of the ${p.requiredHours.toFixed(1)}h shift`;
+  const counterfactual =
+    p.baselineHours > p.hours
+      ? `; doing nothing would have left you ${p.baselineHours.toFixed(1)}h off.`
+      : ".";
+  return `${delivery}${counterfactual}`;
+}
+
 /** One honest sentence for the arrival screen. Never rounds a shortfall up. */
 export function arrivalHeadline(read: ArrivalRead, destName: string): string {
   const { coverage } = read.promise ?? { coverage: null };
@@ -300,14 +320,12 @@ export function arrivalHeadline(read: ArrivalRead, destName: string): string {
   // the body clock will be. The gate's coverage is what the plan *claimed*.
   const p = read.projection;
   if (p) {
+    // One sentence for the headline. The band, the delivery and the
+    // counterfactual are the *second* line: a payoff that opens with two
+    // sentences of numbers asks the reader to work before they know what the
+    // page is saying.
     const band = p.lowHours === p.highHours ? "" : ` (${p.lowHours.toFixed(1)}–${p.highHours.toFixed(1)}h)`;
-    const delivery = p.deliveredHours > 0
-      ? `Your plan's timing carried ${p.deliveredHours.toFixed(1)}h of the ${p.requiredHours.toFixed(1)}h shift`
-      : `Your plan's timing carried none of the ${p.requiredHours.toFixed(1)}h shift`;
-    const counterfactual = p.baselineHours > p.hours
-      ? `; doing nothing would have left you ${p.baselineHours.toFixed(1)}h off.`
-      : ".";
-    return `You landed about ${p.hours.toFixed(1)}h from ${destName} time${band}. ${delivery}${counterfactual}`;
+    return `You landed about ${p.hours.toFixed(1)}h from ${destName} time${band}.`;
   }
   if (!coverage) {
     return `You're in ${destName}. This trip's plan wasn't saved, so there's nothing to score against — the self-report still counts.`;
