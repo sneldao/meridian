@@ -70,6 +70,10 @@ export interface CircadianDialProps {
   /** The headline: hours off the target, with its range and the do-nothing
    *  baseline beside it. */
   misalignmentHours: number;
+  /** What the headline measures. Travel reads "off target"; a shift week
+   *  reads "of delay owed", because a night worker is hours behind the
+   *  night rather than hours off a target. */
+  metricLabel?: string;
   misalignmentLowHours: number;
   misalignmentHighHours: number;
   baselineMisalignmentHours: number;
@@ -165,6 +169,7 @@ export function CircadianDial(props: CircadianDialProps) {
     misalignmentLowHours,
     misalignmentHighHours,
     baselineMisalignmentHours,
+    metricLabel = "off target",
     commitments,
     marks,
     epistemicTag,
@@ -222,7 +227,7 @@ export function CircadianDial(props: CircadianDialProps) {
           {dayLabel} · {mode === "TRIP" ? "Travel" : "Shift"}
         </h3>
         <p className="dial-figure">
-          {misalignmentHours.toFixed(1)}h off target
+          {misalignmentHours.toFixed(1)}h {metricLabel}
           <span className="dial-sub">
             {" "}
             ({misalignmentLowHours.toFixed(1)}–{misalignmentHighHours.toFixed(1)}h, {epistemicTag.toLowerCase()})
@@ -386,7 +391,7 @@ export function CircadianDial(props: CircadianDialProps) {
             </li>
           ))}
           <li className="dial-list-row">
-            <span>Off target</span>
+            <span>{metricLabel === "off target" ? "Off target" : metricLabel}</span>
             <span>
               {misalignmentHours.toFixed(1)}h ({misalignmentLowHours.toFixed(1)}–
               {misalignmentHighHours.toFixed(1)}h)

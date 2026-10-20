@@ -21,6 +21,7 @@ import type {
 } from "@/domain/types";
 import { type LogEntry } from "@/components/CrewFeed";
 import { NudgeFeedScreen } from "@/components/NudgeFeedScreen";
+import { MeridianDailyScreen, type MeridianMode } from "@/components/dial/MeridianDailyScreen";
 import dynamic from "next/dynamic";
 const RoutePicker = dynamic(
   () => import("@/components/RoutePicker").then((m) => m.RoutePicker),
@@ -143,6 +144,11 @@ export default function Home() {
    *  (the no-trip branch) from flashing before the trip arrives. */
   const [tripResolved, setTripResolved] = useState(false);
   const [selectedDayLabel, setSelectedDayLabel] = useState<string>("D-1");
+  /** The two views of the same plan: the timeline (the default, and the calm
+   *  one) and the clock — the dial, the action card and the shift week. The
+   *  traveller picks; nothing is taken away from them. */
+  const [homeView, setHomeView] = useState<"timeline" | "clock">("timeline");
+  const [meridianMode, setMeridianMode] = useState<MeridianMode>("TRIP");
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [briefingDismissed, setBriefingDismissed] = useState(false);
   /** A crew run that died mid-stream. Rendered on the Today surface, not only
@@ -1012,6 +1018,37 @@ export default function Home() {
             />
             )}
 
+            {/* Two views of the same plan: the timeline (the calm one, and
+                the default) and the clock — the dial, the action card and the
+                shift week. Available as soon as the trip is known, because
+                the clock is honest before there is a plan: it shows the
+                distance and what doing nothing would leave. */}
+            {trip && (
+              <div
+                className="pill depth"
+                role="group"
+                aria-label="View"
+                style={{ margin: "10px 4px 0" }}
+              >
+                <button
+                  type="button"
+                  className={homeView === "timeline" ? "on" : undefined}
+                  aria-pressed={homeView === "timeline"}
+                  onClick={() => setHomeView("timeline")}
+                >
+                  Timeline
+                </button>
+                <button
+                  type="button"
+                  className={homeView === "clock" ? "on" : undefined}
+                  aria-pressed={homeView === "clock"}
+                  onClick={() => setHomeView("clock")}
+                >
+                  Clock
+                </button>
+              </div>
+            )}
+
             {/* The one depth control: Simple is the calm viewport, Detailed
                 opens every evidence drawer, AI at work is the crew surface. */}
             {trip && effectiveLocked.size > 0 && (
@@ -1043,6 +1080,23 @@ export default function Home() {
             </div>
 
             <div ref={guideRef}>
+              {homeView === "clock" ? (
+                <MeridianDailyScreen
+                  mode={meridianMode}
+                  onChangeMode={setMeridianMode}
+                  trip={trip}
+                  locked={effectiveLocked}
+                  drafts={run.drafts}
+                  verdicts={run.verdicts}
+                  baseline={baseline}
+                  calendarEvents={currentEvents}
+                  citations={activeCitations}
+                  selectedDayLabel={selectedDayLabel}
+                  onSelectDay={setSelectedDayLabel}
+                  onStartCrewSync={startShift}
+                  preview={data?.baselineKind === "demo-default"}
+                />
+              ) : (
               <NudgeFeedScreen
                 trip={trip}
                 phase={effectivePhase}
@@ -1078,6 +1132,7 @@ export default function Home() {
                 runActiveAgent={run.activeAgent}
                 pastRuns={pastRuns}
               />
+              )}
             </div>
 
             {/* Mechanism lives one dial away, never on the Calm rung. */}
