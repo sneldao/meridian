@@ -211,6 +211,11 @@ export default function Home() {
     `?origin=${origin}&dest=${dest}&date=${departureDate}` +
     (selectedFlightId ? `&flight=${selectedFlightId}` : "");
 
+  /** The baseline the crew planned against: the run's own when it has one,
+   *  the traveller's answer when they have given it, the demo fixture
+   *  otherwise. Declared here rather than further down because the run's
+   *  briefing saves it with the plan. */
+  const baseline = run.baseline ?? resolveBaseline(wakeBand, data?.baseline);
   const esRef = useRef<EventSource | null>(null);
   // Voice lives on /crew now; the first viewport no longer carries a voice
   // toggle (item 16 — Calm is "words + one number + one CTA"). We still
@@ -402,6 +407,11 @@ export default function Home() {
                 // honest to score the trip against. Without it the only number
                 // available after landing is the traveller's own recollection.
                 coverage: e.coverage,
+                // The baseline the plan was built on, kept with it so the
+                // landing can be scored against the same model the clock was
+                // showing. Without it the arrival page falls back to the
+                // gate's own numbers — the claim, not the projection.
+                baseline,
                 savedAt: new Date().toISOString(),
               }),
             );
@@ -468,7 +478,7 @@ export default function Home() {
           break;
       }
     },
-    [push, stopVoice, data, run.errors.length],
+    [push, stopVoice, data, baseline, run.errors.length],
   );
 
   const cancelShift = useCallback(() => {
@@ -635,7 +645,6 @@ export default function Home() {
     useReminders({ trip, lockedDays: effectiveLocked, onMarkDay: setSelectedDayLabel });
 
   const providerFallback = run.errors.length > 0;
-  const baseline = run.baseline ?? resolveBaseline(wakeBand, data?.baseline);
   const rawCalendar = run.calendar.length > 0 ? run.calendar : (data?.calendar ?? []);
   const currentEvents = run.calendar.length > 0 ? calendarWithMoves(run) : rawCalendar;
   const currentReadiness = trip

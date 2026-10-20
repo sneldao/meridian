@@ -40,6 +40,15 @@ export interface EvalPayload {
   coverageRatio?: number | null;
   /** Minutes of the shift still owed when the wearer lands. */
   residualMin?: number | null;
+  /** Hours the body clock is projected to be from the destination's night at
+   *  landing — what the traveller will actually feel, as opposed to what the
+   *  plan claimed. Optional so rows written before the projection existed
+   *  still load. */
+  projectedHoursOff?: number | null;
+  /** The share of the required shift the plan's *timing* actually delivers,
+   *  0..1. The declared coverage above is the plan's claim; this is the
+   *  model's answer to "can the zeitgebers carry it". */
+  deliveredRatio?: number | null;
   attempts: number;
   toolCalls: number;
   violations: Record<string, number>;
