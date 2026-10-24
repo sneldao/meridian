@@ -89,8 +89,18 @@ cubic-bezier(0.22, 1, 0.36, 1) · `--ease-settle` cubic-bezier(0.16, 1, 0.3, 1)
 - Reveal pattern: scroll-driven fade + 16px rise, staggered, gated behind
   `@supports (animation-timeline: view())` / `prefers-reduced-motion: no-preference`;
   content is visible without JS or scroll support.
-- Page entrance: the terminator hairline sweeps once (the dawnIn grammar),
-  content rises under it.
+- Route continuity: React 19.3 `<ViewTransition>`. Typed navigations slide by
+  direction (`nav-forward` / `nav-back`; untagged navigations, including the
+  browser back button, stay instant). The Timeline ↔ Clock switch crossfades
+  as "same place, different reading". The hero's dawn disc and the arrival
+  payoff's disc share `view-transition-name: dawn`, so the object the hero
+  counted down to is the object that lands. Support is progressive: without
+  the API, pages swap and the sweep still runs.
+- Page entrance: the terminator hairline sweeps once per navigation; a
+  first-visit-only streak (remembered in `meridian:visited`) crosses the
+  stage once per browser.
+- The run on the stage: while the crew works, the hero shows the speaking
+  agent, days locked and sun progress (visual only — `RunAnnouncer` speaks it).
 - Reduced-motion fallback: global flatten rule already in `globals.css`
   stands; spatial motion collapses to ≤ 150ms opacity.
 - Only `transform` and `opacity` animate.

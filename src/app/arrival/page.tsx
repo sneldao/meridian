@@ -169,7 +169,7 @@ export default function ArrivalPage() {
             {arrivedDay ? friendlyDayLabel(arrivedDay, trip.departureDayIndex) : "the flight day"}.
             Come back the morning after you land to see how well your body clock adjusted.
           </p>
-          <Link className="arr-btn" href="/">
+          <Link className="arr-btn" href="/" transitionTypes={["nav-back"]}>
             Back to my plan
           </Link>
         </div>
@@ -180,6 +180,9 @@ export default function ArrivalPage() {
   return (
     <main className="arr">
       <div className="arr-in">
+        {/* The hero's dawn disc lands here — the same object, carried across
+            the route by the view transition (shared element "dawn"). */}
+        <div className="arr-dawn" aria-hidden="true" />
         <span className="arr-kicker">
           {dest.name} · {fmtMin(destClock)} · day {read.daysSinceArrival + 1} in {dest.name}
         </span>
@@ -231,10 +234,10 @@ export default function ArrivalPage() {
             : `You marked ${read.followed} done, ${read.partial} partly, ${read.missed} missed. How did it actually feel?`}
         </p>
         <div className="arr-actions">
-          <Link className="arr-btn" href="/outcome">
+          <Link className="arr-btn" href="/outcome" transitionTypes={["nav-forward"]}>
             Tell us how you felt
           </Link>
-          <Link className="arr-btn ghost" href="/review">
+          <Link className="arr-btn ghost" href="/review" transitionTypes={["nav-forward"]}>
             See the plan
           </Link>
         </div>

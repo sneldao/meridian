@@ -2480,9 +2480,9 @@ select:focus-visible {
    fades in under it. Opacity only on the wrapper — a transform here would
    trap `position: fixed` overlays (the setup scene, the edit sheet) inside
    the wrapper while it plays. */
-.page-enter {
-  animation: page-fade 260ms var(--ease-drift) both;
-}
+/* The fade fallback is gated at the end of this file: a view-transition
+   supporting browser animates the handoff itself, and a second fade on top
+   would muddy it. */
 @keyframes page-fade {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -2923,6 +2923,195 @@ select:focus-visible {
   color: var(--color-ghost);
   letter-spacing: 0.02em;
 }
+
+/* ── Dawn pass · view transitions (React 19.3 <ViewTransition>) ───────────
+   Continuity instead of page swaps: the home view crossfades (same place,
+   different reading), and typed navigations slide by direction. Untyped
+   navigations — browser back included — stay instant. */
+::view-transition {
+  pointer-events: none;
+}
+::view-transition-old(home-view),
+::view-transition-new(home-view) {
+  animation-duration: 320ms;
+  animation-timing-function: var(--ease-glide);
+}
+::view-transition-old(.nav-forward) {
+  --slide-offset: -48px;
+  animation:
+    160ms ease-in both vt-fade reverse,
+    360ms var(--ease-glide) both vt-slide reverse;
+}
+::view-transition-new(.nav-forward) {
+  --slide-offset: 48px;
+  animation:
+    220ms ease-out 140ms both vt-fade,
+    380ms var(--ease-glide) both vt-slide;
+}
+::view-transition-old(.nav-back) {
+  --slide-offset: 48px;
+  animation:
+    160ms ease-in both vt-fade reverse,
+    360ms var(--ease-glide) both vt-slide reverse;
+}
+::view-transition-new(.nav-back) {
+  --slide-offset: -48px;
+  animation:
+    220ms ease-out 140ms both vt-fade,
+    380ms var(--ease-glide) both vt-slide;
+}
+@keyframes vt-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes vt-slide {
+  from { translate: var(--slide-offset); }
+  to { translate: 0; }
+}
+
+/* Shared element: the dawn the hero counts down to is the same object on the
+   arrival payoff, so it morphs between screens instead of being replaced. */
+.hero .dawn-globe,
+.hero .dawn-map {
+  view-transition-name: dawn;
+}
+.arr-dawn {
+  width: 78px;
+  height: 78px;
+  border-radius: 50%;
+  margin-bottom: 22px;
+  view-transition-name: dawn;
+  background:
+    radial-gradient(120% 120% at 32% 28%, rgba(255, 217, 138, 0.95), rgba(217, 107, 67, 0.9) 45%, #2a1a14 78%);
+  box-shadow:
+    0 0 44px rgba(255, 196, 107, 0.32),
+    inset 0 0 20px rgba(255, 217, 138, 0.4);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+}
+
+/* Only where the View Transitions API is absent does the page fade run. */
+@supports not (view-transition-name: none) {
+  .page-enter {
+    animation: page-fade 260ms var(--ease-drift) both;
+  }
+}
+
+/* ── Dawn pass · the run on the stage ────────────────────────────────────
+   While the crew works, the stage says who is speaking, how much of the
+   shift is locked, and how far the sun has moved. Visual only — the run
+   announcer already speaks it for screen readers. */
+.hero .hr-col {
+  color: var(--m-text);
+}
+.stage-run {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 4px 10px;
+  padding: 11px 13px;
+  border: 1px solid rgba(255, 196, 107, 0.28);
+  border-radius: 14px;
+  background: rgba(255, 196, 107, 0.07);
+}
+.stage-run-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-ghost);
+  animation: run-pulse 1.6s var(--ease-drift) infinite;
+}
+@keyframes run-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(255, 217, 138, 0.45); }
+  70% { box-shadow: 0 0 0 7px rgba(255, 217, 138, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 217, 138, 0); }
+}
+.stage-run-body {
+  min-width: 0;
+}
+.stage-run-label {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--color-paper);
+}
+.stage-run-meta {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--font-mono2);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  color: var(--color-mist);
+}
+.stage-run-bar {
+  grid-column: 1 / -1;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+.stage-run-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #d96b43, var(--color-sun-dest));
+  transition: width var(--dur-settle) var(--ease-settle);
+}
+
+/* The wake question, on the stage: paper text on glass, chips that glow. */
+.hero .ask p {
+  color: var(--color-paper);
+}
+.hero .ask p span {
+  color: var(--color-mist);
+}
+.hero .ask .ask-title {
+  color: var(--color-paper);
+}
+.hero .ask-promise,
+.hero .ask-foot {
+  color: var(--color-mist);
+}
+.hero .ask-chip:hover {
+  background: var(--color-sun-dest);
+  border-color: var(--color-sun-dest);
+  color: #1a1408;
+}
+
+/* First visit, once: the dawn line crosses the stage. Remembered in
+   localStorage (`meridian:visited`) so it never becomes decoration. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes stage-sweep {
+    from { transform: translateX(-70%); opacity: 0; }
+    20% { opacity: 0.9; }
+    to { transform: translateX(130%); opacity: 0; }
+  }
+  .hero.first-visit::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 55%;
+    background: linear-gradient(
+      100deg,
+      transparent 18%,
+      rgba(255, 217, 138, 0.1) 46%,
+      rgba(255, 217, 138, 0.2) 52%,
+      transparent 82%
+    );
+    pointer-events: none;
+    animation: stage-sweep 1.7s var(--ease-drift) 0.3s both;
+  }
+}
 .clock-stage .dac-reason {
   font-size: 15px;
   line-height: 1.55;
@@ -3307,11 +3496,11 @@ html[data-theme="night"] {
 .bottom-nav { display: none; }
 /* The in-page view toggle is redundant on the phone — the tab bar carries
    the view there, and two controls for one choice is one too many. */
-@media (max-width: 480px) {
+@media (max-width: 768px) {
   .view-toggle { display: none; }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 768px) {
   .bottom-nav {
     position: fixed;
     left: 0;

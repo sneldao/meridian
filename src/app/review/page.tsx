@@ -141,7 +141,7 @@ export default function ReviewPage() {
       <main className="mx-auto max-w-2xl px-6 py-10 text-center">
         <h1 className="page-title">No saved plan yet.</h1>
         <p className="mt-4 text-sm text-clay-2">Make your plan on the home page and it&apos;ll be saved here.</p>
-        <Link href="/" className="mt-6 inline-block rounded-lg bg-paper px-5 py-2 text-sm font-bold text-ink">Make my plan</Link>
+        <Link href="/" transitionTypes={["nav-back"]} className="mt-6 inline-block rounded-lg bg-paper px-5 py-2 text-sm font-bold text-ink">Make my plan</Link>
         <BottomNav />
       </main>
     );
@@ -197,7 +197,7 @@ export default function ReviewPage() {
           className="rounded-lg border border-line bg-ink-2 px-4 py-2 text-sm font-bold text-paper transition-colors hover:border-mist"
         />
         <button onClick={downloadMarkdown} className="rounded-lg border border-line bg-ink-2 px-4 py-2 text-sm font-bold text-paper transition-colors hover:border-mist">Download as text</button>
-        <Link href={arrivalHref} className="rounded-lg border border-line bg-ink-2 px-4 py-2 text-sm text-mist transition-colors hover:text-paper">Rate my trip</Link>
+        <Link href={arrivalHref} transitionTypes={["nav-forward"]} className="rounded-lg border border-line bg-ink-2 px-4 py-2 text-sm text-mist transition-colors hover:text-paper">Rate my trip</Link>
         <ReplanLink trip={trip} />
         <button onClick={clearPlan} className="rounded-lg px-4 py-2 text-sm text-clay-2 transition-colors hover:text-clay-fail">Delete saved plan</button>
       </div>

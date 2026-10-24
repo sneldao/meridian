@@ -110,6 +110,10 @@ export interface NudgeFeedScreenProps {
   feedStale?: boolean;
   onCancelRun?: () => void;
   runActiveAgent?: string | null;
+  /** The crew's current step label while a run is live (e.g. "day 2 of 4"). */
+  runActiveLabel?: string;
+  /** 0–1 sun progress through the run — drives the stage's status ribbon. */
+  runSunProgress?: number;
   /** Report what actually happened — per-step did/skip marks or one
    *  day-level verdict. `lastMarkedDayIndex` lets the replan resume the day
    *  after the checked day. */
@@ -168,6 +172,8 @@ export function NudgeFeedScreen({
   feedStale,
   onCancelRun,
   runActiveAgent,
+  runActiveLabel,
+  runSunProgress,
   onCheckIn,
 }: NudgeFeedScreenProps) {
   const effectiveAdherence = adherence ?? ADHERENCE_PROFILE;
@@ -183,6 +189,23 @@ export function NudgeFeedScreen({
   // "Got it" line lingers three seconds where the card was.
   const [wakeCollapsing, setWakeCollapsing] = useState(false);
   const { toast: undoToast, show: showUndo } = useUndoToast();
+  /** First visit this browser: the stage gets its one-shot entrance — the
+   *  dawn line crossing the frame once. Remembered so it never becomes
+   *  decoration on every load. */
+  const [firstVisit, setFirstVisit] = useState(false);
+  useEffect(() => {
+    try {
+      if (!localStorage.getItem("meridian:visited")) {
+        localStorage.setItem("meridian:visited", "1");
+        /* Deferred a frame: the entrance animates from the painted stage
+           rather than from a hydration-time state change. */
+        const id = requestAnimationFrame(() => setFirstVisit(true));
+        return () => cancelAnimationFrame(id);
+      }
+    } catch {
+      /* storage unavailable — no ceremony */
+    }
+  }, []);
   const [swipe, setSwipe] = useState<{ id: string; dx: number } | null>(null);
   const swipeRef = useRef<{ id: string; x0: number; y0: number; vert: boolean } | null>(null);
 
@@ -746,9 +769,73 @@ export function NudgeFeedScreen({
     <>
       {/* Split-Horizon Hero Card — the left panel is the trip's real dawn line:
           body clock against destination, with the next light window on it. */}
+      <div
+        className={`hero rise${simple && !globeOpen ? " slim" : ""}${firstVisit ? " first-visit" : ""}`}
+        style={{ animationDelay: ".2s" }}
+      >
+        {trip && (!simple || globeOpen) && (
+          <HeroDawnPanel
+            trip={trip}
+            owedMin={dawnOwedMin}
+            beam={heroBeam}
+            readinessPct={readinessPct}
+            readinessSource={readiness.source}
+          />
+        )}
+
+        {/* The card's right half. These two were siblings of HeroDawnPanel, so
+            in a two-column grid the demo tag took cell (1,2) — an empty cream
+            box — and "your next step" wrapped to (2,1), orphaned below the fold
+            at half width. One wrapper, two grid children. */}
+        <div className="hr-col">
+          {/* The run is the product's deepest move, so the stage carries it:
+              who is speaking, how many days are locked, and the sun's
+              progress through the shift. Visual only — RunAnnouncer already
+              announces the run for screen readers. */}
+          {phase === "running" && (
+            <div className="stage-run">
+              <span className="stage-run-dot" aria-hidden="true" />
+              <div className="stage-run-body">
+                <p className="stage-run-label">
+                  {runActiveLabel ?? "The crew is planning your shift"}
+                </p>
+                <span className="stage-run-meta">
+                  {locked.size} of {trip?.days.length ?? 0} days locked
+                </span>
+              </div>
+              <div className="stage-run-bar" aria-hidden="true">
+                <i style={{ width: `${Math.round((runSunProgress ?? 0) * 100)}%` }} />
+              </div>
+            </div>
+          )}
+
+          {/* One frame, not six hedges. When the wake question is live
+              (demo-default, unanswered), it carries the example-plan framing
+              itself — the separate tag is dropped so there is one decision
+              point, not two. Other fixture states keep their own tag. Garmin
+              never shows one: the numbers were already theirs. */}
+          {baselineSource === "fixture" &&
+            !(baselineKind === "demo-default" && !wakeBand && onWakeBand) && (
+              <p className="demo-tag">
+                {baselineKind === "demo-default" && !wakeBand
+                  ? "Example traveller — these numbers aren't your measurements."
+                  : "Your wake time is yours. Sleep and heart data are examples until you connect a wearable."}
+              </p>
+            )}
+
+          {/* After an answer: the card collapses and this line shows for 3s
+              in its place. wakeAck stays for other surfaces. */}
+          {wakeJustAnswered && (
+            <p className="demo-tag" style={{ borderColor: "#cfe3d4" }}>
+              Got it — the plan now fits your mornings.
+            </p>
+          )}
+
+          {/* Vision Rule 1, on the stage: the one question sits directly in
+              the action column, beside the numbers it changes, rather than
+              floating above the band. It retires once answered. */}
           {(wakeCollapsing ||
             (baselineKind === "demo-default" && !wakeBand && onWakeBand)) && (
-          <div className="ask-wrap">
             <div className={`ask${wakeCollapsing ? " collapsing" : ""}`} role="group" aria-label="Your natural wake time">
               <p className="ask-title">Make this plan yours</p>
               <p>
@@ -793,48 +880,6 @@ export function NudgeFeedScreen({
                 Until then, you&apos;re seeing an example plan.
               </p>
             </div>
-            </div>
-          )}
-
-      <div
-        className={`hero rise${simple && !globeOpen ? " slim" : ""}`}
-        style={{ animationDelay: ".2s" }}
-      >
-        {trip && (!simple || globeOpen) && (
-          <HeroDawnPanel
-            trip={trip}
-            owedMin={dawnOwedMin}
-            beam={heroBeam}
-            readinessPct={readinessPct}
-            readinessSource={readiness.source}
-          />
-        )}
-
-        {/* The card's right half. These two were siblings of HeroDawnPanel, so
-            in a two-column grid the demo tag took cell (1,2) — an empty cream
-            box — and "your next step" wrapped to (2,1), orphaned below the fold
-            at half width. One wrapper, two grid children. */}
-        <div className="hr-col">
-          {/* One frame, not six hedges. When the wake question is live
-              (demo-default, unanswered), it carries the example-plan framing
-              itself — the separate tag is dropped so there is one decision
-              point, not two. Other fixture states keep their own tag. Garmin
-              never shows one: the numbers were already theirs. */}
-          {baselineSource === "fixture" &&
-            !(baselineKind === "demo-default" && !wakeBand && onWakeBand) && (
-              <p className="demo-tag">
-                {baselineKind === "demo-default" && !wakeBand
-                  ? "Example traveller — these numbers aren't your measurements."
-                  : "Your wake time is yours. Sleep and heart data are examples until you connect a wearable."}
-              </p>
-            )}
-
-          {/* After an answer: the card collapses and this line shows for 3s
-              in its place. wakeAck stays for other surfaces. */}
-          {wakeJustAnswered && (
-            <p className="demo-tag" style={{ borderColor: "#cfe3d4" }}>
-              Got it — the plan now fits your mornings.
-            </p>
           )}
 
           {/* B3 — the crew remembers. One line under the wake answer, same

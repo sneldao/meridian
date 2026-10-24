@@ -665,14 +665,19 @@ they read ink in both themes and no component carries a second palette —
 the trick the night theme already used, now applied to a surface rather
 than a mode.
 
-Interactivity: a per-navigation dawn-sweep transition (`app/template.tsx`),
-scroll-timeline reveals gated behind `@supports` + reduced-motion (content
-is never hidden without support), press/glow micro-voice on the action pair,
-and a `CountUp` on the arrival figures that always lands on the true value
-(aria-honest). Every product rule from §1–§4 still binds: one question at
-the right moment, every visual read also exists as words, motion is caused
-by the traveller or is the reason the screen exists, and a stage never
-flips with the mode.
+Interactivity: React 19.3 view transitions — typed navigations slide by
+direction, the Timeline ↔ Clock switch crossfades as one plan read two ways,
+and the hero's dawn disc morphs into the arrival payoff's disc as the same
+object. Plus scroll-timeline reveals gated behind `@supports` +
+reduced-motion (content is never hidden without support), a first-visit-only
+stage sweep, a live run ribbon on the stage (agent, days locked, sun
+progress), press/glow micro-voice on the action pair, and a `CountUp` on the
+arrival figures that always lands on the true value (aria-honest). The wake
+question moved from above the band into the stage's action column, beside
+the numbers it changes. Every product rule from §1–§4 still binds: one
+question at the right moment, every visual read also exists as words, motion
+is caused by the traveller or is the reason the screen exists, and a stage
+never flips with the mode.
 
 Nothing about the engine moved: the planner, the scorer, the gate and the
 journey are unchanged — this round is type, surface and motion.

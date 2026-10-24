@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useRef, useState, ViewTransition } from "react";
 import { fmtMin } from "@/domain/circadian";
 import { todayDayIndex } from "@/domain/today";
 import { resolveBaseline, type WakeBand } from "@/domain/fixtures";
@@ -670,6 +670,11 @@ export default function Home() {
   const effectiveLocked = run.locked.size ? run.locked : (restoredLocked ?? EMPTY_LOCKED);
   const homeView =
     homeViewChoice ?? (effectiveLocked.size > 0 ? "clock" : "timeline");
+  /* Timeline and Clock are two views of one plan, so the switch is a
+     crossfade rather than a page swap. The pill flips on the urgent update;
+     the heavy view renders in the background value and the transition
+     animates the handoff (React ViewTransition, same-route pattern). */
+  const deferredView = useDeferredValue(homeView);
   const effectivePhase =
     run.phase === "idle" && restoredLocked?.size ? "done" : run.phase;
 
@@ -746,9 +751,6 @@ export default function Home() {
   return (
     <div className="root" ref={menuRef}>
       <div className="beam" />
-      {/* The terminator sweep the crew surface opens on, now the landing's first
-          paint: the brand's day/night line crossing the frame as you arrive. */}
-      <div className="dawnIn" aria-hidden="true" />
       <div className="in">
         {/* The one live region on the page. Mounted here rather than inside the
             drawer, which is closed by default — a blind traveller was getting
@@ -800,15 +802,18 @@ export default function Home() {
               Trip settings
             </button>
             {hasSavedPlan && (
-              <Link href="/review" className="m" role="menuitem" onClick={() => setMenuOpen(false)}>
+              <Link href="/review" className="m" role="menuitem" transitionTypes={["nav-forward"]} onClick={() => setMenuOpen(false)}>
                 Saved plan
               </Link>
             )}
-            <Link href="/history" className="m" role="menuitem" onClick={() => setMenuOpen(false)}>
+            <Link href="/history" className="m" role="menuitem" transitionTypes={["nav-forward"]} onClick={() => setMenuOpen(false)}>
               Past trips{runCount > 0 ? ` (${runCount})` : ""}
             </Link>
-            <Link href="/shift" className="m" role="menuitem" onClick={() => setMenuOpen(false)}>
+            <Link href="/shift" className="m" role="menuitem" transitionTypes={["nav-forward"]} onClick={() => setMenuOpen(false)}>
               Shift work
+            </Link>
+            <Link href="/team" className="m" role="menuitem" transitionTypes={["nav-forward"]} onClick={() => setMenuOpen(false)}>
+              Team view
             </Link>
             {/* The medical boundary and the privacy note, one tap from
                 anywhere. They used to live at the end of the five-step setup,
@@ -831,6 +836,7 @@ export default function Home() {
               href={`/arrival?origin=${origin}&dest=${dest}&date=${departureDate}`}
               className="m"
               role="menuitem"
+              transitionTypes={["nav-forward"]}
               onClick={() => setMenuOpen(false)}
             >
               Rate my trip
@@ -1141,13 +1147,20 @@ export default function Home() {
                 >
                   Detailed
                 </button>
-                <Link href="/crew">AI at work</Link>
+                <Link href="/crew" transitionTypes={["nav-forward"]}>AI at work</Link>
               </div>
             )}
             </div>
 
             <div ref={guideRef} className="reading">
-              {homeView === "clock" ? (
+              <ViewTransition
+                key={deferredView}
+                name="home-view"
+                share="auto"
+                enter="auto"
+                default="none"
+              >
+              {deferredView === "clock" ? (
                 <MeridianDailyScreen
                   trip={trip}
                   locked={effectiveLocked}
@@ -1204,9 +1217,12 @@ export default function Home() {
                 feedStale={feedStale}
                 onCancelRun={cancelShift}
                 runActiveAgent={run.activeAgent}
+                runActiveLabel={run.activeLabel}
+                runSunProgress={run.sunProgress}
                 pastRuns={pastRuns}
               />
               )}
+              </ViewTransition>
             </div>
 
             {/* Mechanism lives one dial away, never on the Calm rung. */}

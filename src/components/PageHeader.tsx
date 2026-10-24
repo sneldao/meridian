@@ -19,7 +19,7 @@ export function PageHeader({
   return (
     <header className="mb-6 flex items-start justify-between gap-4">
       <div>
-        <Link href={backHref} className="text-xs text-clay-2 hover:text-clay">
+        <Link href={backHref} transitionTypes={["nav-back"]} className="text-xs text-clay-2 hover:text-clay">
           {backLabel}
         </Link>
         <h1 className="page-title mt-2">{title}</h1>
