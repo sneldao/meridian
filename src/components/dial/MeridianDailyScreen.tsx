@@ -30,6 +30,7 @@ import type {
   Trip,
   WearableBaseline,
 } from "@/domain/types";
+import { TweenNumber } from "@/components/TweenNumber";
 import { CircadianDial, type DialCommitmentNotch, type DialMark } from "./CircadianDial";
 import { DailyActionCard, type DailyAction, type PlanStatus } from "./DailyActionCard";
 import {
@@ -446,7 +447,11 @@ export function MeridianDailyScreen({
                 onClick={() => onSelectDay(d.label)}
               >
                 <span className="dial-day-label">{d.label}</span>
-                {gap && <span className="dial-day-gap">{gap}</span>}
+                {gap && (
+                  <span className="dial-day-gap">
+                    <TweenNumber value={gap} />
+                  </span>
+                )}
               </button>
             );
           })}

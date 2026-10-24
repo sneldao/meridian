@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { TweenNumber } from "@/components/TweenNumber";
 import dynamic from "next/dynamic";
 
 function useReducedMotionLocal() {
@@ -710,7 +711,7 @@ export function HeroDawnPanel({ trip, owedMin, beam, readinessPct, readinessSour
         <p className={`dawn-gap${focus === "gap" ? " hot" : ""}`}>
           {gap ? (
             <>
-              Your body clock is <b>{gap} {toward}</b> {destName} time. This plan closes the gap.
+              Your body clock is <b><TweenNumber value={gap} /> {toward}</b> {destName} time. This plan closes the gap.
             </>
           ) : (
             <>Your body clock is already on {destName} time — the plan helps you keep it there.</>
@@ -734,7 +735,13 @@ export function HeroDawnPanel({ trip, owedMin, beam, readinessPct, readinessSour
           time difference
         </div>
         <div className="stat">
-          <em>{readinessPct > 0 ? `${readinessPct}%` : `${bankedH}h`}</em>
+          <em>
+            {readinessPct > 0 ? (
+              <TweenNumber value={`${readinessPct}%`} />
+            ) : (
+              <TweenNumber value={`${bankedH}h`} />
+            )}
+          </em>
           {readinessPct > 0
             ? readinessSource === "preview"
               ? "adjusted before you fly (example)"

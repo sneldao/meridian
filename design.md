@@ -101,6 +101,10 @@ cubic-bezier(0.22, 1, 0.36, 1) · `--ease-settle` cubic-bezier(0.16, 1, 0.3, 1)
   stage once per browser.
 - The run on the stage: while the crew works, the hero shows the speaking
   agent, days locked and sun progress (visual only — `RunAnnouncer` speaks it).
+- Number continuity: a figure that changes tweens from what is on screen to
+  its new value (`TweenNumber` — the owed gap, readiness, day gaps). First
+  paint and unit changes snap, so a number never reads a unit it doesn't have;
+  the true value is what is announced.
 - Reduced-motion fallback: global flatten rule already in `globals.css`
   stands; spatial motion collapses to ≤ 150ms opacity.
 - Only `transform` and `opacity` animate.
