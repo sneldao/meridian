@@ -28,12 +28,12 @@ export default async function SharedPlan({ params }: { params: Promise<{ id: str
   const hero = trip?.heroMeeting ?? null;
 
   return (
-    <main style={{ minHeight: "100vh", background: "#F5EFE6", color: "#5b4d41", fontFamily: '"Helvetica Neue", sans-serif', padding: "40px 20px" }}>
+    <main style={{ minHeight: "100vh", background: "#F5EFE6", color: "#5b4d41", fontFamily: "var(--font-body)", padding: "40px 20px" }}>
       <div style={{ maxWidth: 560, margin: "0 auto" }}>
         <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.18em", color: "#D96B43", textTransform: "uppercase" }}>
           Meridian · shared plan
         </div>
-        <h1 style={{ fontSize: 24, fontWeight: 800, margin: "10px 0 4px" }}>
+        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 600, letterSpacing: "-0.02em", margin: "10px 0 4px" }}>
           {trip ? `${trip.origin.name} → ${trip.destination.name}` : "Shift plan"}
         </h1>
         <p style={{ fontSize: 13, color: "#7a6a5c", margin: "0 0 20px" }}>{briefing.summary}</p>

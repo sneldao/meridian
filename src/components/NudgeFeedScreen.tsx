@@ -911,12 +911,12 @@ export function NudgeFeedScreen({
             </div>
           </div>
           {remindersBlocked && (
-            <p style={{ margin: "4px 0 0", fontSize: 11, color: "#b04523" }}>
+            <p className="warn-ink" style={{ margin: "4px 0 0", fontSize: 11 }}>
               Notifications are blocked in your browser settings.
             </p>
           )}
           {feedStale && (
-            <p style={{ margin: "4px 0 0", fontSize: 11, color: "#b04523" }}>
+            <p className="warn-ink" style={{ margin: "4px 0 0", fontSize: 11 }}>
               Your calendar stopped syncing — run the crew again to push the latest plan.
             </p>
           )}
@@ -1013,7 +1013,7 @@ export function NudgeFeedScreen({
                     background: hasPlan
                       ? "linear-gradient(90deg, #D96B43, #e99a6f)"
                       : "transparent",
-                    color: hasPlan ? "var(--m-card)" : "var(--m-text)",
+                    color: hasPlan ? "var(--m-on-accent)" : "var(--color-paper)",
                     border: hasPlan ? "none" : "1.5px solid #D96B43",
                     borderRadius: "999px",
                     padding: "10px 22px",
@@ -1032,8 +1032,8 @@ export function NudgeFeedScreen({
                   aria-pressed={isSkipped(heroNudge.id)}
                   style={{
                     background: "transparent",
-                    border: "1px solid var(--m-border)",
-                    color: "var(--m-muted)",
+                    border: "1px solid var(--color-line)",
+                    color: "var(--color-mist)",
                     borderRadius: "999px",
                     padding: "10px 18px",
                     fontSize: "12px",
@@ -1046,7 +1046,7 @@ export function NudgeFeedScreen({
                 </button>
               </div>
               {completedIds.has(heroNudge.id) && (
-                <p style={{ margin: 0, fontSize: "12px", color: "var(--m-muted)" }}>
+                <p style={{ margin: 0, fontSize: "12px", color: "var(--color-mist)" }}>
                   {previewMode ? (
                     <>
                       Done — {impactCopy(heroNudge.category, "done")}. Example
@@ -1061,7 +1061,7 @@ export function NudgeFeedScreen({
                 </p>
               )}
               {isSkipped(heroNudge.id) && (
-                <p style={{ margin: 0, fontSize: "12px", color: "#b04523" }}>
+                <p className="warn-ink" style={{ margin: 0, fontSize: "12px" }}>
                   {previewMode ? (
                     <>Skipped — example plan only, nothing saved.</>
                   ) : (

@@ -464,6 +464,11 @@ export function MeridianDailyScreen({
         </button>
       </div>
 
+      {/* One ink stage for the question and its clock — the hero's sibling
+          surface (design.md · Clock view). The action and the dial share the
+          band; the day switcher stays chrome above it. */}
+      <div className="clock-stage">
+      <div className="clock-stage-action">
       <DailyActionCard
         action={action}
         status={status}
@@ -502,6 +507,7 @@ export function MeridianDailyScreen({
           Working shifts instead?
         </Link>
       </div>
+      </div>
 
       <CircadianDial
         dayLabel={spec.label}
@@ -535,6 +541,7 @@ export function MeridianDailyScreen({
           })
         }
       />
+      </div>
 
       {preview && (
         <p className="dial-sub">

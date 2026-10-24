@@ -139,7 +139,7 @@ export default function ReviewPage() {
   if (!plan) {
     return (
       <main className="mx-auto max-w-2xl px-6 py-10 text-center">
-        <h1 className="text-lg font-bold text-clay">No saved plan yet.</h1>
+        <h1 className="page-title">No saved plan yet.</h1>
         <p className="mt-4 text-sm text-clay-2">Make your plan on the home page and it&apos;ll be saved here.</p>
         <Link href="/" className="mt-6 inline-block rounded-lg bg-paper px-5 py-2 text-sm font-bold text-ink">Make my plan</Link>
         <BottomNav />

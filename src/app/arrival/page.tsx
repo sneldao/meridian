@@ -10,6 +10,7 @@ import type { CheckIn, Trip, WearableBaseline } from "@/domain/types";
 import { arrivalRows, destClockMin } from "@/domain/arrival-rows";
 import { scoreBand } from "@/domain/score";
 import { friendlyDayLabel } from "@/lib/day-label";
+import { CountUp } from "@/components/CountUp";
 
 // The payoff. "Land at 100%" is promised in the nav on every screen, and until
 // now nothing ever cashed it — the journey ended at the plan and the only
@@ -203,7 +204,7 @@ export default function ArrivalPage() {
         <div className="arr-grid">
           {rows.slice(0, 3).map((r) => (
             <div className="arr-cell" key={r.label}>
-              <em>{r.value}</em>
+              <em><CountUp value={r.value} /></em>
               <span>{r.label}</span>
               {r.note ? <small>{r.note}</small> : null}
             </div>
@@ -214,7 +215,7 @@ export default function ArrivalPage() {
         <div className="arr-grid">
           {rows.slice(3).map((r) => (
             <div className="arr-cell account" key={r.label}>
-              <em>{r.value}</em>
+              <em><CountUp value={r.value} /></em>
               <span>{r.label}</span>
               {r.note ? <small>{r.note}</small> : null}
             </div>

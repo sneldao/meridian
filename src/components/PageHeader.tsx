@@ -22,7 +22,7 @@ export function PageHeader({
         <Link href={backHref} className="text-xs text-clay-2 hover:text-clay">
           {backLabel}
         </Link>
-        <h1 className="mt-2 text-lg font-bold text-clay">{title}</h1>
+        <h1 className="page-title mt-2">{title}</h1>
       </div>
       {actions && <div className="flex shrink-0 items-center gap-3">{actions}</div>}
     </header>

@@ -68,6 +68,9 @@ decision is held to:
 - [Product vision](docs/vision.md) — the journey around the image: one question
   at the right moment, caption-first interaction, the depth dial, and the
   landing payoff
+- [Design system](design.md) — the locked *Cinematic Dawn* system: Fraunces /
+  Inter / JetBrains Mono, the ink-stage grammar, and the rules every page is
+  held to (kept in sync with `src/app/globals.css`)
 
 Reference (kept in sync with the code):
 

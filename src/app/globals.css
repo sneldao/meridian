@@ -1,10 +1,20 @@
 @import "tailwindcss";
+/* Hallmark · genre: atmospheric · macrostructure: Marquee Hero (landing) /
+ *            Workbench (app) / Statement (/arrival) · design-system: design.md
+ *            designed-as-app · tone: cinematic-dawn · anchor hue: ember-warm
+ *            theme: Dawn Ember (tuned custom) · display: Fraunces Variable
+ *            body: Inter Variable · mono: JetBrains Mono Variable
+ */
 
 @theme {
   /* design-vision.md §8: display serif for the crew's voice, precise mono for
      readouts, and nothing below 12px. `font-voice` / `font-mono2` are the two
      voices; body copy uses the default sans. */
-  --font-voice: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --font-display: "Fraunces Variable", ui-serif, "Iowan Old Style", Georgia, serif;
+  --font-voice: "Fraunces Variable", ui-serif, "Iowan Old Style", Georgia, serif;
+  --font-body: "Inter Variable", system-ui, -apple-system, sans-serif;
+  --font-sans: "Inter Variable", system-ui, -apple-system, sans-serif;
+  --font-mono2: "JetBrains Mono Variable", ui-monospace, "SF Mono", Menlo, monospace;
 
   /* One colour, one meaning.
      Pass and fail are *state*: design-vision.md §8 reserves them, so they are
@@ -58,6 +68,23 @@
   --text-xl: clamp(1.25rem, 2vw, 1.5rem);
   --text-2xl: clamp(1.5rem, 2.8vw, 2rem);
   --text-3xl: clamp(1.75rem, 3.6vw, 2.5rem);
+  /* Dawn pass — display scale for the cinematic statement moments (design.md).
+     Hero headlines ≤7 words sit at --text-display; longer statements cap at
+     --text-display-s so copy length, not viewport, decides the ceiling. */
+  --text-display: clamp(2.6rem, 6vw, 5rem);
+  --text-display-s: clamp(2rem, 4vw, 3.25rem);
+  --text-4xl: clamp(1.9rem, 4vw, 2.75rem);
+
+  /* 4-point named spacing scale (design.md). */
+  --space-3xs: 0.25rem;
+  --space-2xs: 0.5rem;
+  --space-xs: 0.75rem;
+  --space-sm: 1rem;
+  --space-md: 1.5rem;
+  --space-lg: 2rem;
+  --space-xl: 3rem;
+  --space-2xl: 4.5rem;
+  --space-3xl: 7rem;
 
   /* Motion tokens: durations and easings used by components + CSS transitions. */
   --duration-micro: 80ms;
@@ -98,9 +125,19 @@ body {
     linear-gradient(180deg, color-mix(in srgb, var(--m-bg) 100%, white 4%) 0%, var(--m-bg) 42%, color-mix(in srgb, var(--m-bg) 100%, black 3%) 100%);
   background-attachment: fixed;
   color: var(--m-ink);
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: var(--font-body);
   min-height: 100%;
   margin: 0;
+  /* Horizontal overflow is clipped, never hidden (hidden creates a scroll
+     container); the page must never scroll sideways on a phone. */
+  overflow-x: clip;
+}
+
+/* The hero band's breakout width (see the Dawn pass · hero stage block at the
+   end of this file): how far a full-frame element inside .reading must reach
+   to touch .root's frame edge. */
+:root {
+  --hero-out: max(0px, min(178px, (100vw - 64px - 720px) / 2));
 }
 
 /* Sunlit Horizon Bento design system & behavior contract.
@@ -117,7 +154,7 @@ body {
   position: relative;
   background: var(--m-bg);
   color: var(--m-ink);
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: var(--font-body);
   padding: 0 0 56px;
   overflow: hidden;
 }
@@ -402,12 +439,13 @@ body {
   min-height: 100vh;
   background: linear-gradient(180deg, #07090f 0%, #0b1018 52%, #1c1512 100%);
   color: #e8eaf2;
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: var(--font-body);
 }
 .arr-in {
   max-width: 720px;
   margin: 0 auto;
   padding: 72px 28px 64px;
+  animation: page-fade 260ms var(--ease-drift) both;
 }
 .arr-kicker {
   display: block;
@@ -1299,7 +1337,108 @@ body {
 }
 
 .font-mono2 {
-  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-family: var(--font-mono2);
+}
+
+/* ── Dawn pass · stage + elevation tokens (design.md) ─────────────────────
+   Cinematic stage grammar: the dawn gradient is one named thing, glows are
+   ember-warm and rare, and display headings get Fraunces at display sizes.
+   These sit outside @theme because they are used via var() in plain CSS. */
+:root {
+  --stage-dawn:
+    radial-gradient(120% 90% at 78% 74%, rgba(217, 107, 67, 0.55), transparent 55%),
+    linear-gradient(180deg, #0b0e16 0%, #10141f 46%, #241a1c 66%, #3a2118 82%, #d96b43 120%);
+  --stage-night: linear-gradient(180deg, #07090f 0%, #0b1018 52%, #1c1512 100%);
+  --glow-ember: 0 0 28px rgba(255, 196, 107, 0.22);
+  --glow-accent: 0 12px 32px -10px rgba(217, 107, 67, 0.5);
+  --shadow-stage: 0 32px 80px -32px rgba(8, 10, 18, 0.55);
+  --shadow-card: 0 18px 44px -22px rgba(120, 60, 30, 0.35);
+}
+
+/* Display headings — the crew's voice at statement size. Roman only (no
+   italic display), tight tracking, and overflow-safe on narrow viewports. */
+.display-1,
+.display-2 {
+  font-family: var(--font-display);
+  font-style: normal;
+  font-weight: 560;
+  letter-spacing: -0.02em;
+  line-height: 1.02;
+  overflow-wrap: anywhere;
+  min-width: 0;
+  text-wrap: balance;
+}
+.display-1 {
+  font-size: var(--text-display);
+  font-variation-settings: "opsz" 120, "SOFT" 0, "WONK" 1;
+}
+.display-2 {
+  font-size: var(--text-display-s);
+  line-height: 1.06;
+  font-variation-settings: "opsz" 72, "SOFT" 0, "WONK" 1;
+}
+/* Section eyebrows — tracked caps, stacked above the heading, never beside. */
+.eyebrow {
+  display: block;
+  font-family: var(--font-mono2);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--m-accent);
+}
+
+/* --- Scroll reveals ---------------------------------------------------------
+   Enhancement only: content is fully visible without scroll-timeline support.
+   The whole rule lives behind @supports so browsers without view() timelines
+   never see a hidden element. */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    @keyframes reveal-up {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+    .reveal {
+      animation: reveal-up var(--dur-drift) var(--ease-drift) both;
+      animation-timeline: view();
+      animation-range: entry 2% cover 18%;
+    }
+    .reveal[data-reveal="late"] {
+      animation-range: entry 2% cover 30%;
+    }
+    /* Scroll choreography across the app: the big section blocks rise as they
+       enter. Scoped to known block-level sections only — never anything
+       inside a horizontal scroller (.day pills, .dial-days), whose off-screen
+       members would render hidden. */
+    .tl,
+    .cal-summary,
+    .arr-grid,
+    .arr-section-label,
+    .card,
+    .dac,
+    .dial {
+      animation: reveal-up var(--dur-drift) var(--ease-drift) both;
+      animation-timeline: view();
+      animation-range: entry 2% cover 18%;
+    }
+  }
+}
+
+/* The error surface speaks in the crew's voice too. */
+.errcard h1 {
+  font-family: var(--font-display);
+  font-style: normal;
+  font-size: var(--text-3xl);
+  font-weight: 560;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  font-variation-settings: "opsz" 72, "SOFT" 0, "WONK" 1;
 }
 
 ::selection {
@@ -2334,6 +2473,500 @@ select:focus-visible {
 }
 .ask {
   max-height: 400px;
+}
+
+/* ── Dawn pass · page entrance (design.md · Motion) ────────────────────────
+   The terminator hairline crosses the frame once per navigation; the content
+   fades in under it. Opacity only on the wrapper — a transform here would
+   trap `position: fixed` overlays (the setup scene, the edit sheet) inside
+   the wrapper while it plays. */
+.page-enter {
+  animation: page-fade 260ms var(--ease-drift) both;
+}
+@keyframes page-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.dawn-sweep {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: -6vh;
+  height: 6vh;
+  z-index: 55;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgba(255, 217, 138, 0.14) 68%,
+    rgba(255, 217, 138, 0.45)
+  );
+  filter: blur(2px);
+  animation: dawn-sweep 900ms var(--ease-glide) both;
+}
+@keyframes dawn-sweep {
+  from { transform: translateY(0); opacity: 0; }
+  15% { opacity: 1; }
+  to { transform: translateY(112vh); opacity: 0; }
+}
+
+/* ── Dawn pass · the marquee hero stage (design.md · Marquee Hero) ─────────
+   The hero is a stage, not a card: a full-frame ink band, the globe its
+   centerpiece, and the one thing to do rendered as the display line.
+   These rules override the Sunlit Horizon card rules earlier in the file
+   (same specificity, later position) and are scoped under `.hero` so the
+   cream surfaces elsewhere are untouched. The stage is ink in BOTH themes —
+   stages don't flip; working surfaces do. */
+.hero {
+  position: relative;
+  margin: 28px calc(-1 * (32px + var(--hero-out))) 0;
+  background: var(--stage-night);
+  border: none;
+  border-radius: 0;
+  box-shadow: var(--shadow-stage);
+  /* minmax(0, …), never bare fr: the globe is image-bearing, and a bare fr
+     track floors at its intrinsic width on narrow viewports. */
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+}
+/* Dawn glow along the stage floor — the sun the globe is answering to. */
+.hero::after {
+  content: "";
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  bottom: -40%;
+  height: 70%;
+  background: radial-gradient(60% 100% at 30% 100%, rgba(217, 107, 67, 0.35), transparent 70%);
+  pointer-events: none;
+}
+.hero .hl {
+  min-height: 620px;
+  padding: 34px;
+}
+.hero .hl .bg.term {
+  background: var(--stage-dawn);
+}
+.hero .hr {
+  padding: 34px;
+  gap: 14px;
+}
+.hero .hr-col {
+  min-width: 0;
+}
+/* The display line: the answer is the interface, so the biggest thing on the
+   stage is the thing to do next. */
+.hero .hr h2 {
+  font-family: var(--font-display);
+  font-style: normal;
+  font-size: var(--text-display-s);
+  font-weight: 560;
+  font-variation-settings: "opsz" 72, "SOFT" 0, "WONK" 1;
+  letter-spacing: -0.02em;
+  line-height: 1.02;
+  overflow-wrap: anywhere;
+  min-width: 0;
+  text-wrap: balance;
+  color: var(--color-paper);
+  margin: 4px 0 0;
+}
+.hero .hr p.s {
+  color: var(--color-mist);
+  font-size: 15px;
+  line-height: 1.55;
+  max-width: 46ch;
+}
+.hero .mini {
+  color: var(--color-ghost);
+  font-family: var(--font-mono2);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+.hero .tw {
+  font-family: var(--font-mono2);
+  font-variant-numeric: tabular-nums;
+  background: rgba(255, 196, 107, 0.12);
+  border: 1px solid rgba(255, 196, 107, 0.35);
+  color: var(--color-sun-dest);
+  border-radius: 999px;
+  letter-spacing: 0.04em;
+}
+.hero .badge {
+  background: linear-gradient(135deg, #d96b43, #e99a6f);
+  border-radius: 16px;
+  box-shadow: var(--glow-accent);
+}
+.hero .demo-tag {
+  background: rgba(255, 217, 138, 0.07);
+  border-color: var(--color-line);
+  border-left-color: var(--color-ghost);
+  color: var(--color-mist);
+}
+.hero .drawer {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--color-line);
+}
+.hero .drawer b {
+  color: var(--color-ghost);
+}
+.hero .drawer p {
+  color: var(--color-mist);
+}
+.hero .bar {
+  background: var(--color-ink-3);
+}
+.hero .p2 {
+  border-color: rgba(232, 234, 242, 0.5);
+  color: var(--color-paper);
+}
+.hero .p2:hover {
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+.hero .btn {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--color-line);
+  color: var(--color-paper);
+}
+.hero .btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: none;
+}
+.hero .icon-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--color-line);
+  color: var(--color-mist);
+}
+.hero .icon-btn:hover {
+  border-color: var(--color-ghost);
+  color: var(--color-ghost);
+}
+.hero .tl-why {
+  color: var(--color-mist);
+}
+.hero .tl-why:hover {
+  color: var(--color-paper);
+}
+.hero .tl-skip {
+  border-color: var(--color-line);
+  color: var(--color-mist);
+}
+.hero .tl-done.alt {
+  color: var(--color-paper);
+}
+.hero .arrival-nudge {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--color-line);
+  border-left-color: var(--color-terracotta);
+}
+.hero .arrival-nudge h2 {
+  color: var(--color-paper);
+}
+.hero .arrival-nudge .s {
+  color: var(--color-mist);
+}
+/* Skipped / warnings inside the stage: a warm rust that actually reads on ink. */
+.hero .hr .warn-ink {
+  color: #e99a6f;
+}
+@media (max-width: 720px) {
+  .hero {
+    margin-inline: -16px;
+  }
+  .hero .hl {
+    min-height: 0;
+    padding: 22px 18px;
+  }
+  .hero .hr {
+    padding: 24px 18px 28px;
+  }
+  .hero .hr h2 {
+    font-size: var(--text-4xl);
+  }
+}
+
+/* ── Dawn pass · shared component voice (design.md · CTA voice, What pages
+   MUST share) — the wordmark, the segmented pills, the action pair, the card
+   lift and the tab bar, in one voice everywhere. */
+.brand b {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  font-variation-settings: "opsz" 48, "WONK" 1;
+}
+.brand span {
+  font-family: var(--font-mono2);
+  color: var(--m-accent);
+  letter-spacing: 0.01em;
+}
+
+/* Segmented pills — state carried by fill and a whisper of shadow; the press
+   response stays because switching a view is always the traveller's move. */
+.pill button,
+.pill a {
+  transition:
+    color var(--dur-glide) var(--ease-glide),
+    background var(--dur-glide) var(--ease-glide),
+    box-shadow var(--dur-glide) var(--ease-glide),
+    transform var(--dur-glide) var(--ease-glide);
+}
+.pill a.on,
+.pill button.on {
+  box-shadow: 0 2px 10px rgba(30, 27, 24, 0.16);
+}
+.pill button:active,
+.pill a:active {
+  transform: scale(0.97);
+}
+
+/* Primary action — terracotta, ember glow, acknowledged press. */
+.p1 {
+  font-family: var(--font-body);
+  border-radius: 999px;
+  box-shadow: var(--glow-accent);
+  transition:
+    background var(--dur-glide) var(--ease-glide),
+    box-shadow var(--dur-glide) var(--ease-glide),
+    transform var(--dur-glide) var(--ease-glide);
+}
+.p1:hover {
+  background: #c45a34;
+  box-shadow: 0 16px 38px -12px rgba(217, 107, 67, 0.7);
+}
+.p1:active {
+  transform: scale(0.98);
+  background: #a8431e;
+}
+.p2 {
+  border-radius: 999px;
+}
+.p2:active {
+  transform: scale(0.98);
+}
+
+/* Card lift — surfaces float a little above the ground gradient. */
+.card {
+  border-radius: 24px;
+  box-shadow: 0 18px 44px -26px rgba(120, 60, 30, 0.28);
+}
+.tl {
+  box-shadow: 0 18px 44px -26px rgba(120, 60, 30, 0.22);
+}
+
+/* Tab bar — solid surface (no blur: phones), one quiet shadow, and the active
+   tab carries a tint so "where am I" is answerable at a glance. */
+.bottom-nav {
+  box-shadow: 0 -14px 36px -20px rgba(30, 27, 24, 0.35);
+}
+.bottom-nav-item[aria-current="page"] {
+  background: var(--m-tag);
+}
+
+/* Page headings — the design.md section rhythm: a display heading at page
+   scale, roman, tight tracking, overflow-safe. */
+.page-title {
+  font-family: var(--font-display);
+  font-style: normal;
+  font-size: var(--text-4xl);
+  font-weight: 560;
+  font-variation-settings: "opsz" 72, "SOFT" 0, "WONK" 1;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  color: var(--m-ink);
+  overflow-wrap: anywhere;
+  min-width: 0;
+  text-wrap: balance;
+}
+
+/* Scene and instrument titles pick up the same voice at their own sizes. */
+.setup-title {
+  font-size: var(--text-2xl);
+}
+.dac-action {
+  font-size: var(--text-xl);
+}
+
+/* ── Dawn pass · the Statement surface (/arrival, design.md · Statement) ─ */
+.arr-in {
+  max-width: 780px;
+  padding: 96px 28px 88px;
+}
+.arr h1 {
+  font-family: var(--font-display);
+  font-style: normal;
+  font-size: var(--text-display-s);
+  font-weight: 560;
+  font-variation-settings: "opsz" 72, "SOFT" 0, "WONK" 1;
+  letter-spacing: -0.02em;
+  line-height: 1.04;
+  max-width: 24ch;
+  overflow-wrap: anywhere;
+  min-width: 0;
+  text-wrap: balance;
+}
+.arr-kicker {
+  font-family: var(--font-mono2);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+}
+.arr-lede {
+  font-size: 15px;
+  line-height: 1.65;
+  max-width: 58ch;
+}
+.arr-section-label {
+  font-family: var(--font-mono2);
+  letter-spacing: 0.16em;
+}
+.arr-cell em {
+  font-family: var(--font-mono2);
+  font-variant-numeric: tabular-nums;
+  font-size: 27px;
+  letter-spacing: -0.01em;
+}
+.arr-btn {
+  border-radius: 999px;
+  transition:
+    background var(--dur-glide) var(--ease-glide),
+    color var(--dur-glide) var(--ease-glide),
+    transform var(--dur-glide) var(--ease-glide);
+}
+.arr-btn:active {
+  transform: scale(0.98);
+}
+
+/* ── Dawn pass · stages flip their own palette (design.md · Clock view) ────
+   Ink stages read ink in BOTH themes, so the stage scopes the same palette
+   flip the night theme does — every descendant component (dial, action card,
+   mascot) resolves var(--m-*) / var(--dial-*) to ink-appropriate values,
+   including rules that target html[data-theme="night"]: they read these
+   variables, and these win by inheritance. One block, zero component
+   rewrites. */
+.hero,
+.clock-stage {
+  --m-bg: #0b0e16;
+  --m-card: rgba(255, 255, 255, 0.05);
+  --m-card-2: rgba(255, 255, 255, 0.08);
+  --m-text: #c9d2e4;
+  --m-ink: #f4f0e8;
+  --m-muted: #8b93a7;
+  --m-border: rgba(255, 255, 255, 0.12);
+  --m-border-2: rgba(255, 255, 255, 0.07);
+  --m-faint: #6b7590;
+  --m-tag: rgba(217, 107, 67, 0.2);
+  --m-accent: #e99a6f;
+  --m-on-accent: #fff8ef;
+  --dial-target: #ffc46b;
+  --dial-ghost: #6b7590;
+  --dial-sleep: #b8a8ff;
+  --dial-body: #7adfff;
+  --dial-body-soft: rgba(122, 223, 255, 0.18);
+  --dial-committed: #ff7a7a;
+  --dial-movable: #8b93a7;
+}
+
+/* ── Dawn pass · the clock stage ─────────────────────────────────────────
+   The hero's sibling band: the one action and the 24-hour dial on one ink
+   stage. Same breakout, same dawn floor glow, display type on the action. */
+.clock-stage {
+  position: relative;
+  margin: 24px calc(-1 * (32px + var(--hero-out))) 0;
+  background: var(--stage-night);
+  box-shadow: var(--shadow-stage);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: 30px;
+  align-items: center;
+  padding: 36px;
+}
+.clock-stage::after {
+  content: "";
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  bottom: -40%;
+  height: 70%;
+  background: radial-gradient(60% 100% at 70% 100%, rgba(217, 107, 67, 0.32), transparent 70%);
+  pointer-events: none;
+}
+.clock-stage-action {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+/* The action card is the glass panel; the dial floats free on the ink. */
+.clock-stage .dac {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 22px;
+}
+.clock-stage .dial {
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+/* The display line — the same voice and scale as the hero's step title. */
+.clock-stage .dac-action {
+  font-family: var(--font-display);
+  font-style: normal;
+  font-size: var(--text-display-s);
+  font-weight: 560;
+  font-variation-settings: "opsz" 72, "SOFT" 0, "WONK" 1;
+  letter-spacing: -0.02em;
+  line-height: 1.02;
+  overflow-wrap: anywhere;
+  min-width: 0;
+  text-wrap: balance;
+}
+.clock-stage .dac-time {
+  color: var(--color-ghost);
+  letter-spacing: 0.02em;
+}
+.clock-stage .dac-reason {
+  font-size: 15px;
+  line-height: 1.55;
+  max-width: 46ch;
+}
+.clock-stage .dial-title {
+  font-size: var(--text-2xl);
+  letter-spacing: -0.01em;
+}
+.clock-stage .dial-figure {
+  color: var(--color-paper);
+}
+/* Press + hover glow for the stage's actions — the hero's micro-voice. */
+.clock-stage .dac-done,
+.clock-stage .dial-btn {
+  transition:
+    background var(--dur-glide) var(--ease-glide),
+    border-color var(--dur-glide) var(--ease-glide),
+    color var(--dur-glide) var(--ease-glide),
+    transform var(--dur-glide) var(--ease-glide);
+}
+.clock-stage .dac-done:hover,
+.clock-stage .dial-btn:hover {
+  border-color: var(--color-ghost);
+}
+.clock-stage .dac-done:active,
+.clock-stage .dial-btn:active {
+  transform: scale(0.98);
+}
+@media (max-width: 900px) {
+  .clock-stage {
+    grid-template-columns: 1fr;
+    padding: 26px 22px;
+    gap: 22px;
+  }
+}
+@media (max-width: 720px) {
+  .clock-stage {
+    margin-inline: -16px;
+    padding: 22px 18px;
+  }
+  .clock-stage .dac-action {
+    font-size: var(--text-4xl);
+  }
 }
 
 /* --- The 24-hour dial (Phase 2) --------------------------------------------

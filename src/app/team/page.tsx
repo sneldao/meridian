@@ -82,7 +82,7 @@ export default function TeamPage() {
           <Link href="/" className="text-xs text-mist hover:text-paper">
             ← run a shift
           </Link>
-          <h1 className="mt-2 text-lg font-bold tracking-[0.3em]">TEAM · 12 CREWS</h1>
+          <h1 className="mt-2 font-mono2 text-2xl font-bold tracking-[0.22em]">TEAM · 12 CREWS</h1>
           <p className="mt-1 text-xs text-mist">
             {streaming
               ? runs.size === 0

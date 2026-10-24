@@ -649,3 +649,30 @@ cursors; the hover gets a breathing ring; the fades honour
 landing look like mobile, then /crew looks proper?" confusion is closed.
 Cream day-side, ink night-side; both now feel like desktop on desktop,
 and phones see no change.
+
+**Round 8 (shipped 2026-10-24):** the Cinematic Dawn pass — the whole app
+retyped and restaged for the Base44 Challenge. The design system is now
+locked in [design.md](../design.md): Fraunces Variable (the crew's voice),
+Inter Variable (body), JetBrains Mono Variable (every number), and a 4pt
+spacing scale beside the existing motion vocabulary.
+
+The structural move is the **stage**: the landing hero and the Clock view's
+action + dial share one grammar — a full-frame ink band that breaks out of
+the reading column to the app frame edge (`--hero-out`), with the globe and
+the 24-hour dial as its centerpieces and the next action at display scale.
+Stages scope the `--m-*` / `--dial-*` palette flip *inside themselves*, so
+they read ink in both themes and no component carries a second palette —
+the trick the night theme already used, now applied to a surface rather
+than a mode.
+
+Interactivity: a per-navigation dawn-sweep transition (`app/template.tsx`),
+scroll-timeline reveals gated behind `@supports` + reduced-motion (content
+is never hidden without support), press/glow micro-voice on the action pair,
+and a `CountUp` on the arrival figures that always lands on the true value
+(aria-honest). Every product rule from §1–§4 still binds: one question at
+the right moment, every visual read also exists as words, motion is caused
+by the traveller or is the reason the screen exists, and a stage never
+flips with the mode.
+
+Nothing about the engine moved: the planner, the scorer, the gate and the
+journey are unchanged — this round is type, surface and motion.

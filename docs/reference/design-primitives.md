@@ -10,6 +10,13 @@ is **ratio** — how much a screen asks of the eye at once.
 This is the study. Each primitive is what the reference does, what it buys,
 what it costs, and where we stand.
 
+**Update 2026-10-24 — Cinematic Dawn.** The system is now locked in
+[design.md](../../design.md): Fraunces Variable (display), Inter Variable
+(body), JetBrains Mono Variable (readouts), and the ink-stage grammar (the
+hero and the clock stage flip the `--m-*` palette inside themselves). The
+primitives below still hold; the notes marked *Dawn pass* record where they
+moved.
+
 ## The primitives
 
 ### 1. One column, centred
@@ -46,7 +53,9 @@ weight*, not by size and weight of type.
 **Costs:** four levels is the limit; a fifth means the ramp is lying.
 
 **Ours:** `clay` / `clay-2` / `clay-3` / `mist` on cream, and `ink`/`paper` on
-the dark islands. Same idea, two surfaces. Already true.
+the dark islands. Same idea, two surfaces. Already true. *Dawn pass:* an ink
+stage now scopes the same flip inside itself (`.hero`, `.clock-stage`), so a
+stage reads ink in both themes and no component carries a second palette.
 
 ### 4. Translucent surfaces over a soft ground
 
@@ -60,9 +69,11 @@ over a place.
 forced-colors mode.
 
 **Ours:** opaque cards with a one-pixel border, over a flat ground. The soft
-ground is now in (`body` carries a subtle vertical gradient); the glass cards
-are **not** adopted — the cost on a phone and in forced-colors is real, and our
-cards have to stay legible over the dark hero.
+ground is now in (`body` carries a subtle vertical gradient). *Dawn pass:*
+translucency **is** adopted inside ink stages (white at 4–8 %), but never with
+`backdrop-filter` — the objection was the blur's cost on phones, not
+translucency, and a stage never blurs. Forced-colors still degrades to the
+stage's solid ground.
 
 ### 5. Springs, with named levels
 
@@ -76,8 +87,10 @@ fades read as different events, which is the point.
 to be honoured everywhere.
 
 **Ours:** CSS transitions and keyframes for the entrances; framer-motion is
-already a dependency (the globe, the scroll) but the feed is CSS. **Adoption
-plan:** name three levels and use them for the surfaces we already animate.
+already a dependency (the globe, the scroll) but the feed is CSS. **Adopted
+(Dawn pass):** the three levels are named and used — `glide` (180 ms),
+`settle` (320 ms), `drift` (700 ms) with named easings. Page entrances and
+scroll reveals ride `drift`.
 
 ### 6. A visible focus ring, in a colour that is not the accent
 
@@ -97,7 +110,8 @@ Times, gaps, hours — always in the mono face, never in the body face. A number
 in the body face reads as prose; in mono it reads as a measurement.
 
 **Ours:** `font-mono2` on the readouts already; the day pills' gaps are mono
-now too. Already true.
+now too. Already true. *Dawn pass:* the mono face is JetBrains Mono Variable,
+so a number reads as a measurement on every OS, not just the one with SF Mono.
 
 ### 8. Short labels, always nouns
 

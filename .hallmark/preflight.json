@@ -1,0 +1,9 @@
+{
+  "scannedAt": "2026-10-24",
+  "fontStack": "system stacks (Palatino serif voice, Helvetica Neue body, ui-monospace) before the pass; replaced by Fraunces Variable / Inter Variable / JetBrains Mono Variable via @fontsource (layout.tsx)",
+  "palette": "Tailwind v4 @theme hex tokens + --m-* day/night system (src/app/globals.css)",
+  "motion": "framer-motion 14 + CSS keyframes; named vocabulary glide/settle/drift; global reduced-motion rule (motion-on)",
+  "spacing": "no named scale before the pass; 4-point --space-* scale added in the Dawn pass",
+  "framework": "Next.js 16.4.1 app router (app/ dir, src/ layout)",
+  "designSystem": "design.md (locked 2026-10-24, Dawn Ember)"
+}
