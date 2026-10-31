@@ -481,7 +481,7 @@ export default function Home() {
           </div>
         )}
 
-        <div className="shrink-0">
+        <div className="min-w-0 w-full sm:w-auto sm:shrink-0">
           <RoutePicker origin={origin} dest={dest} date={departureDate} onChange={(next) => {
               setOrigin(next.origin);
               setDest(next.dest);

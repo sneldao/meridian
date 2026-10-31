@@ -111,7 +111,7 @@ export function RoutePicker({
           <AirportField label="To" value={dest} date={date} disabled={disabled} onPick={(c) => onChange({ origin, dest: c, date })} surface={surface} />
         </div>
       </div>
-      <div className="rp-date-row flex items-end gap-2">
+      <div className="rp-date-row flex flex-wrap items-end gap-2">
         <div className="rp-field flex flex-col gap-0.5">
           <span className={`rp-label ${FIELD_LABEL[surface]}`}>Departs</span>
           <input
@@ -124,7 +124,7 @@ export function RoutePicker({
           />
         </div>
         {shift && (
-          <span className={`whitespace-nowrap ${SHIFT_LABEL[surface]}`} title="Real offsets on these dates, DST included">
+          <span className={`${SHIFT_LABEL[surface]}`} title="Real offsets on these dates, DST included">
             {destCity} is <span className={SHIFT_BADGE[surface]}>{Math.abs(shift.requiredShiftMin / 60)}h</span>{" "}
             {shift.direction === "east" ? "ahead" : "behind"}
           </span>

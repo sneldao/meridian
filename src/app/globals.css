@@ -333,7 +333,7 @@ body {
   right: 32px;
   top: 66px;
   width: 210px;
-  background: var(--m-card);
+  background: var(--m-bg);
   border: 1px solid var(--m-border);
   border-radius: 14px;
   padding: 8px;
