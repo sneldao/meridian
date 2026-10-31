@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { fmtMin } from "@/domain/circadian";
@@ -468,39 +467,10 @@ export default function Home() {
               agents that fly ahead of you
             </span>
           </div>
-          <Link
-            href="/"
-            className="mt-1 inline-block text-[11px] font-semibold tracking-wide text-clay-2 underline-offset-2 transition-colors hover:text-terracotta"
-          >
-            ← Back to my plan
-          </Link>
         </div>
 
-        {/* Same pill switcher as the traveller's nav — one chrome across the dial */}
-        <nav
-          aria-label="Primary screens"
-          className="inline-flex shrink-0 items-center rounded-full border border-line bg-ink-2 p-1"
-        >
-          <Link
-            href="/"
-            className="rounded-full px-3.5 py-1.5 text-xs font-semibold text-mist transition-all hover:text-paper"
-          >
-            Simple
-          </Link>
-          <Link
-            href="/?depth=guided"
-            className="rounded-full px-3.5 py-1.5 text-xs font-semibold text-mist transition-all hover:text-paper"
-          >
-            Detailed
-          </Link>
-          <span
-            aria-current="page"
-            className="rounded-full bg-paper px-3.5 py-1.5 text-xs font-semibold text-ink shadow-sm"
-          >
-            AI at work
-          </span>
-        </nav>
-
+        {/* One way back to the plan: the bottom bar's Today tab. The pill
+            switcher is gone, since the bar carries the main destinations. */}
         {baseline && (
           <div
             className="hidden shrink-0 items-center gap-1.5 rounded-lg border border-line bg-ink-2 px-3 py-1.5 font-mono2 text-xs text-mist xl:flex"
