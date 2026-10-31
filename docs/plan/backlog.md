@@ -937,26 +937,30 @@ Bridges quantified wearable health data (Whoop / Oura / Garmin) with photobiolog
 3. **Everyday Circadian Anchor (P2, Retention Loop).**
    - When no flight is active, Today smoothly pivots to home city solar rhythm, giving travellers a 365-day photobiology ritual rather than an empty flight form. (Shipped)
 
-## Round 13 — Lock-Screen Habit, Multi-Timezone Clarity & Real QA Pass (2026-10-31)
+## Round 13 — Lock-Screen Habit, Multi-Timezone Clarity & Real QA Pass (shipped 2026-10-31)
 
 Solves the primary mobile drop-off vectors (app switching, temporal disorientation across timezones, and unverified edge-case mobile interactions).
 
+- **Dual/Triple Timezone Clock Bar (Shipped):** Live local time for Home & Destination with direction & hour offset (`TimezoneClocks.tsx`), mounted below the trip route chip.
+- **One-Tap Live Calendar Subscription (Shipped):** Mounted `SubscribeCalendar` directly in Today's action bar for instant webcal sync to iOS/macOS/Google calendars.
+- **Design Contract Ratification (Shipped):** Tokenized styling with 0-hex and 0-inline-style ceilings ratified in `tests/design-contract.test.ts`.
+
+## Round 14 — In-Flight Cruising Mode, Wearable Widget Feed & Multi-Route QA (2026-10-31)
+
+Closes the loop between pre-flight preparation, the actual in-cabin flight experience, and lock-screen/wearable habit retention.
+
 ### Items (ranked)
 
-1. **Dual/Triple Timezone Clock Bar (P1, UX/Clarity).**
-   - Disoriented travellers in hotels or flights need instant temporal grounding.
-   - Pinned ambient multi-clock readout under the trip route chip:
-     `🏠 Origin (Home) · ✈️ Destination (Local) · 🧬 Estimated Body Clock Phase`.
-   - Compact, high-contrast, zero math required.
-2. **One-Tap Live Calendar Subscription (P1, Retention/Lock-Screen).**
-   - Make calendar subscription prominent on Today rather than tucked inside `/review`.
-   - Direct webcal / .ics integration with pre-configured timed alerts 15m before critical zeitgeber windows (Morning light, Caffeine curfew, Wind-down).
-   - Surfaces Meridian directly on lock screens and Apple Watch faces without needing a browser tab open.
-3. **Graduate the Contested Day to Live Stage (P2, Agentic Experience).**
-   - Graduate the contested day animation from `/dev` (`ContestBench`) to the live ShiftBoard / replan stream when a user modifies constraints ("Can't do this").
-4. **End-to-End Interactive Dogfooding & Browser QA (P2, Quality Assurance).**
-   - Perform a structured interaction test across mobile viewports covering the entire traveller lifecycle:
-     Cold setup $\to$ Route selection $\to$ Today glanceable status $\to$ Day swipe $\to$ Skip recovery $\to$ Arrival payoff.
+1. **In-Flight Cruising Mode & Cabin Guidance (P1, In-Flight UX).**
+   - Provide an ambient toggle on the offline pill ("✈ Cruising / In-flight").
+   - When engaged, surface an in-cabin circadian milestone card: direction-aware sleep/nap strategy, eye shades/light protocol, and meal timing.
+2. **Lock Screen & Wearable Widget JSON Feed `/api/feed/[id]/widget.json` (P1, Habit & Complication).**
+   - Expand `FEED_SURFACES` in `feed-store.ts` to include `"widget"`.
+   - Expose `/api/feed/[id]/widget.json` returning high-efficiency, lightweight JSON for iOS Scriptable / Widgy / LockFlow widgets:
+     - Home & Destination clocks, minutes to next circadian zeitgeber, current phase, and Circadian Alignment Score (CAS).
+3. **Multi-Route End-to-End Scenarios & Integration Verification (P2, QA & Science).**
+   - Verify comprehensive multi-route scenarios across eastbound (LHR → HND), westbound (JFK → SFO), and trans-Pacific (SFO → SYD) flows.
+   - Assert timezone offset handling, widget feed calculation, and cabin guidance accuracy.
 
 
 ## Later / deferred
@@ -1012,3 +1016,10 @@ Ambient jewels, not stacked blocks. Three phases:
 - Phase 3 — Everyday Rhythm Mode when no flight is booked.
 
 CAS formula shipped in `domain/circadian.ts` (`circadianAlignmentScore`).
+
+## Landing tease (proposed 2026-10-31)
+
+Cold `/` should show, not ask: render the example trip's Today (read-only) as the
+hero, with the entry form demoted to "Make it yours". Tease three artifacts
+(body-clock dial + CAS, arrival scorecard, shareable passport card). Lead the
+headline with the gap ("Your 07:00 Tokyo meeting is 23:00 body time").

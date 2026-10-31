@@ -25,7 +25,7 @@ const TABLE = "meridian_feeds";
 
 /** Read surfaces that get their own token — kill a leaked assistant link
  *  without re-subscribing the traveller's calendar. */
-export const FEED_SURFACES = ["calendar", "assistant"] as const;
+export const FEED_SURFACES = ["calendar", "assistant", "widget"] as const;
 export type FeedSurface = (typeof FEED_SURFACES)[number];
 
 export interface FeedRecord {
