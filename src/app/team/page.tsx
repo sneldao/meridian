@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Card } from "@/components/ui";
+import { BottomNav } from "@/components/BottomNav";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { CrewEvent } from "@/domain/types";
 import { meetingReadiness } from "@/domain/readiness";
@@ -76,7 +77,7 @@ export default function TeamPage() {
     : [...TEAM_TRAVELLERS].sort((a, b) => Number(riskOf(b)) - Number(riskOf(a)));
 
   return (
-    <main className="mx-auto max-w-6xl px-6 py-8 font-mono2 text-paper">
+    <main className="mx-auto max-w-6xl px-6 py-8 pb-20 font-mono2 text-paper md:pb-8">
       <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <Link href="/" className="text-xs text-mist hover:text-paper">
@@ -172,6 +173,7 @@ export default function TeamPage() {
           );
         })}
       </div>
+      <BottomNav />
     </main>
   );
 }

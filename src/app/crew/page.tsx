@@ -15,6 +15,7 @@ import type {
 import { CREW } from "@/agents/crew";
 import { MoonStar } from "lucide-react";
 import { Button, Card, Badge, KeyHint, AgentChip } from "@/components/ui";
+import { BottomNav } from "@/components/BottomNav";
 import { BriefingCard } from "@/components/BriefingCard";
 import { MorningCheckin } from "@/components/MorningCheckin";
 import { AnchoredPopover } from "@/components/AnchoredPopover";
@@ -73,9 +74,7 @@ export default function Home() {
   const lens = autoDirector ? ((run.focus ?? selectedLens) as LensId) : selectedLens;
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [briefingDismissed, setBriefingDismissed] = useState(false);
-  const [hasSavedPlan, setHasSavedPlan] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [runCount, setRunCount] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const trip = (run.trip ?? data?.trip ?? null) as Trip | null;
 
@@ -120,12 +119,7 @@ export default function Home() {
         voiceOnRef.current = on;
         setVoiceOn(on);
         setVoiceEnabled(on);
-        setHasSavedPlan(Boolean(localStorage.getItem("meridian:lastPlan")));
         setShowOnboarding(!localStorage.getItem("meridian:onboarded"));
-        fetch("/api/memory")
-          .then((r) => r.json())
-          .then((d) => setRunCount(Array.isArray(d?.runs) ? d.runs.length : 0))
-          .catch(() => {});
         if (typeof window !== "undefined") {
           const sp = new URLSearchParams(window.location.search);
           if (sp.get("origin")) setOrigin(sp.get("origin")!);
@@ -304,7 +298,6 @@ export default function Home() {
             if (e.lines?.length) speakDialogue(e.lines);
             else speakOnce(e.summary, "handoff");
           }
-          setHasSavedPlan(true);
           try {
             if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
               new Notification("Meridian handoff ready", { body: e.summary });
@@ -464,7 +457,7 @@ export default function Home() {
   const baseline = run.baseline ?? data?.baseline;
 
   return (
-    <main className="flex min-h-screen flex-col p-4 lg:h-screen">
+    <main className="flex min-h-screen flex-col p-4 pb-20 lg:h-screen lg:pb-4">
       <RunAnnouncer run={run} />
       <div className="dawnIn" aria-hidden="true" />
       <header className="mb-4 flex flex-wrap items-center gap-3">
@@ -581,14 +574,6 @@ export default function Home() {
             <AnchoredPopover anchorRef={menuRef}>
               <Card className="w-52 p-2 shadow-xl">
                 <div className="space-y-1">
-                  {hasSavedPlan && (
-                    <Link href="/review" className="block rounded-lg px-3 py-1.5 text-xs text-paper hover:bg-line focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-paper focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
-                      Saved plan
-                    </Link>
-                  )}
-                  <Link href="/history" className="block rounded-lg px-3 py-1.5 text-xs text-mist hover:bg-line focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-paper focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
-                    Past trips{runCount > 0 ? ` (${runCount})` : ""}
-                  </Link>
                   {providerLabel && (
                     <div className="rounded-lg px-3 py-1.5 text-xs text-dim">
                       {providerLabel}{providerFallback ? " · fallback" : ""}
@@ -785,6 +770,7 @@ export default function Home() {
           <CrewFeed entries={entries} running={run.phase === "running"} />
         </Card>
       </div>
+      <BottomNav />
     </main>
   );
 }

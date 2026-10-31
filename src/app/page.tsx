@@ -1056,14 +1056,6 @@ export default function Home() {
             >
               Trip settings
             </button>
-            {hasSavedPlan && (
-              <Link href="/review" className="m" role="menuitem" transitionTypes={["nav-forward"]} onClick={() => setMenuOpen(false)}>
-                Saved plan
-              </Link>
-            )}
-            <Link href="/history" className="m" role="menuitem" transitionTypes={["nav-forward"]} onClick={() => setMenuOpen(false)}>
-              Past trips{runCount > 0 ? ` (${runCount})` : ""}
-            </Link>
             <Link href="/crew" className="m" role="menuitem" transitionTypes={["nav-forward"]} onClick={() => setMenuOpen(false)}>
               AI at work
             </Link>
