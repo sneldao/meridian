@@ -24,6 +24,7 @@ import { loadMemory, memoryBriefWithCrossTrip, recordRun } from "@/domain/memory
   Trip,
   Citation,
   CrewEvent,
+  CrewQuestionOption,
   DayPlan,
   EvalResult,
   Intervention,
@@ -36,6 +37,7 @@ import { runReplay } from "./replay";
 import { runMorningReplay } from "./morning-replay";
 import { buildIcs, fetchCalendar, proposeMove } from "@/tools/calendar";
 import { requestCalendarApproval } from "@/lib/calendar-approvals";
+import { requestCrewQuestion } from "@/lib/crew-questions";
 import { searchScience } from "@/tools/science";
 import { searchTavily, tavilyEnabled } from "@/tools/tavily";
 import { destinationTaste, qlooEnabled } from "@/tools/qloo";
@@ -195,7 +197,7 @@ interface RunState {
 async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[], calendarSource: "google" | "fixture" = "fixture", checkIns: CheckIn[] = [], startDayIndex: number = 0, kind: ProviderKind = providerKind(), tenant?: string, baseline: WearableBaseline = GARMIN_BASELINE, baselineKind?: BaselineKind, tasteFavorites: TasteEntity[] = [], tasteContext?: Promise<TasteContext>, runId?: string, signal?: AbortSignal) {
   const throwIfAborted = () => signal?.throwIfAborted();
   throwIfAborted();
-  const adherence = checkIns.length ? foldCheckIns(ADHERENCE_PROFILE, checkIns) : ADHERENCE_PROFILE;
+  let adherence = checkIns.length ? foldCheckIns(ADHERENCE_PROFILE, checkIns) : ADHERENCE_PROFILE;
   const memory = await loadMemory(tenant);
   // Graph memory is offered as fixed tools, not prompt prose — the analyst
   // calls recallFindings/priorFailures and every answer carries the hop path.
@@ -294,6 +296,67 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
   );
   throwIfAborted();
   logLine(`analyst: ${analyst.text}`);
+
+  // The crew's one question. Mara just read the compliance floor the plan
+  // has to clear — when the log says early asks get skipped, check whether
+  // that is still true before the planner spends days inside it. The answer
+  // moves the floor for this run; skip or timeout keeps it. Fresh eastward
+  // runs only: a morning replan's check-ins are fresher than a question, and
+  // a westbound clock doesn't lean on the early-ask band.
+  if (
+    checkIns.length === 0 &&
+    startDayIndex === 0 &&
+    trip.direction === "east" &&
+    adherence.ignoresInterventionsBeforeMin > 345
+  ) {
+    const floor = adherence.ignoresInterventionsBeforeMin;
+    const options: CrewQuestionOption[] = [
+      { id: "keep", label: `Still true — keep ${fmtMin(floor)}` },
+      ...(floor - 45 >= 330
+        ? [{ id: "earlier45", label: `I can do ${fmtMin(floor - 45)}` }]
+        : []),
+      ...(floor - 75 >= 330
+        ? [{ id: "earlier75", label: `Push it — ${fmtMin(floor - 75)}` }]
+        : []),
+    ];
+    if (options.length > 1) {
+      const req = requestCrewQuestion({ runId, options });
+      emit({
+        type: "crew_question",
+        question: {
+          id: req.questionId,
+          runId,
+          agent: "analyst",
+          text: `Your log says asks before ${fmtMin(floor)} get skipped. Still right?`,
+          context:
+            "An earlier floor lets the morning light go earlier — that is how the crew buys bigger daily shifts. Unanswered, the floor stays.",
+          options,
+          expiresAt: req.expiresAt,
+        },
+      });
+      const ans = await Promise.race([
+        req.result,
+        new Promise<never>((_, reject) => {
+          signal?.addEventListener("abort", () => reject(signal.reason), { once: true });
+        }),
+      ]);
+      throwIfAborted();
+      const picked = options.find((o) => o.id === ans.optionId) ?? options[0];
+      const newFloor =
+        picked.id === "earlier45" ? floor - 45 : picked.id === "earlier75" ? floor - 75 : floor;
+      adherence = { ...adherence, ignoresInterventionsBeforeMin: newFloor };
+      emit({
+        type: "crew_answer",
+        questionId: req.questionId,
+        optionId: picked.id,
+        label: picked.label,
+        skipped: ans.skipped,
+      });
+      logLine(
+        `crew question ${ans.skipped ? "unanswered — floor kept" : `answered "${picked.label}"`} — compliance floor ${fmtMin(newFloor)}`,
+      );
+    }
+  }
 
   // 2. Researcher — pulls the literature. searchWeb (Tavily) adds live
   // non-paper context — current guidance, destination practicalities — that

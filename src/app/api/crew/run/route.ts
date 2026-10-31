@@ -16,6 +16,7 @@ import {
   cancelCrewRun,
 } from "@/lib/crew-runs";
 import { cancelCalendarApprovalsForRun } from "@/lib/calendar-approvals";
+import { cancelCrewQuestionsForRun } from "@/lib/crew-questions";
 import type { CheckIn, CrewEvent } from "@/domain/types";
 
 export const dynamic = "force-dynamic";
@@ -204,5 +205,6 @@ export async function POST(req: NextRequest) {
   }
   const ok = cancelCrewRun(body.runId);
   cancelCalendarApprovalsForRun(body.runId);
+  cancelCrewQuestionsForRun(body.runId);
   return Response.json({ ok });
 }

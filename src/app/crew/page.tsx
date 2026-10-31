@@ -22,6 +22,7 @@ import { LensShell, type LensId } from "@/components/lenses/LensShell";
 import { WorldLens } from "@/components/lenses/WorldLens";
 import { CrewFeed, type LogEntry } from "@/components/CrewFeed";
 import { CalendarApprovalCard } from "@/components/CalendarApprovalCard";
+import { CrewQuestionCard } from "@/components/CrewQuestionCard";
 import { RunAnnouncer } from "@/components/RunAnnouncer";
 import { DayStrip } from "@/components/DayStrip";
 import { RoutePicker } from "@/components/RoutePicker";
@@ -283,6 +284,15 @@ export default function Home() {
           break;
         case "approval_result":
           push({ kind: e.status === "failed" ? "error" : "system", text: e.message });
+          break;
+        case "crew_question":
+          push({ kind: "system", text: `the crew asks: ${e.question.text}` });
+          break;
+        case "crew_answer":
+          push({
+            kind: "system",
+            text: e.skipped ? "no answer — the crew decides" : `you answered: ${e.label}`,
+          });
           break;
         case "calendar_restore":
           push({ kind: "system", text: "calendar restored to its original times" });
@@ -622,6 +632,11 @@ export default function Home() {
       {providerFallback && (
         <div className="mb-3 rounded-lg border border-fail/20 bg-fail/10 px-4 py-2 text-xs text-fail">
           Crew fell back mid-run — review the plan before acting.
+        </div>
+      )}
+      {run.question && (
+        <div className="mb-3">
+          <CrewQuestionCard question={run.question} answer={run.questionAnswer} />
         </div>
       )}
       {run.approval && (!run.approvalResult || run.approvalResult.status !== "rejected") && (

@@ -85,6 +85,20 @@ const STATE_TEXT: Record<RowState, string> = {
   locked: "locked",
 };
 
+/** Whether the solver's draft and the candidate differ anywhere visible —
+ *  a draft the planner kept wholesale draws no ghost, because the ghost
+ *  would sit exactly under the submission and claim a difference that
+ *  isn't there. */
+function draftDiffers(a: DayPlan, b: DayPlan | undefined): boolean {
+  if (!b) return false;
+  if (a.shiftMin !== b.shiftMin || a.targetBedtimeMin !== b.targetBedtimeMin || a.targetWakeMin !== b.targetWakeMin) {
+    return true;
+  }
+  const byKind = new Map(b.interventions.map((iv) => [iv.kind, iv.startMin]));
+  if (a.interventions.length !== b.interventions.length) return true;
+  return a.interventions.some((iv) => byKind.get(iv.kind) !== iv.startMin);
+}
+
 const STATE_COLOR: Record<RowState, string> = {
   queued: "var(--color-dim)",
   draft: "var(--color-mist)",
@@ -177,6 +191,13 @@ export function ShiftBoard({ days, drafts, verdicts, locked, activeLabel, active
         const shown = plan !== undefined;
         const ghost = state === "draft" || state === "scanning" || state === "rejected";
         const fading = shown ? undefined : dissolving.get(d.label);
+        // The solver's placement, when the live run carried it — drawn hollow
+        // behind the submission while the day is still contested, so a cue
+        // the planner moved reads as a move, not a mystery.
+        const solverGhost =
+          ghost && draft?.solverDraft && draftDiffers(draft.solverDraft, plan)
+            ? draft.solverDraft
+            : null;
 
         return (
           <div key={d.dayIndex} className="grid grid-cols-[96px_1fr_84px] items-center gap-3">
@@ -232,6 +253,40 @@ export function ShiftBoard({ days, drafts, verdicts, locked, activeLabel, active
                   style={{ left: `${(h / 24) * 100}%` }}
                 />
               ))}
+
+              {/* solver ghost — the placement the submission was merged
+                  over, drawn hollow while the day is still contested. A cue
+                  sitting off its ghost is a cue the planner moved. */}
+              {solverGhost && (
+                <>
+                  {sleepSegments(solverGhost).map((seg, i) => (
+                    <span
+                      key={`sg${i}`}
+                      className="absolute top-2 bottom-2 rounded-sm border border-dashed"
+                      style={{
+                        left: `${seg.left}%`,
+                        width: `${seg.width}%`,
+                        background:
+                          "color-mix(in srgb, var(--color-sleep) 18%, transparent)",
+                        borderColor: "var(--color-sleep)",
+                        opacity: 0.5,
+                      }}
+                    />
+                  ))}
+                  {solverGhost.interventions.map((iv, j) => (
+                    <span
+                      key={`gi${j}`}
+                      className="absolute top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rotate-45 border border-dashed"
+                      style={{
+                        left: `${pct(iv.startMin)}%`,
+                        borderColor: INTERVENTION_ICONS[iv.kind].tint,
+                        opacity: 0.6,
+                      }}
+                      title={`solver: ${iv.kind.replace(/_/g, " ")} ${fmtMin(iv.startMin)}`}
+                    />
+                  ))}
+                </>
+              )}
 
               {/* sleep bar */}
               {shown &&

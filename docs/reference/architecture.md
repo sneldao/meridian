@@ -72,10 +72,20 @@ other.
 
 ## Event stream
 
-`CrewEvent` union in `src/domain/types.ts` (19 variants). Everything the UI
+`CrewEvent` union in `src/domain/types.ts` (21 variants). Everything the UI
 needs is an event: agent lifecycle, token deltas, tool calls/results,
 citations, plan candidates, eval verdicts, day locks, staged calendar moves,
-approval requests/results, calendar restores, check-ins, replans, errors.
+crew questions/answers, approval requests/results, calendar restores,
+check-ins, replans, errors.
+
+A `crew_question` suspends the run on the same seam as a calendar approval:
+the runtime emits the question, awaits the pending registry
+(`src/lib/crew-questions.ts`, 5-minute TTL — the run is watched live, so an
+unanswered question lets the crew decide rather than holding the stream),
+and continues on `crew_answer`. `POST /api/crew/answers` resolves it. The
+one question asked today is the compliance-floor check after the analyst —
+fresh eastward runs only — where the traveller's pick moves
+`ignoresInterventionsBeforeMin` for that run.
 
 `GET /api/crew/run` writes every event to an ordered run log
 (`src/lib/crew-runs.ts`) and serves it with SSE `id:` sequence numbers. The
@@ -204,6 +214,7 @@ in [providers.md](providers.md#supabase-persistence-optional).
 |---|---|
 | `GET /api/crew/run` | SSE crew stream (`origin`, `dest`, `date`, `checkins`, `startDay`, `wake`, `flight` query params — `wake` ∈ `before6`/`6to8`/`after8` resolves the baseline; `flight` is a departure-window id) |
 | `POST /api/crew/checkin` | Free-text check-in → structured `CheckIn` |
+| `POST /api/crew/answers` | `{questionId, optionId}` resolves the pending `crew_question` — 404 when the question is gone or the option isn't on the card |
 | `GET /api/trip` | Trip preview: `trip`, `baseline` + `baselineSource` (`"garmin"` after an upload, else `"fixture"`) + `baselineKind` (`garmin`/`wake-band`/`demo-default`), `adherence`, `calendar` + `calendarSource`, `flightId`, `provider`. `?flight=<id>` moves the flight event to that departure (`flightWindowFor` → `applyFlightChoice`); unknown or wrong-direction ids are ignored and `flightId` comes back `null`. Defaults `date` to `2026-10-18`; the client always sends an explicit date (today + 3 by default). Trip shape is `horizonFor`-sized: pre-flight capped by days left, post-flight bounded 1–5 |
 | `POST /api/wearable` | Garmin sleep-export CSV → a per-traveller `WearableBaseline`, which is what makes `baselineSource: "garmin"` possible. Garmin Health API is partner-gated, so the file export is the demo path |
 | `GET /api/team/run` | 12 parallel crews, one tagged SSE stream |

@@ -19,6 +19,8 @@ import type {
   CheckIn,
   Citation,
   CrewEvent,
+  CrewQuestion,
+  CrewQuestionAnswer,
   DayPlan,
   EvalResult,
   ShiftCoverage,
@@ -94,6 +96,9 @@ export interface RunState {
   /** Server-staged external write waiting for explicit traveller approval. */
   approval?: CalendarApprovalRequest;
   approvalResult?: { approvalId: string; status: "applied" | "rejected" | "failed"; message: string };
+  /** The crew's open question — the run is suspended on an answer. */
+  question?: CrewQuestion;
+  questionAnswer?: CrewQuestionAnswer;
   citations: Citation[];
   checkIns: CheckIn[];
   replans: { droppedDays: number[]; reason: string }[];
@@ -148,6 +153,8 @@ export function focusFor(event: CrewEvent): Focus | null {
     case "check_in":
     case "replan":
     case "briefing":
+    case "crew_question":
+    case "crew_answer":
       return "board";
     case "calendar_move":
     case "calendar_restore":
@@ -315,6 +322,20 @@ function applyEventInner(s: RunState, event: CrewEvent, t: number): RunState {
 
     case "calendar_move":
       return { ...base, moves: [...s.moves, event.move] };
+
+    case "crew_question":
+      return { ...base, question: event.question, questionAnswer: undefined };
+
+    case "crew_answer":
+      return {
+        ...base,
+        questionAnswer: {
+          questionId: event.questionId,
+          optionId: event.optionId,
+          label: event.label,
+          skipped: event.skipped,
+        },
+      };
 
     case "approval_request":
       return { ...base, approval: event.approval, approvalResult: undefined };

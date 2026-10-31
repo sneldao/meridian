@@ -822,11 +822,18 @@ that collapses once output arrives. Consensus that matters here:
    replan path exists (`checkins` + `startDay`); the *visible re-drawing*
    is the agentic payoff. Add constraint chips that fold into the
    adherence floor ("no light before 06:00").
-3. **The crew asks before it locks** — reuse the `approval_request`
-   suspend/resume seam for one analyst question pre-plan ("7:30 standup
-   Tue–Thu — anchor light before or after?"). Cheapest change with the
+3. **The crew asks before it locks** — **contract shipped**: `crew_question`
+   / `crew_answer` events, `src/lib/crew-questions.ts` (5-minute TTL — the
+   run is watched live, so an unanswered question lets the crew decide),
+   `POST /api/crew/answers`, `CrewQuestionCard` mounted on Home and `/crew`
+   beside the approval card, the wedge watchdog yielding while a question
+   is open, and run cancellation resolving pending questions as skipped.
+   The first real question is the compliance-floor check after the analyst
+   (fresh eastward runs, floor > 05:45): "your log says asks before 07:00
+   get skipped — still right?" and the pick moves
+   `ignoresInterventionsBeforeMin` for that run. Cheapest change with the
    highest "this is alive" signal — a scripted system cannot ask a
-   question about *your* calendar.
+   question about *your* data.
 4. **Rex edits the calendar in view** — `proposeMove` slides the event on
    `CalendarLens` while his reason captions it. Watching an agent move
    *your* meeting is the most felt-agentic beat available; today it is a

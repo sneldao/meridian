@@ -211,6 +211,38 @@ export interface CalendarApprovalRequest {
   expiresAt: string;
 }
 
+export interface CrewQuestionOption {
+  id: string;
+  label: string;
+}
+
+/** One question the crew pauses to ask — the run suspends on it the way it
+ *  does on a calendar approval, and the answer is a real input to the run
+ *  (not a survey). The first option is always the crew's default: skipped
+ *  or unanswered resolves to it. */
+export interface CrewQuestion {
+  id: string;
+  runId?: string;
+  agent: AgentId;
+  /** The question in plain words. */
+  text: string;
+  /** Why the crew is asking — the data it just read, and what the answer
+   *  changes. */
+  context: string;
+  options: CrewQuestionOption[];
+  expiresAt: string;
+}
+
+/** How a question resolved: the option the traveller picked, or `skipped`
+ *  when it expired or the run was cancelled — the run continues on the
+ *  crew's default either way. */
+export interface CrewQuestionAnswer {
+  questionId: string;
+  optionId: string;
+  label: string;
+  skipped: boolean;
+}
+
 export type CrewEvent =
   | { type: "run_start"; provider: string; runId?: string; trip: Trip; baseline: WearableBaseline; baselineKind?: BaselineKind; calendar: CalendarEvent[] }
   | { type: "agent_start"; agent: AgentId; title: string }
@@ -242,6 +274,14 @@ export type CrewEvent =
   | { type: "eval_result"; result: EvalResult; attempt: number }
   | { type: "day_locked"; day: DayPlan; sunProgress: number }
   | { type: "calendar_move"; move: CalendarMove }
+  | { type: "crew_question"; question: CrewQuestion }
+  | {
+      type: "crew_answer";
+      questionId: string;
+      optionId: string;
+      label: string;
+      skipped: boolean;
+    }
   | { type: "approval_request"; approval: CalendarApprovalRequest }
   | {
       type: "approval_result";

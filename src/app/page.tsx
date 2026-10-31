@@ -45,6 +45,7 @@ const AgentDrawer = dynamic(
 import { RunAnnouncer } from "@/components/RunAnnouncer";
 import { CrewTrace } from "@/components/CrewTrace";
 import { CalendarApprovalCard } from "@/components/CalendarApprovalCard";
+import { CrewQuestionCard } from "@/components/CrewQuestionCard";
 import { useFocusTrap } from "@/lib/a11y";
 import { friendlyDayLabel } from "@/lib/day-label";
 import { restorePlan } from "@/lib/restore-plan";
@@ -467,6 +468,15 @@ export default function Home() {
         case "approval_result":
           push({ kind: e.status === "failed" ? "error" : "system", text: e.message });
           break;
+        case "crew_question":
+          push({ kind: "system", text: `the crew asks: ${e.question.text}` });
+          break;
+        case "crew_answer":
+          push({
+            kind: "system",
+            text: e.skipped ? "no answer — the crew decides" : `you answered: ${e.label}`,
+          });
+          break;
         case "calendar_restore":
           push({ kind: "system", text: "calendar restored to its original times" });
           break;
@@ -750,6 +760,9 @@ export default function Home() {
   useEffect(() => {
     if (run.phase !== "running") return;
     const id = setInterval(() => {
+      // A pending crew question is the same deliberate pause an approval is —
+      // the run is waiting on the traveller, not wedged.
+      if (run.question && !run.questionAnswer) return;
       if (run.approval && !run.approvalResult) return;
       const silent = Date.now() - lastEventAt.current;
       if (silent < (briefingSeen.current ? STALL_AFTER_BRIEFING_MS : STALL_IDLE_MS)) return;
@@ -762,7 +775,7 @@ export default function Home() {
       reset();
     }, 4000);
     return () => clearInterval(id);
-  }, [run.phase, run.approval, run.approvalResult, reset]);
+  }, [run.phase, run.approval, run.approvalResult, run.question, run.questionAnswer, reset]);
 
   const goGuide = () => {
     guideRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -1234,6 +1247,11 @@ export default function Home() {
           </div>
         )}
 
+        {run.question && (
+          <div className="mb-4.5">
+            <CrewQuestionCard question={run.question} answer={run.questionAnswer} />
+          </div>
+        )}
         {run.approval && (!run.approvalResult || run.approvalResult.status !== "rejected") && (
           <div style={{ marginBottom: "18px" }}>
             <CalendarApprovalCard approval={run.approval} result={run.approvalResult} />

@@ -74,6 +74,14 @@ function describe(e: CrewEvent): Row {
       return { who: "system", what: `briefing · score ${e.score.toFixed(2)}`, tone: "var(--color-pass)", emph: true };
     case "error":
       return { who: "system", what: e.message, tone: "var(--color-fail)", emph: true };
+    case "crew_question":
+      return { who: CREW[e.question.agent].name, agent: e.question.agent, what: `asks · ${e.question.text}`, tone: "var(--color-sun-dest)", emph: true };
+    case "crew_answer":
+      return {
+        who: "wearer",
+        what: e.skipped ? "skipped the question — the crew used its default" : `answered · ${e.label}`,
+        tone: "var(--color-mist)",
+      };
     case "done":
       return { who: "system", what: "done", tone: "var(--color-mist)" };
   }
