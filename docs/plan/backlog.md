@@ -950,3 +950,14 @@ Addresses the traveller's real-world environment (brain fog, mobile thumb reach,
 - ~~`.qoder/` lint warnings~~ — added to `globalIgnores`.
 - ~~Hero fold/barrenness~~ — `.hr-col` layout fix + `dawn-layers` shared
   primitive + interaction pass (shipped `5ccf7a6`).
+## Round 9 — mobile & right-now UX (shipped 2026-10-31)
+
+- **Right-now card wired:** `RightNowCard` (previously dead) is mounted in
+  `NudgeFeedScreen` using `heroNudge`/`countdown`/`completedIds`/`skippedIds`.
+- **Mobile scrubbing:** 15-minute stepper buttons + haptic feedback on the
+  1440-minute day scrubber (`DayScene`).
+- **Swipe day navigation:** horizontal swipe (≥50px) on the day rail.
+- **Undo toast:** bottom offset raised to clear the fixed bottom nav.
+- **Offline badge:** root-level `OfflineBadge` surfaces connectivity loss.
+- **Adaptive recovery:** non-punitive recovery card when a step is skipped.
+- **Steering affordance:** skip relabelled "Can't do this" / "Noted".
