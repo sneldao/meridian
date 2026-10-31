@@ -39,6 +39,8 @@ jobs:
   # The suite lives in visual/, outside tests/, so `bun test` never loads it.
   visual:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # commits refreshed baselines back to the branch
     steps:
       - uses: actions/checkout@v4
         with:
