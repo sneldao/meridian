@@ -13,7 +13,7 @@ import type {
 
 const KIND_WORDS: [RegExp, InterventionKind][] = [
   [/\b(light|sun|sunlight|outside|bright)\b/i, "light_exposure"],
-  [/\b(screen|dark|dim|avoid)\b/i, "avoid_light"],
+  [/\b(screen|dark|dim|avoid|shades|sunglasses|eye ?mask|blinds|blackout)\b/i, "avoid_light"],
   [/\b(sleep|bed|slept|bedtime|woke|wake|nap)\b/i, "sleep_window"],
   [/\b(coffee|caffeine|espresso|tea)\b/i, "caffeine_cutoff"],
   [/\b(melatonin)\b/i, "melatonin"],
@@ -32,8 +32,12 @@ export function parseCheckInText(req: CheckInRequest): CheckIn {
 
   let status: CheckInStatus = req.status ?? "done";
   if (!req.status) {
-    if (/\b(skip|skipped|missed|didn'?t|couldn'?t|can'?t|never got|forgot|no way|bailed)\b/.test(lower)) {
+    if (/\b(skip|skipped|missed|didn'?t|couldn'?t|can'?t|never got|forgot|no way|bailed|slept through|ran out of time|impossible|won'?t make|couldn'?t make)\b/.test(lower)) {
       status = "skipped";
+      // A disrupted itinerary isn't compliance or refusal — the honest
+      // middle: the plan partially held. The note text carries the why.
+    } else if (/\b(delay|delayed|landed late|flight (was )?(late|over)|stuck)\b/.test(lower)) {
+      status = "partial";
     } else if (/\b(too (early|hard|much)|brutal|rough|awful|exhausted|struggled)\b/.test(lower)) {
       status = "harder";
     } else if (/\b(sort of|half|partly|some of|a bit)\b/.test(lower)) {

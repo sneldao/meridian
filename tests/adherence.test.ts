@@ -24,6 +24,19 @@ describe("adherence", () => {
     expect(ci.dayIndex).toBe(1);
   });
 
+  test("parseCheckInText reads the words travellers actually use", () => {
+    expect(parseCheckInText({ text: "slept through the morning light alarm" }).status).toBe("skipped");
+    const cant = parseCheckInText({ text: "no way I could make the 5am run" });
+    expect(cant.status).toBe("skipped");
+    expect(cant.kind).toBe("exercise");
+  });
+
+  test("parseCheckInText treats a delayed flight as partial, not success", () => {
+    const ci = parseCheckInText({ text: "flight delayed 3 hours" });
+    expect(ci.status).toBe("partial");
+    expect(ci.text).toContain("delayed");
+  });
+
   test("foldCheckIns moves the floor after early skips", () => {
     const ci = parseCheckInText({ text: "skipped the 5am light" });
     // force the pinned start
