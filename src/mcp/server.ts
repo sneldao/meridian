@@ -135,6 +135,7 @@ const TOOLS: Record<string, McpTool> = {
         calendarSource: calendar.source,
         checkIns,
         startDayIndex: args.startDayIndex ?? 0,
+        interactive: false,
       })) {
         if (e.type === "briefing") {
           briefing = {

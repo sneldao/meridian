@@ -80,6 +80,11 @@ export function runCrew(opts?: {
   tasteFavorites?: TasteEntity[];
   runId?: string;
   signal?: AbortSignal;
+  /** Interactive callers (the app's own streams) can be asked `crew_question`s.
+   *  Non-interactive callers — MCP `plan_shift`, eval harnesses — have nobody
+   *  to answer, so a question would suspend them for the full TTL for
+   *  nothing. Default true. */
+  interactive?: boolean;
 }): AsyncGenerator<CrewEvent> {
   const queue: CrewEvent[] = [];
   const notifier: { fn: (() => void) | null } = { fn: null };
@@ -119,6 +124,7 @@ export function runCrew(opts?: {
             tasteContext,
             opts?.runId,
             opts?.signal,
+            opts?.interactive,
           );
         const primary = providerKind();
         try {
@@ -194,7 +200,7 @@ interface RunState {
   briefingText: string;
 }
 
-async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[], calendarSource: "google" | "fixture" = "fixture", checkIns: CheckIn[] = [], startDayIndex: number = 0, kind: ProviderKind = providerKind(), tenant?: string, baseline: WearableBaseline = GARMIN_BASELINE, baselineKind?: BaselineKind, tasteFavorites: TasteEntity[] = [], tasteContext?: Promise<TasteContext>, runId?: string, signal?: AbortSignal) {
+async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[], calendarSource: "google" | "fixture" = "fixture", checkIns: CheckIn[] = [], startDayIndex: number = 0, kind: ProviderKind = providerKind(), tenant?: string, baseline: WearableBaseline = GARMIN_BASELINE, baselineKind?: BaselineKind, tasteFavorites: TasteEntity[] = [], tasteContext?: Promise<TasteContext>, runId?: string, signal?: AbortSignal, interactive: boolean = true) {
   const throwIfAborted = () => signal?.throwIfAborted();
   throwIfAborted();
   let adherence = checkIns.length ? foldCheckIns(ADHERENCE_PROFILE, checkIns) : ADHERENCE_PROFILE;
@@ -301,9 +307,11 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
   // has to clear — when the log says early asks get skipped, check whether
   // that is still true before the planner spends days inside it. The answer
   // moves the floor for this run; skip or timeout keeps it. Fresh eastward
-  // runs only: a morning replan's check-ins are fresher than a question, and
-  // a westbound clock doesn't lean on the early-ask band.
+  // runs only: a morning replan's check-ins are fresher than a question, a
+  // westbound clock doesn't lean on the early-ask band, and a non-interactive
+  // caller (MCP, eval) has nobody to answer.
   if (
+    interactive &&
     checkIns.length === 0 &&
     startDayIndex === 0 &&
     trip.direction === "east" &&
