@@ -152,12 +152,12 @@ export function solarClockMin(lon: number, sub: SubsolarPoint): number {
  * The sub-solar point as the traveller's body reads it — the ghost terminator
  * of design-vision.md §2, which the world lens and the home hero draw alike.
  *
- * `owedMin` is the shift the plan has not delivered. An eastward body starts
- * *behind* the destination dawn, west of the real sun, and each scorer-locked
- * day drags it east until the two lines fuse; a westward body leads and the
- * drift runs the other way. `requiredShiftMin` carries that direction (signed
- * minutes, negative = advance), `owedMin` the size — so the curve closes as
- * the run locks days.
+ * `owedMin` is the shift the plan has not delivered. An eastbound body is
+ * behind the destination clock, so its sun is *earlier* — the body's
+ * subsolar point sits east of the real one and each locked day drags it
+ * west onto it; a westbound body leads and the drift runs the other way.
+ * `requiredShiftMin` carries that direction (signed minutes, negative =
+ * advance), `owedMin` the size — so the curve closes as the run locks days.
  *
  * The offset is capped at `requiredShiftMin`: coverageOf keeps residualMin
  * inside requiredMin, so nothing upstream can ask for more, but the ghost
@@ -169,6 +169,6 @@ export function bodySubsolarPoint(
   requiredShiftMin: number,
 ): SubsolarPoint {
   const owed = Math.min(Math.abs(owedMin), Math.abs(requiredShiftMin));
-  const driftDeg = (owed / 60) * 15 * Math.sign(requiredShiftMin);
+  const driftDeg = -(owed / 60) * 15 * Math.sign(requiredShiftMin);
   return { lon: wrapLon(sub.lon + driftDeg), lat: sub.lat };
 }

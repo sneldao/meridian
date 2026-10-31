@@ -192,13 +192,13 @@ describe("the body's sub-solar point", () => {
 
   test("an eastbound body sits 15° an hour behind the real sun", () => {
     const body = bodySubsolarPoint(oct, 480, EAST);
-    expect(wrapLon(body.lon - oct.lon)).toBeCloseTo(-120, 6);
+    expect(wrapLon(body.lon - oct.lon)).toBeCloseTo(120, 6);
     // Same declination: the ghost is the same line, only offset in longitude.
     expect(body.lat).toBe(oct.lat);
   });
 
   test("a westbound body leads it", () => {
-    expect(wrapLon(bodySubsolarPoint(oct, 300, 300).lon - oct.lon)).toBeCloseTo(75, 6);
+    expect(wrapLon(bodySubsolarPoint(oct, 300, 300).lon - oct.lon)).toBeCloseTo(-75, 6);
   });
 
   test("nothing owed, no second line at all", () => {
@@ -216,8 +216,8 @@ describe("the body's sub-solar point", () => {
   test("an over-owed day stops at the whole trip", () => {
     // The curve's span is capped by the trip itself: owe sixteen hours to an
     // eight-hour shift and the ghost sits on the far side, not past it.
-    expect(wrapLon(bodySubsolarPoint(oct, 960, EAST).lon - oct.lon)).toBeCloseTo(-120, 6);
-    expect(wrapLon(bodySubsolarPoint(oct, -960, EAST).lon - oct.lon)).toBeCloseTo(-120, 6);
-    expect(wrapLon(bodySubsolarPoint(oct, 600, 300).lon - oct.lon)).toBeCloseTo(75, 6);
+    expect(wrapLon(bodySubsolarPoint(oct, 960, EAST).lon - oct.lon)).toBeCloseTo(120, 6);
+    expect(wrapLon(bodySubsolarPoint(oct, -960, EAST).lon - oct.lon)).toBeCloseTo(120, 6);
+    expect(wrapLon(bodySubsolarPoint(oct, 600, 300).lon - oct.lon)).toBeCloseTo(-75, 6);
   });
 });

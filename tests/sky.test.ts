@@ -3,10 +3,12 @@ import { subsolarPoint, solarZenithDeg, bodySubsolarPoint } from "@/domain/sun";
 import {
   airMass,
   cssRGB,
+  encodeSRGB,
   MAX_AIR_MASS,
   skyBand,
   skyGradient,
   skyRadiance,
+  sunBeamColor,
 } from "@/domain/sky";
 
 // The Window Seat's whole claim is that two skies converge as the plan banks
@@ -128,7 +130,11 @@ describe("the two skies converge — the product thesis", () => {
   });
 
   test("the gap between the two skies shrinks monotonically as the plan banks", () => {
-    const sub = subsolarPoint(new Date("2026-10-17T12:00:00Z"));
+    // 03:23Z is near solar noon in Tokyo (real alt ≈ +43°): altitude falls
+    // off symmetrically with longitude offset there, so the gap is strictly
+    // monotone. Near the nadir it is not — altitude distance dips through the
+    // night side — so the moment is chosen, not incidental.
+    const sub = subsolarPoint(new Date("2026-10-17T03:23:00Z"));
     let prev = Infinity;
     for (const owed of [480, 360, 240, 120, 60, 30, 0]) {
       const mine = altitudeFor(TOKYO.lat, TOKYO.lon, bodySubsolarPoint(sub, owed, 480));
@@ -222,5 +228,25 @@ describe("skyGradient", () => {
     // Bands may change name at the boundary; the colour must not jump wildly.
     expect(Math.abs(just === at ? 0 : 1)).toBeLessThanOrEqual(1);
     expect([justB, atB].every((b) => typeof b === "string")).toBe(true);
+  });
+});
+describe("sunBeamColor", () => {
+  test("at the horizon the beam is pure ember", () => {
+    const [r, , b] = sunBeamColor(0);
+    expect(r).toBe(1);
+    expect(b).toBeLessThan(0.2);
+  });
+
+  test("at the zenith the beam is nearly white", () => {
+    const [, , b] = sunBeamColor(90);
+    expect(b).toBeGreaterThan(0.8);
+  });
+});
+
+describe("encodeSRGB", () => {
+  test("anchors: black, white, mid-grey", () => {
+    expect(encodeSRGB(0)).toBe(0);
+    expect(encodeSRGB(1)).toBe(255);
+    expect(encodeSRGB(0.5)).toBeCloseTo(188, 0);
   });
 });

@@ -65,16 +65,16 @@ describe("dawn layers", () => {
   test("direction matters: east and west drift opposite ways", () => {
     const east = dawnLayers(gen, sub, 240, -240);
     const west = dawnLayers(gen, sub, 240, 240);
-    expect(east.bodyLon).toBeCloseTo(sub.lon - 60, 6);
-    expect(west.bodyLon).toBeCloseTo(sub.lon + 60, 6);
+    expect(east.bodyLon).toBeCloseTo(sub.lon + 60, 6);
+    expect(west.bodyLon).toBeCloseTo(sub.lon - 60, 6);
   });
 
-  test("an eastward body is west of the real dawn — behind, as Tokyo is", () => {
+  test("an eastward body is east of the real dawn — an earlier sun, as a body behind Tokyo's clock sees", () => {
     // 6.5h owed at 15°/h is 97.5° of longitude. ghostDawnLon comes back
     // wrapped into (−180, 180], so the expectation has to wrap too.
     const l = dawnLayers(gen, sub, 390, EAST_8H);
-    expect(l.bodyLon).toBeCloseTo(sub.lon - 97.5, 6);
-    expect(l.ghostDawnLon).toBeCloseTo(wrapLon(sub.lon - 97.5 - 90), 6);
+    expect(l.bodyLon).toBeCloseTo(sub.lon + 97.5, 6);
+    expect(l.ghostDawnLon).toBeCloseTo(wrapLon(sub.lon + 97.5 - 90), 6);
   });
 
   test("the layer set is a pure function of its arguments", () => {

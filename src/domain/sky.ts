@@ -58,7 +58,7 @@ const TAU_GREY = 0.06;
 export const MAX_AIR_MASS = 40;
 
 /** A colour, as three linear channels. */
-type RGB = [number, number, number];
+export type RGB = [number, number, number];
 
 export type SkyBand = "day" | "golden" | "blue-hour" | "civil" | "nautical" | "night";
 
@@ -232,15 +232,15 @@ export function skyRadiance(sunAltDeg: number): Sky {
   };
 }
 
-/** Linear → sRGB, for CSS. */
-function encode(channel: number): number {
+/** Linear → sRGB 0..255 for one channel (the same curve cssRGB uses). */
+export function encodeSRGB(channel: number): number {
   const c = Math.max(0, Math.min(1, channel));
   const s = c <= 0.0031308 ? c * 12.92 : 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
   return Math.round(s * 255);
 }
 
 export function cssRGB(rgb: RGB): string {
-  return `rgb(${encode(rgb[0])}, ${encode(rgb[1])}, ${encode(rgb[2])})`;
+  return `rgb(${encodeSRGB(rgb[0])}, ${encodeSRGB(rgb[1])}, ${encodeSRGB(rgb[2])})`;
 }
 
 /**
@@ -279,6 +279,23 @@ export function skyStops(sunAltDeg: number): { horizon: RGB; zenith: RGB } {
     // Less air overhead, so the zenith is darker and a shade cooler.
     zenith: [display(rgb[0], 0.62), display(rgb[1], 0.68), display(rgb[2], 0.88)],
   };
+}
+
+/**
+ * Colour of the directly transmitted solar beam at an altitude — the light the
+ * sun itself delivers, as opposed to the scattered sky. Reddened by the same
+ * Rayleigh + grey extinction over the same air mass the sky uses; below the
+ * horizon the path is the full horizon air mass, so the beam is ember and
+ * stays ember. Normalised so the strongest channel is 1 (ratio is the physics,
+ * level is a display decision). The stage backdrop uses this: the stage is not
+ * a window, it is the light the body is about to receive.
+ */
+export function sunBeamColor(sunAltDeg: number): RGB {
+  const m = sunAltDeg > 0 ? airMass(sunAltDeg) : MAX_AIR_MASS;
+  const beam: RGB = [0, 0, 0];
+  for (let c = 0; c < 3; c++) beam[c] = Math.exp(-(TAU_BLUE_ZENITH * BETA[c] + TAU_GREY) * m);
+  const peak = Math.max(beam[0], beam[1], beam[2], 1e-9);
+  return [beam[0] / peak, beam[1] / peak, beam[2] / peak];
 }
 
 /**
