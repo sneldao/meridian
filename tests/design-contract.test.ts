@@ -98,6 +98,7 @@ const STYLE_CEILING: Record<string, number> = {
   "src/components/dial/DisclosureSheet.tsx": 2,
   "src/components/DayScene.tsx": 2,
   "src/components/HeroDawnPanel.tsx": 1,
+  "src/components/TodayStage.tsx": 1,
   "src/components/DeepDiveVisuals.tsx": 1,
   "src/components/DayCardShare.tsx": 1,
   "src/components/DawnScrubber.tsx": 1,

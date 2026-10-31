@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { Fragment, useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { fmtMin } from "@/domain/circadian";
+import { coverageOf, fmtMin } from "@/domain/circadian";
 import { todayDayIndex } from "@/domain/today";
-import { resolveBaseline, buildTrip, calendarFor, GARMIN_BASELINE, type WakeBand } from "@/domain/fixtures";
-import { getFlightRecommendations } from "@/domain/nudges";
+import { resolveBaseline, buildTrip, calendarFor, GARMIN_BASELINE, ADHERENCE_PROFILE, type WakeBand } from "@/domain/fixtures";
+import { buildDailyNudgesForDay, getFlightRecommendations } from "@/domain/nudges";
+import { previewPlan } from "@/domain/solver";
 import { summarizeCheckIn } from "@/domain/adherence";
 import type {
   AdherenceProfile,
@@ -82,7 +83,7 @@ import { isTasteItinerary, itineraryMatchesTrip, type TasteItinerary } from "@/d
 import { JourneySteps } from "@/components/JourneySteps";
 import { PLACE_GROUPS } from "@/components/MoreSheet";
 import { PlanReview } from "@/components/PlanReview";
-import { TimezoneClocks } from "@/components/TimezoneClocks";
+import { TodayStage } from "@/components/TodayStage";
 import { SubscribeCalendar } from "@/components/SubscribeCalendar";
 import { PinnedDayRow } from "@/components/DayStrip";
 import { useRunState, calendarWithMoves, ledgerEvents, ghostGapDeg } from "@/state/run";
@@ -1116,6 +1117,67 @@ export default function Home() {
     }
   }
 
+  // The stage's honest inputs (round 20): how deep the sky's dawn still runs,
+  // and today's steps in the exact shape the feed will confirm them — same
+  // builder, same marks, no separate source of truth. Example mode has no
+  // locked days, so the stage falls back to the same preview the feed reads.
+  const stagePreview = useMemo(
+    () =>
+      entry?.mode === "example" && trip
+        ? previewPlan({
+            trip,
+            calendar: currentEvents,
+            adherence: data?.adherence ?? ADHERENCE_PROFILE,
+            baseline,
+          })
+        : null,
+    [entry?.mode, trip, currentEvents, data?.adherence, baseline],
+  );
+  const stageOwedMin = useMemo(() => {
+    if (!trip) return 0;
+    const lockedDays = [...effectiveLocked.values()];
+    if (lockedDays.length) return coverageOf(trip, lockedDays).residualMin;
+    let residual: number | null = null;
+    stagePreview?.forEach((s) => {
+      if (s?.result.coverage) residual = s.result.coverage.residualMin;
+    });
+    return residual ?? Math.abs(trip.requiredShiftMin);
+  }, [trip, effectiveLocked, stagePreview]);
+  const stageBodyShiftMin = useMemo(
+    () => [...effectiveLocked.values()].reduce((s, d) => s + d.shiftMin, 0),
+    [effectiveLocked],
+  );
+  const stageNudges = useMemo(() => {
+    if (!trip) return null;
+    const idx = todayDayIndex(trip, new Date());
+    if (idx === null) return null;
+    const spec = trip.days.find((d) => d.dayIndex === idx);
+    if (!spec) return null;
+    const plan = effectiveLocked.get(spec.label) ?? stagePreview?.get(spec.label)?.plan ?? null;
+    if (!plan) return null;
+    return buildDailyNudgesForDay({
+      trip,
+      dayIndex: idx,
+      plan,
+      baseline,
+      calendarEvents: currentEvents,
+      moves: run.moves,
+      citations: activeCitations,
+      verdicts: run.verdicts.get(spec.label),
+      adherence: data?.adherence,
+    });
+  }, [
+    trip,
+    effectiveLocked,
+    stagePreview,
+    baseline,
+    currentEvents,
+    run.moves,
+    run.verdicts,
+    activeCitations,
+    data?.adherence,
+  ]);
+
   // Depth dial via URL: ?depth=guided opens every evidence drawer;
   // ?depth=operator goes straight to the crew surface. Deferred so the first
   // paint isn't blocked reading location.
@@ -1629,35 +1691,32 @@ export default function Home() {
                 </button>
               </div>
             )}
-            <div ref={setupRef} className="reading" id="journey-trip">
-              <button
-                type="button"
-                className="trip-chip"
-                onClick={() => {
-                  setRouteOpen((v) => {
-                    if (!v) setRouteDraft({ origin, dest, date: departureDate });
-                    return !v;
-                  });
-                }}
-                aria-expanded={routeOpen}
-              >
-                {trip.origin.name} → {trip.destination.name} ·{" "}
-                <span className="trip-chip-date">
-                  {trip.days.find((d) => d.dayIndex === trip.departureDayIndex)?.date
-                    ? new Date(`${trip.days.find((d) => d.dayIndex === trip.departureDayIndex)!.date}T12:00:00`).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })
-                    : departureDate}
-                  {" · "}
-                </span>
-                {Math.abs(trip.requiredShiftMin / 60)}h{" "}
-                {trip.direction === "east" ? "ahead" : "behind"}{" "}
-                <span className="trip-chip-change">✎ Change</span>
-              </button>
-              <TimezoneClocks
-                origin={trip.origin}
-                destination={trip.destination}
-                requiredShiftMin={trip.requiredShiftMin}
-                bodyShiftMin={[...effectiveLocked.values()].reduce((s, d) => s + d.shiftMin, 0)}
-              />
+            {/* Round 20: first paint is the full-bleed stage — sky, route,
+                clocks, the one next step. The rest of Today unfolds below as
+                sticky scenes; the route editor stays in flow, right under
+                the stage, where the chip opens it. */}
+            <div className="today-stage-wrap" id="journey-trip">
+              <div className="today-stage-pin">
+                <TodayStage
+                  trip={trip}
+                  owedMin={stageOwedMin}
+                  bodyShiftMin={stageBodyShiftMin}
+                  nudges={stageNudges}
+                  marks={tripActions.marks}
+                  routeOpen={routeOpen}
+                  onChip={() => {
+                    setRouteOpen((v) => {
+                      if (!v) setRouteDraft({ origin, dest, date: departureDate });
+                      return !v;
+                    });
+                  }}
+                />
+              </div>
+              {/* Scroll room: keeps the stage pinned for one beat past the
+                  first viewport before the recede hand-off. */}
+              <div className="today-stage-run" aria-hidden="true" />
+            </div>
+            <div ref={setupRef} className="reading">
               {routeOpen && (
                 <div style={{ marginTop: 8 }}>
                   <div className="card rise" style={{ padding: "12px 14px", marginBottom: 10 }}>
@@ -1713,6 +1772,7 @@ export default function Home() {
               )}
             </div>
 
+            <div className="today-flow">
             <div
               className="reading"
               style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}
@@ -1901,6 +1961,7 @@ export default function Home() {
                 ics={run.briefing?.ics}
               />
             )}
+            </div>
           </>
         ) : !tripResolved ? (
           <div ref={setupRef} aria-busy="true" aria-label="Loading your plan" style={{ padding: "24px 0" }}>

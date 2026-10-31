@@ -346,3 +346,28 @@ against from a speed-run demo studied in last-human-standing:
   same functions the live app trusts. The passport lands stamped OWED 4.5h,
   because that is what the example honestly carries; a demo that overclaims
   is worse than none.
+
+## Round 20 — Today opens as a stage (2026-11-01)
+
+The critique carried over from round 19: Today dumped every section at
+equal weight the moment a trip existed. Round 20 gives it a composition:
+
+- **First paint is the stage.** `TodayStage` carries exactly four things —
+  the modeled sky (the same `stageSkyFor` the dial trusts), the route chip,
+  the two clocks, and one next step. The next line derives from the same
+  `pickNextStep` the feed uses, with the same marks, so the stage never
+  advertises a step the feed won't confirm.
+- **The stage holds, then recedes.** The wrapper pins the stage for one
+  beat past the first viewport; when the pin releases, a scroll-driven
+  recede (transform + opacity, scoped to the wrapper's `--stage`
+  view-timeline with length-based exit ranges) hands the page to the plan.
+- **The rest rises on arrival.** Today's sections sit in `.today-flow` and
+  reveal with the same cadence vocabulary the feed uses, one register up.
+- **The phantom scroll container is gone.** `.root`'s `overflow: hidden`
+  silently made it the nearest scrollport and froze every scroll-driven
+  timeline inside it; it is now `overflow: clip`, and the motion-language
+  test locks it there. This also un-froze the feed cadence and the trips
+  deck in browsers where they had quietly never run.
+
+Degradation is part of the effect: without `animation-timeline` support,
+or under reduced motion, the stage is simply a section that scrolls away.

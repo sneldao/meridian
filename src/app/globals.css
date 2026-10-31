@@ -159,7 +159,9 @@ body {
   color: var(--m-ink);
   font-family: var(--font-body);
   padding: 0 0 56px;
-  overflow: hidden;
+  /* clip, not hidden: hidden would make .root a scroll container and steal
+     every scroll-driven timeline inside it (the stage recede, the deck). */
+  overflow: clip;
 }
 .beam {
   position: absolute;
@@ -1596,7 +1598,7 @@ body {
    horizon band rising from the floor, the origin-blue ghost residue, and the
    blue-black ink — the var()s resolve per-element from the tokens above or
    the inline values stageSkyFor sets. */
-.hero, .clock-stage, .arr, .hero .hl .bg.term {
+.hero, .clock-stage, .arr, .today-stage, .hero .hl .bg.term {
   background:
     /* the horizon line — soft, elliptical, fades out at the ends */
     radial-gradient(ellipse 62% 2px at var(--stage-sun-x) calc(100% - var(--stage-horizon-h)),
@@ -6682,4 +6684,114 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   text-transform: uppercase;
   color: var(--m-accent);
   margin-right: 8px;
+}
+
+/* ── Today's stage (round 20) ───────────────────────────────────────────
+   First paint is the full-bleed stage — sky, route, clocks, the one next
+   step. The rest of Today unfolds below: the stage pins and recedes as the
+   traveller scrolls (the sky hands the page to the plan), and each section
+   rises on arrival. Scroll-driven, transform + opacity only, and every rule
+   stands down under reduced motion or where animation-timeline is absent —
+   the stage then simply scrolls away like any section. */
+.today-stage {
+  /* The sky is dark ink — the stage's tokens follow the clock stage's so
+     chips, clocks and the next line stay legible on it. */
+  --m-bg: #0b0e16;
+  --m-card: rgba(255, 255, 255, 0.05);
+  --m-text: #c9d2e4;
+  --m-muted: #8b93a7;
+  --m-faint: #6b7590;
+  --m-border: rgba(255, 255, 255, 0.12);
+  --m-accent: #e99a6f;
+  border-radius: 24px;
+  padding: 26px 20px 18px;
+  min-height: 340px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.today-stage-inner {
+  display: grid;
+  gap: 14px;
+  justify-items: center;
+  text-align: center;
+  width: 100%;
+}
+.stage-chip { backdrop-filter: none; }
+.stage-next {
+  margin: 0;
+  font-size: var(--text-base);
+  color: var(--m-text);
+}
+.stage-next-kicker {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--m-accent);
+  margin-right: 2px;
+}
+.stage-cue {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: var(--m-faint);
+  animation: cue-bob 2.4s var(--ease-drift) infinite;
+}
+@keyframes cue-bob {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 5px; }
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    /* The wrapper is taller than the viewport, so its view-timeline phases
+       only address cleanly as lengths: exit 0 starts when the pin releases,
+       and the stage recedes over the following viewport of scroll while the
+       next scene takes over. The run div below the pin is pure scroll room —
+       it keeps the stage held for one beat before the hand-off. */
+    .today-stage-wrap {
+      view-timeline: --stage block;
+    }
+    .today-stage-run {
+      height: 68dvh;
+    }
+    .today-stage-pin {
+      position: sticky;
+      top: 0;
+      height: 100dvh;
+      display: flex;
+      align-items: center;
+    }
+    /* The signature move for entering Today: while the stage holds, the sky
+       recedes and the clocks rise to meet the plan. */
+    .today-stage {
+      animation: stage-recede linear both;
+      animation-timeline: --stage;
+      animation-range: exit 0dvh exit 90dvh;
+    }
+    .today-stage-inner {
+      animation: stage-hand-off linear both;
+      animation-timeline: --stage;
+      animation-range: exit 0dvh exit 90dvh;
+    }
+    /* The sections below rise as they arrive — the same cadence vocabulary
+       the feed uses, one register up. */
+    .today-flow > * {
+      animation: rise-view linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 42%;
+    }
+  }
+}
+@keyframes stage-recede {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0.22; transform: scale(0.96); }
+}
+@keyframes stage-hand-off {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-26px); }
+}
+@keyframes rise-view {
+  from { opacity: 0; transform: translateY(22px); }
+  to { opacity: 1; transform: translateY(0); }
 }

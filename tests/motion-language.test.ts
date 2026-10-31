@@ -261,3 +261,77 @@ describe("motion language — the hooks and markup exist", () => {
     expect(sheet.indexOf("onClick={onClose}")).toBeLessThan(sheet.indexOf("data-place"));
   });
 });
+
+describe("motion language · round 20 — today opens as a stage", () => {
+  it("the stage pins and recedes only where scroll-driven motion is supported", () => {
+    // Height and stickiness are the choreography — under reduced motion or
+    // without animation-timeline the stage must be an ordinary section.
+    for (const sel of [".today-stage-wrap", ".today-stage-pin"]) {
+      const idx = css.indexOf(`${sel} {`);
+      expect(idx).toBeGreaterThan(0);
+      const supportsIdx = css.lastIndexOf("@supports (animation-timeline: view())", idx);
+      expect(supportsIdx).toBeGreaterThan(0);
+      const guardSlice = css.slice(supportsIdx, idx);
+      expect(guardSlice).toContain("@media (prefers-reduced-motion: no-preference)");
+      // Same nesting as the deck and the feed cadence: capability outside,
+      // motion preference inside.
+      expect(guardSlice.indexOf("@supports")).toBeLessThan(
+        guardSlice.indexOf("@media (prefers-reduced-motion: no-preference)"),
+      );
+    }
+    expect(block(".today-stage-wrap")).toContain("view-timeline: --stage block");
+    expect(block(".today-stage-pin")).toContain("position: sticky");
+  });
+
+  it("the recede and the hand-off ride transform + opacity only", () => {
+    const recede = block("@keyframes stage-recede");
+    const handOff = block("@keyframes stage-hand-off");
+    const riseView = block("@keyframes rise-view");
+    for (const kf of [recede, handOff, riseView]) {
+      expect(kf).toMatch(/opacity/);
+      expect(kf).toMatch(/transform|translate/);
+      expect(kf).not.toContain("box-shadow");
+      expect(kf).not.toContain("filter");
+    }
+  });
+
+  it("the recede is timeline-scoped to the stage wrapper", () => {
+    const stage = block(".today-stage {\n      animation: stage-recede");
+    expect(stage).toContain("animation-timeline: --stage");
+    expect(stage).toContain("animation-range: exit");
+  });
+
+  it("the sections below rise on arrival, guarded like the feed cadence", () => {
+    const rule = block(".today-flow > *");
+    expect(rule).toContain("rise-view");
+    expect(rule).toContain("animation-timeline: view()");
+    const ruleIdx = css.indexOf(".today-flow > *");
+    const supportsIdx = css.lastIndexOf("@supports (animation-timeline: view())", ruleIdx);
+    expect(supportsIdx).toBeGreaterThan(0);
+    expect(
+      css.slice(supportsIdx, ruleIdx).includes("@media (prefers-reduced-motion: no-preference)"),
+    ).toBe(true);
+  });
+
+  it("the stage lives in its own component with a one-style budget for the sky", () => {
+    const stage = fs.readFileSync(
+      path.join(import.meta.dir, "..", "src", "components", "TodayStage.tsx"),
+      "utf8",
+    );
+    // Exactly one inline style: the modeled sky's vars. Everything else is
+    // classed and token-driven.
+    expect(stage.match(/style=\{/g)?.length ?? 0).toBe(1);
+    expect(stage).toContain("stageSkyFor");
+    // The next line comes from the same derivation the feed trusts.
+    expect(stage).toContain("pickNextStep");
+  });
+
+  it(".root clips without becoming a scroll container", () => {
+    // overflow: hidden would make .root the nearest scrollport and silently
+    // freeze every scroll-driven timeline inside it (the stage recede, the
+    // feed cadence, the trips deck). clip cuts without containerising.
+    const root = block(".root {");
+    expect(root).toContain("overflow: clip");
+    expect(root).not.toContain("overflow: hidden");
+  });
+});

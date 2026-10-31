@@ -1202,3 +1202,19 @@ beats, skip controls, a send-a-link URL, and a distribution doc.
 **Verification:** tests/demo-beats.test.ts locks the story data (9 tests);
 20/20 browser checks across beats + landing. Design contract intact — the
 new components carry zero inline styles.
+
+## Round 20 — Today opens as a stage (2026-11-01)
+
+1. **`TodayStage`** — first paint is the full-bleed stage: modeled sky,
+   route chip, clocks, one next step (`pickNextStep`, same marks as the
+   feed). Example mode falls back to the same preview plans the feed reads.
+2. **Sticky scene** — the stage pins for one beat past the first viewport,
+   then recedes on a scroll-driven `--stage` timeline (length-based exit
+   ranges; percentage phases degenerate on taller-than-viewport subjects).
+3. **`.today-flow` cadence** — the sections below rise on arrival, same
+   vocabulary as the feed cadence.
+4. **`.root` overflow fix** — `hidden` → `clip`: hidden created a phantom
+   scroll container that froze every scroll-driven timeline in the app.
+
+**Verification:** 5 stage tests, 6 new motion-language locks (21 total),
+15/15 browser checks. Baselines refreshed after commit.

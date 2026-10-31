@@ -482,6 +482,14 @@ rules, all verified by `tests/motion-language.test.ts`:
    every figure is produced by the same solver/arrival/passport functions
    the live app uses — the demo cannot outrun the product. Distribution
    copy lives in docs/reference/demo-distribution.md.
+9. **Today opens as a stage (round 20).** First paint is `TodayStage` —
+   modeled sky, route, clocks, one next step from the feed's own
+   `pickNextStep`. The wrapper pins it for one beat, then a scroll-driven
+   recede (length-based exit ranges on the wrapper's `--stage` timeline —
+   percentage phases degenerate on taller-than-viewport subjects) hands the
+   page to the plan; `.today-flow` sections rise on arrival. `.root` must
+   stay `overflow: clip` — `hidden` would make it a scroll container and
+   silently freeze every scroll-driven timeline inside it.
 
 ## Observability & the closed loop (round 17)
 
