@@ -470,3 +470,42 @@ export function sunProgress(trip: Trip, lockedDays: DayPlan[]): number {
   const done = lockedDays.reduce((acc, d) => acc + Math.abs(d.shiftMin), 0);
   return Math.min(1, done / Math.max(1, Math.abs(trip.requiredShiftMin)));
 }
+
+/**
+ * Circadian Alignment Score (CAS) — calculates the physiological match (0–100%)
+ * between a planned or actual sleep window and the body clock's endogenous sleep gate
+ * (centered around CBTmin = bodyWakeMin - 120min).
+ * Eastman et al. (2005) & Burgess et al. (2010).
+ */
+export function circadianAlignmentScore(
+  bedtimeMin: number,
+  wakeMin: number,
+  bodyWakeMin: number,
+): number {
+  const norm = (m: number) => ((m % 1440) + 1440) % 1440;
+  const bed = norm(bedtimeMin);
+  const wake = norm(wakeMin);
+  const sleepDuration = wake >= bed ? wake - bed : 1440 - bed + wake;
+  if (sleepDuration <= 0) return 0;
+
+  // Endogenous sleep gate starts ~360 min before CBTmin and ends ~120 min after CBTmin.
+  const cbtMin = norm(bodyWakeMin - CBT_BEFORE_WAKE_MIN);
+  const gateStart = norm(cbtMin - 360);
+  const gateEnd = norm(cbtMin + 120);
+
+  const intervals = Math.floor(sleepDuration / 15);
+  if (intervals <= 0) return 0;
+  let alignedIntervals = 0;
+
+  for (let i = 0; i < intervals; i++) {
+    const t = norm(bed + i * 15);
+    const inGate =
+      gateStart <= gateEnd
+        ? t >= gateStart && t <= gateEnd
+        : t >= gateStart || t <= gateEnd;
+    if (inGate) alignedIntervals++;
+  }
+
+  const rawPct = Math.round((alignedIntervals / intervals) * 100);
+  return Math.max(0, Math.min(100, rawPct));
+}

@@ -75,42 +75,100 @@ export function DaySkyStrip({
   const pct = (m: number) => `${(m / 1440) * 100}%`;
   const resolved = (id: string) => resolvedIds?.has(id) ?? false;
 
+  const photonStep = steps.find((s) => s.category === "sunlight");
+  const caffeineStep =
+    steps.find(
+      (s) =>
+        s.category === "nutrition" &&
+        (s.title.toLowerCase().includes("caffeine") || s.title.toLowerCase().includes("coffee")),
+    ) ?? steps.find((s) => s.category === "nutrition");
+  const sleepStep = steps.find((s) => s.category === "sleep");
+
+  const morningAnchorMin = photonStep ? photonStep.startMin : null;
+  const caffeineCurfewMin = caffeineStep ? caffeineStep.startMin : null;
+  const dlmoMin = sleepStep ? Math.max(0, sleepStep.startMin - 90) : null;
+
   const summary = `${label}: ${steps
     .map((s) => `${s.title}, ${fmtMin(s.startMin)} to ${fmtMin(s.endMin)}`)
     .join("; ")}`;
 
   return (
-    <div className="tl-sky" role="img" aria-label={summary}>
-      <div className="tl-sky-base" />
-      {[6, 12, 18].map((h) => (
-        <div key={h} className="tl-sky-tick" style={{ left: `${(h / 24) * 100}%` }} />
-      ))}
-      {bands.map((b, i) => (
-        <div
-          key={`${b.step.id}-${i}`}
-          className="tl-sky-band"
-          style={{
-            left: pct(b.s),
-            width: pct(Math.max(b.e - b.s, 8)),
-            background: CAT_VAR[b.step.category],
-            opacity: resolved(b.step.id) ? 0.3 : 0.8,
-          }}
-        />
-      ))}
-      {points.map((p) => (
-        <div
-          key={p.id}
-          className="tl-sky-dot"
-          style={{
-            left: pct(p.startMin),
-            background: CAT_VAR[p.category],
-            opacity: resolved(p.id) ? 0.3 : 1,
-          }}
-        />
-      ))}
-      {nowMin != null && (
-        <div className="tl-sky-now" style={{ left: pct(nowMin) }} />
+    <>
+      <div className="tl-sky" role="img" aria-label={summary}>
+        <div className="tl-sky-base" />
+        {[6, 12, 18].map((h) => (
+          <div key={h} className="tl-sky-tick" style={{ left: `${(h / 24) * 100}%` }} />
+        ))}
+        {bands.map((b, i) => (
+          <div
+            key={`${b.step.id}-${i}`}
+            className="tl-sky-band"
+            style={{
+              left: pct(b.s),
+              width: pct(Math.max(b.e - b.s, 8)),
+              background: CAT_VAR[b.step.category],
+              opacity: resolved(b.step.id) ? 0.3 : 0.8,
+            }}
+          />
+        ))}
+        {points.map((p) => (
+          <div
+            key={p.id}
+            className="tl-sky-dot"
+            style={{
+              left: pct(p.startMin),
+              background: CAT_VAR[p.category],
+              opacity: resolved(p.id) ? 0.3 : 1,
+            }}
+          />
+        ))}
+        {nowMin != null && (
+          <div className="tl-sky-now" style={{ left: pct(nowMin) }} />
+        )}
+      </div>
+      {(morningAnchorMin !== null || caffeineCurfewMin !== null || dlmoMin !== null) && (
+        <div className="circadian-pills" role="group" aria-label="Key circadian gates">
+          {morningAnchorMin !== null && (
+            <button
+              type="button"
+              className="circadian-pill"
+              title={`Morning photic anchor at ${fmtMin(morningAnchorMin)}: triggers cortisol awakening pulse`}
+              onClick={() => {
+                if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(10);
+              }}
+            >
+              <Sun size={11} className="text-amber" aria-hidden="true" />
+              <span>Anchor {fmtMin(morningAnchorMin)}</span>
+            </button>
+          )}
+          {caffeineCurfewMin !== null && (
+            <button
+              type="button"
+              className="circadian-pill"
+              title={`Caffeine clearance curfew at ${fmtMin(caffeineCurfewMin)}: protects adenosine receptors`}
+              onClick={() => {
+                if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(10);
+              }}
+            >
+              <Coffee size={11} className="text-terracotta" aria-hidden="true" />
+              <span>Curfew {fmtMin(caffeineCurfewMin)}</span>
+            </button>
+          )}
+          {dlmoMin !== null && (
+            <button
+              type="button"
+              className="circadian-pill"
+              title={`Melatonin onset window (DLMO) at ${fmtMin(dlmoMin)}: dim ambient lights 90m before sleep`}
+              onClick={() => {
+                if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(10);
+              }}
+            >
+              <Moon size={11} className="text-lavender" aria-hidden="true" />
+              <span>Wind-down {fmtMin(dlmoMin)}</span>
+            </button>
+          )}
+        </div>
       )}
-    </div>
+    </>
   );
 }

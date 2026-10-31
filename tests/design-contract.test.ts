@@ -224,9 +224,11 @@ describe("design contract", () => {
     // decision, and every phrase retired must be retired from the allowlist.
     const HEDGES = new Set([
       "ArrivalDayView.tsx | · Example schedule",
+      "HeroDawnPanel.tsx | banked on preview",
       "LightWindowPanel.tsx | Example plan.",
       "LightWindowPanel.tsx | Plan preview.",
       "NudgeFeedScreen.tsx | Example traveller — not your measurements.",
+      "NudgeFeedScreen.tsx | banked on preview",
       "PerformanceBrief.tsx | Example event ·",
       "PerformanceBrief.tsx | Example sleep profile ·",
       "PerformanceBrief.tsx | Plan preview ·",

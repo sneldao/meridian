@@ -980,3 +980,14 @@ Bridges quantified wearable health data (Whoop / Oura / Garmin) with photobiolog
 - **Offline badge:** root-level `OfflineBadge` surfaces connectivity loss.
 - **Adaptive recovery:** non-punitive recovery card when a step is skipped.
 - **Steering affordance:** skip relabelled "Can't do this" / "Noted".
+
+## Wearable & quantified-self integration (planned 2026-10-31)
+
+Ambient jewels, not stacked blocks. Three phases:
+
+- Phase 1 — Sky complications: photon anchor, caffeine curfew, DLMO sunset
+  as micro-icons on the existing sky strip (zero new blocks).
+- Phase 2 — Circadian Alignment Score (CAS) on dial + /arrival payoff.
+- Phase 3 — Everyday Rhythm Mode when no flight is booked.
+
+CAS formula shipped in `domain/circadian.ts` (`circadianAlignmentScore`).

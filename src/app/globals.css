@@ -2719,6 +2719,33 @@ select:focus-visible {
     border: 1px solid var(--m-border);
     letter-spacing: 0.03em;
   }
+  .circadian-pills {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    margin-bottom: 8px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .circadian-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: var(--m-tag);
+    border: 1px solid var(--m-border);
+    color: var(--m-text);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    font-family: var(--font-mono2);
+  }
+  .circadian-pill:hover {
+    background: var(--m-border);
+  }
   .right-now-card {
     display: flex;
     flex-direction: column;

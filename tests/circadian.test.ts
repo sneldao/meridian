@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { coverageOf, effectiveCalendar, evaluatePlan, passes } from "../src/domain/circadian";
+import { circadianAlignmentScore, coverageOf, effectiveCalendar, evaluatePlan, passes } from "../src/domain/circadian";
 import type { Citation, DayPlan, Trip } from "../src/domain/types";
 import { DEMO_TRIP, ADHERENCE_PROFILE, CALENDAR, buildTrip } from "../src/domain/fixtures";
 
@@ -310,5 +310,23 @@ describe("the note about a schedule and its cues disagreeing", () => {
       baseline: { avgBedtimeMin: 23 * 60 + 55, avgWakeMin: 6 * 60 + 45 },
     });
     expect(r.notes.some((n) => n.includes("further than the schedule shows"))).toBe(false);
+  });
+});
+
+describe("circadianAlignmentScore", () => {
+  test("habitual sleep aligned with circadian phase yields near 100%", () => {
+    // Bedtime 23:00 (1380), wake 07:00 (420), body clock wake 07:00 (420)
+    const cas = circadianAlignmentScore(23 * 60, 7 * 60, 7 * 60);
+    expect(cas).toBeGreaterThanOrEqual(95);
+  });
+
+  test("severely jetlagged sleep outside endogenous gate drops CAS", () => {
+    // Bedtime 15:00 (900), wake 23:00 (1380), while body clock wake is still 07:00 (420)
+    const cas = circadianAlignmentScore(15 * 60, 23 * 60, 7 * 60);
+    expect(cas).toBeLessThan(50);
+  });
+
+  test("handles zero duration or boundary cleanly", () => {
+    expect(circadianAlignmentScore(0, 0, 420)).toBe(0);
   });
 });
