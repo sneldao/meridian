@@ -43,6 +43,7 @@ const AgentDrawer = dynamic(
   () => import("@/components/AgentDrawer").then((m) => m.AgentDrawer),
 );
 import { RunAnnouncer } from "@/components/RunAnnouncer";
+import { CrewTrace } from "@/components/CrewTrace";
 import { CalendarApprovalCard } from "@/components/CalendarApprovalCard";
 import { useFocusTrap } from "@/lib/a11y";
 import { friendlyDayLabel } from "@/lib/day-label";
@@ -1216,6 +1217,13 @@ export default function Home() {
               ×
             </button>
           </div>
+        )}
+        {run.phase !== "idle" && entries.length > 0 && (
+          <CrewTrace
+            entries={entries}
+            running={run.phase === "running"}
+            lockedDays={run.locked.size}
+          />
         )}
         {checkInWarning && (
           <div className="run-error" role="alert">

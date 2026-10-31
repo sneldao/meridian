@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useReducedMotion } from "framer-motion";
 import { buildDemoScenario, DEMO_SCENARIOS, type DemoScenarioId } from "@/domain/demo-scenarios";
 import { buildTasteItinerary } from "@/domain/taste-itinerary";
 import { resolvePlaceChoice } from "@/lib/place-choices";
@@ -46,10 +47,22 @@ export function readUrlDay(id: DemoScenarioId, departureDate: string): number | 
 export function ScenarioExperience({ id, departureDate, onChooseScenario, onMakeTrip, onBack, initialStep = 0 }: ScenarioExperienceProps & { initialStep?: 0 | 1 | 2 }) {
   const [step, setStep] = useState<0 | 1 | 2>(() => readUrlStep() ?? initialStep);
   const [meetingTime, setMeetingTime] = useState<"morning" | "afternoon">("afternoon");
+  const [refitting, setRefitting] = useState(false);
+  const reduced = useReducedMotion();
   const [profileKey, setProfileKey] = useState<string | null>(null);
   const [selectedDay, setSelectedDay] = useState<number | null>(() => readUrlDay(id, departureDate));
   const [minute, setMinute] = useState<number | null>(null);
   const demo = useMemo(() => buildDemoScenario(id, departureDate, meetingTime), [id, departureDate, meetingTime]);
+
+  const refitTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(refitTimer.current), []);
+  const chooseMeetingTime = (next: "morning" | "afternoon") => {
+    setMeetingTime(next);
+    if (reduced) return;
+    window.clearTimeout(refitTimer.current);
+    setRefitting(true);
+    refitTimer.current = window.setTimeout(() => setRefitting(false), 600);
+  };
 
   const syncUrl = (nextStep: number, nextDay: number | null) => {
     const url = new URL(window.location.href);
@@ -130,12 +143,18 @@ export function ScenarioExperience({ id, departureDate, onChooseScenario, onMake
       {id === "jason" && (
         <fieldset className="scenario-toggle">
           <legend>What if the meeting time changes?</legend>
-          <button type="button" aria-pressed={meetingTime === "morning"} onClick={() => setMeetingTime("morning")} className="taste-button taste-button--ghost">10:00 morning</button>
-          <button type="button" aria-pressed={meetingTime === "afternoon"} onClick={() => setMeetingTime("afternoon")} className="taste-button taste-button--ghost">16:00 afternoon</button>
+          <button type="button" aria-pressed={meetingTime === "morning"} onClick={() => chooseMeetingTime("morning")} className="taste-button taste-button--ghost">10:00 morning</button>
+          <button type="button" aria-pressed={meetingTime === "afternoon"} onClick={() => chooseMeetingTime("afternoon")} className="taste-button taste-button--ghost">16:00 afternoon</button>
         </fieldset>
       )}
+      {id === "jason" && refitting && (
+        <p role="status" className="scenario-source">Refitting the day around the {meetingTime === "morning" ? "10:00" : "16:00"} meeting…</p>
+      )}
       {id === "jason" && meetingTime === "morning" && !demo.plans.some((p) => p.dayIndex === demo.trip.departureDayIndex + 1) && (
-        <p role="status" className="taste-note">The current model could not fit this day around the morning meeting. Try the later slot, or review the plan.</p>
+        <p role="status" className="taste-note">
+          Doesn&apos;t fit a 10:00 start: the current model could not fit this day around the morning meeting.{" "}
+                    <button type="button" className="taste-button taste-button--ghost" onClick={() => chooseMeetingTime("afternoon")}>Try 16:00</button>
+        </p>
       )}
       <p className="scenario-steps" aria-live="polite">Step {step + 1} of 3 · {STEP_LABELS[step]}</p>
       {step === 0 && (

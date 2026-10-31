@@ -723,6 +723,21 @@ rides the `plan_candidate` event for the transcript and the eval.
   from that check. Left alone deliberately: the tolerance is the gate's
   existing contract.
 
+## Round 9 — the crew in view, and the refit (2026-10-31)
+
+- **The crew run is visible on Today.** `CrewTrace` renders the run's newest
+  steps inline while the crew works, and collapses to one line when it
+  settles (`Crew finished · N days locked · M steps`), which expands on tap.
+  The `AgentDrawer` is unchanged and still closed by default. Each run starts
+  collapsed, and the page clears its entries at every path that starts a run.
+  Not checked in a browser; no test pins the running, expanded, or collapsed
+  states yet.
+- **Changing the meeting time shows a refit.** The toggle and "Try 16:00" both
+  show a "Refitting the day around the 10:00/16:00 meeting…" status for 600ms.
+  Reduced motion skips it, using the repo's existing `useReducedMotion`. This
+  is a timed message over a synchronous solve, not a real staged reveal of
+  windows, clocks and body time. Those would need `DayScene` restructured.
+
 ## Later / deferred
 
 - **Visual pass on `/spike/globe`** — the ring pulse, flight hairline and
