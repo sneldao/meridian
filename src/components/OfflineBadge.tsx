@@ -10,8 +10,11 @@ export function OfflineBadge() {
     update();
     window.addEventListener("online", update);
     window.addEventListener("offline", update);
-    try { setCruising(localStorage.getItem("meridian:inflight") === "1"); } catch {}
+    const t = setTimeout(() => {
+      try { setCruising(localStorage.getItem("meridian:inflight") === "1"); } catch {}
+    }, 0);
     return () => {
+      clearTimeout(t);
       window.removeEventListener("online", update);
       window.removeEventListener("offline", update);
     };

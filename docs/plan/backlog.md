@@ -963,6 +963,36 @@ Closes the loop between pre-flight preparation, the actual in-cabin flight exper
    - Assert timezone offset handling, widget feed calculation, and cabin guidance accuracy.
 
 
+## Round 14 — The landing shows the product, not a form (2026-10-31)
+
+User feedback: the landing "feels like a safe, boring, old-school landing
+page" — a setup form with a promise, no proof the product produces
+anything. The fix is to show real computed artifacts, not marketing
+copy — every number on the page comes from the solver, labelled example,
+never mocked. Deliberately NOT doing: flipping cold `/` to the example
+trip (breaks the tested `resolveHomeEntry` precedence — a cold visitor
+with a saved trip would land on someone else's plan), and autoplay film
+(violates the motion contract; the replay stream on a live ShiftBoard
+is the honest version, phase 2 if wanted).
+
+### Items (ranked)
+
+1. **Gap-led headline (P1, copy).** Lead with the stakes-as-arithmetic
+   register the rest of the product speaks: "Your 07:00 Tokyo meeting is
+   23:00 body time." / "Meridian's crew moves it — or moves you."
+2. **Form-reactive live preview (P1, the forward-thinking signal).** As
+   the RoutePicker draft becomes a valid route, a compact strip under the
+   form computes the trip live — `previewPlan` against the solver, no keys,
+   no faking: shift owed, first-day light window, days to land adapted.
+   The landing *reacts* — that's the agentic feel in miniature, and it
+   changes nothing about entry precedence.
+3. **Artifact triptych (P2, proof for scrollers).** Three tiles under the
+   form, all computed once from `DEMO_TRIP` + `previewPlan` and labelled
+   example: the CAS alignment score, one locked day's cue strip, and the
+   arrival payoff line from `coverageOf` (banked vs owed, honestly).
+4. **"See a real plan" escape (P2, already present).** The example link
+   stays a one-tap door into the read-only live trip — kept, not buried.
+
 ## Later / deferred
 
 - **Visual pass on `/spike/globe`** — the ring pulse, flight hairline and
