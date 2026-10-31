@@ -80,7 +80,7 @@ export function ScenarioExperience({ id, departureDate, onChooseScenario, onMake
         <p className="scenario-joke">{demo.scenario.joke}</p>
       </header>
       <p className="scenario-disclosure" role="note">
-        Imagined demo scenarios. Sample schedules, sleep profiles and preferences—not their actual data or endorsements. Nothing here changes your saved trip.
+        Imagined demo scenarios — fictional sample data, not their actual data or endorsements. Nothing is saved.
       </p>
       <nav className="scenario-nav" aria-label="Demo scenarios">
         {DEMO_SCENARIOS.map((s) => (

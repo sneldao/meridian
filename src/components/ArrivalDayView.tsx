@@ -233,8 +233,7 @@ export function ArrivalDayView(props: ArrivalDayViewProps) {
       )}
 
       <p className="arrival-day-foot">
-        Optional, not booked. Check opening hours, travel time and accessibility. Keep your scheduled
-        sleep and light steps.
+        Optional — check hours before you go; your scheduled steps come first.
       </p>
     </section>
   );

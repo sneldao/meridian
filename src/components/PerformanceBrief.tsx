@@ -64,7 +64,7 @@ export function PerformanceBrief({ moment, destination, date, example, preview, 
       ) : (
         <p className="perf-note">Your light and rest plan can work around the moments you need to show up for.</p>
       )}
-      <p className="perf-foot">Body-clock estimates, not a measurement of alertness or performance. Based on planned shifts before the event day.</p>
+      <p className="perf-foot">Body-clock estimates, not a measurement of alertness or performance.</p>
     </section>
   );
 }

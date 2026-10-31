@@ -131,6 +131,14 @@ cubic-bezier(0.22, 1, 0.36, 1) · `--ease-settle` cubic-bezier(0.16, 1, 0.3, 1)
 - Secondary: hairline outline, ink or paper text.
 - Buttons never wrap to two lines at any width (mobile floor).
 
+## Copy voice
+
+- One marker per state, not five sentences: a pill, a dim, or one line names
+  a condition; the next surface does not repeat it. Honesty stays — hedging
+  doesn't stack.
+- Detail lives behind disclosure (`<details>`, drawers), not beside it.
+- Labels are noun phrases ("Example traveller"), not explanations.
+
 ## Per-page allowances
 
 - Landing MAY use the globe stage as full-bleed enrichment (it is real/modelled

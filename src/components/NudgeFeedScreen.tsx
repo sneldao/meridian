@@ -821,8 +821,8 @@ export function NudgeFeedScreen({
             !(baselineKind === "demo-default" && !wakeBand && onWakeBand) && (
               <p className="demo-tag">
                 {baselineKind === "demo-default" && !wakeBand
-                  ? "Example traveller — these numbers aren't your measurements."
-                  : "Your wake time is yours. Sleep and heart data are examples until you connect a wearable."}
+                  ? "Example traveller — not your measurements."
+                  : "Sleep and heart data are examples until you connect a wearable."}
               </p>
             )}
 
@@ -841,10 +841,7 @@ export function NudgeFeedScreen({
             (baselineKind === "demo-default" && !wakeBand && onWakeBand)) && (
             <div className={`ask${wakeCollapsing ? " collapsing" : ""}`} role="group" aria-label="Your natural wake time">
               <p className="ask-title">Make this plan yours</p>
-              <p>
-                On a day with nothing early planned, when do you naturally wake?
-                <span> Answer once and we&apos;ll fit the plan to you.</span>
-              </p>
+              <p>On a day with nothing early planned, when do you naturally wake?</p>
               <div className="ask-chips">
                 {([
                   ["before6", "Before 6"],
@@ -873,14 +870,8 @@ export function NudgeFeedScreen({
                   reads as the run-up to a 05:30 request tomorrow; naming the
                   promise is the difference between a promise and a threat.
                   Evenings are where an eastward trip is actually won. */}
-              {!simple && (
-                <p className="ask-promise">
-                  We won&apos;t schedule anything before you&apos;d normally be up. Most of
-                  the work happens in the evening.
-                </p>
-              )}
               <p className="ask-foot">
-                Until then, you&apos;re seeing an example plan.
+                Nothing&apos;s scheduled before then — until you answer, this is an example.
               </p>
             </div>
           )}
@@ -1101,10 +1092,7 @@ export function NudgeFeedScreen({
               {completedIds.has(heroNudge.id) && (
                 <p style={{ margin: 0, fontSize: "12px", color: "var(--color-mist)" }}>
                   {previewMode ? (
-                    <>
-                      Done — {impactCopy(heroNudge.category, "done")}. Example
-                      plan only, so nothing is saved.
-                    </>
+                    <>Done — {impactCopy(heroNudge.category, "done")}.</>
                   ) : (
                     <>
                       Done — {impactCopy(heroNudge.category, "done")}
@@ -1116,7 +1104,7 @@ export function NudgeFeedScreen({
               {isSkipped(heroNudge.id) && (
                 <p className="warn-ink" style={{ margin: 0, fontSize: "12px" }}>
                   {previewMode ? (
-                    <>Skipped — example plan only, nothing saved.</>
+                    <>Skipped.</>
                   ) : (
                     <>
                       Skipped — {impactCopy(heroNudge.category, "missed")}.
@@ -1838,10 +1826,7 @@ export function NudgeFeedScreen({
                     {isDone && (
                       <p style={{ margin: "6px 0 0", fontSize: "12px", color: "var(--m-muted)" }}>
                         {previewMode ? (
-                          <>
-                            Done — {impactCopy(step.category, "done")}. Example plan
-                            only, so nothing is saved.
-                          </>
+                          <>Done — {impactCopy(step.category, "done")}.</>
                         ) : (
                           <>
                             Done — {impactCopy(step.category, "done")}
@@ -1853,7 +1838,7 @@ export function NudgeFeedScreen({
                     {isSkip && (
                       <p style={{ margin: "6px 0 0", fontSize: "12px", color: "#b04523" }}>
                         {previewMode ? (
-                          <>Skipped — example plan only, nothing saved.</>
+                          <>Skipped.</>
                         ) : (
                           <>
                             Skipped — {impactCopy(step.category, "missed")}.

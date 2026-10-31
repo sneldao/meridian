@@ -312,7 +312,7 @@ export function TasteDiscovery({
         </button>
         <p className="taste-helper">
           {onFitPlan
-            ? "Choose up to three favorites. Place ideas won’t override your sleep and light steps."
+            ? "Up to three favorites — ideas never override your sleep and light steps."
             : "Plan your own trip to fit these ideas around your schedule."}
         </p>
       </div>
@@ -382,8 +382,7 @@ export function TasteDiscovery({
         )}
       </div>
       <p className="taste-footnote">
-        These are places to explore, not scheduled stops. Check opening hours and suitability before
-        you go.
+        Places to explore, not scheduled stops — check hours before you go.
       </p>
     </section>
   );

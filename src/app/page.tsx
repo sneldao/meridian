@@ -1624,20 +1624,17 @@ export default function Home() {
                     Reset link
                   </button>
                   <p style={{ margin: "8px 0 0", fontSize: 12, color: "#a89383" }}>
-                    Works with Siri Shortcuts on iPhone — or any assistant that can fetch a link.
+                    Opening it reads your next step aloud — anyone with the link can hear it.
                   </p>
-                  <ol style={{ margin: "12px 0 0", paddingLeft: 18, fontSize: 13, color: "#e8ded2", lineHeight: 1.7 }}>
-                    <li>Open the Shortcuts app and tap +.</li>
-                    <li>Add &quot;Get contents of URL&quot; and paste the link.</li>
-                    <li>Add &quot;Speak text&quot;.</li>
-                    <li>Name it &quot;Next Meridian step&quot; — then say &quot;Hey Siri, next Meridian step&quot;.</li>
-                  </ol>
-                  <p style={{ margin: "8px 0 0", fontSize: 12, color: "#a89383" }}>
-                    On Android or elsewhere, opening the link reads your next step aloud — no app needed.
-                  </p>
-                  <p style={{ margin: "10px 0 0", fontSize: 11, color: "#a89383" }}>
-                    Anyone with this link can hear your next step — reset it if it gets shared.
-                  </p>
+                  <details style={{ margin: "10px 0 0", fontSize: 12, color: "#a89383" }}>
+                    <summary style={{ cursor: "pointer" }}>Use it with Siri Shortcuts</summary>
+                    <ol style={{ margin: "8px 0 0", paddingLeft: 18, fontSize: 13, color: "#e8ded2", lineHeight: 1.7 }}>
+                      <li>Open the Shortcuts app and tap +.</li>
+                      <li>Add &quot;Get contents of URL&quot; and paste the link.</li>
+                      <li>Add &quot;Speak text&quot;.</li>
+                      <li>Name it &quot;Next Meridian step&quot; — then say &quot;Hey Siri, next Meridian step&quot;.</li>
+                    </ol>
+                  </details>
                 </>
               ) : (
                 !assistant.busy && (

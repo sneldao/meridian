@@ -216,8 +216,7 @@ export function DayScene(props: DaySceneProps) {
           <LightWindowPanel plan={scene.plan} date={scene.date} city={scene.city.name} preview={preview} example={example} />
         </details>
         <p className="day-scene-foot">
-          Body-clock estimates use planned shifts before this day, not measured alertness. Inspection and
-          playback do not record completed steps.
+          Body-clock estimates, not measured alertness. Inspection and playback do not record completed steps.
         </p>
         {children}
       </div>

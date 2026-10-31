@@ -20,8 +20,7 @@ export function SampleJourneys({ onChoose }: { onChoose: (id: DemoScenarioId) =>
         </div>
       ))}
       <p className="sample-foot">
-        Imagined demo scenarios. Sample schedules, sleep profiles and preferences—not their actual
-        data or endorsements.
+        Imagined demo scenarios — fictional sample data, not real schedules or endorsements.
       </p>
     </section>
   );
