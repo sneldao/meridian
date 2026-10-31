@@ -5807,3 +5807,6 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   font-weight: 800;
   cursor: pointer;
 }
+
+.offline-toggle { margin-left: 8px; padding: 4px 8px; border-radius: 999px; border: none; background: var(--m-accent, #d96b43); color: #fff; font-size: 11px; font-weight: 800; cursor: pointer; }
+.offline-hint { display: block; font-size: 11px; margin-top: 4px; }
