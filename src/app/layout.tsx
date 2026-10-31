@@ -10,10 +10,26 @@ import "./globals.css";
 import { OfflineBadge } from "@/components/OfflineBadge";
 
 export const metadata: Metadata = {
+  // Canonical previews resolve against the live origin — without a base,
+  // relative og:image URLs unfurl to nothing in Slack/iMessage.
+  metadataBase: new URL("https://meridian.trustfall.xyz"),
   title: "Meridian — arrive better adjusted",
   description:
     "A daily plan for sleep, light and caffeine, timed to your trip — so jet lag costs you less of it.",
   manifest: "/manifest.webmanifest",
+  openGraph: {
+    title: "Meridian — arrive better adjusted",
+    description:
+      "A daily plan for sleep, light and caffeine, timed to your trip — so jet lag costs you less of it.",
+    siteName: "Meridian",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Meridian — arrive better adjusted",
+    description:
+      "A daily plan for sleep, light and caffeine, timed to your trip — so jet lag costs you less of it.",
+  },
 };
 
 export const viewport: Viewport = {

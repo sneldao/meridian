@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { fmtMin } from "@/domain/circadian";
 import { arrivalHeadline, arrivalLede, arrivalRead, tripDebrief } from "@/domain/arrival";
+import { arrivalPassport } from "@/domain/arrival-passport";
+import { ArrivalPassportCard } from "@/components/ArrivalPassportCard";
 import { stageSkyFor } from "@/domain/stage-sky";
 import { INTERVENTION_LABELS } from "@/lib/intervention-icons";
 import { dayPlace } from "@/domain/today";
@@ -12,6 +14,8 @@ import { arrivalRows, destClockMin } from "@/domain/arrival-rows";
 import { scoreBand } from "@/domain/score";
 import { friendlyDayLabel } from "@/lib/day-label";
 import { CountUp } from "@/components/CountUp";
+import { shareTripContext } from "@/lib/share-trip";
+import { shareLink } from "@/lib/share-client";
 
 // The payoff. "Land at 100%" is promised in the nav on every screen, and until
 // now nothing ever cashed it — the journey ended at the plan and the only
@@ -154,12 +158,48 @@ export default function ArrivalPage() {
 
   const trip = state.trip;
   const dest = trip.destination;
+
+  /* The receipt is the shareable payoff: claimed vs delivered, straight from
+     the projection the page already reports — never a flattered number.
+     Rendered only when the projection exists; without it there is nothing
+     honest to put on a card. */
+  const shareReceipt = async () => {
+    const p = read.projection;
+    if (!p) return;
+    const r = await fetch("/api/share", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        arrival: {
+          hoursOff: p.hours,
+          lowHours: p.lowHours,
+          highHours: p.highHours,
+          deliveredHours: p.deliveredHours,
+          claimedHours: p.claimedHours,
+          requiredHours: p.requiredHours,
+          baselineHours: p.baselineHours,
+        },
+        trip: shareTripContext(trip),
+      }),
+    });
+    const { url } = (await r.json().catch(() => null)) ?? {};
+    if (typeof url === "string") {
+      await shareLink(
+        url,
+        `Landed ${p.deliveredHours.toFixed(1)}h adjusted for ${dest.name} — the crew's receipt.`,
+      );
+    }
+  };
+
   // The stage's sky is the body clock's: the residual the read still owes.
   const stageVars = stageSkyFor(trip, read.promise?.coverage?.residualMin ?? 0, state.now);
   const arrivalDayIndex = trip.departureDayIndex + 1;
   const arrivedDay = trip.days.find((d) => d.dayIndex === arrivalDayIndex);
   const rows = arrivalRows(read, trip, state.checkIns);
   const destClock = destClockMin(trip, state.now);
+  // The stamped record — null when there is nothing honest to stamp
+  // (no projection, no gate promise), in which case no card renders.
+  const passport = arrivalPassport(read, trip);
 
   if (!read.arrived) {
     return (
@@ -185,11 +225,11 @@ export default function ArrivalPage() {
       <div className="arr-in">
         {/* The hero's dawn disc lands here — the same object, carried across
             the route by the view transition (shared element "dawn"). */}
-        <div className="arr-dawn" aria-hidden="true" />
-        <span className="arr-kicker">
+        <div className="arr-dawn" aria-hidden="true" data-rise="1" />
+        <span className="arr-kicker" data-rise="2">
           {dest.name} · {fmtMin(destClock)} · day {read.daysSinceArrival + 1} in {dest.name}
         </span>
-        <h1>
+        <h1 data-rise="3">
           {read.projection
             ? arrivalHeadline(read, dest.name)
             : !read.promise?.coverage
@@ -199,15 +239,15 @@ export default function ArrivalPage() {
                 : `You landed ${(read.promise.coverage.residualMin / 60).toFixed(1)}h off ${dest.name} time — ${Math.round(read.promise.coverage.ratio * 100)}% of the adjustment happened before you flew.`}
         </h1>
         {arrivalLede(read) && (
-          <p className="arr-lede">{arrivalLede(read)}</p>
+          <p className="arr-lede" data-rise="4">{arrivalLede(read)}</p>
         )}
 
         {/* Two sections — what was promised at the gate, and what actually
             happened. Splitting them with a label makes the page read in two
             passes (promise → account), so the traveller sees their own marks
             in context rather than mixed into the gate's numbers. */}
-        <span className="arr-section-label">What the plan promised</span>
-        <div className="arr-grid">
+        <span className="arr-section-label" data-rise="5">What the plan promised</span>
+        <div className="arr-grid" data-rise="5">
           {rows.slice(0, 3).map((r) => (
             <div className="arr-cell" key={r.label}>
               <em><CountUp value={r.value} /></em>
@@ -217,8 +257,8 @@ export default function ArrivalPage() {
           ))}
         </div>
 
-        <span className="arr-section-label">What you did</span>
-        <div className="arr-grid">
+        <span className="arr-section-label" data-rise="6">What you did</span>
+        <div className="arr-grid" data-rise="6">
           {rows.slice(3).map((r) => (
             <div className="arr-cell account" key={r.label}>
               <em><CountUp value={r.value} /></em>
@@ -231,18 +271,23 @@ export default function ArrivalPage() {
         {/* The self-report is the other half of the landing, and it's the only
             place the traveller's own account enters the loop. Reached from
             here because arriving is the moment it becomes meaningful. */}
-        <p className="arr-lede">
+        <p className="arr-lede" data-rise="7">
           {read.followRate === null
             ? "No marks recorded this trip. How much of the plan did you actually follow?"
             : `You marked ${read.followed} done, ${read.partial} partly, ${read.missed} missed. How did it actually feel?`}
         </p>
-        <div className="arr-actions">
+        <div className="arr-actions" data-rise="8">
           <Link className="arr-btn" href="/outcome" transitionTypes={["nav-forward"]}>
             Tell us how you felt
           </Link>
           <Link className="arr-btn ghost" href="/review" transitionTypes={["nav-forward"]}>
             See the plan
           </Link>
+          {read.projection && (
+            <button type="button" className="arr-btn ghost" onClick={shareReceipt}>
+              Share the receipt
+            </button>
+          )}
         </div>
 
         {/* Bet 4 — the debrief worth revisiting. Score at the gate, the one
@@ -251,8 +296,8 @@ export default function ArrivalPage() {
             the "plan your next trip" line closes the loop back to Today. */}
         {(debrief && (debrief.lesson || debrief.carriedFrom || debrief.gateScore !== null)) && (
           <>
-            <span className="arr-section-label">What we learned</span>
-            <div className="arr-grid">
+            <span className="arr-section-label" data-rise="9">What we learned</span>
+            <div className="arr-grid" data-rise="9">
               {debrief!.gateScore !== null && (
                 <div className="arr-cell" key="gate-score">
                   <em>
@@ -278,7 +323,7 @@ export default function ArrivalPage() {
                 </div>
               )}
             </div>
-            <p className="arr-lede">
+            <p className="arr-lede" data-rise="9">
               <Link className="arr-btn ghost" href="/">
                 Plan your next trip →
               </Link>
@@ -286,7 +331,17 @@ export default function ArrivalPage() {
           </>
         )}
 
-        <p className="arr-foot">
+        {/* The closing beat: the trip's record, stamped, and the means to
+            send it. Nothing posts automatically — the passport is an artifact
+            the traveller chooses to share. */}
+        {passport && (
+          <>
+            <span className="arr-section-label" data-rise="10">Your arrival record</span>
+            <ArrivalPassportCard passport={passport} rise={10} />
+          </>
+        )}
+
+        <p className="arr-foot" data-rise="11">
           Timing guidance, not medical advice.{" "}
           {read.daysRemaining > 0
             ? `${read.daysRemaining} day${read.daysRemaining === 1 ? "" : "s"} of the plan left.`

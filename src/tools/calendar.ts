@@ -84,6 +84,9 @@ export function buildIcs(events: CalendarEvent[], trip: Trip, days?: DayPlan[]):
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
     "PRODID:-//Meridian//Shift Plan//EN",
+    // Branded feed name — the subscription is legible when a calendar is
+    // screenshotted or shared, and the moved events below carry the link.
+    `X-WR-CALNAME:Meridian shift plan — ${trip.origin.code} → ${trip.destination.code}`,
   ];
   for (const e of events) {
     const day = e.movedTo?.dayIndex ?? e.dayIndex;
@@ -96,6 +99,10 @@ export function buildIcs(events: CalendarEvent[], trip: Trip, days?: DayPlan[]):
       `DTSTART:${icsDate(trip, day, start)}`,
       `DTEND:${icsDate(trip, day, end)}`,
       `SUMMARY:${e.title}${e.movedTo ? " (rescheduled by Meridian)" : ""}`,
+      // A moved event reaches every attendee's calendar — the ambient ad.
+      ...(e.movedTo
+        ? [`DESCRIPTION:Rescheduled by Meridian for the ${trip.destination.name} shift — meridian.trustfall.xyz`]
+        : []),
       "END:VEVENT",
     );
   }

@@ -601,6 +601,169 @@ body {
   color: #6f7789;
 }
 
+/* ── The arrival passport · the payoff's artifact ──────────────────────
+   The trip's record, stamped. Same glass as the promise/account cells, but
+   the dashed gold frame reads as a document, not a dashboard tile. The
+   export twin lives in src/lib/arrival-passport-svg.ts. */
+.arr-passport {
+  margin-top: 14px;
+}
+.arr-passport-card {
+  position: relative;
+  padding: 30px 32px 24px;
+  border-radius: 20px;
+  border: 1px dashed rgba(255, 217, 138, 0.45);
+  background:
+    radial-gradient(120% 90% at 50% 108%, rgba(255, 217, 138, 0.14), transparent 60%),
+    rgba(255, 255, 255, 0.05);
+  -webkit-backdrop-filter: blur(18px) saturate(1.3);
+  backdrop-filter: blur(18px) saturate(1.3);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 12px 32px -20px rgba(8, 10, 18, 0.6);
+}
+.arr-passport-eyebrow {
+  display: block;
+  font-family: var(--font-mono2);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: #ffd98a;
+}
+.arr-passport-route {
+  margin-top: 12px;
+  max-width: calc(100% - 150px);
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 560;
+  font-variation-settings: "opsz" 72, "SOFT" 0, "WONK" 1;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+  color: #f4f0e8;
+  text-wrap: balance;
+}
+.arr-passport-date {
+  margin-top: 6px;
+  font-family: var(--font-mono2);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #8b93a7;
+}
+.arr-passport-stamp {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  transform: rotate(-8deg);
+  text-align: center;
+  padding: 10px 14px 8px;
+  border: 2.5px solid currentColor;
+  border-radius: 10px;
+  opacity: 0.92;
+}
+.arr-passport-stamp.adjusted { color: #ffd98a; }
+.arr-passport-stamp.almost { color: #f4f0e8; }
+.arr-passport-stamp.owed { color: #ff7a7a; }
+.arr-passport-stamp-word {
+  display: block;
+  font-family: var(--font-mono2);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.28em;
+  text-indent: 0.28em;
+}
+.arr-passport-stamp-detail {
+  display: block;
+  margin-top: 4px;
+  max-width: 150px;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  line-height: 1.35;
+  opacity: 0.85;
+}
+.arr-passport-stat {
+  margin-top: 22px;
+  font-family: var(--font-mono2);
+  font-size: 52px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: #ffd98a;
+}
+.arr-passport-label {
+  margin-top: 8px;
+  font-family: var(--font-mono2);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #f4f0e8;
+}
+.arr-passport-sub {
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #8b93a7;
+}
+.arr-passport-rule {
+  margin: 20px 0 12px;
+  border-top: 1px solid rgba(255, 217, 138, 0.28);
+}
+.arr-passport-marks-k {
+  font-family: var(--font-mono2);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #8b93a7;
+}
+.arr-passport-marks {
+  margin-top: 6px;
+  font-size: 15px;
+  color: #f4f0e8;
+}
+.arr-passport-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-top: 22px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.arr-passport-foot span {
+  font-family: var(--font-mono2);
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #6f7789;
+}
+.arr-passport-foot em {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 15px;
+  color: #b99a5e;
+}
+.arr-passport-status {
+  margin: 12px 2px 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #8b93a7;
+}
+@media (max-width: 560px) {
+  .arr-passport-card { padding: 24px 20px 20px; }
+  .arr-passport-route { max-width: none; font-size: 22px; }
+  .arr-passport-stamp {
+    position: static;
+    display: inline-block;
+    margin-top: 14px;
+    transform: rotate(-4deg);
+  }
+  .arr-passport-stat { font-size: 44px; }
+}
+
+
+
 .errpage {
   position: relative;
   min-height: 100vh;
@@ -3466,6 +3629,30 @@ select:focus-visible {
   }
 }
 
+/* ── Arrival choreography · the page reads in two passes ────────────────
+   The promise lands first; the account follows after a beat; the passport
+   closes. Transform + opacity only (the design contract's paint rule), and
+   only for travellers who haven't asked for reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .arr-in [data-rise] {
+    opacity: 0;
+    animation: rise 640ms var(--ease-drift) forwards;
+  }
+  /* Beats are assigned by name in the JSX (data-rise), not by child index —
+     conditional blocks (the lede, the debrief) can vanish without the
+     account crashing into the promise's beat. */
+  .arr-in [data-rise="2"] { animation-delay: 90ms; }    /* kicker */
+  .arr-in [data-rise="3"] { animation-delay: 180ms; }   /* headline */
+  .arr-in [data-rise="4"] { animation-delay: 300ms; }   /* lede */
+  .arr-in [data-rise="5"] { animation-delay: 440ms; }   /* the promise */
+  .arr-in [data-rise="6"] { animation-delay: 880ms; }   /* the beat — account */
+  .arr-in [data-rise="7"] { animation-delay: 980ms; }
+  .arr-in [data-rise="8"] { animation-delay: 1100ms; }  /* actions */
+  .arr-in [data-rise="9"] { animation-delay: 1240ms; }  /* debrief */
+  .arr-in [data-rise="10"] { animation-delay: 1520ms; } /* the passport */
+  .arr-in [data-rise="11"] { animation-delay: 1600ms; } /* footer */
+}
+
 /* ── Dawn pass · the run on the stage ────────────────────────────────────
    While the crew works, the stage says who is speaking, how much of the
    shift is locked, and how far the sun has moved. Visual only — the run
@@ -5997,3 +6184,17 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .landing-tease-artifacts { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 0 0 16px; }
 .landing-tease-artifacts span { padding: 6px 12px; border-radius: 999px; background: var(--m-card, #fff); border: 1px solid var(--m-border, #ddd); font-size: 12px; font-weight: 700; }
 .landing-tease-cta { padding: 12px 20px; border-radius: 999px; border: none; background: var(--m-accent, #d96b43); color: #fff; font-size: 14px; font-weight: 800; cursor: pointer; }
+
+/* ?via= acknowledgment — the shared card that brought a recipient here,
+   named with its own numbers before the entry form asks for theirs. */
+.via-note {
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--m-border, #ddd);
+  border-left: 3px solid var(--m-accent, #d96b43);
+  background: var(--m-card, #fff);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--m-text, #4a3f35);
+}

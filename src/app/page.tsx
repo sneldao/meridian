@@ -70,6 +70,7 @@ import { useTripActions } from "@/lib/use-trip-actions";
 import { useTripTaste } from "@/lib/use-trip-taste";
 import { usePlaceChoices } from "@/lib/use-place-choices";
 import { shareTripContext } from "@/lib/share-trip";
+import { shareLink } from "@/lib/share-client";
 import { ScenarioExperience } from "@/components/ScenarioExperience";
 import type { DemoScenarioId } from "@/domain/demo-scenarios";
 import { isTasteItinerary, itineraryMatchesTrip, type TasteItinerary } from "@/domain/taste";
@@ -164,6 +165,19 @@ export default function Home() {
   const [departureDate, setDepartureDate] = useState("");
   const [entry, setEntry] = useState<HomeEntry | null>(null);
   const [entryDraft, setEntryDraft] = useState<HomeRoute | null>(null);
+  /* ?via={shareId} — arrived from a shared card. The payload is fetched for
+     the acknowledgment line and the route prefill; the id is kept so a
+     committed trip counts back against the share (the funnel's bottom). */
+  const [via, setVia] = useState<{
+    id: string;
+    trip: {
+      origin?: { code?: string; name?: string };
+      destination?: { code?: string; name?: string };
+      departureDayIndex?: number;
+      days?: { dayIndex?: number; date?: string }[];
+    } | null;
+    arrival: { deliveredHours: number; requiredHours: number; hoursOff: number } | null;
+  } | null>(null);
   /** Null means "the window we'd recommend for this route". Deriving the
    *  default from the trip (rather than hardcoding an id) is what makes the
    *  picker correct on westbound routes, where the east ids don't exist. */
@@ -406,6 +420,32 @@ export default function Home() {
           if (sp.get("checkins")) setCheckInsParam(sp.get("checkins")!);
           const sd = Number(sp.get("startDay"));
           if (!Number.isNaN(sd)) setStartDayParam(sd);
+          /* ?via={shareId}: fetch the same payload the public card renders
+             (the GET exposes nothing the page doesn't), then prefill the
+             sender's route so Continue is one tap, not three fields. */
+          const viaId = sp.get("via");
+          if (viaId) {
+            fetch(`/api/share/${encodeURIComponent(viaId)}`)
+              .then((r) => (r.ok ? r.json() : null))
+              .then((d) => {
+                const p = d?.payload;
+                if (!p) return;
+                setVia({ id: viaId, trip: p.trip ?? null, arrival: p.arrival ?? null });
+                const t = p.trip;
+                const dep = Array.isArray(t?.days)
+                  ? t.days.find((x: { dayIndex?: number }) => x.dayIndex === t?.departureDayIndex)
+                  : null;
+                const candidate = { origin: t?.origin?.code, dest: t?.destination?.code, date: dep?.date };
+                if (isValidHomeRoute(candidate)) {
+                  setEntryDraft({
+                    origin: candidate.origin.toUpperCase(),
+                    dest: candidate.dest.toUpperCase(),
+                    date: candidate.date,
+                  });
+                }
+              })
+              .catch(() => {});
+          }
         }
       } catch {
         /* ignore */
@@ -873,12 +913,22 @@ export default function Home() {
         url.searchParams.delete("example");
         url.searchParams.delete("step");
         url.searchParams.delete("day");
+        url.searchParams.delete("via");
         window.history.pushState(null, "", url.toString());
       } catch {
         /* ignore */
       }
+      /* Funnel bottom: this trip was committed off a shared card. Best-effort
+         — the counter is a metric, never a dependency of the save. */
+      if (via) {
+        fetch(`/api/share/${encodeURIComponent(via.id)}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ recipient: true }),
+        }).catch(() => {});
+      }
     },
-    [resetTripView],
+    [resetTripView, via],
   );
 
   const openEntry = useCallback(() => {
@@ -1251,10 +1301,8 @@ export default function Home() {
                     }),
                   });
                   const { url } = await r.json();
-                  const full = `${window.location.origin}${url}`;
-                  try { await navigator.clipboard.writeText(full); } catch { /* clipboard optional */ }
                   setMenuOpen(false);
-                  window.open(url, "_blank");
+                  await shareLink(url, "My Meridian shift plan");
                 }}
               >
                 Share plan →
@@ -1478,6 +1526,19 @@ export default function Home() {
               </button>
             </div>
             <EverydayRhythm />
+            {via && (
+              /* The shared card that brought them here, acknowledged with its
+                 own numbers — receipt when there is one, route always. */
+              <p className="via-note" role="note">
+                {via.arrival
+                  ? `A traveller's crew carried ${via.arrival.deliveredHours.toFixed(1)}h of their ${via.arrival.requiredHours.toFixed(1)}h shift`
+                  : "A traveller shared their Meridian plan"}
+                {via.trip?.origin?.name && via.trip?.destination?.name
+                  ? ` on ${via.trip.origin.name} → ${via.trip.destination.name}`
+                  : ""}
+                .{entryDraft ? " Their route is prefilled below — change anything." : ""}
+              </p>
+            )}
             <TripEntryScreen
               initialDate={departureDate || defaultDepartureDate()}
               onContinue={commitRoute}

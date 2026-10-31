@@ -993,6 +993,28 @@ is the honest version, phase 2 if wanted).
 4. **"See a real plan" escape (P2, already present).** The example link
    stays a one-tap door into the read-only live trip — kept, not buried.
 
+## Round 15 — The arrival payoff gets its artifact (2026-10-31)
+
+The landing payoff (`/arrival`) scored the trip but ended at prose. This
+round gives it a closing beat worth sending someone: the **arrival
+passport** — the trip's record stamped `ADJUSTED` / `ALMOST` / `OWED`,
+with the honest figure and its comparison, exported as a PNG/SVG card or
+copied text. Built as pure domain (`domain/arrival-passport.ts`), a
+standalone SVG twin (`lib/arrival-passport-svg.ts`), and the
+`ArrivalPassportCard` component; the page also gains a two-pass reveal
+(promise → beat → account → passport) via `data-rise`, gated on
+`prefers-reduced-motion`. Nothing is posted automatically — every export
+is an explicit button. The passport only stamps what the read carries: no
+projection and no gate promise means no card, never an invented figure
+(same honesty contract as the rest of arrival, pinned in
+`tests/arrival-passport.test.ts`).
+
+The shares path added the same week (`lib/share.ts` + `POST /api/share` +
+`/plan/[id]` + OG image, Supabase with filesystem fallback) was smoke-
+tested end to end: mint → recipient page renders the body-clock passport
+line → OG image returns a real PNG → `artifacts/share/*.json` written in
+fallback mode.
+
 ## Later / deferred
 
 - **Visual pass on `/spike/globe`** — the ring pulse, flight hairline and
@@ -1005,6 +1027,10 @@ is the honest version, phase 2 if wanted).
 - **Orphaned routes** — `/dev` and `/team` are complete with zero inbound
   links; `/crew`'s "Trip Setup" pill links to `?screen=setup`, which nothing
   reads. Link or hide.
+- **Server-minted arrival share link** — the passport currently leaves the
+  app as a client-side image/text export. A `/api/share` variant that
+  persists `{arrival,trip}` and renders a live post-landing receipt page
+  (claimed vs delivered) would make the record a URL, not a file.
 - **Video re-record** — shot list refreshed (hackathon-submissions.md §One
   video for all): check-in loop is the signature shot, flight picker is real,
   memory is per-traveller. Record after item 7 lands — the arrival surface is

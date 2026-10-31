@@ -137,6 +137,13 @@ Two more tables back the surfaces that leave the browser:
   subscriptions (`endpoint`, `keys`, `sent` dedup map) tied to a feed id.
   Required for pushed reminders; without it reminders still work while the
   app is open.
+- `public.meridian_shares` (`src/lib/share.ts`) — durable `/plan/{id}` cards
+  (`briefing`, `trip`, `arrival` payloads) plus the share funnel:
+  `view_count` (recipient page loads — the OG image path deliberately does
+  not count) and `recipient_count` (visits that ended in a committed trip).
+  Falls back to `artifacts/share/*.json` on disk — which means Render's
+  ephemeral FS without keys: links work until the next deploy, and the
+  counters simply don't exist.
 
 | Var | Purpose |
 |---|---|

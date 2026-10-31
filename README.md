@@ -25,8 +25,9 @@ bun run dev                   # http://localhost:3000
 Optional extras, all in `.env.local` — every one degrades gracefully when unset:
 
 - `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` — run history, durable
-  calendar/assistant feeds, and push subscriptions (project
-  `vpeakvspljdoxbwfsdvw`, see
+  calendar/assistant feeds, durable shared cards (`meridian_shares` —
+  without it `/plan/{id}` links die with the ephemeral disk), and push
+  subscriptions (project `vpeakvspljdoxbwfsdvw`, see
   [providers.md](docs/reference/providers.md#supabase-persistence-optional))
 - `NEXT_PUBLIC_VAPID_PUBLIC_KEY` + `VAPID_PRIVATE_KEY` + `VAPID_SUBJECT` —
   push notifications that arrive while the app is closed
@@ -59,6 +60,7 @@ Optional extras, all in `.env.local` — every one degrades gracefully when unse
 | `/shift` | Shift work — the rotating night-shift week on its own door: the anchor sleep window, the fixed and negotiable commitments, the one movable thing (the 15:30 pickup, behind a hold), and the post-night-shift driving warning |
 | `/team` | Travel-manager view: 12 travellers, 12 crews in parallel (stretch) |
 | `/dev` | Lens workbench + recorded-event fixture playback + the dial workbench + the contested-day prototype + the crew-question card specimen (dev only) |
+| `/plan/{id}` | The shared card — a plan's passport line or the post-landing arrival receipt, with a generated OG image (terminator + ghost dawn drawn from the payload's real owed minutes). "Make your own plan" lands recipients on `/?via={id}`, which acknowledges the share and prefills the sender's route |
 | `/api/*` | Server surface — run SSE, check-in, trip, wearable upload, team, persistence, memory, graph health, Qloo destination/favorite search, voice ([reference](docs/reference/architecture.md#api-surface)) |
 
 ## Docs

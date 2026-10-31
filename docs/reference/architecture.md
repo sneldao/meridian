@@ -243,7 +243,10 @@ shared list the More sheet uses (`MoreSheet.PLACE_GROUPS` — crew under
 "Inside Meridian", shift and team under "The same engine, other lives"),
 so every place has exactly one name. The payoff is not a destination:
 arrival is reached from the morning-after card on Today and from each
-trip's record on Trips. The menu is for going places and working the
+trip's record on Trips. Once arrived, the page reads in two passes —
+the promise, a beat, then the account — and closes with the arrival
+passport: the trip's record stamped (ADJUSTED / ALMOST / OWED) and
+exportable as an image or text. The menu is for going places and working the
 trip — app utilities (activity log, appearance, install, voice) and the
 medical/privacy disclosure moved behind its "Settings & about" row into
 their own sheet, so the menu stays under seven rows.
@@ -271,9 +274,10 @@ serves the demo traveller.
 Optional Supabase layer (`src/tools/supabase.ts`): when `SUPABASE_URL` +
 `SUPABASE_SERVICE_ROLE_KEY` are set, runs and check-ins are appended to
 `public.meridian_events` and `/api/persistence/runs` serves cross-run history.
-Feeds (`meridian_feeds`) and push subscriptions (`meridian_push_subscriptions`)
-live there too — feeds fall back to `artifacts/feeds/*.json` on disk without
-keys. Everything else falls back to `localStorage`. Project + schema details
+Feeds (`meridian_feeds`), push subscriptions (`meridian_push_subscriptions`)
+and shared cards (`meridian_shares`) live there too — feeds fall back to
+`artifacts/feeds/*.json` and shares to `artifacts/share/*.json` on disk
+without keys. Everything else falls back to `localStorage`. Project + schema details
 in [providers.md](providers.md#supabase-persistence-optional).
 
 ## API surface
@@ -298,6 +302,8 @@ in [providers.md](providers.md#supabase-persistence-optional).
 | `GET /api/assistant/next` | `?feed=<id>&t=<token>&format=text` — one spoken sentence naming the next plan step (`nextStepFromPlan` — zone-aware, pre-flight steps in origin time, post-flight in destination). Built for Siri Shortcuts / any URL-fetching assistant |
 | `GET·POST·DELETE /api/push/subscribe` | GET: `{enabled, publicKey}` — false without VAPID env. POST: `{id, key, endpoint, keys}` stores a Web Push subscription under the feed's write key. DELETE by endpoint stops sends |
 | `GET /api/cron/dispatch` | The reminder sender — `Authorization: Bearer $CRON_SECRET`, intended to run every ~15 min. For each subscription: reads the feed, sends steps due inside the dispatch window (late beats never for a missed tick), dedupes via the row's `sent` map, culls dead endpoints (404/410). 503 when push isn't configured |
+| `POST /api/share` | Mints a `/plan/{id}` card from `{briefing,trip}`. Supabase `meridian_shares` when configured, `artifacts/share/*.json` otherwise. (The post-landing receipt leaves the app client-side — the arrival passport's PNG/SVG/text export — not as a minted link; a server-minted arrival share is on the backlog.) |
+| `GET·POST /api/share/[id]` | GET returns the share payload (the same data the public card renders — backs the `?via=` acknowledgment + route prefill on Home). POST `{recipient:true}` increments `recipient_count` — the funnel's bottom, a share view that ended in a committed trip. The page load itself increments `view_count`; the OG image path does not |
 
 ## Layout
 
@@ -313,7 +319,10 @@ src/domain/      types, circadian scorer + phase-response model, placement
                  palette),
                  adherence, readiness, arrival (the landing read + headline),
                  arrival-rows (the `/arrival` cells, kept out of the component
-                 so the numbers can be asserted), fixtures (trip horizon via
+                 so the numbers can be asserted), arrival-passport (the
+                 stamped record — a verdict, a figure and its honest
+                 comparison, or nothing at all when the read carries neither
+                 a projection nor a gate promise), fixtures (trip horizon via
                  horizonFor; Alex fixture for the demo route,
                  neutralCalendarFor elsewhere),
                  misalignment (the body-clock projection the dial shows:
@@ -342,7 +351,11 @@ src/components/  NudgeFeedScreen (the Calm `/` surface: next step, timeline,
                  tab order; hidden above 480px, where the app is a document),
                  MoreSheet + MoreNav (the More tab's sheet — the grouped
                  places links for /crew, /shift, /team; `aria-current`
-                 on the tab when any of those paths matches), PlanReview
+                 on the tab when any of those paths matches),
+                 ArrivalPassportCard (the arrival payoff's closing beat —
+                 the stamped record in live type, exported from its SVG
+                 twin; download PNG/SVG, copy text, native share, nothing
+                 posted automatically), PlanReview
                  (the signed plan artifact — hosted inline on Today behind
                  the Now / The plan switch, and as the full `/review` page),
                  RightNowCard
@@ -377,7 +390,11 @@ src/lib/         voice/ (engine, config, cache, split, align, huddle),
                  home-entry (URL + stored-route resolution), trip-actions +
                  use-trip-actions (the trip-scoped action ledger and its
                  storage seam), local-data (all-data delete + safe storage
-                 reads), motion tokens, intervention icon vocabulary
+                 reads), motion tokens, intervention icon vocabulary,
+                 arrival-passport-svg + download-arrival-passport (the
+                 passport's export twin — the standalone SVG and its
+                 SVG→canvas→PNG pipeline), share (the `/plan/{id}` payload
+                 writer/reader: Supabase with a filesystem fallback)
 src/mcp/         MCP server: JSON-RPC dispatch + tool catalogue
 src/app/         pages + api routes (/, /arrival, /review, /history, /outcome,
                  /crew, /shift, /dev)
