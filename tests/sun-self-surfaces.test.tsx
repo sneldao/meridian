@@ -110,6 +110,15 @@ describe("the passport portrait", () => {
     const bare = renderToStaticMarkup(createElement(ArrivalPassportCard, { passport: pp }));
     expect(bare).not.toContain("arr-passport-face");
   });
+
+  test("the portrait button exists only when a face was computed", () => {
+    const withSun = renderToStaticMarkup(
+      createElement(ArrivalPassportCard, { passport: pp, sun: halfLit }),
+    );
+    expect(withSun).toContain("Portrait");
+    const without = renderToStaticMarkup(createElement(ArrivalPassportCard, { passport: pp }));
+    expect(without).not.toContain("Portrait");
+  });
 });
 
 describe("SolLuna speaks the sun-self's language", () => {
@@ -213,5 +222,21 @@ describe("the empty entry sleeps, it does not sulk", () => {
     const sleeping = sunSelfSleeping();
     expect(h).toContain(sunSelfMoodWord(sleeping.mood)); // "asleep"
     expect(h).toContain("No route yet");
+  });
+
+  test("the face wakes as the route is typed — drained by the full gap", () => {
+    const h = renderToStaticMarkup(
+      createElement(TripEntryScreen, {
+        initialDate: "2026-05-10",
+        onContinue: () => {},
+        onExploreExample: () => {},
+        onExploreScenario: () => {},
+        initialRoute: { origin: "LHR", dest: "HND", date: "2026-11-04" },
+      }),
+    );
+    expect(h).toContain("drained"); // nine hours east, nothing banked
+    expect(h).not.toContain("sunself-ray lit"); // no rays before any crew work
+    expect(h).toContain("sunself-paper enter"); // the wake pulse is armed
+    expect(h).not.toContain("No route yet");
   });
 });

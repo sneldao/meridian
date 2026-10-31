@@ -13,13 +13,26 @@ import { sunSelfCaption, sunSelfSvgGroup } from "@/lib/sun-self-svg";
 const W = 1080;
 const H = 1350;
 
-const INK = "#0b0e16";
-const INK_2 = "#0c1220";
-const PAPER = "#f4f0e8";
-const MUTED = "#8b93a7";
-const GOLD = "#ffd98a";
-const GOLD_DIM = "#b99a5e";
-const STAMP_RED = "#ff7a7a";
+/* The document palette (round 24): ink, the gold of the horizon band, and the
+ * stamp red for a verdict the body owes. Exported so every artifact that
+ * leaves the app — passport, portrait — reads as the same document family. */
+export const DOCUMENT_PALETTE = {
+  ink: "#0b0e16",
+  ink2: "#0c1220",
+  paper: "#f4f0e8",
+  muted: "#8b93a7",
+  gold: "#ffd98a",
+  goldDim: "#b99a5e",
+  stampRed: "#ff7a7a",
+} as const;
+
+const INK = DOCUMENT_PALETTE.ink;
+const INK_2 = DOCUMENT_PALETTE.ink2;
+const PAPER = DOCUMENT_PALETTE.paper;
+const MUTED = DOCUMENT_PALETTE.muted;
+const GOLD = DOCUMENT_PALETTE.gold;
+const GOLD_DIM = DOCUMENT_PALETTE.goldDim;
+const STAMP_RED = DOCUMENT_PALETTE.stampRed;
 
 const SERIF = "Georgia, 'Times New Roman', serif";
 const MONO = "ui-monospace, 'SF Mono', Menlo, Consolas, monospace";

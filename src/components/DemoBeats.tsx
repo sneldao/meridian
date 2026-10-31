@@ -15,6 +15,7 @@ import {
 } from "@/domain/demo-beats";
 import { SunSelf } from "@/components/SunSelf";
 import { arrivalPassportSvg } from "@/lib/arrival-passport-svg";
+import { downloadSunPortrait } from "@/lib/download-sun-portrait";
 import { useLightSweep } from "@/components/LightSweep";
 import { isDemoScenarioId } from "@/domain/demo-scenarios";
 
@@ -69,8 +70,13 @@ function DemoBeatsInner() {
 
   // The demo is a send-a-link funnel — the payoff beat makes sending one tap.
   const [shared, setShared] = useState(false);
+  const [portraitSaved, setPortraitSaved] = useState(false);
   const shareTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => { if (shareTimer.current) clearTimeout(shareTimer.current); }, []);
+  const portraitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (shareTimer.current) clearTimeout(shareTimer.current);
+    if (portraitTimer.current) clearTimeout(portraitTimer.current);
+  }, []);
   const shareDemo = async () => {
     const url = `${window.location.origin}/demo`;
     const payload = {
@@ -93,6 +99,29 @@ function DemoBeatsInner() {
       shareTimer.current = setTimeout(() => setShared(false), 2200);
     } catch {
       /* clipboard blocked — the link is visible in the address bar anyway */
+    }
+  };
+
+  // The gift, take two (round 25): the traveller's portrait — the face the
+  // payoff shows, as a shareable card. Same honesty rule as every figure on
+  // this beat: it comes from sunSelfForBeat and the projection, never more.
+  const savePortrait = async () => {
+    try {
+      await downloadSunPortrait(
+        {
+          read: sunSelfForBeat(journey, "payoff"),
+          routeLabel: journey.passport?.route ?? "THE TRIP",
+          subLabel: p
+            ? `banked ${p.deliveredHours.toFixed(1)}h of ${p.requiredHours.toFixed(1)}h`
+            : undefined,
+        },
+        "png",
+      );
+      setPortraitSaved(true);
+      if (portraitTimer.current) clearTimeout(portraitTimer.current);
+      portraitTimer.current = setTimeout(() => setPortraitSaved(false), 2200);
+    } catch {
+      /* download blocked — the share link above still carries the story */
     }
   };
 
@@ -249,6 +278,9 @@ function DemoBeatsInner() {
               </Link>
               <button type="button" className="demo-cta-quiet" onClick={shareDemo}>
                 {shared ? "Link copied ✓" : "Send this to a jet-lagged friend"}
+              </button>
+              <button type="button" className="demo-cta-quiet" onClick={savePortrait}>
+                {portraitSaved ? "Portrait saved ✓" : "Save the portrait"}
               </button>
             </div>
           </section>

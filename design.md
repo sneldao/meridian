@@ -492,3 +492,32 @@ adding:
 Verification: 892 tests (13 new), 9/9 round-24 browser checks, full
 regression stack (13/13 · 20/20 · 22/22 · 10/10), OG regenerated.
 Baselines refresh for entry, home, stage and the demo payoff.
+
+## Round 25 — The face wakes; the portrait travels (2026-11-01)
+
+Two steps of the embodiment roadmap, both extending the round-24 law:
+the face is computed, never authored.
+
+1. **The landing face wakes as the route is typed.** The entry's sun-self
+   was asleep pending a route; now it resolves the moment `routeGapRead`
+   does — drained by the full gap, tilted toward the direction, zero rays
+   (nothing banked yet), one wake pulse armed. A same-timezone route gets
+   the radiant "body clock home" face, because the domain says so, not
+   because it flatters. The face reacts before any number appears.
+2. **The body-clock portrait — the Wrapped play.** One shareable
+   state-portrait (1080×1080, the document palette, the face IS the card):
+   `sunPortraitSvg({read, routeLabel, subLabel?})` renders only what the
+   caller computed. Ships on the arrival card ("Portrait" button, present
+   iff a read exists) and the demo payoff ("Save the portrait"). Both ride
+   a new shared export pipeline (`download-svg-image.ts`) — the day card,
+   passport and portrait now share one SVG→canvas rail.
+
+Also verified on the way: the feed→stage pulse needs no wiring — the feed
+and the stage share `tripActions.marks`, so a done check-in already lights
+the face. The missing piece is the per-step receipt line, which needs the
+model to attribute banked minutes to individual steps (not invented) —
+queued as the next round.
+
+Verification: 900 tests (7 new), 9/9 round-25 browser checks (including a
+real PNG download), regression stack green (9/9 · 13/13 · 20/20 · 22/22 ·
+10/10). The demo-payoff baseline refreshes for the new button.

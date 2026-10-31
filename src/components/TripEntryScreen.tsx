@@ -7,7 +7,7 @@ import { isValidHomeRoute, type HomeRoute } from "@/lib/home-entry";
 import { SampleJourneys } from "@/components/SampleJourneys";
 import { SunSelf } from "@/components/SunSelf";
 import type { DemoScenarioId } from "@/domain/demo-scenarios";
-import { sunSelfSleeping } from "@/domain/sun-self";
+import { sunSelfRead, sunSelfSleeping } from "@/domain/sun-self";
 import { ADHERENCE_PROFILE, buildTrip, DEMO_TRIP, GARMIN_BASELINE } from "@/domain/fixtures";
 import { previewPlan, type SolvedDay } from "@/domain/solver";
 import { routeGapHeadline, routeGapLine, routeGapRead } from "@/domain/route-gap";
@@ -69,13 +69,26 @@ export function TripEntryScreen({ initialDate, onContinue, onExploreExample, onE
   const gap = useMemo(() => (valid ? routeGapRead(draft) : null), [draft, valid]);
   const artifacts = useMemo(() => demoArtifacts(), []);
 
+  // The face wakes as the route is typed (round 25): asleep while the draft
+  // is empty — no route yet means no debt yet — and the moment the draft
+  // resolves it shows exactly what the headline says: the gap the route
+  // carries, owed in full, nothing banked. The pulse fires once, on waking.
+  const entrySun = gap
+    ? sunSelfRead({
+        owedMin: gap.gapMin,
+        deliveredMin: 0,
+        requiredMin: gap.gapMin,
+        direction: gap.direction,
+      })
+    : sunSelfSleeping();
+
   return (
     <div className="reading entry" role="group" aria-labelledby="entry-heading">
       <div className="entry-intro">
-        {/* The brand's face, asleep — no route yet, so no debt yet. It wakes
-            on the stage the moment a trip exists. */}
+        {/* The brand's face — asleep before the route resolves, awake (and
+            honest about the debt) the moment it does. */}
         <div className="entry-sunself">
-          <SunSelf read={sunSelfSleeping()} size={56} />
+          <SunSelf read={entrySun} size={56} pulseKey={gap ? "awake" : null} />
         </div>
         <p className="entry-eyebrow">Arrive with a plan</p>
         <h1 id="entry-heading" className="entry-title">

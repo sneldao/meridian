@@ -1289,3 +1289,18 @@ dial center, check-in pulses) and phase D (passport portrait, OG).
 **Next candidates:** a body-clock portrait share card (standalone face
 export for Wrapped-style sharing), push-icon face, SolLuna states mapped
 onto the lids law end-to-end.
+
+## Round 25 — The face wakes; the portrait travels (2026-11-01)
+
+1. **Entry wake-up** — the route draft resolving wakes the sun-self from
+   asleep to drained-by-the-gap, pulse armed; same-timezone routes get
+   the honest "body clock home" face.
+2. **Body-clock portrait** — `src/lib/sun-portrait.ts` (square card, face
+   is the card), arrival-card Portrait button, demo "Save the portrait",
+   shared `download-svg-image.ts` pipeline for every artifact.
+
+**Verification:** 900/900 tests, 9/9 browser checks incl. a real PNG
+download, full regression. **Next:** the per-step receipt — the model must
+attribute banked minutes to individual steps before the feed may say
+"banked 40m of light" (honesty before delight); SolLuna state vocabulary
+convergence; the funnel week (set FUNNEL_SUMMARY_KEY, watch drop-offs).

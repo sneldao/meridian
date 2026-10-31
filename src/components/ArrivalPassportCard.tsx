@@ -4,6 +4,7 @@ import { useId, useState } from "react";
 import { passportText, type ArrivalPassport } from "@/domain/arrival-passport";
 import type { SunSelfRead } from "@/domain/sun-self";
 import { downloadArrivalPassport } from "@/lib/download-arrival-passport";
+import { downloadSunPortrait } from "@/lib/download-sun-portrait";
 import { CountUp } from "@/components/CountUp";
 import { SunSelf } from "@/components/SunSelf";
 
@@ -119,6 +120,30 @@ export function ArrivalPassportCard({
         <button type="button" className="arr-btn ghost" onClick={copy}>
           Copy text
         </button>
+        {sun && (
+          <button
+            type="button"
+            className="arr-btn ghost"
+            disabled={pending}
+            onClick={() =>
+              run(
+                () =>
+                  downloadSunPortrait(
+                    {
+                      read: sun,
+                      routeLabel: passport.route,
+                      subLabel: `${passport.stat} · ${passport.statLabel}`,
+                    },
+                    "png",
+                  ),
+                "Preparing portrait…",
+                "Portrait downloaded.",
+              )
+            }
+          >
+            Portrait
+          </button>
+        )}
         {canShare && (
           <button type="button" className="arr-btn ghost" onClick={share}>
             Share
