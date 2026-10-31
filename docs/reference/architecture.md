@@ -67,7 +67,12 @@ other.
    `approval_request` and pause: `POST /api/crew/approvals` applies the staged
    event moves and Meridian plan blocks, or rejects them and restores the
    pre-negotiation calendar (`calendar_restore`).
-5. **Briefing** — `buildIcs` emits a real `.ics`; summary + mean score stream as
+5. **Briefing** — `buildIcs` emits a real `.ics`: the calendar events (with
+   `movedTo` applied), plus — when the locked days are passed in — alarmed
+   VEVENTs for the zeitgeber gates (light window, caffeine curfew,
+   wind-down, dim-lights), each carrying a `VALARM` 15 min out. The webcal
+   feed and the briefing download both get the alarmed form. Summary +
+   mean score stream as
    the `briefing` event, then `done`.
 
 ## Event stream
@@ -141,7 +146,13 @@ files, not in the prompt.
 ## Adherence loop (`src/domain/adherence.ts`)
 
 Closes observe → plan → outcome. `parseCheckInText` turns a free-text check-in
-("skipped the 6am light walk") into a structured `CheckIn`; `foldCheckIns`
+("skipped the 6am light walk") into a structured `CheckIn` — honest-words
+coverage: "slept through"/"couldn't make it" read as skips, shades/eye mask/
+blackout map to `avoid_light`, a delayed or late flight folds as `partial`,
+never a silent "done". `domain/constraints.ts` models the same thing from
+the UI side: skipped steps → `Constraint[]` → `checkInsFromConstraints`, so
+the constraint-chip "Can't: …" marks and the free-text note land in one
+shape before folding. `foldCheckIns`
 updates the `AdherenceProfile` — the compliance floor moves to the latest
 early-ask time that still failed, skipped kinds join `weakAt`. The scorer then
 penalizes plans the wearer demonstrably won't follow.
@@ -203,6 +214,15 @@ a failed refresh is a nonblocking banner, not a fallback to setup. The
 plan's `baselineKind` is saved with it so the offline path reports the same
 provenance.
 
+Entry-mode transitions (`commitRoute` → trip, `openEntry` → setup,
+`exploreExample` → example) share `resetTripView` — the teardown that
+closes the stream, resets the run, and clears restored-plan state —
+and **push** history entries rather than replacing them, so the browser's
+Back walks the states instead of exiting the app. A `popstate` listener
+re-runs the same `resolveHomeEntry` the mount effect uses and syncs
+`meridian:activeTrip` to whatever the popped URL says, so a subsequent
+load resolves identically.
+
 The `?depth` param shapes explanation depth, not agent visibility:
 `?depth=guided` opens every evidence drawer, `?depth=operator` routes to
 `/crew`. A `crew_question` asks at every depth — it is a decision, not
@@ -255,6 +275,7 @@ in [providers.md](providers.md#supabase-persistence-optional).
 | `POST /api/mcp` | Self-hosted MCP server (Streamable HTTP, protocol 2025-11-25; stateless JSON-RPC over POST). Tools wrap the crew surface: `preview_trip`, `plan_shift`, `evaluate_plan`, `record_check_in`, `search_literature`, `crew_memory`, `recall_findings`, `latest_plan`, `search_web` (Tavily), `destination_taste` (Qloo) — implemented in `src/mcp/server.ts`. GET 405s (no server push); DELETE is a no-op. |
 | `POST /api/feed` | Create or update a plan feed `{ics, trip, days}` → `{id, key, tokens}`. `key` authorizes updates (hash stored, constant-time compare); `tokens` are per-surface read tokens (`calendar`, `assistant`). Rate-limited, ICS capped at 300KB |
 | `GET /api/feed/[id]/calendar.ics` | The webcal URL — serves the current ICS, gated on `?t=` when a calendar token exists. Legacy feeds without tokens still serve on the bare id |
+| `GET /api/feed/[id]/widget.json` | The feed as JSON for small surfaces (widget/lock-screen readers) — same `?t=` gating as the ICS |
 | `POST /api/feed/rotate` | `{id, key, surface}` → mints a fresh read token for one surface, killing its old links. The assistant sheet's "Reset link" |
 | `GET /api/assistant/next` | `?feed=<id>&t=<token>&format=text` — one spoken sentence naming the next plan step (`nextStepFromPlan` — zone-aware, pre-flight steps in origin time, post-flight in destination). Built for Siri Shortcuts / any URL-fetching assistant |
 | `GET·POST·DELETE /api/push/subscribe` | GET: `{enabled, publicKey}` — false without VAPID env. POST: `{id, key, endpoint, keys}` stores a Web Push subscription under the feed's write key. DELETE by endpoint stops sends |
@@ -296,8 +317,15 @@ src/agents/      providers, crew prompts, runtime, night replay, morning replay
 src/components/  NudgeFeedScreen (the Calm `/` surface: next step, timeline,
                  readiness), TripEntryScreen (the first-use form: blank route
                  fields + a departure date, kept draft until Continue),
-                 BottomNav (the phone's tab bar — Today / My plan / Trips,
-                 hidden above 480px, where the app is a document), dial/ (the
+                 BottomNav (the phone's tab bar — Today / My plan / Trips /
+                 More; directional `nav-forward`/`nav-back` transitions by
+                 tab order; hidden above 480px, where the app is a document),
+                 MoreSheet + MoreNav (the 4th tab's sheet — the places links
+                 for /crew, /shift, /team, /arrival, /outcome; `aria-current`
+                 on the tab when any of those paths matches), RightNowCard
+                 (the glanceable "what now" at the top of Today),
+                 OfflineBadge (connectivity + in-flight mode), PageHeader,
+                 dial/ (the
                  read-only BodyClockDetails explanation below Today — dial,
                  projection, provenance — plus the retained, unmounted
                  MeridianDailyScreen. Shared widgets include CircadianDial,
@@ -314,7 +342,11 @@ src/components/  NudgeFeedScreen (the Calm `/` surface: next step, timeline,
                  CrewQuestionCard + CalendarApprovalCard (run suspensions),
                  DayStrip, BriefingCard, HandoffBanner, RoutePicker,
                  MorningCheckin, DailyJourney, AgentDrawer, AnchoredPopover,
-                 lenses/, ui/
+                 JourneySteps (the four-step progress line — steps are links
+                 when `hrefs` are supplied), lenses/, ui/
+                 `page.tsx` also hosts TripClocks — the ambient "home · here ·
+                 body" line above the feed, body phase = origin clock plus the
+                 shift locked days have actually moved.
 src/lib/         voice/ (engine, config, cache, split, align, huddle),
                  home-entry (URL + stored-route resolution), trip-actions +
                  use-trip-actions (the trip-scoped action ledger and its
