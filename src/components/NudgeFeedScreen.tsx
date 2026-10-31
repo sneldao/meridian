@@ -1620,7 +1620,23 @@ export function NudgeFeedScreen({
 
       {steps.some((n) => skippedIds.has(n.id)) && (
         <div className="recovery-card" role="status">
-          <strong>Missed a step?</strong> No stress — get 20 minutes of outdoor light at lunch and shift your caffeine curfew back 30 minutes; your plan adapts from there.
+          <strong>Missed a step?</strong>
+          <ul className="recovery-list">
+            {steps
+              .filter((n) => skippedIds.has(n.id))
+              .map((n) => {
+                const next = steps.find((s) => s.startMin > n.startMin && !skippedIds.has(s.id));
+                const recovery =
+                  n.category === "sunlight"
+                    ? `Get 20 min of outdoor light at ${next ? fmtMin(next.startMin) : "lunch"} to re-anchor your phase.`
+                    : n.category === "nutrition"
+                      ? "Shift your caffeine curfew back 30 min and protect adenosine receptors tonight."
+                      : n.category === "sleep"
+                        ? "Dim overheads 90 min before bed and keep the room cool to protect deep sleep."
+                        : "No stress — your plan adapts from here; mark the next step done when you can.";
+                return <li key={n.id}>{n.title}: {recovery}</li>;
+              })}
+          </ul>
         </div>
       )}
       {!arrivalView && (

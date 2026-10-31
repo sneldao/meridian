@@ -5729,3 +5729,5 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   cursor: pointer;
 }
 .everyday-chip.done { background: var(--m-tag, #eee); }
+
+.recovery-list { margin: 6px 0 0; padding-left: 18px; font-size: 12px; line-height: 1.5; }
