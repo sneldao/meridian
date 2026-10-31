@@ -18,7 +18,8 @@ describe("PerformanceBrief (SSR)", () => {
     expect(h).toContain("Evening performance");
     expect(h).toContain("Event time");
     expect(h).toContain("Estimated body time");
-    expect(h).toContain("Example event");
+    expect(h).toContain("Example sleep profile");
+    expect(h).not.toContain("Example event");
     expect(h).toContain("not a measurement of alertness");
     for (const bad of ["%", "guaranteed", "You will be sharp", "fix jetlag"]) expect(h).not.toContain(bad);
   });

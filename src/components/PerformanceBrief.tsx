@@ -19,6 +19,7 @@ export function PerformanceBrief({ moment, destination, date, example, preview, 
   const risk = moment?.status === "risk";
   const fictionalSleep = exampleBaseline || example;
   const parsedDate = date ? new Date(`${date}T00:00:00Z`) : null;
+  const stateLabel = preview ? "Plan preview · " : fictionalSleep ? "Example sleep profile · " : eventSource !== "google" ? "Example event · " : null;
   const validDate = parsedDate && Number.isFinite(parsedDate.getTime()) && parsedDate.toISOString().slice(0, 10) === date ? parsedDate : null;
   return (
     <section className={`perf-brief${compact ? " perf-brief--compact" : ""}`} aria-labelledby="perf-brief-heading">
@@ -51,9 +52,7 @@ export function PerformanceBrief({ moment, destination, date, example, preview, 
           </div>
           )}
           <p className="perf-note">
-            {eventSource !== "google" && "Example event · "}
-            {preview && "Plan preview · "}
-            {fictionalSleep && "Example sleep profile · "}
+            {stateLabel}
             {risk
               ? fictionalSleep
                 ? "This estimate overlaps the example sleep window."
