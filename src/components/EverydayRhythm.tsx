@@ -9,12 +9,15 @@ export function EverydayRhythm() {
   const [marks, setMarks] = useState<Record<string, boolean>>({});
   const [streak, setStreak] = useState(0);
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(KEY);
-      if (raw) setMarks(JSON.parse(raw));
-      const s = localStorage.getItem(STREAK_KEY);
-      if (s) setStreak(Number(s) || 0);
-    } catch {}
+    const t = setTimeout(() => {
+      try {
+        const raw = localStorage.getItem(KEY);
+        if (raw) setMarks(JSON.parse(raw));
+        const s = localStorage.getItem(STREAK_KEY);
+        if (s) setStreak(Number(s) || 0);
+      } catch {}
+    }, 0);
+    return () => clearTimeout(t);
   }, []);
   const toggle = (k: string) => {
     const next = { ...marks, [k]: !marks[k] };

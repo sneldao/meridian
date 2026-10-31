@@ -1623,7 +1623,7 @@ export function NudgeFeedScreen({
           {steps
             .filter((n) => skippedIds.has(n.id))
             .map((n) => (
-              <span key={n.id} className="constraint-chip">Can't: {n.title}</span>
+              <span key={n.id} className="constraint-chip">Can&apos;t: {n.title}</span>
             ))}
         </div>
       )}
