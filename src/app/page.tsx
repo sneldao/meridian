@@ -184,7 +184,6 @@ export default function Home() {
   const STALL_IDLE_MS = 60_000;
   const STALL_AFTER_BRIEFING_MS = 12_000;
   const [hasSavedPlan, setHasSavedPlan] = useState(false);
-  const [runCount, setRunCount] = useState(0);
   /** Persisted prior runs (Supabase when enabled, else empty) — feeds the
    *  B3 second-trip proof. Local `meridian:history` is the same-trip ledger
    *  (re-entries); this is the cross-trip read. */
@@ -341,10 +340,6 @@ export default function Home() {
       try {
         initVoice().then(setVoiceAvail).catch(() => {});
         setHasSavedPlan(Boolean(read("meridian:lastPlan")));
-        fetch("/api/memory")
-          .then((r) => r.json())
-          .then((d) => setRunCount(Array.isArray(d?.runs) ? d.runs.length : 0))
-          .catch(() => {});
         // B3 — the cross-trip read for the second-trip proof. Supabase-backed;
         // without keys this is `{ enabled: false }` and the proof stays null,
         // which is the honest "first trip" state, not a hole.
