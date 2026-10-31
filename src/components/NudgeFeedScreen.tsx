@@ -101,6 +101,8 @@ export interface NudgeFeedScreenProps {
    *  `TripData.adherence` is itself optional at the caller (`page.tsx:43`), so
    *  the feed falls back to the fixture profile during the `/api/trip` window. */
   adherence?: AdherenceProfile;
+  /** Re-run the crew with the skipped steps recorded as constraints. */
+  onReplanConstraints?: (checkIns: CheckIn[], lastMarkedDayIndex: number) => void;
   /** "fixture" = the sample traveller's numbers. Shown on Today, not only in
    *  the setup sheet, so a first-time visitor knows the plan is sample data. */
   baselineSource?: "fixture" | "garmin";
@@ -173,6 +175,7 @@ export function NudgeFeedScreen({
   moves,
   citations,
   adherence,
+  onReplanConstraints,
   baselineSource,
   baselineKind,
   wakeBand,
@@ -1625,6 +1628,25 @@ export function NudgeFeedScreen({
             .map((n) => (
               <span key={n.id} className="constraint-chip">Can&apos;t: {n.title}</span>
             ))}
+          {onReplanConstraints && (
+            <button
+              type="button"
+              className="constraint-replan"
+              onClick={() => {
+                const skipped = steps.filter((n) => skippedIds.has(n.id));
+                const checkIns = skipped.map((n) => ({
+                  id: n.id,
+                  dayIndex: n.dayIndex,
+                  dayLabel: n.dayLabel,
+                  status: "skipped" as const,
+                  at: Date.now(),
+                }));
+                onReplanConstraints(checkIns, activeDaySpec?.dayIndex ?? 0);
+              }}
+            >
+              Replan
+            </button>
+          )}
         </div>
       )}
       {steps.some((n) => skippedIds.has(n.id)) && (

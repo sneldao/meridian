@@ -920,7 +920,7 @@ Addresses the traveller's real-world environment (brain fog, mobile thumb reach,
 
 ## Round 12 — Circadian Habit Loop & Wearable Photobiology Pass (2026-10-31)
 
-Bridges quantified wearable health data (Whoop / Oura / Garmin) with photobiological causation without adding stacked card bloat. Principle: *Ambient Jewels, Not Stacked Blocks*.
+Bridges quantified wearable health data (Whoop / Oura / Garmin) with photobiological causation without adding stacked card bloat. Principle: *Ambient Jewels, Not Stacked Blocks*. Shipped in `55ad698` and `e876d2a`.
 
 ### Concepts & Architecture (ranked)
 
@@ -929,13 +929,34 @@ Bridges quantified wearable health data (Whoop / Oura / Garmin) with photobiolog
    - **☀️ Anchor Photons (Morning):** Micro-badge pinned at local dawn/wake + 30m. Tapping banks morning photons with haptic feedback.
    - **☕ Clearance Curfew (Afternoon):** Hairline marker at target bedtime - 10h (adenosine receptor protection countdown).
    - **🌙 DLMO / Virtual Sunset (Evening):** Twilight gradient notch 90m before target sleep window (dim-light melatonin onset).
-   Zero block clutter; ambient visual markers with tactile micro-interactions.
+   Zero block clutter; ambient visual markers with tactile micro-interactions. (Shipped)
 2. **Circadian Alignment Score (CAS) & Quantified Payoff (P1, Metric/Payoff).**
    - Wearables track duration; CAS measures circadian timing match ($Hours\ inside\ biological\ sleep\ gate / Total\ sleep$).
    - Kept off the daily active checklist (no cognitive fatigue when tired); surfaced on `/arrival` and `/outcome` as the quantified scientific payoff ("CAS 88% · Aligned sleep · Deep sleep protected").
-   - Grounded in Eastman (2005) & Burgess (2010) phase response literature.
+   - Grounded in Eastman (2005) & Burgess (2010) phase response literature. (Shipped)
 3. **Everyday Circadian Anchor (P2, Retention Loop).**
-   - When no flight is active, Today smoothly pivots to home city solar rhythm, giving travellers a 365-day photobiology ritual rather than an empty flight form.
+   - When no flight is active, Today smoothly pivots to home city solar rhythm, giving travellers a 365-day photobiology ritual rather than an empty flight form. (Shipped)
+
+## Round 13 — Lock-Screen Habit, Multi-Timezone Clarity & Real QA Pass (2026-10-31)
+
+Solves the primary mobile drop-off vectors (app switching, temporal disorientation across timezones, and unverified edge-case mobile interactions).
+
+### Items (ranked)
+
+1. **Dual/Triple Timezone Clock Bar (P1, UX/Clarity).**
+   - Disoriented travellers in hotels or flights need instant temporal grounding.
+   - Pinned ambient multi-clock readout under the trip route chip:
+     `🏠 Origin (Home) · ✈️ Destination (Local) · 🧬 Estimated Body Clock Phase`.
+   - Compact, high-contrast, zero math required.
+2. **One-Tap Live Calendar Subscription (P1, Retention/Lock-Screen).**
+   - Make calendar subscription prominent on Today rather than tucked inside `/review`.
+   - Direct webcal / .ics integration with pre-configured timed alerts 15m before critical zeitgeber windows (Morning light, Caffeine curfew, Wind-down).
+   - Surfaces Meridian directly on lock screens and Apple Watch faces without needing a browser tab open.
+3. **Graduate the Contested Day to Live Stage (P2, Agentic Experience).**
+   - Graduate the contested day animation from `/dev` (`ContestBench`) to the live ShiftBoard / replan stream when a user modifies constraints ("Can't do this").
+4. **End-to-End Interactive Dogfooding & Browser QA (P2, Quality Assurance).**
+   - Perform a structured interaction test across mobile viewports covering the entire traveller lifecycle:
+     Cold setup $\to$ Route selection $\to$ Today glanceable status $\to$ Day swipe $\to$ Skip recovery $\to$ Arrival payoff.
 
 
 ## Later / deferred

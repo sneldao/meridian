@@ -2356,6 +2356,51 @@ html[data-theme="night"] .evline-cite,
   font-size: 11px;
   font-weight: 800;
 }
+.tz-clocks-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  margin-top: 8px;
+  background: var(--m-card);
+  border: 1px solid var(--m-border);
+  border-radius: 12px;
+  font-size: 12px;
+  color: var(--m-text);
+  flex-wrap: wrap;
+}
+.tz-clock-item {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.tz-clock-label {
+  color: var(--m-muted);
+  font-size: 11px;
+}
+.tz-clock-time {
+  font-family: var(--m-font-mono, monospace);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--m-text);
+}
+.tz-clock-divider {
+  color: var(--m-muted);
+  opacity: 0.6;
+}
+.tz-clock-diff {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--m-accent);
+  background: color-mix(in srgb, var(--m-accent) 12%, transparent);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.today-cal-action {
+  display: inline-flex;
+  align-items: center;
+}
 .day-step {
   font: inherit;
   width: 34px;
@@ -4060,6 +4105,14 @@ html[data-theme="night"] {
   .cal-summary { grid-template-columns: 1fr; gap: 6px; }
   .cal-summary-num { flex-direction: row; align-items: baseline; gap: 8px; }
   .cal-summary-num b { font-size: 15px; }
+  .tz-clocks-bar {
+    padding: 6px 10px;
+    gap: 8px;
+    font-size: 11.5px;
+  }
+  .tz-clock-time {
+    font-size: 12px;
+  }
 }
 
 .entry {
@@ -5742,4 +5795,15 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   background: var(--m-tag, #eee);
   font-size: 11px;
   font-weight: 700;
+}
+
+.constraint-replan {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--m-border, #ddd);
+  background: var(--m-accent, #d96b43);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
 }

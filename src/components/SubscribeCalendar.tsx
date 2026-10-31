@@ -10,11 +10,13 @@ export function SubscribeCalendar({
   trip,
   days,
   className,
+  label = "Subscribe in my calendar",
 }: {
   ics: string;
   trip: unknown;
   days: unknown;
   className?: string;
+  label?: string;
 }) {
   const [state, setState] = useState<"idle" | "busy" | "ready" | "error">("idle");
   const [url, setUrl] = useState<string | null>(null);
@@ -39,7 +41,7 @@ export function SubscribeCalendar({
       <span className="inline-flex flex-col gap-1">
         <span className="inline-flex items-center gap-2">
           <a href={url} className={className}>
-            Subscribe in my calendar
+            {label}
           </a>
           <button
             type="button"
@@ -63,7 +65,7 @@ export function SubscribeCalendar({
   return (
     <span className="inline-flex flex-col gap-1">
       <button type="button" className={className} onClick={go} disabled={state === "busy"}>
-        {state === "busy" ? "Making link…" : "Subscribe in my calendar"}
+        {state === "busy" ? "Making link…" : label}
       </button>
       {state === "error" && (
         <span className="text-xs text-mist">Couldn&apos;t make a link — try again.</span>

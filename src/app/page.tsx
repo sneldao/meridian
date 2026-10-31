@@ -74,6 +74,8 @@ import { ScenarioExperience } from "@/components/ScenarioExperience";
 import type { DemoScenarioId } from "@/domain/demo-scenarios";
 import { isTasteItinerary, itineraryMatchesTrip, type TasteItinerary } from "@/domain/taste";
 import { JourneySteps } from "@/components/JourneySteps";
+import { TimezoneClocks } from "@/components/TimezoneClocks";
+import { SubscribeCalendar } from "@/components/SubscribeCalendar";
 import { PinnedDayRow } from "@/components/DayStrip";
 import { useRunState, calendarWithMoves, ledgerEvents, ghostGapDeg } from "@/state/run";
 import { meetingReadiness } from "@/domain/readiness";
@@ -1413,6 +1415,11 @@ export default function Home() {
                 {trip.direction === "east" ? "ahead" : "behind"}{" "}
                 <span className="trip-chip-change">✎ Change</span>
               </button>
+              <TimezoneClocks
+                origin={trip.origin}
+                destination={trip.destination}
+                requiredShiftMin={trip.requiredShiftMin}
+              />
               {routeOpen && (
                 <div style={{ marginTop: 8 }}>
                   <div className="card" style={{ padding: "12px 14px", marginBottom: 10 }}>
@@ -1476,15 +1483,25 @@ export default function Home() {
                 the job is the question and the CTA, not a progress map or a
                 mode picker the traveller can't yet choose between. */}
             {effectiveLocked.size > 0 && (
-              <div className="secondary-action">
-                <JourneySteps
-                  current={
-                    isTripFinished(trip, new Date())
-                      ? 3
-                      : 2
-                  }
-                />
-              </div>
+              <>
+                <div className="secondary-action">
+                  <JourneySteps
+                    current={
+                      isTripFinished(trip, new Date())
+                        ? 3
+                        : 2
+                    }
+                  />
+                </div>
+                <div className="today-cal-action">
+                  <SubscribeCalendar
+                    ics={run.briefing?.ics ?? ""}
+                    trip={trip}
+                    days={Array.from(effectiveLocked.values())}
+                    className="chip"
+                  />
+                </div>
+              </>
             )}
             </div>
 
@@ -1505,6 +1522,7 @@ export default function Home() {
                 moves={run.moves}
                 citations={activeCitations}
                 adherence={data?.adherence}
+                onReplanConstraints={sendDayCheckIn}
                 baselineSource={data?.baselineSource}
                 baselineKind={entry.mode === "example" ? "demo-default" : effectiveBaselineKind}
                 wakeBand={entry.mode === "example" ? null : wakeBand}

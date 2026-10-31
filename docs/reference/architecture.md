@@ -168,7 +168,12 @@ ShiftBoard toggle a skip mark by the nudge's own id, so a board tap and a
 feed skip are the same constraint reaching the next replan. Because
 `storage` events fire only across tabs, writers dispatch a
 `meridian:actions-changed` custom event and both surfaces re-hydrate on it —
-a mark made on Today reads as marked on the board and vice versa.
+a mark made on Today reads as marked on the board and vice versa. While a
+run is live, Home also mounts the ShiftBoard inline (drafts, rejects,
+re-locks drawn on the same 24-hour stage) and the `MorningCheckin`
+conversational check-in — the note regex-parses into `CheckIn`s and restarts
+the stream on the `checkins` + `startDay` seam, so talk → replan → redraw
+all happens on `/`.
 
 **The clock listens.** The Home-owned ledger is the same one the read-only
 projection reads: `skippedClockDays` (domain/marks.ts) selects only skipped
