@@ -291,7 +291,9 @@ export default function Home() {
         case "crew_answer":
           push({
             kind: "system",
-            text: e.skipped ? "no answer — the crew decides" : `you answered: ${e.label}`,
+            text: e.skipped
+              ? "no answer — the crew decides"
+              : `you answered: ${e.label}${e.effect ? ` — ${e.effect}` : ""}`,
           });
           break;
         case "calendar_restore":

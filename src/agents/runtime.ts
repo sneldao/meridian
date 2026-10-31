@@ -351,6 +351,9 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
         optionId: picked.id,
         label: picked.label,
         skipped: ans.skipped,
+        ...(newFloor !== floor
+          ? { effect: `compliance floor ${fmtMin(floor)} → ${fmtMin(newFloor)} — morning light can start at ${fmtMin(newFloor)}` }
+          : {}),
       });
       logLine(
         `crew question ${ans.skipped ? "unanswered — floor kept" : `answered "${picked.label}"`} — compliance floor ${fmtMin(newFloor)}`,

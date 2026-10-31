@@ -281,6 +281,10 @@ export type CrewEvent =
       optionId: string;
       label: string;
       skipped: boolean;
+      /** What the answer changed, in one clause — only present when the
+       *  pick actually moved something, so "you answered" is never claimed
+       *  to have had an effect it didn't. */
+      effect?: string;
     }
   | { type: "approval_request"; approval: CalendarApprovalRequest }
   | {

@@ -5,7 +5,9 @@
 // pipeline running. Not linked from the app.
 
 import { useState } from "react";
+import type { CrewQuestion, CrewQuestionAnswer } from "@/domain/types";
 import { Card } from "@/components/ui";
+import { CrewQuestionCard } from "@/components/CrewQuestionCard";
 import { FixtureScrubber } from "@/components/dev/FixtureScrubber";
 import { ContestBench } from "@/components/dev/ContestedDay";
 import { RoutePicker } from "@/components/RoutePicker";
@@ -14,6 +16,31 @@ import { WorldLens } from "@/components/lenses/WorldLens";
 import { useFixturePlayback } from "@/state/playback";
 import { DevDial } from "@/components/dev/DialWorkbench";
 import { calendarAfter, ghostGapDeg } from "@/state/run";
+
+// The analyst's real question (src/agents/runtime.ts) at a 07:00 floor, so
+// all three options render — both card states at the home-page measure, for
+// spacing screenshots without a live run.
+const CREW_QUESTION_SPECIMEN: CrewQuestion = {
+  id: "dev-specimen-question",
+  runId: "dev-specimen",
+  agent: "analyst",
+  text: "Your log says asks before 07:00 get skipped. Still right?",
+  context:
+    "An earlier floor lets the morning light go earlier — that is how the crew buys bigger daily shifts. Unanswered, the floor stays.",
+  options: [
+    { id: "keep", label: "Still true — keep 07:00" },
+    { id: "earlier45", label: "I can do 06:15" },
+    { id: "earlier75", label: "Push it — 05:45" },
+  ],
+  expiresAt: "2099-01-01T00:00:00.000Z",
+};
+
+const CREW_ANSWER_SPECIMEN: CrewQuestionAnswer = {
+  questionId: "dev-specimen-question",
+  optionId: "earlier45",
+  label: "I can do 06:15",
+  skipped: false,
+};
 
 export default function DevLenses() {
   const pb = useFixturePlayback({ autoplay: false });
@@ -84,6 +111,20 @@ export default function DevLenses() {
       {/* The clock surfaces, on the demo route, with the real solver and the
           real projection behind them. */}
       <DevDial />
+
+      {/* The crew's question card, open and answered, in the home page's
+          .in measure and mb-4.5 wrapper — the spacing specimen. */}
+      <section className="rounded-2xl border border-line p-4">
+        <span className="font-mono2 text-xs text-mist">
+          crew question card — open + answered, home-page measure
+        </span>
+        <div className="mx-auto mt-3 max-w-[1076px]">
+          <div className="mb-4.5">
+            <CrewQuestionCard question={CREW_QUESTION_SPECIMEN} />
+          </div>
+          <CrewQuestionCard question={CREW_QUESTION_SPECIMEN} answer={CREW_ANSWER_SPECIMEN} />
+        </div>
+      </section>
     </main>
   );
 }

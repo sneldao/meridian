@@ -831,7 +831,10 @@ that collapses once output arrives. Consensus that matters here:
    The first real question is the compliance-floor check after the analyst
    (fresh eastward runs, floor > 05:45): "your log says asks before 07:00
    get skipped — still right?" and the pick moves
-   `ignoresInterventionsBeforeMin` for that run. Cheapest change with the
+   `ignoresInterventionsBeforeMin` for that run — the `crew_answer` echoes
+   the move back as an `effect` clause when the pick changed something, so
+   "you answered" is never followed by a change it didn't cause. Cheapest
+   change with the
    highest "this is alive" signal — a scripted system cannot ask a
    question about *your* data.
 4. **Rex edits the calendar in view** — `proposeMove` slides the event on

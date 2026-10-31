@@ -58,7 +58,7 @@ Optional extras, all in `.env.local` — every one degrades gracefully when unse
 | `/outcome` | Post-trip self-report (adherence, jetlag, notes); learned cross-run memory. Gated on a saved plan — no plan, nothing to grade |
 | `/shift` | Shift work — the rotating night-shift week on its own door: the anchor sleep window, the fixed and negotiable commitments, the one movable thing (the 15:30 pickup, behind a hold), and the post-night-shift driving warning |
 | `/team` | Travel-manager view: 12 travellers, 12 crews in parallel (stretch) |
-| `/dev` | Lens workbench + recorded-event fixture playback + the dial workbench + the contested-day prototype (dev only) |
+| `/dev` | Lens workbench + recorded-event fixture playback + the dial workbench + the contested-day prototype + the crew-question card specimen (dev only) |
 | `/api/*` | Server surface — run SSE, check-in, trip, wearable upload, team, persistence, memory, graph health, Qloo destination/favorite search, voice ([reference](docs/reference/architecture.md#api-surface)) |
 
 ## Docs

@@ -55,7 +55,7 @@ const CHROME = [
   "src/app/page.tsx",
   ...[
     "NudgeFeedScreen", "RoutePicker", "HeroDawnPanel", "DayScene", "DeepDiveVisuals",
-    "TripSetupScreen", "CalendarApprovalCard", "UndoToast", "VoiceControls", "ArrivalDayView",
+    "TripSetupScreen", "CalendarApprovalCard", "CrewQuestionCard", "UndoToast", "VoiceControls", "ArrivalDayView",
     "DaySkyStrip", "CrewFeed", "DailyJourney", "DawnScrubber", "DayCardShare",
     "ScenarioExperience", "TasteItineraryCard", "LightWindowPanel", "PerformanceBrief",
   ].map((n) => `src/components/${n}.tsx`),
@@ -89,6 +89,7 @@ const STYLE_CEILING: Record<string, number> = {
   "src/app/page.tsx": 44,
   "src/components/TripSetupScreen.tsx": 18,
   "src/components/CalendarApprovalCard.tsx": 11,
+  "src/components/CrewQuestionCard.tsx": 8,
   "src/components/DaySkyStrip.tsx": 4,
   "src/components/dial/ShiftScreen.tsx": 3,
   "src/components/CrewFeed.tsx": 3,

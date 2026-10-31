@@ -19,6 +19,7 @@ artifacts/crew-runs/
 .qoder/
 # Tool session state, same category as .qoder/ above
 .commandcode/
+.perch/
 
 # Recording stills are regenerable output, not source — and a `git add -A`
 # sweep kept dragging them in. The film itself (video/ scripts, audio,

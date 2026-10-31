@@ -85,7 +85,11 @@ unanswered question lets the crew decide rather than holding the stream),
 and continues on `crew_answer`. `POST /api/crew/answers` resolves it. The
 one question asked today is the compliance-floor check after the analyst —
 fresh eastward runs only — where the traveller's pick moves
-`ignoresInterventionsBeforeMin` for that run.
+`ignoresInterventionsBeforeMin` for that run. When the pick actually moved
+something, the `crew_answer` carries an `effect` clause ("compliance floor
+07:00 → 06:15…") that Home and `/crew` append to the "you answered" line —
+absent on the keep-default pick, so an answer is never claimed to have had
+an effect it didn't.
 
 `GET /api/crew/run` writes every event to an ordered run log
 (`src/lib/crew-runs.ts`) and serves it with SSE `id:` sequence numbers. The

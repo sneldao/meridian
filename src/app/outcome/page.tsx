@@ -78,6 +78,16 @@ export default function OutcomePage() {
         : "border-line bg-ink-2 text-mist hover:text-paper"
     }`;
 
+  // `learned` is always a truthy object (loadMemory seeds it empty), so the
+  // card gates on whether there is anything to say, not on its presence.
+  const hasHistory = Boolean(
+    memory &&
+      (memory.learned.skippedKinds.length > 0 ||
+        memory.learned.earliestDoneMin !== undefined ||
+        memory.learned.notes.length > 0 ||
+        memory.runs.length > 0),
+  );
+
   return (
     <main className="mx-auto max-w-2xl px-6 py-8">
       <PageHeader title="How did your trip go?" />
@@ -88,11 +98,12 @@ export default function OutcomePage() {
 
       {hasPlan === false ? (
         <Card className="mt-6 p-4">
-          <p className="text-xs leading-relaxed text-mist">
-            Nothing to rate yet — make a plan and follow it first.
+          <p className="text-sm leading-relaxed text-paper">Nothing to rate yet.</p>
+          <p className="mt-1 text-xs leading-relaxed text-mist">
+            Make a plan and follow it for a while, then come back and tell us how it went.
           </p>
-          <Link href="/" className="mt-3 inline-block text-xs font-bold text-paper hover:text-white">
-            ← Back to my plan
+          <Link href="/" className="mt-4 inline-block rounded-lg bg-paper px-4 py-2 text-xs font-bold text-ink transition-colors hover:bg-white">
+            Make my plan →
           </Link>
         </Card>
       ) : (
@@ -172,7 +183,7 @@ export default function OutcomePage() {
         </>
       )}
 
-      {memory?.learned && (
+      {memory && hasHistory && (
         <Card className="mt-8 p-4">
           <h2 className="text-sm font-bold text-paper">What we&apos;ve learned about you</h2>
           {memory.learned.skippedKinds?.length ? (

@@ -141,7 +141,8 @@ export default function ReviewPage() {
       <main className="mx-auto max-w-2xl px-6 py-10 text-center">
         <h1 className="page-title">No saved plan yet.</h1>
         <p className="mt-4 text-sm text-clay-2">Make your plan on the home page and it&apos;ll be saved here.</p>
-        <Link href="/" transitionTypes={["nav-back"]} className="mt-6 inline-block rounded-lg bg-paper px-5 py-2 text-sm font-bold text-ink">Make my plan</Link>
+        <p className="mt-2 text-xs text-clay-2">Your day-by-day timeline, calendar export and the research behind it will live here.</p>
+        <Link href="/" transitionTypes={["nav-back"]} className="mt-6 inline-block rounded-lg bg-paper px-5 py-2.5 text-sm font-bold text-ink transition-colors hover:bg-white">Make my plan →</Link>
         <BottomNav />
       </main>
     );
