@@ -44,6 +44,7 @@ const TripEntryScreen = dynamic(
   () => import("@/components/TripEntryScreen").then((m) => m.TripEntryScreen),
 );
 import { HandoffBanner } from "@/components/HandoffBanner";
+import { LandingArtifacts } from "@/components/LandingArtifacts";
 const AgentDrawer = dynamic(
   () => import("@/components/AgentDrawer").then((m) => m.AgentDrawer),
 );
@@ -1565,14 +1566,13 @@ export default function Home() {
               <p className="landing-tease-sub">
                 Your 07:00 Tokyo meeting is 23:00 body time. Meridian moves it — or moves you.
               </p>
-              <div className="landing-tease-artifacts">
-                <span>Body-clock dial + CAS</span>
-                <span>Arrival scorecard</span>
-                <span>Shareable passport</span>
-              </div>
-              <button type="button" className="landing-tease-cta" onClick={() => exploreExample()}>
-                Try the example trip
-              </button>
+              {/* Round 19: the landing shows the artifacts instead of naming
+                  them — dial, scorecard and passport render live from the
+                  same demo journey the beats tell. */}
+              <LandingArtifacts />
+              <Link href="/demo" className="landing-tease-cta" transitionTypes={["nav-forward"]}>
+                Watch the ninety-second example
+              </Link>
             </div>
             <EverydayRhythm />
             {via && (
@@ -1621,6 +1621,9 @@ export default function Home() {
             {entry.mode === "example" && (
               <div className="example-banner" role="note">
                 <span>Example trip — not your plan</span>
+                <Link href="/demo" className="example-banner-cta" transitionTypes={["nav-forward"]}>
+                  See the story first
+                </Link>
                 <button type="button" className="example-banner-cta" onClick={openEntry}>
                   Plan my trip
                 </button>

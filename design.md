@@ -323,3 +323,26 @@ Seat. `stageSkyFor` derives the body clock's sun altitude at the destination
 from the planned residual, then luminance-clamps the horizon colour so paper
 text stays readable. A null/hydrating date leaves the token defaults; the
 model describes an estimated body clock, not weather or measured adaptation.
+
+## Round 19 — Show, don't tell; unfold, don't dump (2026-11-01)
+
+Two failures diagnosed by the "what's broken, why" sweep, both borrowed
+against from a speed-run demo studied in last-human-standing:
+
+- **The landing named artifacts it never showed.** "Body-clock dial + CAS"
+  was a chip of text; the visitor never saw a dial. Now the three artifacts
+  render live from the demo journey — dial with both hands, scorecard
+  counting up, passport stamped — waking once on scroll. One strip below
+  names what the crew times; the capability is visible without a bullet
+  wall.
+- **The example trip dumped the dashboard.** Ten card headers at equal
+  weight is a data dump, not a story. `/demo` now tells it in the order the
+  product promises it: stakes (two clocks, the gap) → crew (solved live,
+  say so) → plan (arrival day, timed) → payoff (scorecard, stamped
+  passport). Skip controls, arrow keys, scenario switch.
+- **The demo's honesty rule is structural, not editorial.** Every figure on
+  a beat is produced by `src/domain/demo-beats.ts` from
+  `buildDemoScenario` → solver → `arrivalRead` → `arrivalPassport` — the
+  same functions the live app trusts. The passport lands stamped OWED 4.5h,
+  because that is what the example honestly carries; a demo that overclaims
+  is worse than none.

@@ -1174,3 +1174,31 @@ as a wall of identical blocks. All four are now inside the motion language:
 
 **Verification:** `tests/motion-language.test.ts` locks all four; 831 tests
 green; browser-verified morph pairs and the in-place swap.
+
+## Round 19 — The experience unfolds (2026-11-01)
+
+The landing told, and the example dumped. Round 19 makes both perform,
+borrowing the speed-run pattern studied in last-human-standing: scripted
+beats, skip controls, a send-a-link URL, and a distribution doc.
+
+1. **The landing shows instead of naming.** The three label chips became
+   the three artifacts, computed live from the demo journey
+   (`LandingArtifacts`): the body-clock dial with both hands, the arrival
+   scorecard counting up (banked of needed vs doing nothing), and the
+   stamped passport. A capability strip names what the crew times and
+   carries. Artifacts wake once on scroll (IntersectionObserver,
+   opacity + translate, staggered).
+2. **`/demo` — the ninety-second example.** Four beats in story order:
+   the stakes (both clocks, the gap), the crew at work (lines + day chips
+   with real solved shifts), the plan (arrival-day rows in canonical
+   words), the payoff (scorecard + stamped passport + CTAs). Every number
+   comes from `src/domain/demo-beats.ts`, which builds on
+   `buildDemoScenario` → solver → `arrivalRead` → `arrivalPassport` — the
+   demo cannot tell a story the product cannot back up. Skip-to-payoff,
+   dot navigation, arrow keys, scenario switch (`/demo?s=cedric`).
+3. **The example banner gains "See the story first"** — the dump path
+   stays one tap away for people who want it, but the story leads.
+
+**Verification:** tests/demo-beats.test.ts locks the story data (9 tests);
+20/20 browser checks across beats + landing. Design contract intact — the
+new components carry zero inline styles.

@@ -474,6 +474,14 @@ rules, all verified by `tests/motion-language.test.ts`:
    `animation-timeline: view()` on `.tl-rows > .tl-row`, animated with the
    `translate` property so the swipe gesture's inline `transform` is never
    fought; preview strips are out of scope.
+8. **The story leads (round 19).** The landing shows its artifacts instead
+   of naming them (`LandingArtifacts`: dial, scorecard, passport, computed
+   live from the demo journey, waking once on scroll), and the example trip
+   is told as beats instead of dumped as a dashboard: `/demo` walks
+   stakes → crew → plan → payoff from `src/domain/demo-beats.ts`, where
+   every figure is produced by the same solver/arrival/passport functions
+   the live app uses — the demo cannot outrun the product. Distribution
+   copy lives in docs/reference/demo-distribution.md.
 
 ## Observability & the closed loop (round 17)
 
