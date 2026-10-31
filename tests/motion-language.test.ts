@@ -335,3 +335,40 @@ describe("motion language · round 20 — today opens as a stage", () => {
     expect(root).not.toContain("overflow: hidden");
   });
 });
+
+describe("motion language · round 21 — the stamp lands", () => {
+  it("the peak beat rides transform + opacity only", () => {
+    for (const name of ["@keyframes stamp-land", "@keyframes stamp-burst"]) {
+      const kf = block(name);
+      expect(kf).toMatch(/opacity/);
+      expect(kf).toContain("transform");
+      expect(kf).not.toContain("box-shadow");
+      expect(kf).not.toContain("filter");
+    }
+  });
+
+  it("the stamp choreography stands down under reduced motion", () => {
+    for (const sel of [".demo-passport-frame", ".demo-stamp-burst"]) {
+      const idx = css.indexOf(`${sel} {`);
+      expect(idx).toBeGreaterThan(0);
+      const guardIdx = css.lastIndexOf(
+        "@media (prefers-reduced-motion: no-preference)",
+        idx,
+      );
+      expect(guardIdx).toBeGreaterThan(0);
+    }
+  });
+
+  it("the payoff beat is sendable", () => {
+    const demo = fs.readFileSync(
+      path.join(import.meta.dir, "..", "src", "components", "DemoBeats.tsx"),
+      "utf8",
+    );
+    // One tap: native share where available, clipboard as the honest
+    // fallback — and the component keeps its zero-inline-style budget.
+    expect(demo).toContain("navigator.share");
+    expect(demo).toContain("navigator.clipboard.writeText");
+    expect(demo).toContain("Send this to a jet-lagged friend");
+    expect(demo.match(/style=\{/g)?.length ?? 0).toBe(0);
+  });
+});

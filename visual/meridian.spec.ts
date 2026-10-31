@@ -48,6 +48,48 @@ test("more — the sheet grows out of its tab", async ({ page }) => {
   await expect(page).toHaveScreenshot("more-sheet.png");
 });
 
+test("demo — the stakes beat", async ({ page }) => {
+  await page.addInitScript(() => localStorage.clear());
+  await page.goto("/demo");
+  await page.waitForSelector('[data-beat="stakes"]', { timeout: 30000 });
+  await expect(page).toHaveScreenshot("demo-stakes.png");
+});
+
+test("demo — the payoff beat stamps the passport", async ({ page }) => {
+  await page.addInitScript(() => localStorage.clear());
+  await page.goto("/demo");
+  await page.waitForSelector('[data-beat="stakes"]', { timeout: 30000 });
+  for (let i = 0; i < 3; i++) {
+    await page.locator(".demo-foot .demo-nav", { hasText: "Next" }).click();
+    await page.waitForTimeout(250);
+  }
+  await page.waitForSelector('[data-beat="payoff"]', { timeout: 10000 });
+  await expect(page).toHaveScreenshot("demo-payoff.png");
+});
+
+test("stage — today opens on the full-bleed stage", async ({ page }) => {
+  await page.addInitScript((trip) => {
+    localStorage.clear();
+    localStorage.setItem("meridian:activeTrip", JSON.stringify(trip));
+  }, TRIP);
+  await page.goto("/");
+  await page.waitForSelector(".today-stage", { timeout: 30000 });
+  await page.waitForLoadState("networkidle");
+  await expect(page).toHaveScreenshot("today-stage.png");
+});
+
+test("stage — the hand-off as the pin releases", async ({ page }) => {
+  await page.addInitScript((trip) => {
+    localStorage.clear();
+    localStorage.setItem("meridian:activeTrip", JSON.stringify(trip));
+  }, TRIP);
+  await page.goto("/");
+  await page.waitForSelector(".today-stage", { timeout: 30000 });
+  await page.evaluate(() => window.scrollTo({ top: Math.round(innerHeight * 1.6) }));
+  await page.waitForTimeout(300);
+  await expect(page).toHaveScreenshot("today-stage-handoff.png");
+});
+
 test("trips — the deck", async ({ page }) => {
   await page.addInitScript((trip) => {
     localStorage.clear();

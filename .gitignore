@@ -32,3 +32,7 @@ video/
 
 # stray screenshot dumps land here when a tool writes to the repo root
 --timeout
+
+# Visual baselines are runner-generated (-linux); laptop artifacts never commit.
+visual/**/*-darwin.png
+visual/**/*-actual.png

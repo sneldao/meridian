@@ -1218,3 +1218,18 @@ new components carry zero inline styles.
 
 **Verification:** 5 stage tests, 6 new motion-language locks (21 total),
 15/15 browser checks. Baselines refreshed after commit.
+
+## Round 21 — The demo becomes a gift (2026-11-01)
+
+1. **OG preview** — composed from the real demo passport + stage sky by
+   `scripts/make-og-demo.ts` (headless Chromium, no second renderer).
+2. **Share from the payoff** — native share with clipboard fallback and
+   visible confirmation.
+3. **Peak beat** — stamp-land impact + ink burst on the passport, guarded,
+   settles to rest.
+4. **`/?demo=1` door** — redirects to /demo as documented.
+5. **Visual coverage** — 4 new snapshots (demo stakes/payoff, stage
+   first-paint/hand-off); darwin/actual artifacts gitignored.
+
+**Verification:** 3 new motion-language locks, 12/12 browser checks,
+20/20 round-19 regression, 854/854 tests.

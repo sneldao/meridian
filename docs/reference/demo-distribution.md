@@ -12,7 +12,13 @@ last-human-standing's speed-run). One link, ninety seconds, no account.
 
 Variants: `/demo?s=cedric` (a stage, not a boardroom), `/demo?s=alex`
 (taste-first traveller). The landing CTA "Watch the ninety-second example"
-points at the same door.
+points at the same door; `/?demo=1` redirects there too.
+
+The link unfurls with its own preview (`public/og-demo.png` — the real
+passport over the stage sky, the stakes line as the hook). Regenerate after
+any passport or story change with `bun run scripts/make-og-demo.ts`. The
+payoff beat ends with a one-tap share (Web Share API, clipboard fallback) —
+the visitor's last action is passing it on.
 
 ## The arc (do not reorder)
 

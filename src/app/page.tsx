@@ -408,6 +408,11 @@ export default function Home() {
           .catch(() => {});
         if (typeof window !== "undefined") {
           const sp = new URLSearchParams(window.location.search);
+          // /?demo=1 and /demo are the same door — the story leads.
+          if (sp.get("demo") !== null) {
+            window.location.replace("/demo");
+            return;
+          }
           const resolved = resolveHomeEntry(
             sp,
             read("meridian:activeTrip"),
@@ -1015,6 +1020,10 @@ export default function Home() {
     const onPop = () => {
       try {
         const sp = new URLSearchParams(window.location.search);
+        if (sp.get("demo") !== null) {
+          window.location.replace("/demo");
+          return;
+        }
         /* Resolve from the URL alone: storage is written *during* the session
            (commitRoute saves the trip), so using it as a fallback made two
            identical-looking `/` entries resolve differently depending on when

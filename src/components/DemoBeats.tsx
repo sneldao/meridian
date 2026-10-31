@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   clockLabel,
@@ -64,6 +64,35 @@ function DemoBeatsInner() {
   const arrivalSpec = journey.trip.days.find(
     (d) => d.dayIndex === journey.trip.departureDayIndex + 1,
   );
+
+  // The demo is a send-a-link funnel — the payoff beat makes sending one tap.
+  const [shared, setShared] = useState(false);
+  const shareTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (shareTimer.current) clearTimeout(shareTimer.current); }, []);
+  const shareDemo = async () => {
+    const url = `${window.location.origin}/demo`;
+    const payload = {
+      title: "Meridian — the ninety-second example",
+      text: "Your meeting is at 16:00 Tokyo time and your body thinks it's 07:00. Watch a crew of agents move it.",
+      url,
+    };
+    try {
+      if (navigator.share) {
+        await navigator.share(payload);
+        return;
+      }
+    } catch {
+      /* declined — fall through to the clipboard */
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setShared(true);
+      if (shareTimer.current) clearTimeout(shareTimer.current);
+      shareTimer.current = setTimeout(() => setShared(false), 2200);
+    } catch {
+      /* clipboard blocked — the link is visible in the address bar anyway */
+    }
+  };
 
   return (
     <div className="demo">
@@ -173,12 +202,15 @@ function DemoBeatsInner() {
               </div>
             )}
             {journey.passport && (
-              <div
-                className="demo-passport"
-                data-rise="4"
-                aria-label="Example arrival passport"
-                dangerouslySetInnerHTML={{ __html: arrivalPassportSvg(journey.passport) }}
-              />
+              <div className="demo-passport" data-rise="4" aria-label="Example arrival passport">
+                {/* The peak beat: the passport lands and the stamp hits —
+                    one scale/rotate impact plus an ink burst, nothing more. */}
+                <div className="demo-stamp-burst" aria-hidden="true" />
+                <div
+                  className="demo-passport-frame"
+                  dangerouslySetInnerHTML={{ __html: arrivalPassportSvg(journey.passport) }}
+                />
+              </div>
             )}
             <p className="demo-honest" data-rise="5">
               {journey.passport
@@ -194,6 +226,9 @@ function DemoBeatsInner() {
               <Link href="/?example=1" className="demo-cta-quiet" transitionTypes={["nav-forward"]}>
                 Wander this trip in the app
               </Link>
+              <button type="button" className="demo-cta-quiet" onClick={shareDemo}>
+                {shared ? "Link copied ✓" : "Send this to a jet-lagged friend"}
+              </button>
             </div>
           </section>
         )}

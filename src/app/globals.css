@@ -6540,8 +6540,17 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 }
 .demo-score-cell small { font-size: 11px; color: var(--m-muted); }
 
-.demo-passport { margin: 20px auto 0; max-width: 300px; }
+.demo-passport { margin: 20px auto 0; max-width: 300px; position: relative; }
 .demo-passport svg { width: 100%; height: auto; border-radius: 14px; }
+.demo-passport-frame { position: relative; }
+.demo-stamp-burst {
+  position: absolute;
+  inset: -14%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(233, 154, 111, 0.38), transparent 72%);
+  opacity: 0;
+  pointer-events: none;
+}
 
 .demo-ctas { margin: 22px 0 0; display: flex; flex-wrap: wrap; gap: 10px; }
 .demo-cta-primary {
@@ -6621,6 +6630,25 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   .demo-beat [data-rise="6"] { animation-delay: 450ms; }
   .demo-beat [data-rise="7"] { animation-delay: 540ms; }
   .demo-beat [data-rise="8"] { animation-delay: 630ms; }
+  /* The peak beat (round 21): the passport lands a moment after its rise
+     begins, the stamp hits with one scale/rotate impact, and an ink burst
+     blooms out from behind. Transform + opacity only, per the motion
+     language; under reduced motion the passport simply appears. */
+  .demo-passport-frame {
+    animation: stamp-land 620ms var(--ease-drift) 480ms both;
+  }
+  .demo-stamp-burst {
+    animation: stamp-burst 760ms ease-out 560ms both;
+  }
+}
+@keyframes stamp-land {
+  0% { opacity: 0; transform: scale(1.16) rotate(-2.5deg); }
+  60% { opacity: 1; transform: scale(0.982) rotate(0.5deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+@keyframes stamp-burst {
+  0% { opacity: 0.85; transform: scale(0.55); }
+  100% { opacity: 0; transform: scale(1.45); }
 }
 
 /* ── Landing artifacts (round 19) ───────────────────────────────────────
