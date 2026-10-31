@@ -5708,3 +5708,24 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   color: var(--m-muted);
   margin: 6px 0;
 }
+
+.everyday-rhythm {
+  padding: 16px;
+  margin: 12px 0;
+  border-radius: 16px;
+  background: var(--m-card, #fff);
+  border: 1px solid var(--m-border, #ddd);
+}
+.everyday-title { font-size: 16px; font-weight: 700; margin: 0 0 4px; }
+.everyday-sub { font-size: 12px; color: var(--m-muted); margin: 0 0 12px; }
+.everyday-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.everyday-chip {
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--m-border, #ddd);
+  background: transparent;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.everyday-chip.done { background: var(--m-tag, #eee); }

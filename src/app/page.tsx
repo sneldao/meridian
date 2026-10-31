@@ -35,6 +35,10 @@ const DeepDiveVisuals = dynamic(
 const TripSetupScreen = dynamic(
   () => import("@/components/TripSetupScreen").then((m) => m.TripSetupScreen),
 );
+const EverydayRhythm = dynamic(
+  () => import("@/components/EverydayRhythm").then((m) => m.EverydayRhythm),
+  { loading: () => null },
+);
 const TripEntryScreen = dynamic(
   () => import("@/components/TripEntryScreen").then((m) => m.TripEntryScreen),
 );
@@ -1347,6 +1351,7 @@ export default function Home() {
           </div>
         ) : entry.mode === "setup" ? (
           <div ref={setupRef}>
+            <EverydayRhythm />
             <TripEntryScreen
               initialDate={departureDate || defaultDepartureDate()}
               onContinue={commitRoute}
