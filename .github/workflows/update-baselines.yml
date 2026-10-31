@@ -32,7 +32,11 @@ jobs:
         run: bun run build
       - name: Regenerate baselines
         if: inputs.update_baselines == true
-        run: bunx playwright test --update-snapshots
+        # `=all`, not the bare flag: since Playwright 1.50 the default mode is
+        # "changed", which only rewrites snapshots that FAIL comparison. A
+        # deliberate face-lift (a 64px glyph is under the 2% pixel threshold)
+        # passes the old comparison and would silently keep the old baseline.
+        run: bunx playwright test --update-snapshots=all
       - name: Commit baselines back
         if: inputs.update_baselines == true
         run: |
