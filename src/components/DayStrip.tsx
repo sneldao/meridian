@@ -28,6 +28,11 @@ const PIN_CARD_W = 180;
 const PIN_CARD_H = 88;
 const PIN_GAP = 16;
 
+/** The width the row needs to be whole. Shared by the morph's own stage and the
+ *  viewport gate, so the two can't disagree about what "fits" means. */
+export const pinRowWidth = (count: number) =>
+  count * PIN_CARD_W + Math.max(0, count - 1) * PIN_GAP;
+
 /** Resolved through useSyncExternalStore so the first paint and the hydration
  *  pass agree (server snapshot: the query does not match). */
 function useMediaQuery(query: string) {
@@ -74,7 +79,7 @@ function PinnedDayCard({
   index: number;
   count: number;
 }) {
-  const rowW = count * PIN_CARD_W + (count - 1) * PIN_GAP;
+  const rowW = pinRowWidth(count);
   const colH = count * PIN_CARD_H + (count - 1) * PIN_GAP;
   const colX = (rowW - PIN_CARD_W) / 2;
   const rowY = (colH - PIN_CARD_H) / 2;
@@ -95,22 +100,39 @@ function PinnedDayCard({
 }
 
 /** Locked days as one row that morphs from a stacked column as the page scrolls
- *  through a pinned section. Reduced motion shows the row with no scroll link. */
+ *  through a pinned section. Reduced motion shows the row with no scroll link;
+ *  a viewport too narrow to hold the whole row gets the stacked column instead. */
 export function PinnedDayRow({ days, locked }: { days: DaySpec[]; locked: Map<string, DayPlan> }) {
+  const rows = days.flatMap((d) => {
+    const plan = locked.get(d.label);
+    return plan ? [{ label: d.label, plan }] : [];
+  });
+  const count = rows.length;
+  // The row is whole only when every card fits side by side. Below that the
+  // alternative is clipped cards or unreadably scaled ones, so the morph waits
+  // and the 250vh of scroll it spends is not taken from the page.
+  const rowW = pinRowWidth(count);
+  const tooNarrow = useMediaQuery(`(max-width: ${Math.max(0, rowW - 1)}px)`);
   const reduced = useReducedMotion();
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end end"] });
   const linear = useTransform(scrollYProgress, [0.1, 0.8], [0, 1]);
   const eased = useTransform(linear, easeInOutCubic);
   const settled = useMotionValue(1);
-  const rows = days.flatMap((d) => {
-    const plan = locked.get(d.label);
-    return plan ? [{ label: d.label, plan }] : [];
-  });
-  if (rows.length === 0) return null;
+  if (count === 0) return null;
 
-  const count = rows.length;
-  const rowW = count * PIN_CARD_W + (count - 1) * PIN_GAP;
+  if (tooNarrow) {
+    return (
+      <div className="flex flex-col gap-2">
+        {rows.map((r) => (
+          <div key={r.label} className="rounded-lg border border-pass/20 bg-ink-3 px-3 py-2">
+            <DayCardBody label={r.label} plan={r.plan} />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   const colH = count * PIN_CARD_H + (count - 1) * PIN_GAP;
   // Reduced motion: the final row, with the scroll link removed.
   const progress = reduced ? settled : eased;
