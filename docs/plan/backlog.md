@@ -1233,3 +1233,19 @@ new components carry zero inline styles.
 
 **Verification:** 3 new motion-language locks, 12/12 browser checks,
 20/20 round-19 regression, 854/854 tests.
+
+## Round 22 — Watch what we built (2026-11-01)
+
+1. **Safari smoke pass** — 14/14 WebKit checks: full choreography parity
+   (WebKit 26 ships scroll-driven animations), reduced-motion stand-down
+   verified, zero page errors.
+2. **Cedric/Alex walkthrough** — 22/22 across both scenarios, all four
+   beats, honesty assertions on the payoff.
+3. **Funnel summary** — `src/lib/funnel-summary.ts` (pure aggregator,
+   10 tests) + `GET /api/funnel/summary` (key-gated, honest no-ops) +
+   `docs/reference/funnel.md` (stages, schema, SQL, what the numbers are
+   for).
+
+**Not carried forward:** none of the three items surfaced a product bug —
+the degradations held, the scenarios were honest, the events were already
+flowing.

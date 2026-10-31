@@ -396,3 +396,28 @@ passing on:
   both demo beats that carry art (stakes, payoff), the stage first paint,
   and the hand-off mid-recede. Laptop artifacts (`*-darwin.png`,
   `*-actual.png`) are gitignored — baselines remain runner-owned.
+
+## Round 22 — Watch what we built (2026-11-01)
+
+Three closures on the round-21 open list:
+
+- **Safari is not a degradation browser anymore.** The smoke pass assumed
+  WebKit would fall back; WebKit 26 actually ships scroll-driven
+  animations, and the stage recede runs there at behavioral parity with
+  Chromium (mid-flight opacity at the hand-off point, full rest at the
+  top, zero page errors across the whole walk). Reduced motion still
+  stands everything down: static pin, opacity 1, `animation: none`. The
+  `@supports` guards remain for the browsers that truly lack the feature —
+  there the stage is a section that scrolls away.
+- **All three demo lives walk clean.** Cedric (evening performance) and
+  Alex (customer keynote) were driven through all four beats end-to-end:
+  right moment, right joke, real solved shifts, timed rows in traveller
+  words, honest scorecard arithmetic, stamped passport, and the payoff
+  line that says exactly what was delivered. 22/22.
+- **The funnel is readable.** `GET /api/funnel/summary` aggregates the
+  round-17 events behind `FUNNEL_SUMMARY_KEY` (unset = locked, never
+  open; no Supabase = `{configured:false}`, never invented). Aggregation
+  is a pure module (`src/lib/funnel-summary.ts`): per-stage reach,
+  trip-level conversion with honest nulls for empty denominators, and a
+  trailing-week pulse. Queries and semantics live in
+  docs/reference/funnel.md.
