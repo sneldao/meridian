@@ -30,7 +30,7 @@ import { fmtMin } from "@/domain/circadian";
 import { nowMinOnDay } from "@/domain/today";
 import { dawnLayers } from "@/domain/dawn-layers";
 import { bodySubsolarPoint, isDaylight, subsolarPoint, terminatorCrossings, terminatorLat, wrapLon, type SubsolarPoint } from "@/domain/sun";
-import { stageSkyFor } from "@/domain/stage-sky";
+import { STAGE_SKY_VARS, stageSkyFor } from "@/domain/stage-sky";
 import type { Trip } from "@/domain/types";
 import { DawnScrubber } from "@/components/DawnScrubber";
 import { useWebGLAvailable } from "@/lib/webgl";
@@ -201,10 +201,31 @@ export function HeroDawnPanel({ trip, owedMin, beam, readinessPct, readinessSour
   const displayDate =
     timeOverride === null ? live : atOriginMinute(live, trip.origin.utcOffsetMin, timeOverride ?? 0);
 
+  // One sun per stage: while this panel is mounted it owns the hero's sky —
+  // the same displayDate/displayOwed the disc draws. Writing imperatively on
+  // `.hero` (rather than inline styles here) keeps the band, the hairline and
+  // the disc reading the same instant; the parent screen's live-clock values
+  // resume when the panel unmounts.
+  const hlRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const stage = hlRef.current?.closest(".hero");
+    if (!(stage instanceof HTMLElement)) return;
+    const vars = stageSkyFor(trip, displayOwed, hydrated ? displayDate : null) as Record<
+      string,
+      string
+    >;
+    for (const name of STAGE_SKY_VARS) {
+      if (vars[name]) stage.style.setProperty(name, vars[name]);
+    }
+    return () => {
+      for (const name of STAGE_SKY_VARS) stage.style.removeProperty(name);
+    };
+  }, [trip, displayOwed, displayDate, hydrated]);
+
   const reset = useCallback(() => {
     setTimeOverride(null);
     setOwedOverride(null);
-  }, []);
+  }, [setTimeOverride, setOwedOverride]);
 
   // --- projection -----------------------------------------------------------
   // Centre the disc between the two cities, so both sit on it and the distance
@@ -476,8 +497,8 @@ export function HeroDawnPanel({ trip, owedMin, beam, readinessPct, readinessSour
   };
 
   return (
-    <div className="hl">
-      <div className="bg term" aria-hidden="true" style={stageSkyFor(trip, displayOwed, hydrated ? displayDate : null)} />
+    <div className="hl" ref={hlRef}>
+      <div className="bg term" aria-hidden="true" />
       <div className="sc" />
 
       <div className="hl-stage">

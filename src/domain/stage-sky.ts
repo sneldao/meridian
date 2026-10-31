@@ -44,6 +44,16 @@ export interface StageSky {
   bodyAltDeg: number;
 }
 
+/** The custom properties a stage writes, in emission order — shared by
+ *  `stageSkyVars` and the imperative writer in HeroDawnPanel. */
+export const STAGE_SKY_VARS = [
+  "--stage-horizon",
+  "--stage-horizon-h",
+  "--stage-horizon-floor",
+  "--stage-ink-2",
+  "--stage-origin",
+] as const;
+
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
 
 /** Encoded-channel cap so paper text (#e8eaf2) stays legible on the band. */
@@ -62,10 +72,10 @@ export function stageSky(bodyAltDeg: number, owedMin: number, requiredShiftMin: 
   const enc = beam.map(encodeSRGB);
   const peak = Math.max(...enc);
   const k = peak > MAX_CHANNEL ? MAX_CHANNEL / peak : 1;
-  const alpha = clamp01(0.26 + 0.3 * t);
-  const floorAlpha = 0.06 + 0.1 * t;
+  const alpha = clamp01(0.24 + 0.16 * t);
+  const floorAlpha = 0.05 + 0.08 * t;
 
-  const heightPct = Math.round((10 + 34 * t) * 10) / 10;
+  const heightPct = Math.round((10 + 26 * t) * 10) / 10;
 
   // The zenith stop: the real sky's zenith, mixed into ink-2 by t — night
   // keeps the stage's ink, a risen sun lets a little of the sky through.
@@ -89,11 +99,11 @@ export function stageSky(bodyAltDeg: number, owedMin: number, requiredShiftMin: 
 
 export function stageSkyVars(sky: StageSky): CSSProperties {
   return {
-    "--stage-horizon": sky.horizon,
-    "--stage-horizon-h": sky.horizonHeight,
-    "--stage-horizon-floor": sky.horizonFloor,
-    "--stage-ink-2": sky.zenith,
-    "--stage-origin": sky.origin,
+    [STAGE_SKY_VARS[0]]: sky.horizon,
+    [STAGE_SKY_VARS[1]]: sky.horizonHeight,
+    [STAGE_SKY_VARS[2]]: sky.horizonFloor,
+    [STAGE_SKY_VARS[3]]: sky.zenith,
+    [STAGE_SKY_VARS[4]]: sky.origin,
   } as Record<string, string> as CSSProperties;
 }
 

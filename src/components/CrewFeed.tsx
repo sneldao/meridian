@@ -50,18 +50,23 @@ function TextLine({ e, isTail, isLiveEdge }: { e: Extract<LogEntry, { kind: "tex
 
 export function CrewFeed({ entries, running }: { entries: LogEntry[]; running?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
+  const pinned = useRef(true);
   const reduce = useReducedMotion();
 
   useEffect(() => {
-    ref.current?.scrollTo({ top: ref.current.scrollHeight, behavior: "smooth" });
+    if (pinned.current) ref.current?.scrollTo({ top: ref.current.scrollHeight, behavior: "smooth" });
   }, [entries.length]);
 
   return (
     <div
       ref={ref}
       role="log"
-      aria-live="polite"
+      aria-live="off"
       aria-label="Crew activity feed"
+      onScroll={(e) => {
+        const el = e.currentTarget;
+        pinned.current = el.scrollHeight - el.scrollTop - el.clientHeight < 32;
+      }}
       className="scroll-thin h-full overflow-y-auto pr-2 font-mono2 text-xs leading-relaxed"
     >
       {entries.length === 0 && (
@@ -73,7 +78,7 @@ export function CrewFeed({ entries, running }: { entries: LogEntry[]; running?: 
         >
           <div className="text-sm font-bold text-paper">The crew is on standby.</div>
           <p className="max-w-xs text-xs leading-relaxed text-mist">
-            Start the night shift and you&apos;ll see each agent think, research and check its work here, in order.
+            Start the night shift and you&apos;ll see each agent&apos;s visible work here, in order.
           </p>
           <div className="mt-1 flex flex-wrap justify-center gap-x-3 gap-y-2 text-xs text-dim">
             {(Object.keys(CREW) as AgentId[]).map((id) => (

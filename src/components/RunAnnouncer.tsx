@@ -25,6 +25,12 @@ function announce(prev: RunState | null, run: RunState): string {
   if (prev && run.replans.length > prev.replans.length) {
     parts.push("Replanning around your check-in.");
   }
+  if (run.approval && !prev?.approval) {
+    parts.push("Calendar changes need your approval.");
+  }
+  if (run.approvalResult && prev?.approvalResult !== run.approvalResult) {
+    parts.push(run.approvalResult.message);
+  }
   if (prev && run.errors.length > prev.errors.length) {
     parts.push(`Error: ${run.errors[run.errors.length - 1]?.message ?? "stream interrupted"}`);
   }

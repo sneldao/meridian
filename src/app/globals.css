@@ -1365,6 +1365,48 @@ body {
   --shadow-card: 0 18px 44px -22px rgba(120, 60, 30, 0.35);
 }
 
+/* Registered so the modeled sky can tween: the body's sun rising through the
+   trip is a transition, not a jump. Initials mirror the :root defaults above,
+   which stay as the fallback for browsers without @property. */
+@property --stage-horizon {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgba(255, 196, 107, 0.26);
+}
+@property --stage-horizon-h {
+  syntax: "<percentage>";
+  inherits: true;
+  initial-value: 26%;
+}
+@property --stage-horizon-floor {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgba(199, 131, 42, 0.10);
+}
+@property --stage-sun-x {
+  syntax: "<percentage>";
+  inherits: true;
+  initial-value: 50%;
+}
+@property --stage-origin {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgba(157, 184, 255, 0.10);
+}
+@property --stage-ink-2 {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #0c1220;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero, .clock-stage, .arr {
+    transition: --stage-horizon-h 320ms var(--ease-settle), --stage-horizon 320ms var(--ease-settle),
+      --stage-horizon-floor 320ms var(--ease-settle), --stage-origin 320ms var(--ease-settle),
+      --stage-ink-2 320ms var(--ease-settle);
+  }
+}
+
 /* The modeled sky as the stage backdrop. Three layers: the body clock's
    horizon band rising from the floor, the origin-blue ghost residue, and the
    blue-black ink — the var()s resolve per-element from the tokens above or
@@ -2018,7 +2060,7 @@ textarea:focus-visible,
   white-space: nowrap;
   font-size: 15px;
   font-weight: 800;
-  color: #D96B43;
+  color: var(--cat, #D96B43);
   font-variant-numeric: tabular-nums;
 }
 .tl-time span {
@@ -2159,6 +2201,107 @@ textarea:focus-visible,
   padding: 14px 0 4px;
   font-size: 12px;
   color: var(--m-muted);
+}
+
+/* Category hues — the rail's rhythm made visible. Each step kind keeps one
+   data colour (gold light, violet sleep, terracotta food, blue calendar,
+   pine run, slate flight), shared by the row glyph, the row's time, and the
+   sky strip above — so strip and rail read as one day seen two ways. The
+   `--cat-*` values live in the `--m-*` theme blocks below (deepened for
+   cream, the stage palette on ink). */
+.tl-row {
+  --cat: var(--m-accent);
+}
+[data-cat="sunlight"] { --cat: var(--cat-light); }
+[data-cat="sleep"] { --cat: var(--cat-sleep); }
+[data-cat="nutrition"] { --cat: var(--cat-food); }
+[data-cat="calendar"] { --cat: var(--cat-cal); }
+[data-cat="run"] { --cat: var(--cat-run); }
+[data-cat="flight"] { --cat: var(--cat-flight); }
+.tl-glyph {
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+  flex: none;
+  color: var(--cat, var(--m-accent));
+}
+.tl-row.done .tl-glyph,
+.tl-row.skipped .tl-glyph {
+  color: var(--m-faint);
+}
+
+/* Instrument band — the day's working surfaces (stepper, checks, rail)
+   grow toward the frame: ≈960px inside .reading on desktop, capped by
+   --hero-out so smaller viewports only ever reach the frame edge. Prose
+   stays in the 720px column; these surfaces are instruments, not text. */
+.wide {
+  margin-left: calc(-1 * min(120px, var(--hero-out)));
+  margin-right: calc(-1 * min(120px, var(--hero-out)));
+}
+
+/* The day seen from above — bands are windows (light, run, sleep),
+   diamonds are moments (the cutoff, a moved meeting), the caret is now. */
+.tl-sky {
+  position: relative;
+  height: 34px;
+  margin: 2px 0 10px;
+}
+.tl-sky-base {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 17px;
+  height: 1px;
+  background: var(--m-border);
+}
+.tl-sky-tick {
+  position: absolute;
+  top: 27px;
+  width: 1px;
+  height: 4px;
+  background: var(--m-border);
+}
+.tl-sky-band {
+  position: absolute;
+  top: 9px;
+  height: 16px;
+  min-width: 3px;
+  border-radius: 5px;
+}
+.tl-sky-dot {
+  position: absolute;
+  top: 12.5px;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  transform: translateX(-50%) rotate(45deg);
+}
+.tl-sky-now {
+  position: absolute;
+  top: 0;
+  width: 0;
+  height: 0;
+  transform: translateX(-50%);
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid var(--m-accent);
+}
+
+/* Provenance as one quiet line — the evidence the chips carried, without
+   the chip chrome. */
+.evline {
+  margin: 8px 0 0;
+  font-size: 11px;
+  line-height: 1.55;
+  color: var(--m-muted);
+}
+.evline-cite {
+  color: #4a6492;
+}
+html[data-theme="night"] .evline-cite,
+.hero .evline-cite,
+.clock-stage .evline-cite {
+  color: #9db8ff;
 }
 
 @media (max-width: 720px) {
@@ -2303,6 +2446,13 @@ textarea:focus-visible,
   --m-tag: rgba(217, 107, 67, 0.12);
   --m-accent: #D96B43;
   --m-on-accent: #fff8ef;
+  /* Step-kind data colours, deepened for cream */
+  --cat-light: #a6741c;
+  --cat-sleep: #6e5fbb;
+  --cat-food: #b04523;
+  --cat-cal: #4a6cb4;
+  --cat-run: #4c7a5c;
+  --cat-flight: #6e6459;
 }
 html[data-theme="night"] {
   --m-bg: #0b0e16;
@@ -2317,6 +2467,13 @@ html[data-theme="night"] {
   --m-tag: rgba(255, 196, 107, 0.14);
   --m-accent: #D96B43;
   --m-on-accent: #fff8ef;
+  /* Step-kind data colours, the stage palette */
+  --cat-light: #ffc46b;
+  --cat-sleep: #b8a8ff;
+  --cat-food: #e99a6f;
+  --cat-cal: #9db8ff;
+  --cat-run: #8fc7a3;
+  --cat-flight: #8b93a7;
 }
 html[data-theme="night"] body,
 html[data-theme="night"] .root {
@@ -2879,6 +3036,28 @@ select:focus-visible {
   --dial-body-soft: rgba(122, 223, 255, 0.18);
   --dial-committed: #ff7a7a;
   --dial-movable: #8b93a7;
+  /* Step-kind data colours, the stage palette */
+  --cat-light: #ffc46b;
+  --cat-sleep: #b8a8ff;
+  --cat-food: #e99a6f;
+  --cat-cal: #9db8ff;
+  --cat-run: #8fc7a3;
+  --cat-flight: #8b93a7;
+}
+
+/* Glass on ink — surfaces floating on the modeled sky blur it instead of
+   painting over it. Scoped to the three stages so cards on cream surfaces
+   keep their warm ground. */
+.hero .hl-stats .stat,
+.hero .city-cell,
+.hero .hr-col .ask,
+.clock-stage .dac,
+.arr .arr-cell {
+  background: rgba(255, 255, 255, 0.06);
+  -webkit-backdrop-filter: blur(18px) saturate(1.3);
+  backdrop-filter: blur(18px) saturate(1.3);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 12px 32px -20px rgba(8, 10, 18, 0.6);
 }
 
 /* ── Dawn pass · the clock stage ─────────────────────────────────────────

@@ -54,7 +54,18 @@ function describe(e: CrewEvent): Row {
     case "day_locked":
       return { who: "evaluator", agent: "evaluator", what: `${e.day.label} locked · bed ${fmtMin(e.day.targetBedtimeMin)}`, tone: "var(--color-pass)", emph: true };
     case "calendar_move":
-      return { who: "negotiator", agent: "negotiator", what: `${e.move.title}: ${fmtMin(e.move.from.startMin)} → ${fmtMin(e.move.to.startMin)}`, tone: "var(--color-sun-home)" };
+      return { who: "negotiator", agent: "negotiator", what: `proposed ${e.move.title}: ${fmtMin(e.move.from.startMin)} → ${fmtMin(e.move.to.startMin)}`, tone: "var(--color-sun-home)" };
+    case "approval_request":
+      return { who: "system", what: e.approval.summary, tone: "var(--color-sun-dest)", emph: true };
+    case "approval_result":
+      return {
+        who: "system",
+        what: e.message,
+        tone: e.status === "applied" ? "var(--color-pass)" : e.status === "rejected" ? "var(--color-sun-dest)" : "var(--color-fail)",
+        emph: true,
+      };
+    case "calendar_restore":
+      return { who: "system", what: "calendar restored to its original times", tone: "var(--color-mist)" };
     case "check_in":
       return { who: "wearer", what: `reported ${e.checkIn.status}${e.checkIn.text ? ` — ${e.checkIn.text}` : ""}`, tone: "var(--color-sun-dest)" };
     case "replan":

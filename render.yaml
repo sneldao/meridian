@@ -5,7 +5,7 @@ services:
   #
   # Live 2026-10-15: Render Starter service `meridian`
   # (srv-db8cve1srm7s73e7eod0), frankfurt, autoDeploy on main.
-  # Public URL: https://meridian-afud.onrender.com
+  # Public URL: https://meridian.trustfall.xyz
   # NOTE: Render can't upgrade free→paid in place, so this Blueprint describes
   # the shape — the live service was created via API as `meridian` (Starter).
   # The old free `meridian-replay` service is suspended.

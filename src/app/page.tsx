@@ -43,6 +43,7 @@ const AgentDrawer = dynamic(
   () => import("@/components/AgentDrawer").then((m) => m.AgentDrawer),
 );
 import { RunAnnouncer } from "@/components/RunAnnouncer";
+import { CalendarApprovalCard } from "@/components/CalendarApprovalCard";
 import { useFocusTrap } from "@/lib/a11y";
 import { friendlyDayLabel } from "@/lib/day-label";
 import { restorePlan } from "@/lib/restore-plan";
@@ -271,6 +272,8 @@ export default function Home() {
     : (run.baseline ??
       resolveBaseline(wakeBand, data?.baseline ?? restoredBaseline ?? undefined));
   const esRef = useRef<EventSource | null>(null);
+  const runIdRef = useRef<string | null>(null);
+  const [checkInWarning, setCheckInWarning] = useState<string | null>(null);
   // Voice lives on /crew now; the first viewport no longer carries a voice
   // toggle (item 16 — Calm is "words + one number + one CTA"). We still
   // probe whether the deployment has a voice engine so the briefing can name
@@ -452,8 +455,17 @@ export default function Home() {
         case "calendar_move":
           push({
             kind: "move",
-            text: `${e.move.title}: ${fmtMin(e.move.from.startMin)} → ${fmtMin(e.move.to.startMin)} — ${e.move.reason}`,
+            text: `proposed ${e.move.title}: ${fmtMin(e.move.from.startMin)} → ${fmtMin(e.move.to.startMin)} — ${e.move.reason}`,
           });
+          break;
+        case "approval_request":
+          push({ kind: "system", text: e.approval.summary });
+          break;
+        case "approval_result":
+          push({ kind: e.status === "failed" ? "error" : "system", text: e.message });
+          break;
+        case "calendar_restore":
+          push({ kind: "system", text: "calendar restored to its original times" });
           break;
         case "briefing":
           // Voice is opt-in only — the banner's Listen button speaks on tap.
@@ -545,6 +557,8 @@ export default function Home() {
         case "done":
           setEntries((prev) => [...prev, { kind: "system", text: "shift complete" }]);
           setStreamError(null);
+          runIdRef.current = null;
+          try { localStorage.removeItem("meridian:activeRunId"); } catch { /* ignore */ }
           esRef.current?.close();
           // While the run streamed, the day pills followed each lock — which
           // leaves them sitting on the last day the crew touched. Hand the
@@ -561,7 +575,17 @@ export default function Home() {
   );
 
   const cancelShift = useCallback(() => {
+    const runId = runIdRef.current;
+    if (runId) {
+      fetch("/api/crew/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ runId }),
+      }).catch(() => {});
+    }
     esRef.current?.close();
+    runIdRef.current = null;
+    try { localStorage.removeItem("meridian:activeRunId"); } catch { /* ignore */ }
     stopVoice();
     push({ kind: "system", text: "shift cancelled by operator" });
     reset();
@@ -589,6 +613,10 @@ export default function Home() {
       if (tasteProfile.ready && tasteProfile.favorites.length) {
         params.set("taste", JSON.stringify(tasteProfile.favorites));
       }
+      const runId = crypto.randomUUID();
+      runIdRef.current = runId;
+      params.set("runId", runId);
+      try { localStorage.setItem("meridian:activeRunId", runId); } catch { /* ignore */ }
       const es = new EventSource("/api/crew/run?" + params.toString());
       esRef.current = es;
       lastEventAt.current = Date.now();
@@ -601,17 +629,11 @@ export default function Home() {
         handleSideEffects(evt);
       };
       es.onerror = () => {
-        push({ kind: "error", text: "stream interrupted" });
-        es.close();
-        // A dropped stream used to strand the page: phase stayed "running", so
-        // the CTA stayed disabled and beginStream early-returned — the only
-        // ways out were Escape or a reload. reset() is the safe half of the
-        // fix: it carries any days already locked into priorLocked, so a
-        // partial run is preserved for the next one rather than discarded.
-        setStreamError(
-          "The crew's connection dropped mid-run. Days already verified are kept — run it again when you're ready.",
-        );
-        reset();
+        // EventSource retries the same URL with Last-Event-ID. Closing here used
+        // to discard the server's ordered run log; now a drop only means the
+        // client is waiting to catch up.
+        push({ kind: "error", text: "connection interrupted — reconnecting" });
+        setStreamError("Connection interrupted — reconnecting to the crew run…");
       };
     },
     [dispatch, handleSideEffects, push, reset, run.phase, tripQuery, checkInsParam, startDayParam, wakeBand, selectedFlightId, entry?.mode, origin, dest, departureDate, tasteProfile],
@@ -619,12 +641,48 @@ export default function Home() {
 
   const startShift = useCallback(() => beginStream(), [beginStream]);
 
+  const resumeRun = useCallback((runId: string) => {
+    if (run.phase === "running") return;
+    esRef.current?.close();
+    reset();
+    setEntries([]);
+    setBriefingDismissed(false);
+    runIdRef.current = runId;
+    setStreamError("Reconnecting to the crew run…");
+    const es = new EventSource(`/api/crew/run?runId=${encodeURIComponent(runId)}&resume=1`);
+    esRef.current = es;
+    lastEventAt.current = Date.now();
+    briefingSeen.current = false;
+    es.onmessage = (m) => {
+      lastEventAt.current = Date.now();
+      const evt = JSON.parse(m.data) as CrewEvent;
+      if (evt.type === "briefing") briefingSeen.current = true;
+      dispatch(evt);
+      handleSideEffects(evt);
+    };
+    es.onerror = () => {
+      es.close();
+      runIdRef.current = null;
+      try { localStorage.removeItem("meridian:activeRunId"); } catch { /* ignore */ }
+      setStreamError("Couldn’t resume that crew run — start a new plan.");
+      reset();
+    };
+  }, [dispatch, handleSideEffects, reset, run.phase]);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const runId = safeStorageGet(() => localStorage.getItem("meridian:activeRunId"));
+      if (runId) resumeRun(runId);
+    }, 0);
+    return () => clearTimeout(t);
+  }, [resumeRun]);
+
   // Every check-in surface ends in the same place: record the marks through
   // the intake route — memory, Supabase, the graph write path — and then let
   // the replan run consume them as context. Before this, check-ins reached
   // the run but were never remembered.
-  const persistCheckIns = useCallback((checkIns: CheckIn[]) => {
-    for (const c of checkIns) {
+  const persistCheckIns = useCallback(async (checkIns: CheckIn[]) => {
+    const results = await Promise.allSettled(checkIns.map((c) => {
       const body: CheckInRequest = {
         dayIndex: c.dayIndex,
         kind: c.kind,
@@ -632,14 +690,15 @@ export default function Home() {
         status: c.status,
         text: c.text,
       };
-      fetch("/api/crew/checkin", {
+      return fetch("/api/crew/checkin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
-      }).catch(() => {
-        // Persistence is best-effort — the replan still gets the marks.
+      }).then((r) => {
+        if (!r.ok) throw new Error(`check-in ${r.status}`);
       });
-    }
+    }));
+    return results.filter((r) => r.status === "rejected").length;
   }, []);
 
   // The feed's check-ins arrive as structured CheckIn[] — per-step did/skip
@@ -648,7 +707,16 @@ export default function Home() {
   const sendDayCheckIn = useCallback(
     (checkIns: CheckIn[], lastMarkedDayIndex: number) => {
       if (!trip || !checkIns.length) return;
-      persistCheckIns(checkIns);
+      void persistCheckIns(checkIns).then((failed) => {
+        if (failed > 0) {
+          setCheckInWarning(
+            failed === checkIns.length
+              ? "Marked for this run, but the check-in history could not be saved."
+              : `${failed} of ${checkIns.length} marks could not be saved to history.`,
+          );
+        }
+      });
+      setCheckInWarning(null);
       beginStream({
         checkins: btoa(JSON.stringify(checkIns)),
         startDay: Math.min(lastMarkedDayIndex + 1, Math.max(trip.days.length - 1, 0)),
@@ -679,6 +747,7 @@ export default function Home() {
   useEffect(() => {
     if (run.phase !== "running") return;
     const id = setInterval(() => {
+      if (run.approval && !run.approvalResult) return;
       const silent = Date.now() - lastEventAt.current;
       if (silent < (briefingSeen.current ? STALL_AFTER_BRIEFING_MS : STALL_IDLE_MS)) return;
       esRef.current?.close();
@@ -690,7 +759,7 @@ export default function Home() {
       reset();
     }, 4000);
     return () => clearInterval(id);
-  }, [run.phase, reset]);
+  }, [run.phase, run.approval, run.approvalResult, reset]);
 
   const goGuide = () => {
     guideRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -1137,6 +1206,20 @@ export default function Home() {
             <button type="button" onClick={() => setStreamError(null)} aria-label="Dismiss">
               ×
             </button>
+          </div>
+        )}
+        {checkInWarning && (
+          <div className="run-error" role="alert">
+            <span>{checkInWarning}</span>
+            <button type="button" onClick={() => setCheckInWarning(null)} aria-label="Dismiss">
+              ×
+            </button>
+          </div>
+        )}
+
+        {run.approval && (!run.approvalResult || run.approvalResult.status !== "rejected") && (
+          <div style={{ marginBottom: "18px" }}>
+            <CalendarApprovalCard approval={run.approval} result={run.approvalResult} />
           </div>
         )}
 

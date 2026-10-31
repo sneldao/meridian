@@ -57,7 +57,18 @@ import { meetingReadiness } from "@/domain/readiness";
 import { friendlyDayLabel } from "@/lib/day-label";
 import { isTripFinished } from "@/lib/trip-status";
 import type { TripActions } from "@/lib/use-trip-actions";
-import { Bell, BellRing } from "lucide-react";
+import {
+  Bell,
+  BellRing,
+  CalendarClock,
+  Coffee,
+  Footprints,
+  Moon,
+  Plane,
+  Sun,
+  type LucideIcon,
+} from "lucide-react";
+import { DaySkyStrip } from "@/components/DaySkyStrip";
 import { VoiceControls } from "@/components/VoiceControls";
 import { useUndoToast } from "@/components/UndoToast";
 import type {
@@ -151,6 +162,18 @@ const CATEGORY_KIND: Partial<Record<NudgeCategory, InterventionKind>> = {
   run: "exercise",
   nutrition: "caffeine_cutoff",
   sleep: "sleep_window",
+};
+
+/** Category glyph — the rail's rhythm: the same kinds carry the same marks
+ *  and the same hues (`--cat-*` in globals.css), so the sky strip above and
+ *  the rows below read as one day seen two ways. */
+const CAT_ICON: Record<NudgeCategory, LucideIcon> = {
+  sunlight: Sun,
+  sleep: Moon,
+  nutrition: Coffee,
+  run: Footprints,
+  calendar: CalendarClock,
+  flight: Plane,
 };
 
 export function NudgeFeedScreen({
@@ -599,6 +622,9 @@ export function NudgeFeedScreen({
     [trip, activeDaySpec, scenePlans, calendarEvents, baseline],
   );
   const simple = !expandAllWhy;
+  // HeroDawnPanel mounts under the same condition used in the hero below;
+  // while mounted it is the single source of the hero's sky vars.
+  const panelMounted = !!trip && (!simple || globeOpen);
 
   // Item 13 — the calendar is the compliance surface. The summary block sits
   // above the timeline so a traveller sees the numbers they will lock before
@@ -742,9 +768,15 @@ export function NudgeFeedScreen({
           body clock against destination, with the next light window on it. */}
       <div
         className={`hero rise${simple && !globeOpen ? " slim" : ""}${firstVisit ? " first-visit" : ""}`}
-        style={{ animationDelay: ".2s", ...stageSkyFor(trip, dawnOwedMin, trip ? liveDate : null) }}
+        style={{
+          animationDelay: ".2s",
+          // While the dawn panel is mounted it owns the stage's sky vars
+          // (imperatively, off its scrub state) — React must not also write
+          // them or every re-render would clobber the panel's values.
+          ...(panelMounted ? {} : stageSkyFor(trip, dawnOwedMin, trip ? liveDate : null)),
+        }}
       >
-        {trip && (!simple || globeOpen) && (
+        {panelMounted && (
           <HeroDawnPanel
             trip={trip}
             owedMin={dawnOwedMin}
@@ -994,8 +1026,16 @@ export function NudgeFeedScreen({
                     {countdown ? " · " : ""}
                     {fmtMin(heroNudge.startMin)} · {cityFor(heroNudge.dayIndex)} local time
                   </span>
-                  <div key={heroNudge.id} className="nudge-in">
-                  <h2>{heroNudge.title}</h2>
+                  <div key={heroNudge.id} className="nudge-in" data-cat={heroNudge.category}>
+                  <h2>
+                    <span className="tl-glyph" aria-hidden="true">
+                      {(() => {
+                        const HeroIcon = CAT_ICON[heroNudge.category];
+                        return <HeroIcon size={15} strokeWidth={2.4} />;
+                      })()}
+                    </span>
+                    {heroNudge.title}
+                  </h2>
                   <p className="s">{heroNudge.actionSummary}</p>
                 </div>
                   {expandAllWhy || heroWhyId === heroNudge.id ? (
@@ -1455,7 +1495,7 @@ export function NudgeFeedScreen({
           page; this copy is the reminder, not a new flow. */}
       {pendingMarks.size > 0 && (
         <div
-          className="rise marks-waiting"
+          className="rise marks-waiting wide"
           style={{
             animationDelay: ".2s",
             marginTop: "12px",
@@ -1498,7 +1538,7 @@ export function NudgeFeedScreen({
       {/* Day stepper — ‹ › through the days; the centre label opens the
           full list for a direct jump. Real trip days only. */}
       {days.length > 0 && activeDaySpec && (
-        <div className="rise" style={{ animationDelay: ".3s", marginTop: "22px", position: "relative" }}>
+        <div className="rise wide" style={{ animationDelay: ".3s", marginTop: "22px", position: "relative" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
             <button
               type="button"
@@ -1583,7 +1623,7 @@ export function NudgeFeedScreen({
           day-level verdicts still work in one tap. */}
       {phase === "done" && onCheckIn && (pendingMarks.size > 0 || dayVerdictAllowed) && (
         <div
-          className="card rise"
+          className="card rise wide"
           style={{
             marginTop: "12px",
             padding: "12px 16px",
@@ -1651,7 +1691,7 @@ export function NudgeFeedScreen({
       {/* The rail — one line per step, in the order the day happens */}
       {expandAllWhy && calSummary && (
         <div
-          className="cal-summary rise"
+          className="cal-summary rise wide"
           style={{ animationDelay: ".35s" }}
           aria-label="Calendar fit"
         >
@@ -1675,13 +1715,15 @@ export function NudgeFeedScreen({
       )}
 
       {!arrivalView && (
-      <section className={`tl rise${previewMode ? " preview" : ""}`} style={{ animationDelay: ".4s" }} aria-label={`${currentDayName} — steps`}>
+      <section className={`tl rise wide${previewMode ? " preview" : ""}`} style={{ animationDelay: ".4s" }} aria-label={`${currentDayName} — steps`}>
+        <DaySkyStrip steps={steps} resolvedIds={resolvedIds} nowMin={nowMin} label={currentDayName} />
         <div className="tl-rows">
         {steps.map((step, stepIdx) => {
           const isDone = completedIds.has(step.id);
           const isSkip = isSkipped(step.id);
           const isOpen = !!expandAllWhy || expandedWhyId === step.id;
           const city = cityFor(step.dayIndex);
+          const StepIcon = CAT_ICON[step.category];
           // The city is worth a line only where it changes — which is exactly
           // when it matters, because that is the moment the trip crosses into
           // a new clock.
@@ -1691,6 +1733,7 @@ export function NudgeFeedScreen({
             <div
               key={step.id}
               className={`tl-row${isDone ? " done" : ""}${isSkip ? " skipped" : ""}`}
+              data-cat={step.category}
               style={
                 swipe?.id === step.id
                   ? {
@@ -1764,6 +1807,9 @@ export function NudgeFeedScreen({
                 style={{ cursor: expandAllWhy ? "default" : "pointer" }}
               >
                 <h3 className="tl-title">
+                  <span className="tl-glyph" aria-hidden="true">
+                    <StepIcon size={13} strokeWidth={2.4} />
+                  </span>
                   <span className="tl-title-text">{step.title}</span>
                   {isSkip && !isOpen && (
                     <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--m-faint)" }}>Skipped</span>
@@ -1779,9 +1825,6 @@ export function NudgeFeedScreen({
                 </h3>
                 {isOpen && (
                   <div className="drawer tl-drawer">
-                    <b>
-                      {step.timeWindow} · {city}
-                    </b>
                     <p>{step.actionSummary}</p>
                     <p>{step.whyItHelps}</p>
                     <button
@@ -1820,42 +1863,37 @@ export function NudgeFeedScreen({
                       </p>
                     )}
                     {step.evidence ? (
-                      <div className="evrow">
-                        <span className="evchip" style={{ background: "transparent", border: "none", padding: "3px 0" }}>
-                          Checked against sleep research
-                        </span>
-                        {step.evidence.evalVerdict && (() => {
-                          const violations = step.evidence.evalVerdict.violations;
-                          return (
-                            <span
-                              className={`evchip ${violations.length ? "warn" : "pass"}`}
-                              title={evalChipTitle(violations)}
-                            >
-                              {evalChipLabel(step.evidence.evalVerdict.score, violations)}
-                            </span>
-                          );
+                      <p
+                        className="evline"
+                        title={
+                          step.evidence.evalVerdict
+                            ? evalChipTitle(step.evidence.evalVerdict.violations)
+                            : step.evidence.memoryPath
+                        }
+                      >
+                        {(() => {
+                          const v = step.evidence!.evalVerdict;
+                          return [
+                            v
+                              ? evalChipLabel(v.score, v.violations)
+                              : "checked against sleep research",
+                            ...(step.evidence!.draftRejected ? ["revised once"] : []),
+                            ...(step.evidence!.memoryPath ? ["learned from your past trips"] : []),
+                          ].join(" · ");
                         })()}
-                        {step.evidence.draftRejected && (
-                          <span className="evchip warn">revised once</span>
-                        )}
-                        {step.citation && (
-                          <span className="evchip cite" title={step.citation.title}>
-                            ◈ {step.citation.title.length > 48
-                              ? `${step.citation.title.slice(0, 46)}…`
+                        {step.citation ? (
+                          <span className="evline-cite" title={step.citation.title}>
+                            {" "}· ◈ {step.citation.title.length > 56
+                              ? `${step.citation.title.slice(0, 54)}…`
                               : step.citation.title}
                           </span>
-                        )}
-                        {step.evidence.memoryPath && (
-                          <span className="evchip mem" title={step.evidence.memoryPath}>
-                            Based on your past trips
-                          </span>
-                        )}
-                        {step.evidence.evalVerdict?.violations.length ? (
-                          <span style={{ width: "100%", fontSize: "10px", color: "#b04523" }}>
-                            {step.evidence.evalVerdict.violations.join("; ")}
-                          </span>
                         ) : null}
-                      </div>
+                      </p>
+                    ) : null}
+                    {step.evidence?.evalVerdict?.violations.length ? (
+                      <p style={{ margin: "4px 0 0", fontSize: "10px", color: "#b04523" }}>
+                        {step.evidence.evalVerdict.violations.join("; ")}
+                      </p>
                     ) : null}
                   </div>
                 )}

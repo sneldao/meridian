@@ -47,9 +47,9 @@ whoever used the demo last. The arrival surface (`/arrival`) finally cashes
 "land at 100%" against the day's actual score.
 
 ## Try it
-- Live: https://meridian-afud.onrender.com
+- Live: https://meridian.trustfall.xyz
 - Repo: https://github.com/sneldao/meridian
-- Demo video: https://meridian-afud.onrender.com/video (or attach the .mp4)
+- Demo video: https://meridian.trustfall.xyz/video (or attach the .mp4)
 - Replay harness: `bun run replay:check` — same crew, same routes, same
   outcomes deterministically (no API keys required)
 

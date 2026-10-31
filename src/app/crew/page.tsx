@@ -21,6 +21,8 @@ import { AnchoredPopover } from "@/components/AnchoredPopover";
 import { LensShell, type LensId } from "@/components/lenses/LensShell";
 import { WorldLens } from "@/components/lenses/WorldLens";
 import { CrewFeed, type LogEntry } from "@/components/CrewFeed";
+import { CalendarApprovalCard } from "@/components/CalendarApprovalCard";
+import { RunAnnouncer } from "@/components/RunAnnouncer";
 import { DayStrip } from "@/components/DayStrip";
 import { RoutePicker } from "@/components/RoutePicker";
 import { ShiftBoard } from "@/components/lenses/ShiftBoard";
@@ -77,6 +79,7 @@ export default function Home() {
   const trip = (run.trip ?? data?.trip ?? null) as Trip | null;
 
   const esRef = useRef<EventSource | null>(null);
+  const runIdRef = useRef<string | null>(null);
   const [voiceOn, setVoiceOn] = useState(false);
   const voiceOnRef = useRef(false);
   const [voiceAvail, setVoiceAvail] = useState(false);
@@ -272,8 +275,17 @@ export default function Home() {
         case "calendar_move":
           push({
             kind: "move",
-            text: `${e.move.title}: ${fmtMin(e.move.from.startMin)} → ${fmtMin(e.move.to.startMin)} — ${e.move.reason}`,
+            text: `proposed ${e.move.title}: ${fmtMin(e.move.from.startMin)} → ${fmtMin(e.move.to.startMin)} — ${e.move.reason}`,
           });
+          break;
+        case "approval_request":
+          push({ kind: "system", text: e.approval.summary });
+          break;
+        case "approval_result":
+          push({ kind: e.status === "failed" ? "error" : "system", text: e.message });
+          break;
+        case "calendar_restore":
+          push({ kind: "system", text: "calendar restored to its original times" });
           break;
         case "briefing":
           if (voiceOnRef.current) {
@@ -320,6 +332,8 @@ export default function Home() {
           break;
         case "done":
           setEntries((prev) => [...prev, { kind: "system", text: "shift complete" }]);
+          runIdRef.current = null;
+          try { localStorage.removeItem("meridian:crewActiveRunId"); } catch { /* ignore */ }
           esRef.current?.close();
           break;
       }
@@ -328,7 +342,17 @@ export default function Home() {
   );
 
   const cancelShift = useCallback(() => {
+    const runId = runIdRef.current;
+    if (runId) {
+      fetch("/api/crew/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ runId }),
+      }).catch(() => {});
+    }
     esRef.current?.close();
+    runIdRef.current = null;
+    try { localStorage.removeItem("meridian:crewActiveRunId"); } catch { /* ignore */ }
     stopVoice();
     push({ kind: "system", text: "shift cancelled by operator" });
     reset();
@@ -348,6 +372,10 @@ export default function Home() {
     else if (checkInsParam) params.set("checkins", checkInsParam);
     if (extra?.startDay !== undefined) params.set("startDay", String(extra.startDay));
     else if (startDayParam) params.set("startDay", String(startDayParam));
+    const runId = crypto.randomUUID();
+    runIdRef.current = runId;
+    params.set("runId", runId);
+    try { localStorage.setItem("meridian:crewActiveRunId", runId); } catch { /* ignore */ }
     const es = new EventSource("/api/crew/run?" + params.toString());
     esRef.current = es;
     es.onmessage = (m) => {
@@ -356,22 +384,55 @@ export default function Home() {
       handleSideEffects(evt);
     };
     es.onerror = () => {
-      push({ kind: "error", text: "stream interrupted" });
-      es.close();
+      push({ kind: "error", text: "connection interrupted — reconnecting" });
     };
   }, [dispatch, handleSideEffects, push, reset, run.phase, tripQuery, checkInsParam, startDayParam]);
 
   const startShift = useCallback(() => beginStream(), [beginStream]);
 
+  const resumeRun = useCallback((runId: string) => {
+    if (run.phase === "running") return;
+    esRef.current?.close();
+    reset();
+    setEntries([]);
+    setBriefingDismissed(false);
+    runIdRef.current = runId;
+    const es = new EventSource(`/api/crew/run?runId=${encodeURIComponent(runId)}&resume=1`);
+    esRef.current = es;
+    es.onmessage = (m) => {
+      const evt = JSON.parse(m.data) as CrewEvent;
+      dispatch(evt);
+      handleSideEffects(evt);
+    };
+    es.onerror = () => {
+      es.close();
+      runIdRef.current = null;
+      try { localStorage.removeItem("meridian:crewActiveRunId"); } catch { /* ignore */ }
+      reset();
+    };
+  }, [dispatch, handleSideEffects, reset, run.phase]);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      try {
+        const runId = localStorage.getItem("meridian:crewActiveRunId");
+        if (runId) resumeRun(runId);
+      } catch { /* ignore */ }
+    }, 0);
+    return () => clearTimeout(t);
+  }, [resumeRun]);
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName;
+      if (e.code === "Escape" && run.phase === "running") {
+        cancelShift();
+        return;
+      }
       if (tag === "INPUT" || tag === "TEXTAREA") return;
       if (e.code === "Space") {
         e.preventDefault();
         if (run.phase !== "running") startShift();
-      } else if (e.code === "Escape" && run.phase === "running") {
-        cancelShift();
       }
     };
     window.addEventListener("keydown", handler);
@@ -392,6 +453,7 @@ export default function Home() {
 
   return (
     <main className="flex min-h-screen flex-col p-4 lg:h-screen">
+      <RunAnnouncer run={run} />
       <div className="dawnIn" aria-hidden="true" />
       <header className="mb-4 flex flex-wrap items-center gap-3">
         <div className="shrink-0">
@@ -560,6 +622,11 @@ export default function Home() {
       {providerFallback && (
         <div className="mb-3 rounded-lg border border-fail/20 bg-fail/10 px-4 py-2 text-xs text-fail">
           Crew fell back mid-run — review the plan before acting.
+        </div>
+      )}
+      {run.approval && (!run.approvalResult || run.approvalResult.status !== "rejected") && (
+        <div className="mb-3">
+          <CalendarApprovalCard approval={run.approval} result={run.approvalResult} />
         </div>
       )}
       {data?.calendarSource === "fixture" && (

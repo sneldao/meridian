@@ -22,7 +22,7 @@ two separate integrations. Also exposed as MCP tool `destination_taste`.
 ## Requirement verification
 - Working app integrating the Qloo API ✓
 - Agentic — multi-agent crew with tool calls ✓
-- Live hosted demo URL ✓ (`https://meridian-afud.onrender.com`)
+- Live hosted demo URL ✓ (`https://meridian.trustfall.xyz`)
 - Public repo with **OSI license visible in repo About** ✓ (`LICENSE` file
   at repo root, MIT)
 - Text description — this submission text ✓

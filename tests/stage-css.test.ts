@@ -52,8 +52,16 @@ describe("stage backdrop", () => {
     }
   });
 
+  test("the sky vars are registered so they can tween", () => {
+    const prop = blockAfter("@property --stage-horizon-h");
+    expect(prop).toContain("syntax:");
+    expect(prop).toContain("<percentage>");
+    const transition = blockAfter("prefers-reduced-motion: no-preference");
+    expect(transition).toContain("--stage-horizon-h");
+  });
+
   test("the night theme sits on the ink family", () => {
-    const block = blockAfter('html[data-theme="night"]');
+    const block = blockAfter('html[data-theme="night"] {\n  --m-bg');
     expect(block).toContain("--m-bg: #0b0e16");
   });
 

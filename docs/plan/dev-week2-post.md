@@ -38,7 +38,7 @@ can mark up.
 
 ## Demo
 
-**Live:** https://meridian-afud.onrender.com — pick a route, watch a plan come
+**Live:** https://meridian.trustfall.xyz — pick a route, watch a plan come
 together, download the `.ics`.
 
 The app has a depth dial, and it's the fastest way to see what makes this
@@ -186,7 +186,7 @@ manager watching a fleet of crews. The first real user test is next.
 
 - **Best Use of Render** — Render is the AI runtime: Blueprint-managed web
   service streaming five-agent SSE runs plus a private FalkorDB service,
-  auto-deploy on `main`, ~$7/mo. https://meridian-afud.onrender.com
+  auto-deploy on `main`, ~$7/mo. https://meridian.trustfall.xyz
 - **Best Use of ElevenLabs** — per-agent voice layer (`src/lib/voice/`): five
   distinct voices streamed chunk-aligned over token generation, char-aligned
   karaoke highlighting, multi-voice dialogue mode for the plan handoff.

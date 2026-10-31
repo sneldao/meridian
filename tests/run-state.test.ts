@@ -233,3 +233,59 @@ describe("briefing taste itinerary", () => {
     expect(run.briefing?.tasteItinerary).toBeUndefined();
   });
 });
+
+describe("calendar approval events", () => {
+  const start = events[0].event as Extract<CrewEvent, { type: "run_start" }>;
+  const moveEvent = events.find((e) => e.event.type === "calendar_move")!.event as Extract<CrewEvent, { type: "calendar_move" }>;
+  const approval = {
+    id: "approval-1",
+    runId: "run-1",
+    kind: "calendar_write" as const,
+    summary: "Apply one proposed event move?",
+    moves: [moveEvent.move],
+    planBlocks: [{
+      dayLabel: "D-2",
+      kind: "light_exposure" as const,
+      startMin: 420,
+      endMin: 450,
+      note: "Morning light",
+    }],
+    expiresAt: "2026-10-18T00:30:00.000Z",
+  };
+
+  test("approval request and result are replayable run state", () => {
+    const run = reduceRun(initialRunState(), {
+      kind: "batch",
+      items: [
+        { t: 0, event: start },
+        { t: 1, event: moveEvent },
+        { t: 2, event: { type: "approval_request", approval } },
+        {
+          t: 3,
+          event: {
+            type: "approval_result",
+            approvalId: approval.id,
+            status: "applied",
+            message: "Applied 1 calendar move.",
+          },
+        },
+      ],
+    });
+    expect(run.approval).toEqual(approval);
+    expect(run.approvalResult?.status).toBe("applied");
+    expect(run.moves).toHaveLength(1);
+  });
+
+  test("calendar restore clears proposed moves and returns the original calendar", () => {
+    const run = reduceRun(initialRunState(), {
+      kind: "batch",
+      items: [
+        { t: 0, event: start },
+        { t: 1, event: moveEvent },
+        { t: 2, event: { type: "calendar_restore", calendar: start.calendar } },
+      ],
+    });
+    expect(run.moves).toHaveLength(0);
+    expect(run.calendar).toEqual(start.calendar);
+  });
+});

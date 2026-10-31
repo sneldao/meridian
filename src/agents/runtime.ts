@@ -35,7 +35,7 @@ import { providerFallback, providerKind, resolveModel, type ProviderKind } from 
 import { runReplay } from "./replay";
 import { runMorningReplay } from "./morning-replay";
 import { buildIcs, fetchCalendar, proposeMove } from "@/tools/calendar";
-import { createPlanEvents, patchGoogleEvent } from "@/tools/calendar-google";
+import { requestCalendarApproval } from "@/lib/calendar-approvals";
 import { searchScience } from "@/tools/science";
 import { searchTavily, tavilyEnabled } from "@/tools/tavily";
 import { destinationTaste, qlooEnabled } from "@/tools/qloo";
@@ -76,6 +76,8 @@ export function runCrew(opts?: {
    *  carried through run_start so surfaces label numbers honestly. */
   baselineKind?: BaselineKind;
   tasteFavorites?: TasteEntity[];
+  runId?: string;
+  signal?: AbortSignal;
 }): AsyncGenerator<CrewEvent> {
   const queue: CrewEvent[] = [];
   const notifier: { fn: (() => void) | null } = { fn: null };
@@ -93,7 +95,7 @@ export function runCrew(opts?: {
       : undefined;
     try {
       if (providerKind() === "replay") {
-        await drain(tasteContext ? withTasteItinerary(replayFor(opts), tasteContext) : replayFor(opts), emit);
+        await drain(tasteContext ? withTasteItinerary(replayFor(opts), tasteContext) : replayFor(opts), emit, opts?.signal);
       } else {
         const trip = opts?.trip ?? DEMO_TRIP;
         const cal = opts?.calendar
@@ -113,6 +115,8 @@ export function runCrew(opts?: {
             opts?.baselineKind,
             favorites,
             tasteContext,
+            opts?.runId,
+            opts?.signal,
           );
         const primary = providerKind();
         try {
@@ -129,12 +133,13 @@ export function runCrew(opts?: {
         }
       }
     } catch (err) {
+      if (opts?.signal?.aborted) throw err;
       emit({
         type: "error",
         message: `crew uplink failed: ${err instanceof Error ? err.message : String(err)} — switching to recorded shift`,
         recoverable: true,
       });
-      await drain(tasteContext ? withTasteItinerary(replayFor(opts), tasteContext) : replayFor(opts), emit);
+      await drain(tasteContext ? withTasteItinerary(replayFor(opts), tasteContext) : replayFor(opts), emit, opts?.signal);
     } finally {
       finished = true;
       notifier.fn?.();
@@ -153,8 +158,11 @@ export function runCrew(opts?: {
   })();
 }
 
-async function drain(gen: AsyncGenerator<CrewEvent>, emit: Emit) {
-  for await (const e of gen) emit(e);
+async function drain(gen: AsyncGenerator<CrewEvent>, emit: Emit, signal?: AbortSignal) {
+  for await (const e of gen) {
+    signal?.throwIfAborted();
+    emit(e);
+  }
 }
 
 /** Recorded transcript for this run: a morning shift (check-ins or a later
@@ -176,13 +184,17 @@ interface RunState {
   evals: EvalResult[];
   log: { ts: string; entry: string }[];
   pendingPlan: DayPlan | null;
+  /** Proposed calendar moves, with the negotiator's human-readable reasons. */
+  moves: CalendarMove[];
   /** How far the planner's submission moved from the solver's draft. */
   planDrift: DraftDrift | null;
   ics: string;
   briefingText: string;
 }
 
-async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[], calendarSource: "google" | "fixture" = "fixture", checkIns: CheckIn[] = [], startDayIndex: number = 0, kind: ProviderKind = providerKind(), tenant?: string, baseline: WearableBaseline = GARMIN_BASELINE, baselineKind?: BaselineKind, tasteFavorites: TasteEntity[] = [], tasteContext?: Promise<TasteContext>) {
+async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[], calendarSource: "google" | "fixture" = "fixture", checkIns: CheckIn[] = [], startDayIndex: number = 0, kind: ProviderKind = providerKind(), tenant?: string, baseline: WearableBaseline = GARMIN_BASELINE, baselineKind?: BaselineKind, tasteFavorites: TasteEntity[] = [], tasteContext?: Promise<TasteContext>, runId?: string, signal?: AbortSignal) {
+  const throwIfAborted = () => signal?.throwIfAborted();
+  throwIfAborted();
   const adherence = checkIns.length ? foldCheckIns(ADHERENCE_PROFILE, checkIns) : ADHERENCE_PROFILE;
   const memory = await loadMemory(tenant);
   // Graph memory is offered as fixed tools, not prompt prose — the analyst
@@ -234,6 +246,7 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
     evals: [],
     log: [],
     pendingPlan: null,
+    moves: [],
     planDrift: null,
     ics: "",
     briefingText: "",
@@ -244,6 +257,7 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
   emit({
     type: "run_start",
     provider: kind,
+    runId,
     trip,
     baseline,
     baselineKind,
@@ -275,7 +289,10 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
     emit,
     state,
     kind,
+    "specialist",
+    signal,
   );
+  throwIfAborted();
   logLine(`analyst: ${analyst.text}`);
 
   // 2. Researcher — pulls the literature. searchWeb (Tavily) adds live
@@ -307,11 +324,15 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
     emit,
     state,
     kind,
+    "specialist",
+    signal,
   );
+  throwIfAborted();
   logLine(`researcher: ${research.toolCalls.length} searches, ${state.citations.length} citations kept`);
 
   // 3. Planner + evaluator loop — one day at a time, default-FAIL.
   for (const spec of trip.days.filter((d) => d.dayIndex >= startDayIndex)) {
+    throwIfAborted();
     let day: DayPlan | null = null;
     let feedback = "";
 
@@ -447,7 +468,9 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
         state,
         kind,
         "orchestrator",
+        signal,
       );
+      throwIfAborted();
 
       const candidate = state.pendingPlan as DayPlan | null;
       if (!candidate) {
@@ -504,7 +527,10 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
         emit,
         state,
         kind,
+        "specialist",
+        signal,
       );
+      throwIfAborted();
 
       if (passes(result)) {
         day = candidate;
@@ -587,33 +613,23 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
             const clash = moveBreaksLockedPlan(r.move, state.lockedDays);
             if (clash) return { error: clash };
 
-            if (calendarSource === "google") {
-              const ev = state.calendar.find((e) => e.id === eventId)!;
-              try {
-                await patchGoogleEvent(ev, r.move, trip);
-              } catch (err) {
-                delete ev.movedTo; // real calendar kept the old time — roll back
-                return { error: `calendar write failed: ${err instanceof Error ? err.message : String(err)}` };
-              }
-            }
             r.move.reason = reason;
             return r.move;
           },
         },
-        commitPlan: bare("Commit the rescheduled calendar", async () => {
+        commitPlan: bare("Stage the rescheduled calendar for review", async () => {
           state.ics = buildIcs(state.calendar, trip);
-          let written = 0;
-          if (calendarSource === "google") {
-            written = await createPlanEvents(state.lockedDays, trip);
-          }
-          return { committed: state.calendar.filter((e) => e.movedTo).length, googleBlocksWritten: written };
+          return { staged: state.calendar.filter((e) => e.movedTo).length, approvalRequired: calendarSource === "google" };
         }),
       },
     },
     emit,
     state,
     kind,
+    "specialist",
+    signal,
   );
+  throwIfAborted();
 
   // The gate does not stop at the plan. Rex's moves are re-checked against the
   // locked days with moves folded in — if the negotiator created a collision
@@ -623,8 +639,10 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
   if (verdict.length) {
     for (const e of state.calendar) delete e.movedTo;
     state.calendar = preNegotiation.map((e) => ({ ...e }));
+    state.moves = [];
     state.ics = "";
     logLine(`negotiator moves reverted — ${verdict.join("; ")}`);
+    emit({ type: "calendar_restore", calendar: state.calendar });
     emit({
       type: "error",
       message: `Calendar rescheduling broke the locked plan (${verdict.join("; ")}) — reverted to your original calendar.`,
@@ -635,6 +653,58 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
   }
 
   if (!state.ics) state.ics = buildIcs(state.calendar, trip);
+
+  const proposedMoves = state.moves.map((m) => ({ ...m, from: { ...m.from }, to: { ...m.to } }));
+
+  if (calendarSource === "google" && (proposedMoves.length > 0 || state.lockedDays.length > 0)) {
+    const request = requestCalendarApproval({
+      runId,
+      trip,
+      calendar: preNegotiation,
+      lockedDays: state.lockedDays,
+      moves: proposedMoves,
+    });
+    emit({
+      type: "approval_request",
+      approval: {
+        id: request.approvalId,
+        runId,
+        kind: "calendar_write",
+        summary:
+          `Apply ${proposedMoves.length} proposed event move${proposedMoves.length === 1 ? "" : "s"} and write ${state.lockedDays.reduce((n, d) => n + d.interventions.length, 0)} Meridian plan blocks to Google Calendar?`,
+        moves: proposedMoves,
+        planBlocks: state.lockedDays.flatMap((day) =>
+          day.interventions.map((iv) => ({
+            dayLabel: day.label,
+            kind: iv.kind,
+            startMin: iv.startMin,
+            endMin: iv.endMin ?? iv.startMin + 30,
+            note: iv.note,
+          })),
+        ),
+        expiresAt: request.expiresAt,
+      },
+    });
+    throwIfAborted();
+    const result = await Promise.race([
+      request.result,
+      new Promise<never>((_, reject) => {
+        signal?.addEventListener("abort", () => reject(signal.reason), { once: true });
+      }),
+    ]);
+    emit({
+      type: "approval_result",
+      approvalId: result.approvalId,
+      status: result.status,
+      message: result.message,
+    });
+    if (result.status !== "applied") {
+      state.calendar = preNegotiation.map((e) => ({ ...e }));
+      state.moves = [];
+      state.ics = buildIcs(state.calendar, trip);
+      emit({ type: "calendar_restore", calendar: state.calendar });
+    }
+  }
 
   // 5. Briefing — the morning handoff.
   const scores = state.evals.filter((e) => e.feasible).map((e) => e.score);
@@ -845,6 +915,7 @@ async function runAgent(
   state: RunState,
   kind: ProviderKind,
   role: "orchestrator" | "specialist" = "specialist",
+  signal?: AbortSignal,
 ): Promise<AgentRunResult> {
   emit({
     type: "agent_start",
@@ -877,7 +948,9 @@ async function runAgent(
             }
           }
           if (name === "proposeMove" && output && typeof output === "object" && "to" in (output as object)) {
-            emit({ type: "calendar_move", move: output as CalendarMove });
+            const move = output as CalendarMove;
+            state.moves.push(move);
+            emit({ type: "calendar_move", move });
           }
           return output;
         },
@@ -892,6 +965,7 @@ async function runAgent(
     tools: wrappedTools,
     stopWhen: stepCountIs(8),
     temperature: 0.6,
+    abortSignal: signal,
   });
 
   // The scorer gates submitted plan notes; this gates the prose that streams to

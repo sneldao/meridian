@@ -12,7 +12,7 @@ times, the crew debates intent, and a scorer backed by a phase-response model
 decides — a plan's declared shift is checked against what its zeitgeber timing
 can actually deliver.
 
-**Live:** https://meridian-afud.onrender.com
+**Live:** https://meridian.trustfall.xyz
 
 ## Quickstart
 

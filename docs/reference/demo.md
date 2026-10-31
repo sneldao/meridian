@@ -38,7 +38,7 @@ committed trip, so the URL needs a complete route alongside `startDay` and
 `checkins` (base64 JSON array of `CheckIn`):
 
 ```
-https://meridian-afud.onrender.com/?origin=LHR&dest=HND&date=<YYYY-MM-DD>&startDay=2&checkins=<base64 of [{"id":"c1","dayIndex":1,"kind":"light_exposure","startMin":300,"status":"skipped","text":"skipped the 5am light","at":0}]>
+https://meridian.trustfall.xyz/?origin=LHR&dest=HND&date=<YYYY-MM-DD>&startDay=2&checkins=<base64 of [{"id":"c1","dayIndex":1,"kind":"light_exposure","startMin":300,"status":"skipped","text":"skipped the 5am light","at":0}]>
 ```
 
 The feed shows `wearer reported: …` then `replan — …`. On the board, the

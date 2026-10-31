@@ -193,8 +193,26 @@ export interface VoiceLine {
   text: string;
 }
 
+export interface CalendarPlanBlock {
+  dayLabel: string;
+  kind: InterventionKind;
+  startMin: number;
+  endMin: number;
+  note: string;
+}
+
+export interface CalendarApprovalRequest {
+  id: string;
+  runId?: string;
+  kind: "calendar_write";
+  summary: string;
+  moves: CalendarMove[];
+  planBlocks: CalendarPlanBlock[];
+  expiresAt: string;
+}
+
 export type CrewEvent =
-  | { type: "run_start"; provider: string; trip: Trip; baseline: WearableBaseline; baselineKind?: BaselineKind; calendar: CalendarEvent[] }
+  | { type: "run_start"; provider: string; runId?: string; trip: Trip; baseline: WearableBaseline; baselineKind?: BaselineKind; calendar: CalendarEvent[] }
   | { type: "agent_start"; agent: AgentId; title: string }
   | { type: "agent_token"; agent: AgentId; text: string }
   | { type: "agent_end"; agent: AgentId }
@@ -218,6 +236,14 @@ export type CrewEvent =
   | { type: "eval_result"; result: EvalResult; attempt: number }
   | { type: "day_locked"; day: DayPlan; sunProgress: number }
   | { type: "calendar_move"; move: CalendarMove }
+  | { type: "approval_request"; approval: CalendarApprovalRequest }
+  | {
+      type: "approval_result";
+      approvalId: string;
+      status: "applied" | "rejected" | "failed";
+      message: string;
+    }
+  | { type: "calendar_restore"; calendar: CalendarEvent[] }
   | {
       type: "briefing";
       summary: string;

@@ -62,17 +62,29 @@ other.
      history) and explains it in two lines.
    - Pass → `day_locked`, sun advances. Fail → violations feed back as the next
      prompt; day stays unlocked.
-4. **Negotiator (Rex)** — `proposeMove` on movable calendar events that
-   survived the locked plan.
+4. **Negotiator (Rex)** — `proposeMove` stages movable calendar events that
+   survived the locked plan. Fixture runs keep going. Google-backed runs emit
+   `approval_request` and pause: `POST /api/crew/approvals` applies the staged
+   event moves and Meridian plan blocks, or rejects them and restores the
+   pre-negotiation calendar (`calendar_restore`).
 5. **Briefing** — `buildIcs` emits a real `.ics`; summary + mean score stream as
    the `briefing` event, then `done`.
 
 ## Event stream
 
-`CrewEvent` union in `src/domain/types.ts` (16 variants). Everything the UI
+`CrewEvent` union in `src/domain/types.ts` (19 variants). Everything the UI
 needs is an event: agent lifecycle, token deltas, tool calls/results,
-citations, plan candidates, eval verdicts, day locks, calendar moves,
-check-ins, replans, errors.
+citations, plan candidates, eval verdicts, day locks, staged calendar moves,
+approval requests/results, calendar restores, check-ins, replans, errors.
+
+`GET /api/crew/run` writes every event to an ordered run log
+(`src/lib/crew-runs.ts`) and serves it with SSE `id:` sequence numbers. The
+client passes a `runId`; EventSource reconnects with `Last-Event-ID` and the
+server replays only missed events. Reloads use `runId=<id>&resume=1`. The log
+is mirrored to gitignored `artifacts/crew-runs/*.jsonl` for a 2-hour replay
+window; after a process restart an unfinished run replays its record plus an
+honest terminal error. `POST /api/crew/run` cancels the run's AbortSignal and
+resolves any pending calendar approval without writing.
 
 `plan_candidate` carries an optional `drift`: how far the planner's
 submission moved from the solver's draft (the shift difference, the minutes

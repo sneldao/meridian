@@ -13,6 +13,7 @@ import { passes, sunProgress } from "@/domain/circadian";
 import type {
   AgentId,
   BaselineKind,
+  CalendarApprovalRequest,
   CalendarEvent,
   CalendarMove,
   CheckIn,
@@ -87,6 +88,9 @@ export interface RunState {
   priorLocked?: { route: string; days: Map<string, DayPlan>; moves: CalendarMove[] };
 
   moves: CalendarMove[];
+  /** Server-staged external write waiting for explicit traveller approval. */
+  approval?: CalendarApprovalRequest;
+  approvalResult?: { approvalId: string; status: "applied" | "rejected" | "failed"; message: string };
   citations: Citation[];
   checkIns: CheckIn[];
   replans: { droppedDays: number[]; reason: string }[];
@@ -143,6 +147,9 @@ export function focusFor(event: CrewEvent): Focus | null {
     case "briefing":
       return "board";
     case "calendar_move":
+    case "calendar_restore":
+    case "approval_request":
+    case "approval_result":
       return "calendar";
     case "error":
       return "ledger";
@@ -301,6 +308,22 @@ function applyEventInner(s: RunState, event: CrewEvent, t: number): RunState {
 
     case "calendar_move":
       return { ...base, moves: [...s.moves, event.move] };
+
+    case "approval_request":
+      return { ...base, approval: event.approval, approvalResult: undefined };
+
+    case "approval_result":
+      return {
+        ...base,
+        approvalResult: {
+          approvalId: event.approvalId,
+          status: event.status,
+          message: event.message,
+        },
+      };
+
+    case "calendar_restore":
+      return { ...base, calendar: event.calendar, moves: [] };
 
     case "briefing": {
       const { summary, ics, score, citations, days, coverage, lines, tasteItinerary } = event;

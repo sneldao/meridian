@@ -74,14 +74,18 @@ the provider, forces one tool call, prints the round-trip.
 ## Calendar backend
 
 The negotiator's calendar is fixture-backed by default. With a Composio MCP
-consumer key it becomes a **real Google Calendar** — `proposeMove` patches
-actual events and `commitPlan` writes every locked intervention as a
-`Meridian — …` block. Transport is the MCP endpoint
+consumer key it reads a **real Google Calendar**, but writes now wait for an
+explicit human decision. `proposeMove` only stages a move; after calendar
+verification the run emits `approval_request` and pauses. `POST
+/api/crew/approvals` either patches the staged events and creates the locked
+`Meridian — …` blocks, or rejects and emits `calendar_restore`. If an apply
+fails part-way, already-patched moves are reverse-patched best-effort and the
+result says whether rollback succeeded. Transport is the MCP endpoint
 (`connect.composio.dev/mcp`, `x-consumer-api-key` header →
 `COMPOSIO_MULTI_EXECUTE_TOOL`); the consumer key is already bound to the
 connected account, so no project API key or entity id is needed. Any Google
-failure falls back to fixtures; a failed patch rolls the local move back and
-surfaces as a tool error the negotiator can route around.
+read failure falls back to fixtures, which never require approval or mutate
+external state.
 
 | Var | Purpose |
 |---|---|

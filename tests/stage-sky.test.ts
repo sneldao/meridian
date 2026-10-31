@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { stageSky, stageSkyFor, stageSkyVars } from "@/domain/stage-sky";
+import { STAGE_SKY_VARS, stageSky, stageSkyFor, stageSkyVars } from "@/domain/stage-sky";
 import { buildTrip } from "../src/domain/fixtures";
 import { solarZenithDeg, subsolarPoint } from "@/domain/sun";
 
@@ -24,7 +24,8 @@ describe("stageSky", () => {
     expect(hs[2]).toBeGreaterThan(hs[1]);
     expect(hs[3]).toBeGreaterThan(hs[2]);
     // Both at the +6° knee of t → the same clamped height.
-    expect(stageSky(6, 0, -540).horizonHeight).toBe(stageSky(30, 0, -540).horizonHeight);
+    expect(stageSky(6, 0, -540).horizonHeight).toBe("36%");
+    expect(stageSky(30, 0, -540).horizonHeight).toBe("36%");
   });
 
   test("horizon band luminance stays under the text-contrast cap", () => {
@@ -50,8 +51,8 @@ describe("stageSky", () => {
   test("night state: a deep-night body sun leaves a faint low ember band", () => {
     const sky = stageSky(-25, 360, -540);
     expect(sky.horizonHeight).toBe("10%");
-    expect(parseChannels(sky.horizon)[3]).toBeCloseTo(0.26, 3);
-    expect(parseChannels(sky.horizonFloor)[3]).toBeCloseTo(0.06, 3);
+    expect(parseChannels(sky.horizon)[3]).toBeCloseTo(0.24, 3);
+    expect(parseChannels(sky.horizonFloor)[3]).toBeCloseTo(0.05, 3);
     // The haze is the band's own colour, dimmer.
     expect(sky.horizonFloor.slice(0, sky.horizonFloor.lastIndexOf(","))).toBe(
       sky.horizon.slice(0, sky.horizon.lastIndexOf(",")),
@@ -85,15 +86,16 @@ describe("stageSkyFor", () => {
       string,
       string
     >;
-    for (const key of [
-      "--stage-horizon",
-      "--stage-horizon-h",
-      "--stage-horizon-floor",
-      "--stage-ink-2",
-      "--stage-origin",
-    ]) {
+    for (const key of STAGE_SKY_VARS) {
       expect(typeof vars[key]).toBe("string");
     }
+  });
+
+  test("STAGE_SKY_VARS is the emitted key set — imperative and React writers agree", () => {
+    expect(STAGE_SKY_VARS.length).toBe(5);
+    expect([...STAGE_SKY_VARS].sort()).toEqual(
+      Object.keys(stageSkyVars(stageSky(0, 0, -540))).sort(),
+    );
   });
 
   test("with nothing owed, the body sun IS the real sun", () => {
