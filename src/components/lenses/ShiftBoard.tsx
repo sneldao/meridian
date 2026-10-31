@@ -17,6 +17,8 @@ import { springLock } from "@/lib/motion";
 export interface ShiftDraft {
   plan: DayPlan;
   attempt: number;
+  /** Live runs only: the solver's placement the plan was merged over. */
+  solverDraft?: DayPlan;
 }
 
 export interface ShiftBoardProps {

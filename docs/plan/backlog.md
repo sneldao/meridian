@@ -738,6 +738,148 @@ rides the `plan_candidate` event for the transcript and the eval.
   is a timed message over a synchronous solve, not a real staged reveal of
   windows, clocks and body time. Those would need `DayScene` restructured.
 
+## Round 10 — the crew's work as the artifact, not a feed (2026-10-31)
+
+The run is shown as a feed of events. The field's consensus is to show the
+work on the thing it changes. Ideas below are proposals; none are built except
+where marked.
+
+- **The contested day (proposed, prototype next).** The day card is the stage.
+  The solver's draft (`solverDraft` on `plan_candidate`) renders as ghosted cue
+  slots; Otto's merged submission animates the cues from ghost to final
+  position. The `drift` fields (`minutesMoved`, `kindsChanged`, `cuesKept`) are
+  the animation spec. A FAIL bounces the day back with the violation pinned to
+  the cue that broke. **Gap:** the reducer keeps only the latest candidate, and
+  the recorded fixture carries no `solverDraft`, so the prototype needs either
+  a live recording or a fixture change first.
+- **Lanes with a baton pass (proposed).** One lane per agent on a shared time
+  axis. A handoff is drawn as a visible baton showing what moved and what was
+  dropped. Better than stacked rows for a fixed sequential pipeline only if the
+  handoff is the point; a full node graph adds little here and is skipped.
+- **Run replay as a labelled film (proposed).** `artifacts/crew-runs/*.jsonl`
+  and `Last-Event-ID` already allow replay. A scrubber with playhead, speed and
+  pause, labelled "watch a recorded night shift", makes replay honest rather
+  than passed off as live.
+- **Steering on the artifact (proposed).** Tap a cue and mark it "can't do
+  this" or "too early". The unlocked days go back to drafts, re-solve, and
+  re-lock on the same stage. Reuses `startDay` and the folded check-ins.
+- **The crew asks one question (proposed).** Reuse the `approval_request`
+  pause for a single informed question before planning, for example "anchor
+  light before or after the 7:30 standup?". The cheapest change with the
+  clearest "this is live" signal.
+- **Live state outside the run view (proposed).** A menu row such as "Crew ·
+  Otto drafting D-2 · 2/5 locked". The run already survives navigation; the UI
+  does not say so.
+- **Provenance per cue (proposed).** One tap shows who placed, kept and passed
+  a cue, with its citation. Extends the existing `evline` data.
+
+What we are not doing: generative UI that has agents emit component JSON. It
+solves "no surface exists", which is not this app's gap.
+
+## Round 10 — the agentic surface (direction set 2026-10-31, prototype live on `/dev`)
+
+The user feedback, verbatim: *"it doesn't feel agentic"* and *"not built with
+users at its heart."* Both are accurate, and both are structural, not tonal:
+the consequential decisions are made by code (solver places, gate judges,
+evaluator narrates), the default provider replays a script, and the user's
+only channels into the loop are trip params, one wake question, and did/skip
+marks. An agent you can't steer, interrupt, or argue with reads as a batch
+job with a progress bar — however good the feed's copy is.
+
+**Research base** (named patterns, not vibes): agentic-ux.com (Progress
+Ledger), agenticuxpatterns.com (Execution Progress View), affectUI (Agent
+Lanes, Plan vs Actual), LukeW's Bench/Intent postmortem — full tool-call
+disclosure was "too much," the winning move is work-as-progress-indicator
+that collapses once output arrives. Consensus that matters here:
+
+- **Render the work on the artifact, not in a feed.** A feed is what you
+  show when there is nothing better to draw.
+- **Plan vs Actual** — the proposal as a dashed ghost, reality drawn over
+  it. We already *have* this in data (solver draft vs submission vs gate);
+  it was just never rendered — drift rode the event as three numbers in a
+  log line.
+- **Gate the run, not every step** (Perplexity's Modify/Approve). Our
+  `approval_request` machinery already suspends and resumes a run — it is
+  used for calendar writes and nothing else.
+- **Stopping is a state, not an absence.** Name it, keep partial work,
+  offer resumption.
+- **A run that outlives its screen needs a home** — a list-row with the
+  live step is the strongest observed pattern.
+
+### Concepts (ranked)
+
+1. **The day as a contested object** — the day lane IS the stage: solver
+   draft as dashed ghost, the submission sliding cues into place (drift as
+   motion, not a number), the gate stamping PASS or bouncing FAIL with the
+   violation pinned on the cue that broke. Prototype: `ContestBench` in
+   `src/components/dev/ContestedDay.tsx`, mounted on `/dev` — real
+   `solveDay` + `evaluatePlan`, only the planner's moves scripted. Required
+   contract landed: `plan_candidate` now carries `solverDraft` (additive;
+   absent on replay and on solver-infeasible days), stored on `ShiftDraft`
+   in the reducer.
+2. **Steering on the artifact** — tap a cue → "can't do this / too early" →
+   unlocked days visibly go fluid and re-solve on the same stage. The
+   replan path exists (`checkins` + `startDay`); the *visible re-drawing*
+   is the agentic payoff. Add constraint chips that fold into the
+   adherence floor ("no light before 06:00").
+3. **The crew asks before it locks** — reuse the `approval_request`
+   suspend/resume seam for one analyst question pre-plan ("7:30 standup
+   Tue–Thu — anchor light before or after?"). Cheapest change with the
+   highest "this is alive" signal — a scripted system cannot ask a
+   question about *your* calendar.
+4. **Rex edits the calendar in view** — `proposeMove` slides the event on
+   `CalendarLens` while his reason captions it. Watching an agent move
+   *your* meeting is the most felt-agentic beat available; today it is a
+   text line.
+5. **Run replay as honest film** — the scrubber already exists on `/dev`
+   (`FixtureScrubber` + `useFixturePlayback`). Graduate it: labeled
+   playback of recorded runs (`artifacts/crew-runs/*.jsonl`, the 2h window)
+   rather than replay-as-live. Fixes the replay deception by making it a
+   feature.
+6. **Live state outside the run view** — menu row during a run ("Crew ·
+   Otto drafting D-2 · 2/5 locked"); push on `done` when VAPID is
+   configured.
+7. **Provenance per cue** — extend `.evline`: "placed by solver · kept by
+   Otto · Eastman 2005 · passed gate". The crew's *standards* made legible.
+8. **Flight strips** — one strip per agent turn passed down a rail, showing
+   what went along and what was dropped. Deferred: nice genre fit (the
+   crew is already aviation-flavoured) but the contested day delivers the
+   same legibility with less chrome.
+9. ~~Agent lanes / node graph~~ — skipped deliberately. The pipeline is
+   fixed and sequential; lanes add engineering eye-candy over strips'
+   legibility.
+10. ~~Generative UI (agent-emitted component JSON)~~ — skipped. It solves
+    "no surface exists"; we have purpose-built surfaces.
+
+### Rules the surface is held to
+
+- **Nothing is decorative still binds.** Every element in the contested day
+  is an event: ghost = solver output, slide = drift, stamp = gate verdict.
+- **Every visual read exists as words** — the `.evline` provenance under
+  each row *is* the read; the animation is the enhancement. `RunAnnouncer`
+  keeps speaking the run.
+- **Honest provenance.** The bench caption says which parts are live
+  (solver, gate) and which are scripted (the planner's move). If replay
+  playback ever ships as a surface, it is labelled playback — simulated
+  agency discovered is worse than none claimed.
+- **The gate stays the gate.** No concept may let a user move a cue past
+  the scorer — steering submits constraints and replans through
+  `evaluatePlan`; it never edits a locked plan around it.
+
+### Item split (when this round gets staffed)
+
+- **B first — contracts.** `solverDraft` on `plan_candidate` is done.
+  Remaining: a `crew_question` event reusing the approval seam (concept 3),
+  a `replan-preview` payload or a cheap way to show fluid-days before the
+  replan's first `plan_candidate` lands (concept 2).
+- **A second — renders.** Contested-day graduation from `/dev` into the
+  ShiftBoard row (it already owns drafts/scan/bounce — the ghost layer is
+  the missing piece, not a new surface), CalendarLens live-edit animation,
+  the menu's live-run row.
+- **Do not** build concept 2's tap-to-constrain until the check-in→replan
+  path is visible end-to-end in a browser — the engine is real but the
+  full loop has never had a visual pass.
+
 ## Later / deferred
 
 - **Visual pass on `/spike/globe`** — the ring pulse, flight hairline and

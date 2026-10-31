@@ -7,6 +7,7 @@
 import { useState } from "react";
 import { Card } from "@/components/ui";
 import { FixtureScrubber } from "@/components/dev/FixtureScrubber";
+import { ContestBench } from "@/components/dev/ContestedDay";
 import { RoutePicker } from "@/components/RoutePicker";
 import { ShiftBoard } from "@/components/lenses/ShiftBoard";
 import { WorldLens } from "@/components/lenses/WorldLens";
@@ -71,6 +72,13 @@ export default function DevLenses() {
             <div key={i}>{(l.t / 1000).toFixed(2)}s {l.event.type}</div>
           ))}
         </Card>
+      </section>
+
+      {/* Contested-day prototype: solver draft as ghost, the planner's
+          submission sliding in on top, the gate stamping or bouncing.
+          Live solveDay/evaluatePlan — only the planner's move is scripted. */}
+      <section className="min-h-[260px] overflow-auto rounded-2xl border border-line">
+        <ContestBench />
       </section>
 
       {/* The clock surfaces, on the demo route, with the real solver and the

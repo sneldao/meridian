@@ -90,7 +90,10 @@ resolves any pending calendar approval without writing.
 submission moved from the solver's draft (the shift difference, the minutes
 the cues moved, the kinds added or dropped). It is a number, not a verdict —
 the gate judges the plan — but it is how the transcript and the eval harness
-both see that the draft is the default and how much of it survived.
+both see that the draft is the default and how much of it survived. Live
+planner runs also carry `solverDraft` — the draft itself, so lenses can draw
+the submission against the placement it was merged over (absent on replay
+and on solver-infeasible days).
 
 Errors are `recoverable: true` where the run can continue (e.g. planner
 submitted nothing → `continue`). A provider-level throw mid-run retries once on

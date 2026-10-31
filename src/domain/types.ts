@@ -222,6 +222,12 @@ export type CrewEvent =
   | {
       type: "plan_candidate";
       day: DayPlan;
+      /** The solver's placement the submission was merged over — the ghost
+       *  the candidate can be drawn against. Absent when no draft existed
+       *  (solver-infeasible day) or when the provider is not the live
+       *  planner (the replay path submits the solver's plan itself, so the
+       *  draft is the day). */
+      solverDraft?: DayPlan;
       /** How far the planner's submission moved from the solver's draft.
        *  Absent when the provider is not the live planner (the replay path
        *  submits the solver's plan itself, and there is no drift to report). */

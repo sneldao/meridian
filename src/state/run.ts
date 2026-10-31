@@ -30,6 +30,9 @@ import type {
 export interface ShiftDraft {
   plan: DayPlan;
   attempt: number;
+  /** The solver's placement the plan was merged over — present only on live
+   *  planner runs that had a draft. Lenses draw it as the ghost layer. */
+  solverDraft?: DayPlan;
 }
 
 export interface Briefing {
@@ -278,7 +281,11 @@ function applyEventInner(s: RunState, event: CrewEvent, t: number): RunState {
         ...base,
         activeLabel: label,
         attempts: s.attempts + 1,
-        drafts: withMap(s.drafts, label, { plan: event.day, attempt: (prev?.attempt ?? 0) + 1 }),
+        drafts: withMap(s.drafts, label, {
+          plan: event.day,
+          attempt: (prev?.attempt ?? 0) + 1,
+          solverDraft: event.solverDraft,
+        }),
         // A fresh draft supersedes the stale FAIL — the day goes back under
         // the scanner instead of staying red while Iris re-reads it.
         rejected: withoutSet(s.rejected, label),

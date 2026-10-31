@@ -488,6 +488,7 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
       emit({
         type: "plan_candidate",
         day: candidate,
+        ...(solved ? { solverDraft: solved.plan } : {}),
         ...(drift
           ? {
               drift: {
