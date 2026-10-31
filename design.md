@@ -64,6 +64,13 @@ mode; the ink night side becomes the cinematic default for stages.
 Day/night themes (`--m-*`, `html[data-theme="night"]`) keep flipping the
 working surfaces; ink *stages* are ink in both modes.
 
+`auto` is the destination's sun, not the phone's clock (`src/domain/theme.ts`):
+once a trip exists the app asks the solar model whether the traveller is in
+light, so Tokyo at 07:00 is cream on a phone that still says Berlin 00:00.
+Device rules (OS scheme, 21:00–06:00) apply only until there is a destination;
+the menu names which is governing ("Auto · day in Tokyo"). A manual Light or
+Dark always wins.
+
 ## Typography
 
 - **Display:** Fraunces Variable (opsz + wght, `font-style: normal` — italic
@@ -114,7 +121,11 @@ cubic-bezier(0.22, 1, 0.36, 1) · `--ease-settle` cubic-bezier(0.16, 1, 0.3, 1)
   the true value is what is announced.
 - Reduced-motion fallback: global flatten rule already in `globals.css`
   stands; spatial motion collapses to ≤ 150ms opacity.
-- Only `transform` and `opacity` animate.
+- Only `transform` and `opacity` animate. Paint crossfades (`color`,
+  `background`, `box-shadow`) cost nothing to composite and stay; anything
+  animating a box (`width`, `height`, `margin`, `padding`, `inset`) reflows
+  and does not. Remaining box animations are frozen debt, counted by exact
+  declaration text in `tests/design-contract.test.ts`.
 
 ## Microinteractions stance
 
@@ -144,9 +155,10 @@ cubic-bezier(0.22, 1, 0.36, 1) · `--ease-settle` cubic-bezier(0.16, 1, 0.3, 1)
 - Landing MAY use the globe stage as full-bleed enrichment (it is real/modelled
   data — the product rule "nothing is decorative" holds).
 - App pages MUST NOT add decoration; function carries the page.
-- The day's instrument surfaces (stepper, check-in card, calendar summary,
-  the rail card) MAY break to ≈960px via `.wide` — the same `--hero-out`
-  math the stages use, capped so small viewports only reach the frame edge.
+- The day's instrument surfaces MAY break to ≈960px via `.wide` — the same
+  `--hero-out` math the stages use, capped so small viewports only reach the
+  frame edge. Sanctioned surfaces, in page order: the marks-waiting banner,
+  the day stepper, the check-in card, the calendar summary, the rail card.
   Prose stays in the 720px `.reading` column.
 - Statement pages (`/arrival`) may use one atmospheric ink gradient — the
   sunrise already earned there.
@@ -162,7 +174,9 @@ cubic-bezier(0.22, 1, 0.36, 1) · `--ease-settle` cubic-bezier(0.16, 1, 0.3, 1)
 - **Step-kind data colours** (`--cat-*`): light gold, sleep violet, food
   terracotta, calendar blue, run pine, flight slate — deepened for cream,
   the stage palette on ink. Every step category keeps one hue across glyph,
-  time and sky-strip band; data colours, never chrome.
+  time and sky-strip band; data colours, never chrome. A step with no kind
+  falls back to `--m-faint`, never to the accent: the fallback resolving to a
+  category hue would let an unkinded row claim data it does not have.
 - **The sky-strip motif** (`.tl-sky`): the day's steps drawn as a strip
   above the rail — windows as bands, moments as diamonds, a "now" caret on
   today only. It shares the category hues with the rows below, so strip and

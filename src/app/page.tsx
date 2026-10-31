@@ -199,7 +199,6 @@ export default function Home() {
   const assistant = useAssistantLink();
   const install = useInstallPrompt();
   const feedStale = useFeedStale();
-  const { theme, cycleTheme } = useTheme();
   /** Run state is memory-only; the saved plan + trip let a reload show the
    *  locked plan instead of the example preview. Recomputed when the route
    *  changes or a new briefing lands. */
@@ -234,6 +233,9 @@ export default function Home() {
     restoredTrip ??
     null
   ) as Trip | null;
+  // Below `trip` because auto follows the destination's sun; before a trip
+  // exists there is no destination, so it stays on the device.
+  const { theme, cycleTheme, sunUpNow } = useTheme(trip?.destination ?? null);
 
   const tripKey = trip
     ? `${trip.origin.code}-${trip.destination.code}-${trip.days[0]?.date ?? ""}`
@@ -1152,7 +1154,14 @@ export default function Home() {
               role="menuitem"
               onClick={cycleTheme}
             >
-              Appearance: {theme === "auto" ? "Auto" : theme === "light" ? "Light" : "Dark"}
+              Appearance:{" "}
+              {theme === "auto"
+                ? sunUpNow == null
+                  ? "Auto · your device"
+                  : `Auto · ${sunUpNow ? "day" : "night"} in ${trip?.destination.name ?? "your city"}`
+                : theme === "light"
+                  ? "Light"
+                  : "Dark"}
             </button>
             {(() => {
               const standalone =

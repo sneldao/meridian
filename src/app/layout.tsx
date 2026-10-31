@@ -27,7 +27,7 @@ export default function RootLayout({
       <body className="antialiased">
         {children}
         <Script id="theme-init" strategy="beforeInteractive">
-          {"try{var t=localStorage.getItem('meridian:theme')||'auto';var dark=t==='dark'||(t==='auto'&&((window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)||new Date().getHours()>=21||new Date().getHours()<6));document.documentElement.dataset.theme=dark?'night':''}catch(e){}"}
+          {"try{var k='meridian:theme',t=localStorage.getItem(k)||'auto',p=localStorage.getItem(k+':paint'),dark;if(t==='light')dark=false;else if(t==='dark')dark=true;else if(p!==null)dark=p==='night';else dark=(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)||new Date().getHours()>=21||new Date().getHours()<6;document.documentElement.dataset.theme=dark?'night':''}catch(e){}"}
         </Script>
         <Script id="sw-register" strategy="afterInteractive">
           {"if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(()=>{});}"}
