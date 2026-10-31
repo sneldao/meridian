@@ -46,6 +46,8 @@ import { RunAnnouncer } from "@/components/RunAnnouncer";
 import { CrewTrace } from "@/components/CrewTrace";
 import { CalendarApprovalCard } from "@/components/CalendarApprovalCard";
 import { CrewQuestionCard } from "@/components/CrewQuestionCard";
+import { MorningCheckin } from "@/components/MorningCheckin";
+import { ShiftBoard } from "@/components/lenses/ShiftBoard";
 import { CREW } from "@/agents/crew";
 import { useFocusTrap } from "@/lib/a11y";
 import { friendlyDayLabel } from "@/lib/day-label";
@@ -1240,6 +1242,34 @@ export default function Home() {
             <button type="button" onClick={() => setStreamError(null)} aria-label="Dismiss">
               ×
             </button>
+          </div>
+        )}
+        {/* The plan as the object being worked on, on the surface the
+            traveller is actually on: while a run is live the board draws
+            drafts, rejects and re-locks inline — a replan's days visibly go
+            fluid here, not just on /crew. */}
+        {run.phase === "running" && trip && (
+          <div className="mb-[18px] h-52 overflow-hidden rounded-xl border border-line">
+            <ShiftBoard
+              days={trip.days}
+              drafts={run.drafts}
+              verdicts={run.verdicts}
+              locked={run.locked}
+              activeLabel={run.activeLabel}
+              activeAgent={run.activeAgent}
+              tripKey={tripKey ?? undefined}
+            />
+          </div>
+        )}
+        {run.phase !== "idle" && (
+          <div className="mb-[18px] flex justify-end">
+            <MorningCheckin
+              phase={run.phase}
+              lockedCount={run.locked.size}
+              totalDays={trip?.days.length ?? 5}
+              sessionStartedAt={run.sessionStartedAt}
+              onCheckIn={(extra) => beginStream(extra)}
+            />
           </div>
         )}
         {run.phase !== "idle" && entries.length > 0 && (
