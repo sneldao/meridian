@@ -71,6 +71,7 @@ import { JourneySteps } from "@/components/JourneySteps";
 import { PinnedDayRow } from "@/components/DayStrip";
 import { useRunState, calendarWithMoves, ledgerEvents, ghostGapDeg } from "@/state/run";
 import { meetingReadiness } from "@/domain/readiness";
+import { useOnlineStatus } from "@/lib/use-online-status";
 import {
   initVoice,
   stopAll as stopVoiceAll,
@@ -142,6 +143,7 @@ const MEMORY_TOOL_NAMES = new Set([
 ]);
 
 export default function Home() {
+  const isOnline = useOnlineStatus();
   const [setupOpen, setSetupOpen] = useState(false);
   const [origin, setOrigin] = useState("");
   const [dest, setDest] = useState("");
@@ -1016,6 +1018,11 @@ export default function Home() {
           </button>
 
           <div className="right">
+            {!isOnline && (
+              <span className="offline-pill" role="status" aria-label="Offline mode">
+                ✈ Offline
+              </span>
+            )}
             {/* Item 16 — Calm (the Plan rung) is "words + one number + one CTA".
                 The voice toggle, named agents, and the narrator now live behind
                 the Crew rung on /crew, which has its own voice control. The

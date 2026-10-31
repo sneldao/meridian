@@ -107,7 +107,7 @@ export function RightNowCard({
               onClick={onSkip}
               aria-pressed={isSkip}
             >
-              {isSkip ? "Skipped ✓" : "Skip"}
+              {isSkip ? "Noted ✓" : "Can't do this"}
             </button>
           )}
         </div>

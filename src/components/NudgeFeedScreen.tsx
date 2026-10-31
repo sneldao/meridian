@@ -6,6 +6,7 @@ import { stageSkyFor } from "@/domain/stage-sky";
 import { useLiveDate } from "@/lib/use-live-date";
 import {
   buildDailyNudgesForDay,
+  recoveryTip,
   stepImpactMin,
   type NudgeCategory,
   type TravelerNudge,
@@ -19,6 +20,7 @@ import { performanceMoment } from "@/domain/trip-performance";
 import { DayScene } from "@/components/DayScene";
 import { buildDayScene } from "@/domain/day-scene";
 import { DayCardShare } from "@/components/DayCardShare";
+import { RightNowCard } from "@/components/RightNowCard";
 import { resolvePlaceChoice } from "@/lib/place-choices";
 import { tasteSelectionKey } from "@/domain/taste";
 import type { DestinationPlace } from "@/domain/taste";
@@ -200,6 +202,7 @@ export function NudgeFeedScreen({
   const [showMissed, setShowMissed] = useState(false);
   const [heroWhyId, setHeroWhyId] = useState<string | null>(null);
   const [globeOpen, setGlobeOpen] = useState(false);
+  const touchStartX = useRef<number | null>(null);
   const [dayListOpen, setDayListOpen] = useState(false);
   const [celebrated, setCelebrated] = useState(false);
   // The wake ack is a this-session thank-you, not a permanent banner.
@@ -706,6 +709,19 @@ export function NudgeFeedScreen({
 
   return (
     <>
+      <RightNowCard
+        step={heroNudge ?? null}
+        nowMin={nowMin}
+        isToday={todayIdx === activeDaySpec?.dayIndex}
+        selectedDayLabel={activeDaySpec?.label ?? ""}
+        countdown={countdown}
+        isDone={heroNudge ? completedIds.has(heroNudge.id) : false}
+        isSkip={heroNudge ? isSkipped(heroNudge.id) : false}
+        onDone={heroNudge ? () => doneTap(heroNudge) : undefined}
+        onSkip={heroNudge ? () => skipTap(heroNudge) : undefined}
+        totalSteps={totalSteps}
+        completedCount={completedCount}
+      />
       {expandAllWhy || !scene ? (
         <PerformanceBrief
           moment={heroMtg}
@@ -1082,16 +1098,17 @@ export function NudgeFeedScreen({
                 </p>
               )}
               {isSkipped(heroNudge.id) && (
-                <p className="warn-ink" style={{ margin: 0, fontSize: "12px" }}>
-                  {previewMode ? (
-                    <>Skipped.</>
-                  ) : (
-                    <>
-                      Skipped — {impactCopy(heroNudge.category, "missed")}.
-                      We&apos;ll adjust the rest of your plan when you check in.
-                    </>
+                <div className="tl-recovery-tip">
+                  <p className="tl-recovery-header">Skipped · Recovery suggestion</p>
+                  <p className="tl-recovery-body">
+                    {recoveryTip(heroNudge.category, heroNudge.title)}
+                  </p>
+                  {!previewMode && (
+                    <span className="tl-recovery-note">
+                      Impact: {impactCopy(heroNudge.category, "missed")} · Saved for check-in.
+                    </span>
                   )}
-                </p>
+                </div>
               )}
               {missedNudges.length > 0 && (
                 <div style={{ width: "100%" }}>
@@ -1601,14 +1618,20 @@ export function NudgeFeedScreen({
         </div>
       )}
 
+      {steps.some((n) => skippedIds.has(n.id)) && (
+        <div className="recovery-card" role="status">
+          <strong>Missed a step?</strong> No stress — get 20 minutes of outdoor light at lunch and shift your caffeine curfew back 30 minutes; your plan adapts from there.
+        </div>
+      )}
       {!arrivalView && (
       <section
         className={`tl rise wide${previewMode ? " preview" : ""}`}
         style={{ animationDelay: ".4s" }}
         aria-label={`${currentDayName} — steps`}
-        onTouchStart={(e) => { (window as any).__swipeX = e.touches[0].clientX; }}
+        onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }}
         onTouchEnd={(e) => {
-          const startX = (window as any).__swipeX;
+          const startX = touchStartX.current;
+          touchStartX.current = null;
           if (typeof startX !== "number") return;
           const dx = e.changedTouches[0].clientX - startX;
           if (Math.abs(dx) < 50) return;
@@ -1815,16 +1838,17 @@ export function NudgeFeedScreen({
                       </p>
                     )}
                     {isSkip && (
-                      <p style={{ margin: "6px 0 0", fontSize: "12px", color: "#b04523" }}>
-                        {previewMode ? (
-                          <>Skipped.</>
-                        ) : (
-                          <>
-                            Skipped — {impactCopy(step.category, "missed")}.
-                            We&apos;ll adjust the rest of your plan when you check in.
-                          </>
+                      <div className="tl-recovery-tip">
+                        <p className="tl-recovery-header">Skipped · Recovery suggestion</p>
+                        <p className="tl-recovery-body">
+                          {recoveryTip(step.category, step.title)}
+                        </p>
+                        {!previewMode && (
+                          <span className="tl-recovery-note">
+                            Impact: {impactCopy(step.category, "missed")} · Saved for check-in.
+                          </span>
                         )}
-                      </p>
+                      </div>
                     )}
                     {step.evidence ? (
                       <p
