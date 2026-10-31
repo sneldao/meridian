@@ -323,6 +323,11 @@ src/lib/         voice/ (engine, config, cache, split, align, huddle),
 src/mcp/         MCP server: JSON-RPC dispatch + tool catalogue
 src/app/         pages + api routes (/, /arrival, /review, /history, /outcome,
                  /crew, /shift, /dev)
+
+                 `/crew` keyboard: Space sends the crew out, 1–4 switches
+                 lenses, A toggles the agent drawer; Escape closes overlays
+                 then cancels a live run. Documented on the screen's
+                 onboarding card too — this line is the persistent record.
 artifacts/       runtime handoff artifacts (gitignored)
 scripts/         replay-check, provider-check, smoke (night + morning),
                  eval, seed-graph, verify-commit

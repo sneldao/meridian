@@ -26,9 +26,9 @@ describe("TripEntryScreen (first use)", () => {
   );
 
   test("states the honest value proposition", () => {
-    expect(html).toContain("Show up for what matters.");
+    expect(html).toContain("Your 07:00 meeting in Tokyo is 23:00 body time.");
     expect(html).toContain("Arrive with a plan");
-    expect(html).toContain("Time your light, sleep and caffeine around the trip");
+    expect(html).toContain("Light, sleep and caffeine, timed to your route");
   });
 
   test("offers one primary action and the example", () => {
