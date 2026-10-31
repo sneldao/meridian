@@ -28,6 +28,8 @@ jobs:
         run: bun install --frozen-lockfile
       - name: Install Playwright browsers
         run: bunx playwright install --with-deps chromium
+      - name: Build
+        run: bun run build
       - name: Regenerate baselines
         if: inputs.update_baselines == true
         run: bunx playwright test --update-snapshots
