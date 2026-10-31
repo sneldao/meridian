@@ -30,13 +30,13 @@ export interface ScenarioExperienceProps {
 
 const STEP_LABELS = ["Pick a day", "Scrub the day", "See the plan"] as const;
 
-function readUrlStep(): 0 | 1 | 2 | null {
+export function readUrlStep(): 0 | 1 | 2 | null {
   if (typeof window === "undefined") return null;
   const s = Number(new URLSearchParams(window.location.search).get("step"));
   return s === 0 || s === 1 || s === 2 ? s : null;
 }
 
-function readUrlDay(id: DemoScenarioId, departureDate: string): number | null {
+export function readUrlDay(id: DemoScenarioId, departureDate: string): number | null {
   if (typeof window === "undefined") return null;
   const d = Number(new URLSearchParams(window.location.search).get("day"));
   const demo = buildDemoScenario(id, departureDate, "afternoon");
