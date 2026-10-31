@@ -238,12 +238,15 @@ if one came in via a deep link. A `crew_question` asks at every depth —
 it is a decision, not detail — and the trace stays collapsed at simple.
 While a run is live the menu's top row is its current step ("Crew
 working — name → tool · n/m locked") and links back to the board. The
-menu's destination links (crew, shift, team, arrival) come from the one
+menu's destination links (crew, shift, team) come from the one
 shared list the More sheet uses (`MoreSheet.PLACE_GROUPS` — crew under
 "Inside Meridian", shift and team under "The same engine, other lives"),
 so every place has exactly one name. The payoff is not a destination:
 arrival is reached from the morning-after card on Today and from each
-trip's record on Trips.
+trip's record on Trips. The menu is for going places and working the
+trip — app utilities (activity log, appearance, install, voice) and the
+medical/privacy disclosure moved behind its "Settings & about" row into
+their own sheet, so the menu stays under seven rows.
 
 One ledger (`useTripActions`) serves both the Today checklist and the clock
 explanation: hydrated per trip scope before any write, and a preview scope
@@ -363,10 +366,13 @@ src/components/  NudgeFeedScreen (the Calm `/` surface: next step, timeline,
                  DayStrip, BriefingCard, HandoffBanner, RoutePicker,
                  MorningCheckin, DailyJourney, AgentDrawer, AnchoredPopover,
                  JourneySteps (the four-step progress line — steps are links
-                 when `hrefs` are supplied), lenses/, ui/
-                 `page.tsx` also hosts TripClocks — the ambient "home · here ·
-                 body" line above the feed, body phase = origin clock plus the
-                 shift locked days have actually moved.
+                 when `hrefs` are supplied; on the phone it collapses to a
+                 dot strip where only the current step keeps its label),
+                 lenses/, ui/
+                 Orientation is one merged clock bar (TimezoneClocks with a
+                 `bodyShiftMin` prop): home, destination and the estimated
+                 body clock in a single row — it replaced the two strips
+                 that used to say overlapping things.
 src/lib/         voice/ (engine, config, cache, split, align, huddle),
                  home-entry (URL + stored-route resolution), trip-actions +
                  use-trip-actions (the trip-scoped action ledger and its

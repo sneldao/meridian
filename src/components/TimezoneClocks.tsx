@@ -12,10 +12,16 @@ export function TimezoneClocks({
   origin,
   destination,
   requiredShiftMin,
+  bodyShiftMin,
 }: {
   origin: City;
   destination: City;
   requiredShiftMin?: number;
+  /** Minutes the locked days have actually moved the body clock so far
+   *  (signed). When supplied, the bar carries the third time a disoriented
+   *  traveller needs — where the body thinks it is — so one row replaces
+   *  the two strips that used to say overlapping things. */
+  bodyShiftMin?: number;
 }) {
   const [now, setNow] = useState<Date>(() => new Date());
 
@@ -37,7 +43,7 @@ export function TimezoneClocks({
   const diffDirection = isAhead ? "ahead" : "behind";
 
   return (
-    <div className="tz-clocks-bar" role="region" aria-label="Current city times">
+    <div className="tz-clocks-bar" role="region" aria-label="Home, destination and body-clock times">
       <div className="tz-clock-item">
         <span className="tz-clock-label">{origin.name} (Home)</span>
         <strong className="tz-clock-time">{clockAt(origin.utcOffsetMin, now)}</strong>
@@ -47,6 +53,12 @@ export function TimezoneClocks({
         <span className="tz-clock-label">{destination.name}</span>
         <strong className="tz-clock-time">{clockAt(destination.utcOffsetMin, now)}</strong>
       </div>
+      {bodyShiftMin !== undefined && (
+        <div className="tz-clock-item tz-clock-body">
+          <span className="tz-clock-label">Body (est.)</span>
+          <strong className="tz-clock-time">~{clockAt(origin.utcOffsetMin + bodyShiftMin, now)}</strong>
+        </div>
+      )}
       <div className="tz-clock-diff">
         <span>{diffHours.toFixed(1)}h {diffDirection}</span>
       </div>

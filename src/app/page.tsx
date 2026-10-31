@@ -110,30 +110,6 @@ function clockAt(offsetMin: number, now = new Date()): string {
   return fmtMin(now.getUTCHours() * 60 + now.getUTCMinutes() + offsetMin);
 }
 
-/** Ambient grounding for a disoriented traveller: home, here, and where the
- *  body clock currently sits — origin time plus the shift the locked days
- *  have actually moved it (no locked days → body ≈ home). */
-function TripClocks({ trip, locked }: { trip: Trip; locked: ReadonlyMap<string, DayPlan> }) {
-  const [, setTick] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => setTick((t) => t + 1), 30_000);
-    return () => clearInterval(id);
-  }, []);
-  const now = new Date();
-  const moved = [...locked.values()].reduce((s, d) => s + d.shiftMin, 0);
-  const bodyMin = now.getUTCHours() * 60 + now.getUTCMinutes() + trip.origin.utcOffsetMin + moved;
-  return (
-    <p
-      className="m-0 mb-3 font-mono2 text-xs text-dim"
-      title="home · destination · estimated body-clock phase"
-    >
-      🏠 {trip.origin.code} {clockAt(trip.origin.utcOffsetMin, now)}&ensp;·&ensp;
-      ✈ {trip.destination.code} {clockAt(trip.destination.utcOffsetMin, now)}&ensp;·&ensp;
-      🧬 body ~{fmtMin(bodyMin)}
-    </p>
-  );
-}
-
 /** The day Home should open on: today when the trip spans it, else the first
  *  pre-flight day, else the first day. Used at fetch time and again when a
  *  run finishes — while it runs, the day pills follow the crew's locks. */
@@ -232,6 +208,10 @@ export default function Home() {
     { savedAt: string; trip?: { origin?: { code?: string }; destination?: { code?: string }; requiredShiftMin?: number; direction?: "east" | "west" } | null; score: number }[]
   >([]);
   const [menuOpen, setMenuOpen] = useState(false);
+  // The utilities that used to crowd the menu (activity, appearance, install,
+  // voice, the disclosure) live in their own sheet now, one hop from the
+  // menu's last row.
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [disclosureOpen, setDisclosureOpen] = useState(false);
   const [agentDrawerOpen, setAgentDrawerOpen] = useState(false);
   const [drawerUsed, setDrawerUsed] = useState(false);
@@ -806,13 +786,14 @@ export default function Home() {
         else if (setupOpen) setSetupOpen(false);
         else if (agentDrawerOpen) setAgentDrawerOpen(false);
         else if (routeOpen) setRouteOpen(false);
+        else if (settingsOpen) setSettingsOpen(false);
         else if (menuOpen) setMenuOpen(false);
         else if (run.phase === "running") cancelShift();
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [run.phase, cancelShift, agentDrawerOpen, menuOpen, setupOpen, routeOpen, assistant]);
+  }, [run.phase, cancelShift, agentDrawerOpen, menuOpen, settingsOpen, setupOpen, routeOpen, assistant]);
 
   // Wedge watchdog. Runs only while a run is live, and reports the same
   // recoverable state `onerror` does — the CTA comes back either way.
@@ -867,6 +848,7 @@ export default function Home() {
     setRouteDraft(null);
     setSetupOpen(false);
     setMenuOpen(false);
+    setSettingsOpen(false);
     setPlanView(false);
   }, [reset]);
 
@@ -1086,6 +1068,26 @@ export default function Home() {
     return () => clearTimeout(t);
   }, []);
 
+  // The Appearance row's words, computed once for the settings sheet.
+  const themeLabel =
+    theme === "auto"
+      ? sunUpNow == null
+        ? "Auto · your device"
+        : `Auto · ${sunUpNow ? "day" : "night"} in ${trip?.destination.name ?? "your city"}`
+      : theme === "light"
+        ? "Light"
+        : "Dark";
+  // Install row shows only where installing is a real, available action.
+  const installVisible = (() => {
+    if (typeof window === "undefined") return false;
+    const standalone =
+      window.matchMedia?.("(display-mode: standalone)").matches ||
+      (navigator as { standalone?: boolean }).standalone;
+    if (standalone) return false;
+    const iOS = /iP(hone|ad|od)/.test(navigator.userAgent);
+    return Boolean(install.installEvt) || iOS;
+  })();
+
   return (
     <div className="root">
       <div className="beam" />
@@ -1204,21 +1206,6 @@ export default function Home() {
             >
               {depth === "guided" ? "Calm view" : "Detailed view"}
             </button>
-            {/* The medical boundary and the privacy note, one tap from
-                anywhere. They used to live at the end of the five-step setup,
-                which meant a traveller who never opened the setup never read
-                them. The arrival link is in Places above, carrying the trip. */}
-            <button
-              type="button"
-              className="m"
-              role="menuitem"
-              onClick={() => {
-                setDisclosureOpen(true);
-                setMenuOpen(false);
-              }}
-            >
-              What Meridian is, and is not
-            </button>
             {run.briefing && (
               <button
                 type="button"
@@ -1273,75 +1260,93 @@ export default function Home() {
                 Share plan →
               </button>
             )}
-            <p className="menu-label">App</p>
+            {/* The utilities moved out of the menu — it is for going places
+                and working the trip, not for toggling the app. The medical
+                boundary and the privacy note stay one hop deeper, and still
+                live in the More sheet too, so they are never further than
+                two taps from anywhere. */}
             <button
               type="button"
-              role="menuitem"
               className="m"
+              role="menuitem"
               onClick={() => {
                 setMenuOpen(false);
-                setDrawerUsed(true);
-                setAgentDrawerOpen(true);
+                setSettingsOpen(true);
               }}
             >
-              Activity log
+              Settings &amp; about
             </button>
-            <button
-              type="button"
-              className="m"
-              role="menuitem"
-              onClick={cycleTheme}
-            >
-              Appearance:{" "}
-              {theme === "auto"
-                ? sunUpNow == null
-                  ? "Auto · your device"
-                  : `Auto · ${sunUpNow ? "day" : "night"} in ${trip?.destination.name ?? "your city"}`
-                : theme === "light"
-                  ? "Light"
-                  : "Dark"}
-            </button>
-            {(() => {
-              const standalone =
-                typeof window !== "undefined" &&
-                (window.matchMedia?.("(display-mode: standalone)").matches ||
-                  (navigator as { standalone?: boolean }).standalone);
-              const iOS =
-                typeof window !== "undefined" &&
-                /iP(hone|ad|od)/.test(navigator.userAgent);
-              if (standalone) return null;
-              if (!install.installEvt && !iOS) return null;
-              return (
+          </div>
+        )}
+
+        {/* Settings & about — the sheet behind the menu's last row. Reuses
+            the More sheet's chrome: bottom sheet on the phone, floating
+            panel on wider screens. */}
+        {settingsOpen && (
+          <>
+            <div className="more-sheet-backdrop" role="presentation" onClick={() => setSettingsOpen(false)} />
+            <div role="dialog" aria-modal="true" aria-label="Settings and about" className="more-sheet">
+              <p className="more-sheet-label">Settings</p>
+              <button
+                type="button"
+                className="more-sheet-item"
+                onClick={() => {
+                  setSettingsOpen(false);
+                  setDrawerUsed(true);
+                  setAgentDrawerOpen(true);
+                }}
+              >
+                <span>Activity log</span>
+                <small>everything the crew did, in order</small>
+              </button>
+              <button
+                type="button"
+                className="more-sheet-item"
+                onClick={cycleTheme}
+              >
+                <span>Appearance</span>
+                <small>{themeLabel} — tap to change</small>
+              </button>
+              {installVisible && (
                 <button
                   type="button"
-                  className="m"
-                  role="menuitem"
+                  className="more-sheet-item"
                   onClick={() => {
-                    setMenuOpen(false);
+                    setSettingsOpen(false);
                     install.promptInstall();
                   }}
                 >
-                  Install app
+                  <span>Install app</span>
+                  <small>Meridian on your home screen</small>
                 </button>
-              );
-            })()}
-            {hasSavedPlan && (
+              )}
+              {hasSavedPlan && (
+                <button
+                  type="button"
+                  className="more-sheet-item"
+                  onClick={() => {
+                    setSettingsOpen(false);
+                    void assistant.openSheet();
+                  }}
+                >
+                  <span>Voice assistant</span>
+                  <small>talk the next step through</small>
+                </button>
+              )}
+              <p className="more-sheet-label">About</p>
               <button
                 type="button"
-                className="m"
-                role="menuitem"
+                className="more-sheet-item"
                 onClick={() => {
-                  setMenuOpen(false);
-                  void assistant.openSheet();
+                  setSettingsOpen(false);
+                  setDisclosureOpen(true);
                 }}
               >
-                Voice assistant
+                <span>What Meridian is, and is not</span>
+                <small>timing guidance, not medical advice</small>
               </button>
-            )}
-            <div style={{ padding: "8px 12px 4px", fontSize: "11px", color: "var(--m-muted)" }}>
-              Timing guidance, not medical advice.
             </div>
-          </div>
+          </>
         )}
 
         {/* A failed run, on the surface the traveller is looking at. The AgentDrawer
@@ -1538,6 +1543,7 @@ export default function Home() {
                 origin={trip.origin}
                 destination={trip.destination}
                 requiredShiftMin={trip.requiredShiftMin}
+                bodyShiftMin={[...effectiveLocked.values()].reduce((s, d) => s + d.shiftMin, 0)}
               />
               {routeOpen && (
                 <div style={{ marginTop: 8 }}>
@@ -1647,7 +1653,6 @@ export default function Home() {
             )}
 
             <div ref={guideRef} className="reading">
-              {trip && <TripClocks trip={trip} locked={effectiveLocked} />}
               {/* The plan is a view of Today, not another destination: one
                   switch between the live feed and the signed artifact (the
                   same component /review renders), shown only once a plan

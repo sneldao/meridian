@@ -35,7 +35,7 @@ interface SharedBriefing {
 
 export default async function Image({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const data = loadSharedPlan(id) as
+  const data = (await loadSharedPlan(id)) as
     | { briefing?: SharedBriefing; trip?: SharedTrip | null }
     | null;
   const briefing = data?.briefing;

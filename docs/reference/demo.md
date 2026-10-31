@@ -52,7 +52,8 @@ each agent's output is spoken sentence-by-sentence as tokens stream (no
 waiting for `agent_end`), the spoken prefix lights up in the feed in the
 agent's colour, and the handoff is a multi-voice text-to-dialogue exchange —
 the crew talking the locked plan over in one call (the "huddle"). Without a
-key, voice reads as "unavailable" in the menu and everything else works.
+key, voice reads as "unavailable" in the Settings sheet and everything
+else works.
 
 - `/crew` is the voice operator surface — its menu holds the live-speech
   toggle (Home's menu no longer toggles voice). The BriefingCard **Listen** button

@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 export default async function SharedPlan({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const data = loadSharedPlan(id);
+  const data = await loadSharedPlan(id, { countView: true });
   if (!data) notFound();
   const { briefing, trip } = data as {
     briefing: { summary: string; score: number; days: { label: string; shiftMin: number; interventions: { kind: string; startMin: number; endMin: number }[] }[]; citations: { title: string }[] };

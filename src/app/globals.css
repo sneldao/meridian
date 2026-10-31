@@ -2410,6 +2410,12 @@ html[data-theme="night"] .evline-cite,
   color: var(--m-muted);
   opacity: 0.6;
 }
+/* The third time a disoriented traveller needs — separated so the bar
+   reads as "home → there · body · gap", not four siblings in a row. */
+.tz-clock-body {
+  padding-left: 12px;
+  border-left: 1px solid var(--m-border-2);
+}
 .tz-clock-diff {
   margin-left: auto;
   font-size: 11px;
@@ -4195,11 +4201,41 @@ html[data-theme="night"] .more-sheet-item:hover { background: var(--color-ink-3,
 .hero.slim { grid-template-columns: 1fr; }
 .hero.slim .hr-col { max-width: 720px; margin: 0 auto; width: 100%; }
 
-/* Secondary actions fold away on the phone. A handoff that asks for four
-   things at once is a handoff nobody finishes reading; the calendar
-   subscription is in the menu and the voice is in the header. */
+/* The journey spine stays visible on the phone — collapsed to dots: done
+   and later steps become points on the line, and only the step the
+   traveller is standing on keeps its word. */
 @media (max-width: 480px) {
-  .secondary-action { display: none; }
+  .secondary-action { display: block; }
+  .journey {
+    align-items: center;
+    gap: 10px;
+    margin: 4px 0 0;
+  }
+  .journey-step {
+    font-size: 0;
+    line-height: 0;
+  }
+  .journey-step::before {
+    content: "";
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: currentColor;
+  }
+  .journey-step-link {
+    padding: 6px 2px;
+  }
+  .journey-check {
+    display: none;
+  }
+  .journey-step.now {
+    font-size: 11px;
+    line-height: 1.4;
+  }
+  .journey-step.now::before {
+    content: none;
+  }
 }
 
 /* --- A press response -------------------------------------------------------

@@ -37,4 +37,19 @@ describe("TimezoneClocks (SSR)", () => {
     expect(html).toContain("London");
     expect(html).toContain("8.0h behind");
   });
+
+  test("carries the body-clock estimate when a shift is supplied", () => {
+    const html = renderToStaticMarkup(
+      <TimezoneClocks origin={origin} destination={destination} requiredShiftMin={-480} bodyShiftMin={-90} />
+    );
+    expect(html).toContain("Body (est.)");
+    expect(html).toContain("~");
+  });
+
+  test("omits the body clock when no shift is supplied", () => {
+    const html = renderToStaticMarkup(
+      <TimezoneClocks origin={origin} destination={destination} />
+    );
+    expect(html).not.toContain("Body (est.)");
+  });
 });
