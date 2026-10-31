@@ -17,6 +17,7 @@ import Link from "next/link";
 import { ShiftScreen } from "@/components/dial/ShiftScreen";
 import { DisclosureSheet } from "@/components/dial/DisclosureSheet";
 import { BottomNav } from "@/components/BottomNav";
+import { MoreNav } from "@/components/MoreSheet";
 
 export default function ShiftPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -29,7 +30,7 @@ export default function ShiftPage() {
             Meridian for shift work
           </h1>
           <div className="dial-actions">
-            <Link href="/" className="dial-btn">
+            <Link href="/" className="dial-btn" transitionTypes={["nav-back"]}>
               Travelling instead?
             </Link>
             <button
@@ -39,6 +40,7 @@ export default function ShiftPage() {
             >
               What Meridian is, and is not
             </button>
+            <MoreNav className="dial-btn hidden md:inline-flex" />
           </div>
         </div>
         <p className="dial-sub" style={{ marginTop: 8 }}>

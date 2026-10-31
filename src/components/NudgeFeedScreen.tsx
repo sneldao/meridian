@@ -206,7 +206,17 @@ export function NudgeFeedScreen({
   const [heroWhyId, setHeroWhyId] = useState<string | null>(null);
   const [globeOpen, setGlobeOpen] = useState(false);
   const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
   const [dayListOpen, setDayListOpen] = useState(false);
+  // The day list dismisses like every other overlay: Escape closes it.
+  useEffect(() => {
+    if (!dayListOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setDayListOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [dayListOpen]);
   const [celebrated, setCelebrated] = useState(false);
   // The wake ack is a this-session thank-you, not a permanent banner.
   const [wakeJustAnswered, setWakeJustAnswered] = useState(false);
@@ -1672,16 +1682,25 @@ export function NudgeFeedScreen({
       )}
       {!arrivalView && (
       <section
+        id="journey-days"
         className={`tl rise wide${previewMode ? " preview" : ""}`}
         style={{ animationDelay: ".4s" }}
         aria-label={`${currentDayName} — steps`}
-        onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }}
+        onTouchStart={(e) => {
+          touchStartX.current = e.touches[0].clientX;
+          touchStartY.current = e.touches[0].clientY;
+        }}
         onTouchEnd={(e) => {
           const startX = touchStartX.current;
+          const startY = touchStartY.current;
           touchStartX.current = null;
-          if (typeof startX !== "number") return;
+          touchStartY.current = null;
+          if (typeof startX !== "number" || typeof startY !== "number") return;
           const dx = e.changedTouches[0].clientX - startX;
-          if (Math.abs(dx) < 50) return;
+          const dy = e.changedTouches[0].clientY - startY;
+          // Axis lock: only a clearly horizontal swipe changes days — a
+          // diagonal scroll that drifts sideways must not flip the day.
+          if (Math.abs(dx) < 50 || Math.abs(dx) < 2 * Math.abs(dy)) return;
           if (dx < 0 && activeDayIndex < days.length - 1) onSelectDay(days[activeDayIndex + 1].label);
           if (dx > 0 && activeDayIndex > 0) onSelectDay(days[activeDayIndex - 1].label);
         }}
@@ -1735,6 +1754,14 @@ export function NudgeFeedScreen({
               </button>
             </div>
             {dayListOpen && (
+              <>
+              {/* Dismiss backdrop — taps outside the list close it, like
+                  every other overlay in the app. */}
+              <div
+                aria-hidden="true"
+                onClick={() => setDayListOpen(false)}
+                style={{ position: "fixed", inset: 0, zIndex: 29 }}
+              />
               <div className="card" style={{ position: "absolute", zIndex: 30, top: "calc(100% + 4px)", left: 0, right: 0, padding: 6, display: "flex", flexDirection: "column", gap: 2 }}>
                 {days.map((d) => (
                   <button
@@ -1750,6 +1777,7 @@ export function NudgeFeedScreen({
                   </button>
                 ))}
               </div>
+              </>
             )}
           </div>
         )}

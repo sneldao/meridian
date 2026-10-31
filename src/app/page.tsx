@@ -318,7 +318,11 @@ export default function Home() {
   // probe whether the deployment has a voice engine so the briefing can name
   // the option; the narrator is /crew's, not ours.
   const [voiceAvail, setVoiceAvail] = useState(false);
+  /* Two refs, two dismiss zones: the dropdown panel and its trigger. (The
+     ref used to sit on `.root` — the whole page — so "click outside to
+     close" could never fire.) */
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const menuBtnRef = useRef<HTMLButtonElement | null>(null);
   /** The Edit sheet's panel. `aria-modal` without a focus trap is a claim the
    *  page doesn't honour, so Tab used to escape into the content behind it. */
   const setupPanelRef = useRef<HTMLDivElement | null>(null);
@@ -416,7 +420,9 @@ export default function Home() {
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
+      const t = e.target as Node;
+      if (menuRef.current?.contains(t) || menuBtnRef.current?.contains(t)) return;
+      setMenuOpen(false);
     };
     window.addEventListener("mousedown", handler);
     return () => window.removeEventListener("mousedown", handler);
@@ -780,13 +786,14 @@ export default function Home() {
         if (assistant.open) assistant.closeSheet();
         else if (setupOpen) setSetupOpen(false);
         else if (agentDrawerOpen) setAgentDrawerOpen(false);
+        else if (routeOpen) setRouteOpen(false);
         else if (menuOpen) setMenuOpen(false);
         else if (run.phase === "running") cancelShift();
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [run.phase, cancelShift, agentDrawerOpen, menuOpen, setupOpen, assistant]);
+  }, [run.phase, cancelShift, agentDrawerOpen, menuOpen, setupOpen, routeOpen, assistant]);
 
   // Wedge watchdog. Runs only while a run is live, and reports the same
   // recoverable state `onerror` does — the CTA comes back either way.
@@ -818,57 +825,14 @@ export default function Home() {
   const openSetup = () => setSetupOpen(true);
   const closeSetup = () => setSetupOpen(false);
 
-  const commitRoute = useCallback(
-    (route: HomeRoute) => {
-      if (!isValidHomeRoute(route)) return;
-      esRef.current?.close();
-      reset();
-      setOrigin(route.origin);
-      setDest(route.dest);
-      setDepartureDate(route.date);
-      setFlightChoice(null);
-      setEntry((prev) => ({ mode: "trip", route, clockOpen: prev?.clockOpen ?? false }));
-      setData(null);
-      setTripResolved(false);
-      setTripFetchError(false);
-      setStreamError(null);
-      setRestoredLocked(null);
-      setRestoredCitations([]);
-      setRestoredBaseline(null);
-      setRestoredTrip(null);
-      setRestoredBaselineKind(null);
-      setRestoredItinerary(null);
-      setRouteOpen(false);
-      setRouteDraft(null);
-      setSetupOpen(false);
-      setMenuOpen(false);
-      try {
-        localStorage.setItem("meridian:activeTrip", JSON.stringify(route));
-      } catch {
-        /* best effort */
-      }
-      try {
-        const url = new URL(window.location.href);
-        url.searchParams.set("origin", route.origin);
-        url.searchParams.set("dest", route.dest);
-        url.searchParams.set("date", route.date);
-        url.searchParams.delete("example");
-        window.history.replaceState(null, "", url.toString());
-      } catch {
-        /* ignore */
-      }
-    },
-    [reset],
-  );
-
-  const openEntry = useCallback(() => {
-    setEntryDraft(null);
+  /* The blank-slate half of every entry-mode change: kill the stream and the
+     run, clear the trip and anything restored for it, and fold the overlays
+     back up. Entry-mode transitions push history entries (the browser's Back
+     should walk the states, not exit the app), and the popstate handler below
+     resolves the URL the same way the mount effect does. */
+  const resetTripView = useCallback(() => {
     esRef.current?.close();
     reset();
-    setEntry({ mode: "setup", route: null, clockOpen: false });
-    setOrigin("");
-    setDest("");
-    setDepartureDate(defaultDepartureDate());
     setFlightChoice(null);
     setData(null);
     setTripResolved(false);
@@ -884,51 +848,120 @@ export default function Home() {
     setRouteDraft(null);
     setSetupOpen(false);
     setMenuOpen(false);
+  }, [reset]);
+
+  const commitRoute = useCallback(
+    (route: HomeRoute) => {
+      if (!isValidHomeRoute(route)) return;
+      resetTripView();
+      setOrigin(route.origin);
+      setDest(route.dest);
+      setDepartureDate(route.date);
+      setEntry((prev) => ({ mode: "trip", route, clockOpen: prev?.clockOpen ?? false }));
+      try {
+        localStorage.setItem("meridian:activeTrip", JSON.stringify(route));
+      } catch {
+        /* best effort */
+      }
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.set("origin", route.origin);
+        url.searchParams.set("dest", route.dest);
+        url.searchParams.set("date", route.date);
+        url.searchParams.delete("example");
+        url.searchParams.delete("step");
+        url.searchParams.delete("day");
+        window.history.pushState(null, "", url.toString());
+      } catch {
+        /* ignore */
+      }
+    },
+    [resetTripView],
+  );
+
+  const openEntry = useCallback(() => {
+    setEntryDraft(null);
+    resetTripView();
+    setEntry({ mode: "setup", route: null, clockOpen: false });
+    setOrigin("");
+    setDest("");
+    setDepartureDate(defaultDepartureDate());
     try {
       const url = new URL(window.location.href);
       url.searchParams.delete("origin");
       url.searchParams.delete("dest");
       url.searchParams.delete("date");
       url.searchParams.delete("example");
-      window.history.replaceState(null, "", url.toString());
+      url.searchParams.delete("step");
+      url.searchParams.delete("day");
+      window.history.pushState(null, "", url.toString());
     } catch {
       /* ignore */
     }
-  }, [reset]);
+  }, [resetTripView]);
 
   const exploreExample = useCallback((scenarioId?: DemoScenarioId) => {
-    esRef.current?.close();
-    reset();
+    resetTripView();
     setEntry({ mode: "example", route: null, clockOpen: false, ...(scenarioId ? { scenarioId } : {}) });
     setOrigin("");
     setDest("");
     setDepartureDate(defaultDepartureDate());
-    setFlightChoice(null);
-    setData(null);
     setTripResolved(true);
-    setTripFetchError(false);
-    setStreamError(null);
-    setRestoredLocked(null);
-    setRestoredCitations([]);
-    setRestoredBaseline(null);
-    setRestoredTrip(null);
-    setRestoredBaselineKind(null);
-    setRestoredItinerary(null);
-    setRouteOpen(false);
-    setRouteDraft(null);
-    setSetupOpen(false);
-    setMenuOpen(false);
     try {
       const url = new URL(window.location.href);
       url.searchParams.delete("origin");
       url.searchParams.delete("dest");
       url.searchParams.delete("date");
+      url.searchParams.delete("step");
+      url.searchParams.delete("day");
       url.searchParams.set("example", scenarioId ?? "1");
-      window.history.replaceState(null, "", url.toString());
+      window.history.pushState(null, "", url.toString());
     } catch {
       /* ignore */
     }
-  }, [reset]);
+  }, [resetTripView]);
+
+  /* Back/forward walk the entry states: the URL is the source of truth, so a
+     pop re-resolves the entry exactly the way the mount effect does — trip,
+     example, scenario or setup — and clears whatever the popped-from state
+     had running. */
+  useEffect(() => {
+    const onPop = () => {
+      try {
+        const read = (k: string) => safeStorageGet(() => localStorage.getItem(k));
+        const sp = new URLSearchParams(window.location.search);
+        const resolved = resolveHomeEntry(
+          sp,
+          read("meridian:activeTrip"),
+          read("meridian:lastTrip"),
+        );
+        resetTripView();
+        setEntry(resolved);
+        setTripResolved(resolved.mode === "example");
+        if (resolved.mode === "trip" && resolved.route) {
+          setOrigin(resolved.route.origin);
+          setDest(resolved.route.dest);
+          setDepartureDate(resolved.route.date);
+          try {
+            localStorage.setItem("meridian:activeTrip", JSON.stringify(resolved.route));
+          } catch {
+            /* best effort */
+          }
+        } else {
+          setOrigin("");
+          setDest("");
+          setDepartureDate(defaultDepartureDate());
+        }
+        setCheckInsParam(sp.get("checkins") ?? "");
+        const sd = Number(sp.get("startDay"));
+        setStartDayParam(Number.isNaN(sd) ? 0 : sd);
+      } catch {
+        /* ignore */
+      }
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [resetTripView]);
 
   useEffect(() => {
     if (entry?.mode !== "trip") return;
@@ -1034,7 +1067,7 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="root" ref={menuRef}>
+    <div className="root">
       <div className="beam" />
       <div className="in">
         {/* The one live region on the page. Mounted here rather than inside the
@@ -1063,6 +1096,7 @@ export default function Home() {
                 surface calm. */}
             <button
               type="button"
+              ref={menuBtnRef}
               className="btn"
               onClick={() => setMenuOpen((v) => !v)}
               aria-expanded={menuOpen}
@@ -1075,7 +1109,7 @@ export default function Home() {
 
         {/* Dropdown Menu */}
         {menuOpen && (
-          <div className="menu rise" style={{ animationDelay: ".1s" }} role="menu">
+          <div ref={menuRef} className="menu rise" style={{ animationDelay: ".1s" }} role="menu">
             {/* A run outlives its screen — while one is live, the menu's top
                 row is its current step and a way back to watch it. */}
             {run.phase === "running" && (
@@ -1377,6 +1411,20 @@ export default function Home() {
           </div>
         ) : entry.mode === "setup" ? (
           <div ref={setupRef}>
+            <div className="landing-tease" role="region" aria-label="What you get">
+              <h2 className="landing-tease-title">Arrive better adjusted</h2>
+              <p className="landing-tease-sub">
+                Your 07:00 Tokyo meeting is 23:00 body time. Meridian moves it — or moves you.
+              </p>
+              <div className="landing-tease-artifacts">
+                <span>Body-clock dial + CAS</span>
+                <span>Arrival scorecard</span>
+                <span>Shareable passport</span>
+              </div>
+              <button type="button" className="landing-tease-cta" onClick={() => exploreExample()}>
+                Try the example trip
+              </button>
+            </div>
             <EverydayRhythm />
             <TripEntryScreen
               initialDate={departureDate || defaultDepartureDate()}
@@ -1416,7 +1464,7 @@ export default function Home() {
                 </button>
               </div>
             )}
-            <div ref={setupRef} className="reading">
+            <div ref={setupRef} className="reading" id="journey-trip">
               <button
                 type="button"
                 className="trip-chip"
@@ -1515,6 +1563,12 @@ export default function Home() {
                         ? 3
                         : 2
                     }
+                    hrefs={[
+                      "#journey-trip",
+                      "/review",
+                      "#journey-days",
+                      `/arrival?origin=${origin}&dest=${dest}&date=${departureDate}`,
+                    ]}
                   />
                 </div>
                 <div className="today-cal-action">

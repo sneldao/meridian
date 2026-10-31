@@ -3960,9 +3960,80 @@ html[data-theme="night"] {
   }
   .bottom-nav-item[aria-current="page"] { color: var(--m-accent); }
   .bottom-nav-item:focus-visible { outline: 2px solid var(--m-accent); outline-offset: 2px; }
+  button.bottom-nav-item { border: 0; background: none; font-family: inherit; cursor: pointer; }
+  /* The More tab lights on the back-room surfaces — the traveller is on a
+     page the three tabs don't name, and the bar should say so. */
+  .bottom-nav-item[data-on] { color: var(--m-accent); background: var(--m-tag); }
   /* Room for the bar, so the last thing on the page is never under it. */
   .root { padding-bottom: 78px; }
 }
+
+/* The shared "More" sheet: a bottom sheet on the phone (above the tab bar),
+   a floating panel near the header trigger on wider screens. z-60 keeps it
+   under the disclosure sheet (z-61) so that sheet can layer over it. */
+.more-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 59;
+  background: color-mix(in srgb, var(--m-ink) 30%, transparent);
+}
+.more-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0px));
+  background: var(--m-card);
+  border-top: 1px solid var(--m-border);
+  border-radius: 16px 16px 0 0;
+}
+@media (min-width: 768px) {
+  .more-sheet {
+    left: auto;
+    right: 24px;
+    bottom: auto;
+    top: 64px;
+    width: 280px;
+    border: 1px solid var(--m-border);
+    border-radius: 14px;
+    box-shadow: 0 14px 34px rgba(30, 27, 24, 0.18);
+  }
+}
+.more-sheet-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 12px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--m-ink);
+  text-decoration: none;
+  text-align: left;
+  cursor: pointer;
+}
+.more-sheet-item small {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--m-muted);
+}
+.more-sheet-item:hover { background: #efe2d0; }
+.more-sheet-item:focus-visible { outline: 2px solid #D96B43; outline-offset: 2px; }
+.more-sheet-note {
+  margin: 0;
+  padding: 8px 12px 4px;
+  font-size: 11px;
+  color: var(--m-muted);
+}
+html[data-theme="night"] .more-sheet-item:hover { background: var(--color-ink-3, #2b2825); }
 
 /* The two evidence grades, as chips — the grade and the field evidence are
    two different questions, and one should be readable without the other. */
@@ -5810,3 +5881,10 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 
 .offline-toggle { margin-left: 8px; padding: 4px 8px; border-radius: 999px; border: none; background: var(--m-accent, #d96b43); color: #fff; font-size: 11px; font-weight: 800; cursor: pointer; }
 .offline-hint { display: block; font-size: 11px; margin-top: 4px; }
+
+.landing-tease { padding: 24px 0; text-align: center; }
+.landing-tease-title { font-size: 28px; font-weight: 700; margin: 0 0 8px; }
+.landing-tease-sub { font-size: 14px; color: var(--m-muted); margin: 0 0 16px; }
+.landing-tease-artifacts { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 0 0 16px; }
+.landing-tease-artifacts span { padding: 6px 12px; border-radius: 999px; background: var(--m-card, #fff); border: 1px solid var(--m-border, #ddd); font-size: 12px; font-weight: 700; }
+.landing-tease-cta { padding: 12px 20px; border-radius: 999px; border: none; background: var(--m-accent, #d96b43); color: #fff; font-size: 14px; font-weight: 800; cursor: pointer; }

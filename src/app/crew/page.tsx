@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import { fmtMin } from "@/domain/circadian";
 import { summarizeCheckIn } from "@/domain/adherence";
@@ -17,7 +18,7 @@ import { Button, Card, Badge, KeyHint, AgentChip } from "@/components/ui";
 import { BottomNav } from "@/components/BottomNav";
 import { BriefingCard } from "@/components/BriefingCard";
 import { MorningCheckin } from "@/components/MorningCheckin";
-import { AnchoredPopover } from "@/components/AnchoredPopover";
+import { MoreNav } from "@/components/MoreSheet";
 import { LensShell, type LensId } from "@/components/lenses/LensShell";
 import { WorldLens } from "@/components/lenses/WorldLens";
 import { CrewFeed, type LogEntry } from "@/components/CrewFeed";
@@ -74,7 +75,6 @@ export default function Home() {
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [briefingDismissed, setBriefingDismissed] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
   const trip = (run.trip ?? data?.trip ?? null) as Trip | null;
 
   const esRef = useRef<EventSource | null>(null);
@@ -86,7 +86,6 @@ export default function Home() {
   // to TTS, total display chars, and the current utterance id (karaoke key).
   const uttRef = useRef<Record<string, { uId: string; total: number; sent: number; pending: string; last: string }>>({});
   const uSeqRef = useRef(0);
-  const menuRef = useRef<HTMLDivElement | null>(null);
 
   const stopVoice = useCallback(() => {
     uttRef.current = {};
@@ -141,14 +140,6 @@ export default function Home() {
       clearTimeout(t);
       esRef.current?.close();
     };
-  }, []);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
-    };
-    window.addEventListener("mousedown", handler);
-    return () => window.removeEventListener("mousedown", handler);
   }, []);
 
   const push = useCallback((e: LogEntry) => {
@@ -462,15 +453,21 @@ export default function Home() {
       <header className="mb-4 flex flex-wrap items-center gap-3">
         <div className="shrink-0">
           <div className="flex items-baseline gap-3">
-            <h1 className="text-lg font-bold tracking-[0.3em] text-clay">MERIDIAN</h1>
+            <h1 className="text-lg font-bold tracking-[0.3em] text-clay">
+              <Link href="/" transitionTypes={["nav-back"]} className="text-clay hover:text-paper">MERIDIAN</Link>
+            </h1>
             <span className="hidden text-xs tracking-wide text-clay-2 sm:inline">
               agents that fly ahead of you
             </span>
           </div>
         </div>
 
-        {/* One way back to the plan: the bottom bar's Today tab. The pill
-            switcher is gone, since the bar carries the main destinations. */}
+        {/* Two ways out on every screen: the wordmark above, this link, and on
+            the phone the tab bar's Today tab too. (The bar used to be the only
+            exit — and it's hidden above the phone width.) */}
+        <Link href="/" transitionTypes={["nav-back"]} className="shrink-0 text-xs text-mist hover:text-paper">
+          ← Today
+        </Link>
         {baseline && (
           <div
             className="hidden shrink-0 items-center gap-1.5 rounded-lg border border-line bg-ink-2 px-3 py-1.5 font-mono2 text-xs text-mist xl:flex"
@@ -530,29 +527,15 @@ export default function Home() {
           {voiceOn ? "🔊 Voice on" : "🔈 Voice off"}
         </button>
 
-        <div className="relative ml-auto shrink-0" ref={menuRef}>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setMenuOpen((v) => !v)}
-            aria-expanded={menuOpen}
-            aria-haspopup="menu"
-          >
-            menu
-          </Button>
-          {menuOpen && (
-            <AnchoredPopover anchorRef={menuRef}>
-              <Card className="w-52 p-2 shadow-xl">
-                <div className="space-y-1">
-                  {providerLabel && (
-                    <div className="rounded-lg px-3 py-1.5 text-xs text-dim">
-                      {providerLabel}{providerFallback ? " · fallback" : ""}
-                    </div>
-                  )}
-                </div>
-              </Card>
-            </AnchoredPopover>
+        <div className="ml-auto flex shrink-0 items-center gap-2">
+          {/* The provider is a fact about the run, not a menu — the old
+              "menu" button opened a popover with no items in it. */}
+          {providerLabel && (
+            <span className="hidden rounded-lg px-2 py-1 text-xs text-dim lg:inline">
+              {providerLabel}{providerFallback ? " · fallback" : ""}
+            </span>
           )}
+          <MoreNav className="hidden items-center justify-center gap-2 rounded-lg border border-line px-3 py-1.5 text-xs font-bold text-mist transition-all hover:border-mist hover:text-paper sm:inline-flex" />
         </div>
       </header>
 

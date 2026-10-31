@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Card } from "@/components/ui";
 import { BottomNav } from "@/components/BottomNav";
+import { MoreNav } from "@/components/MoreSheet";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { CrewEvent } from "@/domain/types";
 import { meetingReadiness } from "@/domain/readiness";
@@ -80,9 +81,10 @@ export default function TeamPage() {
     <main className="mx-auto max-w-6xl px-6 py-8 pb-20 font-mono2 text-paper md:pb-8">
       <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <Link href="/" className="text-xs text-mist hover:text-paper">
+          <Link href="/" transitionTypes={["nav-back"]} className="text-xs text-mist hover:text-paper">
             ← run a shift
           </Link>
+          <MoreNav className="ml-3 hidden text-xs text-mist hover:text-paper md:inline" />
           <h1 className="mt-2 font-mono2 text-2xl font-bold tracking-[0.22em]">TEAM · 12 CREWS</h1>
           <p className="mt-1 text-xs text-mist">
             {streaming

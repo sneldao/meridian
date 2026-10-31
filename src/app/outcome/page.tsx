@@ -90,7 +90,7 @@ export default function OutcomePage() {
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-8">
-      <PageHeader title="How did your trip go?" />
+      <PageHeader title="How did your trip go?" backHref="/arrival" backLabel="← Back to arrival" />
 
       {hasPlan !== false && (
         <p className="text-sm leading-relaxed text-mist">
