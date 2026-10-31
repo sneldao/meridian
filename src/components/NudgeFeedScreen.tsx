@@ -1865,6 +1865,9 @@ export function NudgeFeedScreen({
           );
         })}
         </div>
+        {steps.length > 0 && (
+          <p className="tl-hint">Swipe right to mark done, left to skip · tap a step for why</p>
+        )}
         {steps.length === 0 && (
           <p className="tl-empty">
             {isPostFlightDay
