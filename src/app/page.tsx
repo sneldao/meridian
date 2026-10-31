@@ -1051,6 +1051,9 @@ export default function Home() {
             >
               Trip settings
             </button>
+            <Link href="/?depth=guided" className="m" role="menuitem" onClick={() => setMenuOpen(false)}>
+              Detailed view
+            </Link>
             <Link href="/crew" className="m" role="menuitem" transitionTypes={["nav-forward"]} onClick={() => setMenuOpen(false)}>
               AI at work
             </Link>
