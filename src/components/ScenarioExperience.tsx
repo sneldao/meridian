@@ -6,8 +6,9 @@ import { buildTasteItinerary } from "@/domain/taste-itinerary";
 import { resolvePlaceChoice } from "@/lib/place-choices";
 import { usePlaceChoices } from "@/lib/use-place-choices";
 import { sampleTasteProfile, SAMPLE_TASTE_LABEL } from "@/lib/sample-taste";
-import { DayScene } from "@/components/DayScene";
-import { buildDayScene } from "@/domain/day-scene";
+import { DayScene, initialSceneMinute } from "@/components/DayScene";
+import { buildDayScene, inspectDayScene } from "@/domain/day-scene";
+import { fmtMin } from "@/domain/circadian";
 import { DayCardShare } from "@/components/DayCardShare";
 import { ArrivalDayView } from "@/components/ArrivalDayView";
 import { buildDailyNudgesForDay } from "@/domain/nudges";
@@ -29,12 +30,42 @@ export interface ScenarioExperienceProps {
 
 const STEP_LABELS = ["Pick a day", "Scrub the day", "See the plan"] as const;
 
+function readUrlStep(): 0 | 1 | 2 | null {
+  if (typeof window === "undefined") return null;
+  const s = Number(new URLSearchParams(window.location.search).get("step"));
+  return s === 0 || s === 1 || s === 2 ? s : null;
+}
+
+function readUrlDay(id: DemoScenarioId, departureDate: string): number | null {
+  if (typeof window === "undefined") return null;
+  const d = Number(new URLSearchParams(window.location.search).get("day"));
+  const demo = buildDemoScenario(id, departureDate, "afternoon");
+  return demo.trip.days.some((x) => x.dayIndex === d) ? d : null;
+}
+
 export function ScenarioExperience({ id, departureDate, onChooseScenario, onMakeTrip, onBack, initialStep = 0 }: ScenarioExperienceProps & { initialStep?: 0 | 1 | 2 }) {
-  const [step, setStep] = useState<0 | 1 | 2>(initialStep);
+  const [step, setStep] = useState<0 | 1 | 2>(() => readUrlStep() ?? initialStep);
   const [meetingTime, setMeetingTime] = useState<"morning" | "afternoon">("afternoon");
   const [profileKey, setProfileKey] = useState<string | null>(null);
-  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const [selectedDay, setSelectedDay] = useState<number | null>(() => readUrlDay(id, departureDate));
+  const [minute, setMinute] = useState<number | null>(null);
   const demo = useMemo(() => buildDemoScenario(id, departureDate, meetingTime), [id, departureDate, meetingTime]);
+
+  const syncUrl = (nextStep: number, nextDay: number | null) => {
+    const url = new URL(window.location.href);
+    if (nextStep === 0) url.searchParams.delete("step"); else url.searchParams.set("step", String(nextStep));
+    if (nextDay === null) url.searchParams.delete("day"); else url.searchParams.set("day", String(nextDay));
+    window.history.replaceState(null, "", url.toString());
+  };
+  const goToStep = (next: 0 | 1 | 2) => {
+    setStep(next);
+    syncUrl(next, selectedDay);
+  };
+  const chooseDay = (dayIndex: number) => {
+    setSelectedDay(dayIndex);
+    setMinute(null);
+    syncUrl(step, dayIndex);
+  };
   const profile = useMemo(
     () => sampleTasteProfile(profileKey ?? demo.scenario.profile),
     [profileKey, demo.scenario.profile],
@@ -110,7 +141,7 @@ export function ScenarioExperience({ id, departureDate, onChooseScenario, onMake
       {step === 0 && (
       <div className="scenario-days" role="group" aria-label="Days">
         {demo.trip.days.map((d) => (
-          <button key={d.dayIndex} type="button" aria-pressed={d.dayIndex === day} onClick={() => setSelectedDay(d.dayIndex)} className="taste-button taste-button--ghost">{d.label} · {d.date.slice(5)}</button>
+          <button key={d.dayIndex} type="button" aria-pressed={d.dayIndex === day} onClick={() => chooseDay(d.dayIndex)} className="taste-button taste-button--ghost">{d.label} · {d.date.slice(5)}</button>
         ))}
       </div>
       )}
@@ -121,9 +152,11 @@ export function ScenarioExperience({ id, departureDate, onChooseScenario, onMake
           example
           eventSource="fixture"
           idea={resolved}
+          minute={minute ?? undefined}
+          onMinuteChange={setMinute}
           onSelectDay={(label) => {
             const m = demo.trip.days.find((d) => d.label === label);
-            if (m) setSelectedDay(m.dayIndex);
+            if (m) chooseDay(m.dayIndex);
           }}
         >
           <DayCardShare
@@ -138,6 +171,11 @@ export function ScenarioExperience({ id, departureDate, onChooseScenario, onMake
         </DayScene>
       )}
 
+      {step === 2 && scene && (
+        <p role="status" className="scenario-source">
+          Plan for {fmtMin(inspectDayScene(scene, minute ?? initialSceneMinute(scene)).localMin)} local time. Scrub the day to see the plan at another moment.
+        </p>
+      )}
       {step === 2 && spec && (
         <ArrivalDayView
           destination={dayPlace(demo.trip, spec.dayIndex).city}
@@ -167,8 +205,8 @@ export function ScenarioExperience({ id, departureDate, onChooseScenario, onMake
         />
       )}
       <nav className="scenario-nav" aria-label="Step controls">
-        {step > 0 && <button type="button" className="taste-button taste-button--ghost" onClick={() => setStep((step - 1) as 0 | 1 | 2)}>← Back</button>}
-        {step < 2 && <button type="button" className="entry-cta" onClick={() => setStep((step + 1) as 0 | 1 | 2)}>{step === 0 ? "Scrub this day" : "See the plan"}</button>}
+        {step > 0 && <button type="button" className="taste-button taste-button--ghost" onClick={() => goToStep((step - 1) as 0 | 1 | 2)}>← Back</button>}
+        {step < 2 && <button type="button" className="entry-cta" onClick={() => goToStep((step + 1) as 0 | 1 | 2)}>{step === 0 ? "Scrub this day" : "See the plan"}</button>}
       </nav>
       {step === 2 && (
       <>

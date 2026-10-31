@@ -18,16 +18,26 @@ export interface DaySceneProps {
   idea?: ResolvedPlaceChoice;
   onSelectDay?: (label: string) => void;
   children?: ReactNode;
+  minute?: number;
+  onMinuteChange?: (minute: number) => void;
+}
+
+export function initialSceneMinute(scene: DaySceneModel): number {
+  return scene.momentDayIndex === scene.dayIndex && scene.moment
+    ? scene.moment.localMin
+    : scene.windows.find((w) => w.kind === "seek")?.startMin ?? 720;
 }
 
 export function DayScene(props: DaySceneProps) {
-  const { scene, example, exampleBaseline, preview, eventSource, idea, onSelectDay, children } = props;
+  const { scene, example, exampleBaseline, preview, eventSource, idea, onSelectDay, children, minute: controlledMinute, onMinuteChange } = props;
   const uid = useId();
-  const initial =
-    scene.momentDayIndex === scene.dayIndex && scene.moment
-      ? scene.moment.localMin
-      : scene.windows.find((w) => w.kind === "seek")?.startMin ?? 720;
-  const [minute, setMinute] = useState(initial);
+  const initial = initialSceneMinute(scene);
+  const [localMinute, setLocalMinute] = useState(initial);
+  const minute = controlledMinute ?? localMinute;
+  const setMinute = (m: number) => {
+    setLocalMinute(m);
+    onMinuteChange?.(m);
+  };
   const [playing, setPlaying] = useState(false);
   const reduced = useReducedMotion();
   const read = useMemo(() => inspectDayScene(scene, minute), [scene, minute]);
@@ -36,11 +46,12 @@ export function DayScene(props: DaySceneProps) {
     if (!playing || reduced) return;
     const t = setTimeout(() => {
       const next = Math.min(1439, minute + 10);
-      setMinute(next);
+      setLocalMinute(next);
+      onMinuteChange?.(next);
       if (next >= 1439) setPlaying(false);
     }, 80);
     return () => clearTimeout(t);
-  }, [playing, reduced, minute]);
+  }, [playing, reduced, minute, onMinuteChange]);
 
   useEffect(() => {
     const onVis = () => {
