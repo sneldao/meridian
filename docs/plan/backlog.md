@@ -902,21 +902,40 @@ that collapses once output arrives. Consensus that matters here:
 
 ## Round 11 — The Core Mobile Experience, Ambient Glanceability & Recovery Pass (2026-10-31)
 
-Addresses the traveller's real-world environment (brain fog, mobile thumb reach, touch collisions, offline flights, and unexpected disruption).
+Addresses the traveller's real-world environment (brain fog, mobile thumb reach, touch collisions, offline flights, and unexpected disruption). Shipped in `c9a8e1c` and `3cfe43c`.
 
 ### Items (ranked)
 
-1. **UndoToast mobile elevation (P1, Bug/Ergonomics).** `UndoToast` sits at `bottom: 24px`, directly colliding with `.bottom-nav` on phones (`bottom: 0`, ~84px with safe-area padding). Move toast positioning to clear the bottom nav on mobile viewports (`calc(env(safe-area-inset-bottom, 0px) + 72px)` on narrow screens, `24px` on desktop) using CSS variable or responsive styling.
+1. **UndoToast mobile elevation (P1, Bug/Ergonomics).** `UndoToast` sits at `bottom: 24px`, directly colliding with `.bottom-nav` on phones (`bottom: 0`, ~84px with safe-area padding). Move toast positioning to clear the bottom nav on mobile viewports (`calc(env(safe-area-inset-bottom, 0px) + 72px)` on narrow screens, `24px` on desktop) using CSS variable or responsive styling. (Shipped)
 2. **The "Right Now" glanceable status card (P1, Product/UX).** High-cognitive-fatigue travellers opening Today need an instant answer to *"What should I do right this second?"* Render a prominent ambient status banner at the top of Today / active day:
    - Current active window (e.g. `☀️ Seek bright light · Active until 10:30 (45m left)`) or countdown to the next upcoming intervention (e.g. `☕ Caffeine curfew in 1h 15m (Cutoff at 14:00)`).
-   - Low cognitive load, high contrast, zero scrolling required to see immediate instruction.
+   - Low cognitive load, high contrast, zero scrolling required to see immediate instruction. (Shipped)
 3. **Adaptive recovery on skipped interventions (P2, Product/Honesty).** Skipping a nudge currently registers a mark without offering guidance, feeling punitive or dead-end. When a critical intervention (morning light, caffeine, or sleep) is marked skipped:
    - Show an immediate, non-punitive circadian recovery tip (e.g., *"Missed morning light? Get 20m of outdoor light at midday and avoid evening blue light"*).
-   - Clarify the scientific rationale without blaming the traveller.
-4. **Offline & in-flight reassurance badge (P2, Polish).** When a user is offline (airplane mode or poor cellular), show a calm indicator: *"Offline ready · Full plan saved on device"*.
+   - Clarify the scientific rationale without blaming the traveller. (Shipped)
+4. **Offline & in-flight reassurance badge (P2, Polish).** When a user is offline (airplane mode or poor cellular), show a calm indicator: *"Offline ready · Full plan saved on device"*. (Shipped)
 5. **Day navigation swipe affordance & scrubber micro-steps (P2, Mobile interaction).**
    - Provide touch swipe support (touch start/end) across the day rail to switch days smoothly with a thumb.
-   - Add stepped ±15m micro-jump buttons alongside the 1440-minute slider so precise times can be selected on phone touchscreens.
+   - Add stepped ±15m micro-jump buttons alongside the 1440-minute slider so precise times can be selected on phone touchscreens. (Shipped)
+
+## Round 12 — Circadian Habit Loop & Wearable Photobiology Pass (2026-10-31)
+
+Bridges quantified wearable health data (Whoop / Oura / Garmin) with photobiological causation without adding stacked card bloat. Principle: *Ambient Jewels, Not Stacked Blocks*.
+
+### Concepts & Architecture (ranked)
+
+1. **The Three Sky Complications (P1, Ambient UI).**
+   Instead of new text cards, integrate three tactile circadian milestones directly into the existing solar timeline (`DaySkyStrip` and Hero Horizon):
+   - **☀️ Anchor Photons (Morning):** Micro-badge pinned at local dawn/wake + 30m. Tapping banks morning photons with haptic feedback.
+   - **☕ Clearance Curfew (Afternoon):** Hairline marker at target bedtime - 10h (adenosine receptor protection countdown).
+   - **🌙 DLMO / Virtual Sunset (Evening):** Twilight gradient notch 90m before target sleep window (dim-light melatonin onset).
+   Zero block clutter; ambient visual markers with tactile micro-interactions.
+2. **Circadian Alignment Score (CAS) & Quantified Payoff (P1, Metric/Payoff).**
+   - Wearables track duration; CAS measures circadian timing match ($Hours\ inside\ biological\ sleep\ gate / Total\ sleep$).
+   - Kept off the daily active checklist (no cognitive fatigue when tired); surfaced on `/arrival` and `/outcome` as the quantified scientific payoff ("CAS 88% · Aligned sleep · Deep sleep protected").
+   - Grounded in Eastman (2005) & Burgess (2010) phase response literature.
+3. **Everyday Circadian Anchor (P2, Retention Loop).**
+   - When no flight is active, Today smoothly pivots to home city solar rhythm, giving travellers a 365-day photobiology ritual rather than an empty flight form.
 
 
 ## Later / deferred

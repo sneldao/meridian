@@ -766,8 +766,8 @@ export function HeroDawnPanel({ trip, owedMin, beam, readinessPct, readinessSour
           </em>
           {readinessPct > 0
             ? readinessSource === "preview"
-              ? "adjusted before you fly (example)"
-              : "adjusted before you fly"
+              ? "banked on preview"
+              : "of shift locked"
             : "adjusted so far"}
         </div>
       </div>

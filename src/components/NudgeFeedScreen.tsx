@@ -1348,7 +1348,7 @@ export function NudgeFeedScreen({
         <div className="rise" style={{ animationDelay: ".25s", margin: "8px 4px 0", fontSize: "12px", color: "var(--m-muted)", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <span>
             {dawnOwedMin > 0
-              ? <>Your body clock is {Math.round(dawnOwedMin / 6) / 10}h {trip.direction === "east" ? "behind" : "ahead"} {trip.destination.name} time · {readinessPct}% adjusted before you fly{readiness.source === "preview" ? " (example)" : ""}</>
+              ? <>Your body clock is {Math.round(dawnOwedMin / 6) / 10}h {trip.direction === "east" ? "behind" : "ahead"} {trip.destination.name} time · {readinessPct}% {readiness.source === "preview" ? "banked on preview" : "of shift locked"}</>
               : <>Your body clock is on {trip.destination.name} time</>}
           </span>
           <button
