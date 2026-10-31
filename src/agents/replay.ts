@@ -252,7 +252,7 @@ export async function* runReplay(trip: Trip = DEMO_TRIP): AsyncGenerator<CrewEve
   yield { type: "agent_end", agent: "negotiator" };
 
   // --- Briefing ---------------------------------------------------------------
-  const ics = buildIcs(cal, trip);
+  const ics = buildIcs(cal, trip, locked);
   // Same aggregation as the live orchestrator: mean of the passing verdicts.
   const scores = evals.filter((e) => e.feasible).map((e) => e.score);
   const meanScore = scores.length ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 100) / 100 : 0;

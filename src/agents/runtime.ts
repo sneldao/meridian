@@ -699,7 +699,7 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
           },
         },
         commitPlan: bare("Stage the rescheduled calendar for review", async () => {
-          state.ics = buildIcs(state.calendar, trip);
+          state.ics = buildIcs(state.calendar, trip, state.lockedDays);
           return { staged: state.calendar.filter((e) => e.movedTo).length, approvalRequired: calendarSource === "google" };
         }),
       },
@@ -733,7 +733,7 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
     logLine(`negotiator verified — ${state.calendar.filter((e) => e.movedTo).length} moves hold against the locked plan`);
   }
 
-  if (!state.ics) state.ics = buildIcs(state.calendar, trip);
+  if (!state.ics) state.ics = buildIcs(state.calendar, trip, state.lockedDays);
 
   const proposedMoves = state.moves.map((m) => ({ ...m, from: { ...m.from }, to: { ...m.to } }));
 
@@ -782,7 +782,7 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
     if (result.status !== "applied") {
       state.calendar = preNegotiation.map((e) => ({ ...e }));
       state.moves = [];
-      state.ics = buildIcs(state.calendar, trip);
+      state.ics = buildIcs(state.calendar, trip, state.lockedDays);
       emit({ type: "calendar_restore", calendar: state.calendar });
     }
   }

@@ -140,7 +140,7 @@ export async function* runMorningReplay(opts: {
   yield {
     type: "briefing",
     summary,
-    ics: buildIcs(cal, trip),
+    ics: buildIcs(cal, trip, locked),
     score: meanScore,
     citations,
     days: locked,
