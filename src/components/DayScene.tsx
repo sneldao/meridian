@@ -153,40 +153,43 @@ export function DayScene(props: DaySceneProps) {
             </button>
           )}
         </div>
-        {(["seek", "reduce", "sleep"] as const).map((k) => {
-          const lanes = scene.windows.filter((w) => w.kind === k);
-          const name = k === "seek" ? "Seek light" : k === "reduce" ? "Reduce light" : "Sleep";
-          return (
-            <div key={k} className="day-scene-lane">
-              <span>{name}</span>
-              <div className="day-scene-track">
-                {lanes.map((w) => (
-                  <span
-                    key={w.id}
-                    className="day-scene-window"
-                    data-kind={kindOf(w.kind)}
-                    style={{ left: `${(w.startMin / 1440) * 100}%`, width: `${((w.endMin - w.startMin) / 1440) * 100}%` }}
-                    title={`${w.label} ${fmtMin(w.startMin)}–${w.endMin === 1440 ? "24:00" : fmtMin(w.endMin)}`}
-                  />
-                ))}
+        <details className="day-scene-details">
+          <summary>Light and sleep windows</summary>
+          {(["seek", "reduce", "sleep"] as const).map((k) => {
+            const lanes = scene.windows.filter((w) => w.kind === k);
+            const name = k === "seek" ? "Seek light" : k === "reduce" ? "Reduce light" : "Sleep";
+            return (
+              <div key={k} className="day-scene-lane">
+                <span>{name}</span>
+                <div className="day-scene-track">
+                  {lanes.map((w) => (
+                    <span
+                      key={w.id}
+                      className="day-scene-window"
+                      data-kind={kindOf(w.kind)}
+                      style={{ left: `${(w.startMin / 1440) * 100}%`, width: `${((w.endMin - w.startMin) / 1440) * 100}%` }}
+                      title={`${w.label} ${fmtMin(w.startMin)}–${w.endMin === 1440 ? "24:00" : fmtMin(w.endMin)}`}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
-          );
-        })}
-        <div className="day-scene-jumps">
-          {scene.windows.map((w) => (
-            <button
-              key={w.id}
-              type="button"
-              data-active={read.localMin >= w.startMin && read.localMin < w.endMin}
-              onClick={() => { setPlaying(false); setMinute(w.startMin); }}
-            >
-              {w.label} {fmtMin(w.startMin)}–{w.endMin === 1440 ? "24:00" : fmtMin(w.endMin)}
-              {w.fromEarlierDay && " · from earlier day"}
-              {w.continuesAfter && " · continues tomorrow"}
-            </button>
-          ))}
-        </div>
+            );
+          })}
+          <div className="day-scene-jumps">
+            {scene.windows.map((w) => (
+              <button
+                key={w.id}
+                type="button"
+                data-active={read.localMin >= w.startMin && read.localMin < w.endMin}
+                onClick={() => { setPlaying(false); setMinute(w.startMin); }}
+              >
+                {w.label} {fmtMin(w.startMin)}–{w.endMin === 1440 ? "24:00" : fmtMin(w.endMin)}
+                {w.fromEarlierDay && " · from earlier day"}
+                {w.continuesAfter && " · continues tomorrow"}
+              </button>
+            ))}
+          </div>
+        </details>
         <p className="day-scene-caption">
           {read.activeWindows.length
             ? read.activeWindows.map((w) => w.label).join(" · ")

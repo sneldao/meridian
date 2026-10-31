@@ -27,7 +27,10 @@ export interface ScenarioExperienceProps {
   onBack: () => void;
 }
 
-export function ScenarioExperience({ id, departureDate, onChooseScenario, onMakeTrip, onBack }: ScenarioExperienceProps) {
+const STEP_LABELS = ["Pick a day", "Scrub the day", "See the plan"] as const;
+
+export function ScenarioExperience({ id, departureDate, onChooseScenario, onMakeTrip, onBack, initialStep = 0 }: ScenarioExperienceProps & { initialStep?: 0 | 1 | 2 }) {
+  const [step, setStep] = useState<0 | 1 | 2>(initialStep);
   const [meetingTime, setMeetingTime] = useState<"morning" | "afternoon">("afternoon");
   const [profileKey, setProfileKey] = useState<string | null>(null);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
@@ -103,12 +106,15 @@ export function ScenarioExperience({ id, departureDate, onChooseScenario, onMake
       {id === "jason" && meetingTime === "morning" && !demo.plans.some((p) => p.dayIndex === demo.trip.departureDayIndex + 1) && (
         <p role="status" className="taste-note">The current model could not fit this day around the morning meeting. Try the later slot, or review the plan.</p>
       )}
+      <p className="scenario-steps" aria-live="polite">Step {step + 1} of 3 · {STEP_LABELS[step]}</p>
+      {step === 0 && (
       <div className="scenario-days" role="group" aria-label="Days">
         {demo.trip.days.map((d) => (
           <button key={d.dayIndex} type="button" aria-pressed={d.dayIndex === day} onClick={() => setSelectedDay(d.dayIndex)} className="taste-button taste-button--ghost">{d.label} · {d.date.slice(5)}</button>
         ))}
       </div>
-      {scene && (
+      )}
+      {step === 1 && scene && (
         <DayScene
           key={`${scene.city.code}:${scene.date}:${scene.moment?.eventId ?? ""}:${scene.moment?.localMin ?? ""}`}
           scene={scene}
@@ -132,15 +138,7 @@ export function ScenarioExperience({ id, departureDate, onChooseScenario, onMake
         </DayScene>
       )}
 
-      <fieldset className="scenario-toggle">
-        <legend>Fictional taste preference</legend>
-        {(["bjork", "luke"] as const).map((k) => {
-          const p = sampleTasteProfile(k);
-          return p && <button key={k} type="button" aria-pressed={profile?.key === k} onClick={() => setProfileKey(k)} className="taste-button taste-button--ghost">{p.favorites[0].name}</button>;
-        })}
-      </fieldset>
-      <p role="status" className="scenario-source">Showing recorded suggestions for {profile?.favorites.map((f) => f.name).join(", ")}. {SAMPLE_TASTE_LABEL} · not a live lookup.</p>
-      {spec && (
+      {step === 2 && spec && (
         <ArrivalDayView
           destination={dayPlace(demo.trip, spec.dayIndex).city}
           date={spec.date}
@@ -168,10 +166,29 @@ export function ScenarioExperience({ id, departureDate, onChooseScenario, onMake
           tasteStatus={itinerary?.status}
         />
       )}
+      <nav className="scenario-nav" aria-label="Step controls">
+        {step > 0 && <button type="button" className="taste-button taste-button--ghost" onClick={() => setStep((step - 1) as 0 | 1 | 2)}>← Back</button>}
+        {step < 2 && <button type="button" className="entry-cta" onClick={() => setStep((step + 1) as 0 | 1 | 2)}>{step === 0 ? "Scrub this day" : "See the plan"}</button>}
+      </nav>
+      {step === 2 && (
+      <>
+      <details className="scenario-taste">
+        <summary>Change taste preference · {profile?.favorites[0]?.name}</summary>
+        <fieldset className="scenario-toggle">
+          <legend>Fictional taste preference</legend>
+          {(["bjork", "luke"] as const).map((k) => {
+            const p = sampleTasteProfile(k);
+            return p && <button key={k} type="button" aria-pressed={profile?.key === k} onClick={() => setProfileKey(k)} className="taste-button taste-button--ghost">{p.favorites[0].name}</button>;
+          })}
+        </fieldset>
+        <p role="status" className="scenario-source">Showing recorded suggestions for {profile?.favorites.map((f) => f.name).join(", ")}. {SAMPLE_TASTE_LABEL} · not a live lookup.</p>
+      </details>
       <div className="scenario-cta">
         <button type="button" className="entry-cta" onClick={() => onMakeTrip({ origin: "LHR", dest: "HND", date: departureDate })}>Make this my trip</button>
         <p className="scenario-sub">Start with this route. Add your own details before saving.</p>
       </div>
+      </>
+      )}
     </div>
   );
 }

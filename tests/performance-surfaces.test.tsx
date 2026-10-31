@@ -82,10 +82,13 @@ describe("ScenarioExperience + prefill (SSR)", () => {
         const h = renderToStaticMarkup(createElement(ScenarioExperience, { id, departureDate: "2026-11-04", onChooseScenario: () => {}, onMakeTrip: () => {}, onBack: () => {} }));
         expect(h).toContain("Imagined demo scenarios");
         expect(h).toContain("not their actual data or endorsements");
-        expect(h).toContain("Recorded Qloo sample");
-        expect(h).toContain("Make this my trip");
-        expect(h).not.toContain(">Done<");
-        expect(h).not.toContain(">Skip<");
+        expect(h).toContain("Step 1 of 3");
+        expect(h).not.toContain("Make this my trip");
+        const plan = renderToStaticMarkup(createElement(ScenarioExperience, { id, departureDate: "2026-11-04", onChooseScenario: () => {}, onMakeTrip: () => {}, onBack: () => {}, initialStep: 2 }));
+        expect(plan).toContain("Recorded Qloo sample");
+        expect(plan).toContain("Make this my trip");
+        expect(plan).not.toContain(">Done<");
+        expect(plan).not.toContain(">Skip<");
       }
     } finally {
       globalThis.fetch = saved;

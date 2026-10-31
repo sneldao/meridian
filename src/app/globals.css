@@ -5052,6 +5052,34 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   padding-top:24px;
   border-top:1px solid var(--m-border);
 }
+.scenario-taste {
+  margin:24px 0 0;
+}
+.scenario-taste summary {
+  cursor:pointer;
+  font-size:13px;
+  font-weight:700;
+  color:var(--m-muted);
+  padding:8px 0;
+}
+.scenario-taste .scenario-toggle {
+  margin-top:12px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .scenario-days,
+    .scenario-route,
+    .day-scene {
+      animation: scenario-rise var(--dur-settle) var(--ease-settle) both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 40%;
+    }
+  }
+}
+@keyframes scenario-rise {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: none; }
+}
 .scenario-sub {
   font-size:13px;
   line-height:1.7;
