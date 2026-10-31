@@ -128,6 +128,28 @@ export function DayScene(props: DaySceneProps) {
         <p className="day-scene-caption">
           Modeled sun position, not a weather forecast. {read.solar?.label ?? "Solar position unavailable at this local time; clock-change hours may be ambiguous."}
         </p>
+        <div className="day-scene-bands" aria-label="Light and sleep windows">
+          {(["seek", "reduce", "sleep"] as const).map((k) => {
+            const lanes = scene.windows.filter((w) => w.kind === k);
+            const name = k === "seek" ? "Seek light" : k === "reduce" ? "Reduce light" : "Sleep";
+            return (
+              <div key={k} className="day-scene-lane">
+                <span>{name}</span>
+                <div className="day-scene-track">
+                  {lanes.map((w) => (
+                    <span
+                      key={w.id}
+                      className="day-scene-window"
+                      data-kind={kindOf(w.kind)}
+                      style={{ left: `${(w.startMin / 1440) * 100}%`, width: `${((w.endMin - w.startMin) / 1440) * 100}%` }}
+                      title={`${w.label} ${fmtMin(w.startMin)}–${w.endMin === 1440 ? "24:00" : fmtMin(w.endMin)}`}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
         <label htmlFor={`${uid}-range`}>Inspect the day—not change the plan</label>
         <input
           id={`${uid}-range`}
@@ -165,27 +187,7 @@ export function DayScene(props: DaySceneProps) {
           )}
         </div>
         <details className="day-scene-details">
-          <summary>Light and sleep windows</summary>
-          {(["seek", "reduce", "sleep"] as const).map((k) => {
-            const lanes = scene.windows.filter((w) => w.kind === k);
-            const name = k === "seek" ? "Seek light" : k === "reduce" ? "Reduce light" : "Sleep";
-            return (
-              <div key={k} className="day-scene-lane">
-                <span>{name}</span>
-                <div className="day-scene-track">
-                  {lanes.map((w) => (
-                    <span
-                      key={w.id}
-                      className="day-scene-window"
-                      data-kind={kindOf(w.kind)}
-                      style={{ left: `${(w.startMin / 1440) * 100}%`, width: `${((w.endMin - w.startMin) / 1440) * 100}%` }}
-                      title={`${w.label} ${fmtMin(w.startMin)}–${w.endMin === 1440 ? "24:00" : fmtMin(w.endMin)}`}
-                    />
-                  ))}
-                </div>
-              </div>
-            );
-          })}
+          <summary>Jump to a window</summary>
           <div className="day-scene-jumps">
             {scene.windows.map((w) => (
               <button

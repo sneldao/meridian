@@ -210,17 +210,16 @@ export function ScenarioExperience({ id, departureDate, onChooseScenario, onMake
       </nav>
       {step === 2 && (
       <>
-      <details className="scenario-taste">
-        <summary>Change taste preference · {profile?.favorites[0]?.name}</summary>
+      <div className="scenario-taste">
         <fieldset className="scenario-toggle">
-          <legend>Fictional taste preference</legend>
+          <legend>Taste preference</legend>
           {(["bjork", "luke"] as const).map((k) => {
             const p = sampleTasteProfile(k);
             return p && <button key={k} type="button" aria-pressed={profile?.key === k} onClick={() => setProfileKey(k)} className="taste-button taste-button--ghost">{p.favorites[0].name}</button>;
           })}
         </fieldset>
         <p role="status" className="scenario-source">Showing recorded suggestions for {profile?.favorites.map((f) => f.name).join(", ")}. {SAMPLE_TASTE_LABEL} · not a live lookup.</p>
-      </details>
+      </div>
       <div className="scenario-cta">
         <button type="button" className="entry-cta" onClick={() => onMakeTrip({ origin: "LHR", dest: "HND", date: departureDate })}>Make this my trip</button>
         <p className="scenario-sub">Start with this route. Add your own details before saving.</p>
