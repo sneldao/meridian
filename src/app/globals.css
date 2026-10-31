@@ -4597,7 +4597,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .arrival-day-time {
   font-family: var(--font-mono2);
   font-size: 12px;
-  color: var(--m-muted);
+  color: var(--cat, var(--m-muted));
   padding-top: 4px;
 }
 .arrival-day-step {

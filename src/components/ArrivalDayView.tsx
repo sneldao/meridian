@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowUpRight } from "lucide-react";
+import { CAT_ICON, DaySkyStrip } from "@/components/DaySkyStrip";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useId } from "react";
 import { springCalendar } from "@/lib/motion";
@@ -48,6 +49,7 @@ export function ArrivalDayView(props: ArrivalDayViewProps) {
   const reduced = useReducedMotion();
   const scope = useId();
   const stale = favoritesChanged === true;
+  const resolvedIds = new Set([...completedIds, ...skippedIds]);
 
   const active = idea && (idea.status === "suggested" || idea.status === "kept") ? idea : null;
   type Row = { kind: "step"; step: TravelerNudge } | { kind: "idea" };
@@ -94,6 +96,7 @@ export function ArrivalDayView(props: ArrivalDayViewProps) {
         </p>
       )}
 
+      <DaySkyStrip steps={steps} resolvedIds={resolvedIds} label={`Arrival in ${destination}`} />
       <ol className="arrival-day-rows">
         {rows.map((row) => {
           if (row.kind === "idea" && active) {
@@ -161,15 +164,19 @@ export function ArrivalDayView(props: ArrivalDayViewProps) {
           const step = (row as { kind: "step"; step: TravelerNudge }).step;
           const isDone = completedIds.has(step.id);
           const isSkip = skippedIds.has(step.id);
+          const StepIcon = CAT_ICON[step.category];
           return (
-            <li key={step.id} className="arrival-day-row">
+            <li key={step.id} className="arrival-day-row" data-cat={step.category}>
               <span className="arrival-day-time" aria-label={`${fmtMin(step.startMin)} to ${fmtMin(step.endMin)}`}>
                 <span>{fmtMin(step.startMin)}</span>
                 <span>to</span>
                 <span>{fmtMin(step.endMin)}</span>
               </span>
               <div className="arrival-day-step">
-                <h3 className="arrival-day-step-title">{step.title}</h3>
+                <h3 className="arrival-day-step-title">
+                  <span className="tl-glyph" aria-hidden="true"><StepIcon size={14} strokeWidth={2.4} /></span>
+                  {step.title}
+                </h3>
                 <p className="arrival-day-step-summary">{step.actionSummary}</p>
                 {(step.whyItHelps || step.citation) && (
                   <details className="arrival-day-why">
@@ -233,7 +240,7 @@ export function ArrivalDayView(props: ArrivalDayViewProps) {
       )}
 
       <p className="arrival-day-foot">
-        Optional — check hours before you go; your scheduled steps come first.
+        Optional—not booked. Check hours before you go; your scheduled steps come first.
       </p>
     </section>
   );

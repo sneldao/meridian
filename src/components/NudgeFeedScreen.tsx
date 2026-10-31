@@ -57,18 +57,8 @@ import { meetingReadiness } from "@/domain/readiness";
 import { friendlyDayLabel } from "@/lib/day-label";
 import { isTripFinished } from "@/lib/trip-status";
 import type { TripActions } from "@/lib/use-trip-actions";
-import {
-  Bell,
-  BellRing,
-  CalendarClock,
-  Coffee,
-  Footprints,
-  Moon,
-  Plane,
-  Sun,
-  type LucideIcon,
-} from "lucide-react";
-import { DaySkyStrip } from "@/components/DaySkyStrip";
+import { Bell, BellRing } from "lucide-react";
+import { CAT_ICON, DaySkyStrip } from "@/components/DaySkyStrip";
 import { VoiceControls } from "@/components/VoiceControls";
 import { useUndoToast } from "@/components/UndoToast";
 import type {
@@ -162,18 +152,6 @@ const CATEGORY_KIND: Partial<Record<NudgeCategory, InterventionKind>> = {
   run: "exercise",
   nutrition: "caffeine_cutoff",
   sleep: "sleep_window",
-};
-
-/** Category glyph — the rail's rhythm: the same kinds carry the same marks
- *  and the same hues (`--cat-*` in globals.css), so the sky strip above and
- *  the rows below read as one day seen two ways. */
-const CAT_ICON: Record<NudgeCategory, LucideIcon> = {
-  sunlight: Sun,
-  sleep: Moon,
-  nutrition: Coffee,
-  run: Footprints,
-  calendar: CalendarClock,
-  flight: Plane,
 };
 
 export function NudgeFeedScreen({

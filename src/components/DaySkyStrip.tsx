@@ -1,5 +1,25 @@
 import { fmtMin } from "@/domain/circadian";
 import type { NudgeCategory } from "@/domain/nudges";
+import {
+  CalendarClock,
+  Coffee,
+  Footprints,
+  Moon,
+  Plane,
+  Sun,
+  type LucideIcon,
+} from "lucide-react";
+
+/** Category glyph — shared by the rail, the arrival view and the sky strip
+ *  so one kind keeps one mark and one hue (`--cat-*`) everywhere it renders. */
+export const CAT_ICON: Record<NudgeCategory, LucideIcon> = {
+  sunlight: Sun,
+  sleep: Moon,
+  nutrition: Coffee,
+  run: Footprints,
+  calendar: CalendarClock,
+  flight: Plane,
+};
 
 export interface SkyStep {
   id: string;
