@@ -42,9 +42,8 @@ export default function ShiftPage() {
           </div>
         </div>
         <p className="dial-sub" style={{ marginTop: 8 }}>
-          A week of nights, days and days off. The crew holds a stable anchor
-          sleep window rather than trying to flip your clock, and the dial says
-          how much of that gap a week of cues can actually close.
+          A week of nights, days and days off — one anchor window held;
+          the dial shows what a week of cues can close.
         </p>
       </div>
       <ShiftScreen />

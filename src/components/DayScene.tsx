@@ -197,7 +197,7 @@ export function DayScene(props: DaySceneProps) {
         )}
         {!scene.plan && (
           <p className="day-scene-caption">
-            This day has no verified plan yet. Earlier-day carry-over, if any, is shown separately.
+            This day has no verified plan yet — earlier-day carry-over shown separately.
           </p>
         )}
         {ideaShown && (

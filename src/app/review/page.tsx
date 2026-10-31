@@ -206,9 +206,9 @@ export default function ReviewPage() {
         <div className="min-w-0">
           <h2 className="text-sm font-bold text-clay-2">Your week at a glance</h2>
           <p className="mt-1 text-xs leading-relaxed text-clay-2">
-            Each row is a day. Your sleep moves a little{" "}
+            Your sleep moves a little{" "}
             {trip?.direction === "east" ? "earlier" : "later"} each day —
-            that&apos;s your body clock adjusting.
+            that&apos;s the adjustment.
           </p>
           <Card className="mt-3 h-[380px] overflow-hidden">
             <ShiftBoard days={specs} drafts={NO_DRAFTS} verdicts={NO_VERDICTS} locked={locked} readOnly rowLabel={(spec) => friendlyDayLabel(spec, trip?.departureDayIndex)} />

@@ -83,7 +83,7 @@ export default function OutcomePage() {
       <PageHeader title="How did your trip go?" />
 
       <p className="text-sm leading-relaxed text-mist">
-        Two quick questions. Your answers help us fit your next plan better.
+        Two quick questions — answers shape your next plan.
       </p>
 
       {hasPlan === false ? (
