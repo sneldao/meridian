@@ -107,7 +107,11 @@ the gate judges the plan — but it is how the transcript and the eval harness
 both see that the draft is the default and how much of it survived. Live
 planner runs also carry `solverDraft` — the draft itself, so lenses can draw
 the submission against the placement it was merged over (absent on replay
-and on solver-infeasible days).
+and on solver-infeasible days). The same diff powers per-cue provenance:
+`buildDailyNudgesForDay` tags each nudge with its intervention `kind` and,
+when a `solverDraft` is supplied, writes `evidence.placedBy` /
+`evidence.movedMin` — so the feed's evidence line can say "solver's slot"
+or "planner moved +30m" per step rather than only per day.
 
 Errors are `recoverable: true` where the run can continue (e.g. planner
 submitted nothing → `continue`). A provider-level throw mid-run retries once on
@@ -155,6 +159,12 @@ On `/`, per-step did/skip marks queue on one trip-scoped ledger —
 structured `CheckIn`s on "Update plan", with `startDay` derived from the last
 marked day (not a fixed index). Acknowledgement clears only the send queue;
 the marks themselves stay on the ledger so a skipped step stays skipped.
+The same ledger is writable from `/crew`: locked-day cue diamonds on the
+ShiftBoard toggle a skip mark by the nudge's own id, so a board tap and a
+feed skip are the same constraint reaching the next replan. Because
+`storage` events fire only across tabs, writers dispatch a
+`meridian:actions-changed` custom event and both surfaces re-hydrate on it —
+a mark made on Today reads as marked on the board and vice versa.
 
 **The clock listens.** The Home-owned ledger is the same one the read-only
 projection reads: `skippedClockDays` (domain/marks.ts) selects only skipped
@@ -183,6 +193,13 @@ restores via `restorePlan` and stays readable while `/api/trip` refreshes —
 a failed refresh is a nonblocking banner, not a fallback to setup. The
 plan's `baselineKind` is saved with it so the offline path reports the same
 provenance.
+
+The `?depth` param shapes explanation depth, not agent visibility:
+`?depth=guided` opens every evidence drawer, `?depth=operator` routes to
+`/crew`. A `crew_question` asks at every depth — it is a decision, not
+detail — and the trace stays collapsed at simple. While a run is live the
+menu's top row is its current step ("Crew working — name → tool · n/m
+locked") and links back to the board.
 
 One ledger (`useTripActions`) serves both the Today checklist and the clock
 explanation: hydrated per trip scope before any write, and a preview scope
@@ -285,6 +302,7 @@ src/components/  NudgeFeedScreen (the Calm `/` surface: next step, timeline,
                  read in words), RunAnnouncer (aria-live run narration),
                   TripSetupScreen (setup body), DeepDiveVisuals
                  (globe / swimlane / week, `?depth=guided` only), CrewFeed,
+                 CrewQuestionCard + CalendarApprovalCard (run suspensions),
                  DayStrip, BriefingCard, HandoffBanner, RoutePicker,
                  MorningCheckin, DailyJourney, AgentDrawer, AnchoredPopover,
                  lenses/, ui/

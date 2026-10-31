@@ -25,6 +25,22 @@ const actionsKey = (tripKey: string) => `meridian:actions:${tripKey}`;
 const legacyCompletedKey = (tripKey: string) => `meridian:completedNudges:${tripKey}`;
 const legacyPendingKey = (tripKey: string) => `meridian:pendingCheckins:${tripKey}`;
 
+/** Same-tab write notification — `storage` events only fire in *other*
+ *  tabs, so a cue mark written on /crew and a skip toggled on Today would
+ *  never see each other without one. Listeners re-hydrate; writes only
+ *  happen in handlers, so there is no loop. */
+export const ACTIONS_CHANGED = "meridian:actions-changed";
+
+export function notifyActionsChanged(tripKey: string): void {
+  try {
+    window.dispatchEvent(
+      new CustomEvent(ACTIONS_CHANGED, { detail: { key: actionsKey(tripKey) } }),
+    );
+  } catch {
+    /* non-DOM environment — nothing to notify */
+  }
+}
+
 type StorageLike = Pick<Storage, "getItem" | "setItem">;
 
 export function hydrateTripActionsFromStorage(
@@ -85,7 +101,21 @@ export function useTripActions(tripKey: string | null, preview: boolean): TripAc
       }
       setHydrated({ scope, state });
     }, 0);
-    return () => clearTimeout(t);
+    // Another surface (the ShiftBoard's cue marks, a second tab via the
+    // storage event shim above) wrote the same ledger — take its truth.
+    const onChanged = (e: Event) => {
+      if ((e as CustomEvent).detail?.key !== actionsKey(tripKey)) return;
+      try {
+        setHydrated({ scope, state: hydrateTripActionsFromStorage(tripKey, preview, localStorage) });
+      } catch {
+
+      }
+    };
+    window.addEventListener(ACTIONS_CHANGED, onChanged);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener(ACTIONS_CHANGED, onChanged);
+    };
   }, [scope, preview, tripKey]);
 
   const state = hydrated?.scope === scope ? hydrated.state : EMPTY_TRIP_ACTIONS;
@@ -96,6 +126,7 @@ export function useTripActions(tripKey: string | null, preview: boolean): TripAc
       if (preview || tripKey === null) return;
       try {
         persistTripActionsToStorage(tripKey, preview, next, localStorage);
+        notifyActionsChanged(tripKey);
       } catch {
 
       }

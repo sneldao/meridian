@@ -12,6 +12,7 @@ import {
   readTripActions,
   toggleTripAction,
 } from "@/lib/trip-actions";
+import { ACTIONS_CHANGED, notifyActionsChanged } from "@/lib/use-trip-actions";
 
 // The hero lens. Reads the run state the event stream builds (see the
 // hackathon plan, section 6) and draws each day as a row on a 24-hour clock.
@@ -150,13 +151,11 @@ export function ShiftBoard({ days, drafts, verdicts, locked, activeLabel, active
     current: EMPTY_TRIP_ACTIONS,
   });
   useEffect(() => {
-    // Deferred a tick: hydration reads localStorage, which is render-impure,
-    // and setState stays out of the effect body.
-    const t = setTimeout(() => {
-      if (!tripKey) {
-        setMarked(new Set());
-        return;
-      }
+    if (!tripKey) {
+      const t = setTimeout(() => setMarked(new Set()), 0);
+      return () => clearTimeout(t);
+    }
+    const hydrate = () => {
       try {
         const s = readTripActions(localStorage.getItem(actionsKey(tripKey)));
         stateRef.current = s;
@@ -170,8 +169,24 @@ export function ShiftBoard({ days, drafts, verdicts, locked, activeLabel, active
       } catch {
         /* storage unavailable — the board stays read-only for marks */
       }
-    }, 0);
-    return () => clearTimeout(t);
+    };
+    // Deferred a tick: hydration reads localStorage, which is render-impure,
+    // and setState stays out of the effect body.
+    const t = setTimeout(hydrate, 0);
+    // A skip toggled on Today, or a mark on another tab, writes the same
+    // ledger — take its truth so a tap here never clobbers it.
+    const onChanged = (e: Event) => {
+      const key =
+        e instanceof CustomEvent ? e.detail?.key : (e as StorageEvent).key;
+      if (key === actionsKey(tripKey)) hydrate();
+    };
+    window.addEventListener(ACTIONS_CHANGED, onChanged);
+    window.addEventListener("storage", onChanged);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener(ACTIONS_CHANGED, onChanged);
+      window.removeEventListener("storage", onChanged);
+    };
   }, [tripKey, stateRef]);
 
   // useCallback keeps the compiler treating it as an event handler —
@@ -194,6 +209,7 @@ export function ShiftBoard({ days, drafts, verdicts, locked, activeLabel, active
     stateRef.current = next;
     try {
       localStorage.setItem(actionsKey(tripKey), JSON.stringify(next));
+      notifyActionsChanged(tripKey);
     } catch {
       /* storage unavailable — the mark still shows for this session */
     }
