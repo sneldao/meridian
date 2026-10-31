@@ -136,6 +136,10 @@ cubic-bezier(0.22, 1, 0.36, 1) · `--ease-settle` cubic-bezier(0.16, 1, 0.3, 1)
 - Landing MAY use the globe stage as full-bleed enrichment (it is real/modelled
   data — the product rule "nothing is decorative" holds).
 - App pages MUST NOT add decoration; function carries the page.
+- The day's instrument surfaces (stepper, check-in card, calendar summary,
+  the rail card) MAY break to ≈960px via `.wide` — the same `--hero-out`
+  math the stages use, capped so small viewports only reach the frame edge.
+  Prose stays in the 720px `.reading` column.
 - Statement pages (`/arrival`) may use one atmospheric ink gradient — the
   sunrise already earned there.
 
@@ -147,6 +151,17 @@ cubic-bezier(0.22, 1, 0.36, 1) · `--ease-settle` cubic-bezier(0.16, 1, 0.3, 1)
 - CTA voice and radius rhythm.
 - Section heading rhythm: eyebrow (tracked caps, 11–12px) stacked above a
   Fraunces display heading — never side-by-side hanging labels.
+- **Step-kind data colours** (`--cat-*`): light gold, sleep violet, food
+  terracotta, calendar blue, run pine, flight slate — deepened for cream,
+  the stage palette on ink. Every step category keeps one hue across glyph,
+  time and sky-strip band; data colours, never chrome.
+- **The sky-strip motif** (`.tl-sky`): the day's steps drawn as a strip
+  above the rail — windows as bands, moments as diamonds, a "now" caret on
+  today only. It shares the category hues with the rows below, so strip and
+  rail read as one day seen two ways. Empty days draw nothing.
+- **Provenance as one quiet line** (`.evline`): the evidence row — gate
+  verdict, revisions, memory, citation — as a single middot-joined line,
+  not a row of chip boxes.
 
 ## What pages MAY differ on
 
