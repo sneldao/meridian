@@ -121,17 +121,49 @@ remaining days from the solver under the folded profile and re-scores them
 with the same deterministic gate — the days are re-planned against the body
 clock the replan starts from, not re-judged against the full run's chain.
 
-On `/`, per-step did/skip marks queue a trip-scoped ledger and flush as
-structured `CheckIn`s on "Tell the crew", with `startDay` derived from the last
-marked day (not a fixed index).
+On `/`, per-step did/skip marks queue on one trip-scoped ledger —
+`meridian:actions:<origin>-<dest>-<firstPlannedDayDate>` — and flush as
+structured `CheckIn`s on "Update plan", with `startDay` derived from the last
+marked day (not a fixed index). Acknowledgement clears only the send queue;
+the marks themselves stay on the ledger so a skipped step stays skipped.
 
-**The clock listens.** The projection takes the traveller's *session* skips
-(`Not tonight`) **and** the persisted marks (`meridian:checkins`, read back by
-`domain/marks.ts`): a day whose light was missed is a day whose light did not
-happen, and the dial says so instead of crediting the shift. Only a *skipped*
-clock-moving cue counts — missing the caffeine does not move a body clock, and
-a free-text note about the whole day cannot be attributed to one cue, so
-neither moves the projection.
+**The clock listens.** The Home-owned ledger is the same one the read-only
+projection reads: `skippedClockDays` (domain/marks.ts) selects only skipped
+clock-moving cues (`light_exposure` / `avoid_light`), so a day whose light was
+missed is a day whose light did not happen — submitted marks included. A
+missing caffeine step cannot move a body clock, and a free-text note about the
+whole day cannot be attributed to one cue, so neither moves the projection.
+The interactive daily-action clock surface (`MeridianDailyScreen` with its own
+session skips and setup controls) is retained as a legacy component — nothing
+mounts it today: not Home, and not the current routes. The shared dial and
+onboarding widgets (`CircadianDial`, `SleepDial`, `MeridianOnboarding`) do
+still serve the shift and dev surfaces.
+
+## Home: entry, restore, and state ownership
+
+`/` decides what to open on before any fetch (`src/lib/home-entry.ts`
+`resolveHomeEntry` — pure, storage-free). Precedence: `?example=1` → a
+complete valid `?origin&dest&date` (any malformed or partial explicit route
+falls back to the entry form, never to a stale saved trip) →
+`meridian:activeTrip` → `meridian:lastTrip` (legacy) → the entry form. A
+committed route is a plain `{origin, dest, date}`; the same `commitRoute`
+serves the entry form, the inline editor ("Save trip"), the booking paste
+and the settings sheet, and stops the old EventSource so one trip can never
+inherit another's stream. A matching `meridian:lastPlan`/`lastTrip` pair
+restores via `restorePlan` and stays readable while `/api/trip` refreshes —
+a failed refresh is a nonblocking banner, not a fallback to setup. The
+plan's `baselineKind` is saved with it so the offline path reports the same
+provenance.
+
+One ledger (`useTripActions`) serves both the Today checklist and the clock
+explanation: hydrated per trip scope before any write, and a preview scope
+(example, or a real route with the wake question unanswered) is memory-only —
+zero storage reads or writes, an empty send queue, and marks that are never
+promoted to durable check-ins. Live reads migrate the legacy
+`completedNudges`/`pendingCheckins` pair once, only when the new key is
+absent. The example itself (`?example=1`) is built locally from
+`buildTrip("LHR","HND")` + `GARMIN_BASELINE` + `calendarFor` — no `/api/trip`
+request, no saved plan, no reminders, no crew run.
 
 **Traveller scoping.** Middleware stamps a `meridian-tid` cookie per visitor
 and mirrors it as `x-meridian-tid` on `/api/*` requests (`src/middleware.ts`,
@@ -201,13 +233,16 @@ src/agents/      providers, crew prompts, runtime, night replay, morning replay
                  (the replay path's plan is the solver's plan — the same
                  draft the live path hands the planner)
 src/components/  NudgeFeedScreen (the Calm `/` surface: next step, timeline,
-                 readiness), BottomNav (the phone's tab bar — hidden above
-                 480px, where the app is a document), dial/ (the clock view:
-                 CircadianDial, the mascot, the daily action card, the
-                 five-step setup and its scenes, SleepDial (the dial as the
-                 answer to the first question), the disclosure sheet, and
-                 ShiftScreen — the shift week, which has its own route at
-                 /shift),
+                 readiness), TripEntryScreen (the first-use form: blank route
+                 fields + a departure date, kept draft until Continue),
+                 BottomNav (the phone's tab bar — Today / My plan / Trips,
+                 hidden above 480px, where the app is a document), dial/ (the
+                 read-only BodyClockDetails explanation below Today — dial,
+                 projection, provenance — plus the retained, unmounted
+                 MeridianDailyScreen. Shared widgets include CircadianDial,
+                 the mascot, the daily action card, the five-step setup and
+                 its scenes, SleepDial and the disclosure sheet. ShiftScreen
+                 owns the shift week at /shift),
                  TripSummary (trip chip + edit sheet),
                  HeroDawnPanel + DawnScrubber (the residual globe and its
                  clock/shift scrubber — hover, fine-pointer drag, and two native
@@ -219,7 +254,10 @@ src/components/  NudgeFeedScreen (the Calm `/` surface: next step, timeline,
                  MorningCheckin, DailyJourney, AgentDrawer, AnchoredPopover,
                  lenses/, ui/
 src/lib/         voice/ (engine, config, cache, split, align, huddle),
-                 motion tokens, intervention icon vocabulary
+                 home-entry (URL + stored-route resolution), trip-actions +
+                 use-trip-actions (the trip-scoped action ledger and its
+                 storage seam), local-data (all-data delete + safe storage
+                 reads), motion tokens, intervention icon vocabulary
 src/mcp/         MCP server: JSON-RPC dispatch + tool catalogue
 src/app/         pages + api routes (/, /arrival, /review, /history, /outcome,
                  /crew, /shift, /dev)

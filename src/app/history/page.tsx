@@ -6,6 +6,7 @@ import { BottomNav } from "@/components/BottomNav";
 import { PageHeader } from "@/components/PageHeader";
 import { useUndoToast } from "@/components/UndoToast";
 import { secondTripCopy, secondTripProof } from "@/domain/second-trip";
+import { meridianStorageKeys } from "@/lib/local-data";
 import { scoreBand } from "@/domain/score";
 
 interface HistEntry {
@@ -79,7 +80,7 @@ export default function HistoryPage() {
   };
 
   const deleteAll = () => {
-    const snap = snapshot(["meridian:lastPlan","meridian:lastTrip","meridian:history","meridian:outcomes","meridian:checkins"]);
+    const snap = snapshot(meridianStorageKeys(localStorage));
     snap.forEach(([k]) => {
       try { localStorage.removeItem(k); } catch {}
     });

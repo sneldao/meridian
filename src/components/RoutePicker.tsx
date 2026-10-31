@@ -91,9 +91,9 @@ export function RoutePicker({
   const destCity = findAirport(dest)?.name ?? dest;
   const fields = (
     <>
-      <div className="flex items-end gap-1.5">
-        <div className="flex flex-col gap-0.5">
-          <span className={FIELD_LABEL[surface]}>From</span>
+      <div className="rp-route-row flex items-end gap-1.5">
+        <div className="rp-field rp-field--from flex flex-col gap-0.5">
+          <span className={`rp-label ${FIELD_LABEL[surface]}`}>From</span>
           <AirportField label="From" value={origin} date={date} disabled={disabled} onPick={(c) => onChange({ origin: c, dest, date })} surface={surface} />
         </div>
         <button
@@ -106,20 +106,20 @@ export function RoutePicker({
         >
           →
         </button>
-        <div className="flex flex-col gap-0.5">
-          <span className={FIELD_LABEL[surface]}>To</span>
+        <div className="rp-field rp-field--to flex flex-col gap-0.5">
+          <span className={`rp-label ${FIELD_LABEL[surface]}`}>To</span>
           <AirportField label="To" value={dest} date={date} disabled={disabled} onPick={(c) => onChange({ origin, dest: c, date })} surface={surface} />
         </div>
       </div>
-      <div className="flex items-end gap-2">
-        <div className="flex flex-col gap-0.5">
-          <span className={FIELD_LABEL[surface]}>Departs</span>
+      <div className="rp-date-row flex items-end gap-2">
+        <div className="rp-field flex flex-col gap-0.5">
+          <span className={`rp-label ${FIELD_LABEL[surface]}`}>Departs</span>
           <input
             type="date"
             value={date}
             disabled={disabled}
             onChange={(e) => e.target.value && onChange({ origin, dest, date: e.target.value })}
-            className={DATE_INPUT_CLASSES[surface]}
+            className={`rp-input ${DATE_INPUT_CLASSES[surface]}`}
             aria-label="Departure date"
           />
         </div>
@@ -134,11 +134,11 @@ export function RoutePicker({
   );
 
   return surface === "default" ? (
-    <Card className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 font-mono2 text-xs">
+    <Card className="rp-picker flex flex-wrap items-center justify-between gap-2 px-3 py-2 font-mono2 text-xs">
       {fields}
     </Card>
   ) : (
-    <div className={`${surfaceClass} flex flex-wrap items-center justify-between gap-2`}>
+    <div className={`rp-picker ${surfaceClass} flex flex-wrap items-center justify-between gap-2`}>
       {fields}
     </div>
   );
@@ -181,7 +181,7 @@ function AirportField({
   };
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="rp-field-wrap relative">
       <input
         value={open ? query : value}
         disabled={disabled}
@@ -195,21 +195,30 @@ function AirportField({
           setHi(0);
         }}
         onKeyDown={(e) => {
-          if (e.key === "ArrowDown") setHi((h) => Math.min(h + 1, results.length - 1));
-          else if (e.key === "ArrowUp") setHi((h) => Math.max(h - 1, 0));
-          else if (e.key === "Enter" && results[hi]) pick(results[hi]);
-          else if (e.key === "Escape") setOpen(false);
+          if (e.key === "ArrowDown") {
+            e.preventDefault();
+            setHi((h) => Math.min(h + 1, results.length - 1));
+          } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            setHi((h) => Math.max(h - 1, 0));
+          } else if (e.key === "Enter" && open && results[hi]) {
+            e.preventDefault();
+            pick(results[hi]);
+          } else if (e.key === "Escape") {
+            e.preventDefault();
+            setOpen(false);
+          }
           e.stopPropagation(); // keep the page's Space/Esc shortcuts out of typing
         }}
-        placeholder={open ? "city or code" : value}
+        placeholder={open ? "city or code" : value || "City or airport"}
         aria-label={`${label} airport`}
         title={current ? `${current.airport} · ${current.tz}` : undefined}
-        className={AIRPORT_INPUT[surface]}
+        className={`rp-input ${AIRPORT_INPUT[surface]}`}
       />
       {open && results.length > 0 && (
         <ul
           role="listbox"
-          className="absolute top-full left-0 z-50 mt-2 w-72 overflow-hidden rounded-xl border border-line bg-ink-2 shadow-xl"
+          className="rp-listbox absolute top-full left-0 z-50 mt-2 w-72 overflow-hidden rounded-xl border border-line bg-ink-2 shadow-xl"
         >
           {results.map((a, i) => (
             <li

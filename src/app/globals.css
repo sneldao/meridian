@@ -3676,3 +3676,204 @@ html[data-theme="night"] {
   .cal-summary-num { flex-direction: row; align-items: baseline; gap: 8px; }
   .cal-summary-num b { font-size: 15px; }
 }
+
+.entry {
+  padding: 56px 4px 0;
+  max-width: 720px;
+}
+.entry-title {
+  font-family: var(--font-display);
+  font-size: var(--text-display-s);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  margin: 0;
+  color: var(--m-text);
+}
+.entry-sub {
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--m-muted);
+  margin: 14px 0 0;
+  max-width: 34em;
+}
+.entry-form {
+  margin-top: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: stretch;
+  width: 100%;
+}
+.entry .rp-picker {
+  width: 100%;
+  min-width: 0;
+}
+.entry .rp-route-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  width: 100%;
+}
+.entry .rp-field {
+  min-width: 0;
+}
+.entry .rp-field-wrap {
+  min-width: 0;
+}
+.entry .rp-date-row {
+  width: 100%;
+  flex-wrap: wrap;
+}
+.entry .rp-label {
+  font-size: 12px;
+}
+.entry .rp-input {
+  font-size: 16px;
+}
+.entry .rp-field .rp-input {
+  width: 100%;
+  min-width: 0;
+}
+.entry .rp-field--from .rp-listbox {
+  left: 0;
+}
+.entry .rp-field--to .rp-listbox {
+  left: auto;
+  right: 0;
+}
+.entry .rp-listbox {
+  max-width: min(18rem, calc(100vw - 6rem));
+}
+.entry-error {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-clay-fail);
+}
+.entry-cta {
+  font: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  border: none;
+  border-radius: 999px;
+  padding: 12px 28px;
+  min-height: 48px;
+  cursor: pointer;
+  white-space: nowrap;
+  align-self: flex-start;
+  background: var(--color-terracotta);
+  color: var(--color-clay);
+  transition: filter var(--duration-fast) var(--ease-smooth-out);
+}
+.entry-cta:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+.entry-cta:active:not(:disabled) {
+  filter: brightness(0.94);
+}
+.entry-cta:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+.entry-cta:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.entry-example {
+  font: inherit;
+  background: none;
+  border: none;
+  padding: 10px 0;
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--m-muted);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  align-self: flex-start;
+}
+.entry-example:hover {
+  color: var(--color-terracotta);
+}
+.entry-example:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.example-banner {
+  max-width: 720px;
+  margin: 12px auto 0;
+  padding: 10px 14px;
+  border: 1px solid var(--m-border);
+  border-radius: 12px;
+  background: var(--m-card);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--m-text);
+}
+.example-banner-cta {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  border: none;
+  border-radius: 999px;
+  padding: 8px 16px;
+  min-height: 44px;
+  cursor: pointer;
+  white-space: nowrap;
+  background: var(--color-terracotta);
+  color: var(--color-clay);
+  transition: filter var(--duration-fast) var(--ease-smooth-out);
+}
+.example-banner-cta:hover {
+  filter: brightness(1.06);
+}
+.example-banner-cta:active {
+  filter: brightness(0.94);
+}
+.example-banner-cta:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.now-line {
+  font-size: 15px;
+  align-self: flex-start;
+  font-weight: 800;
+}
+
+.clock-details {
+  margin-top: 22px;
+  border: 1px solid var(--m-border);
+  border-radius: 14px;
+  background: var(--m-card);
+}
+.clock-details-summary {
+  cursor: pointer;
+  padding: 12px 14px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--m-text);
+  list-style-position: inside;
+}
+.clock-details-body {
+  padding: 0 14px 14px;
+}
+.clock-details-text {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--m-text);
+  margin: 4px 0 12px;
+}
+.clock-details .dial {
+  background: transparent;
+  border: none;
+  padding: 0;
+}

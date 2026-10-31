@@ -86,6 +86,7 @@ export interface CircadianDialProps {
   skippedToday: boolean;
   onRepairSkip: () => void;
   isShiftPostNightWarning?: boolean;
+  showToneControls?: boolean;
 }
 
 const SIZE = 240;
@@ -178,6 +179,7 @@ export function CircadianDial(props: CircadianDialProps) {
     skippedToday,
     onRepairSkip,
     isShiftPostNightWarning,
+    showToneControls = true,
   } = props;
 
   const [asList, setAsList] = useState(false);
@@ -367,17 +369,18 @@ export function CircadianDial(props: CircadianDialProps) {
             >
               {asList ? "Show the dial" : "As a list"}
             </button>
-            {(["gentle", "cheeky", "direct"] as const).map((t) => (
-              <button
-                key={t}
-                type="button"
-                className="dial-btn"
-                aria-pressed={tone === t}
-                onClick={() => onChangeTone(t)}
-              >
-                {t}
-              </button>
-            ))}
+            {showToneControls &&
+              (["gentle", "cheeky", "direct"] as const).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  className="dial-btn"
+                  aria-pressed={tone === t}
+                  onClick={() => onChangeTone(t)}
+                >
+                  {t}
+                </button>
+              ))}
           </div>
         </div>
       </div>

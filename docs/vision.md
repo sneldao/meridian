@@ -1,13 +1,14 @@
 <!-- ASPIRATIONAL — target experience and design rules. This is where we are going, not where we are. Current-state facts live in docs/reference/; the work items live in docs/plan/backlog.md. Successor to docs/archive/design-vision.md, which stays frozen as the hackathon-era record. -->
 
-# Product vision — land at 100%
+# Product vision — arrive better adjusted
 
-**Status:** proposal · round 2 (`63e8861`) and round 3 (`56965c1`,
-`6d62d56`, `7b6cc7d`/`3bb8e94`, `9651585`/`45a5918`) shipped on `main`.
-The §6 directions are all realised on the surface; the two carried
-findings (globe rate, 1,145-airport surfacing) and the two pre-lock
-follow-ons (hero meeting, readiness %) closed in round 3. See §7 and
-[docs/plan/backlog.md](plan/backlog.md).
+**Status:** live direction. The Home UX pass described in
+[docs/plan/backlog.md](plan/backlog.md) supersedes the historical stages in
+this doc — specifically auto-demo entry, the depth dial as persistent chrome,
+and the interactive clock view. Dated round references below are history,
+not the current contract. What "verified" means today: pure-function tests,
+SSR markup checks, typecheck/lint/build — no browser or user QA is claimed
+here or anywhere below.
 **Companion:** [design-vision.md](archive/design-vision.md) (the visual primitives)
 
 The archived vision won the interesting argument: **nothing is decorative** — the
@@ -31,19 +32,20 @@ screenshot.
 
 ### Rule 1 — One question, at the moment it first matters
 
-Not a wizard, not an onboarding tour. Meridian already auto-creates a trip,
-which is right: a first-time visitor should see the product work in five
-seconds without filling in a form.
+Not a wizard, not an onboarding tour — but a trip first. A cold visitor now
+meets an explicit entry ("Arrive better adjusted."): two airports and a date,
+one Continue. Personalisation comes *after* the route is theirs, as the one
+inline question on Today. The example stays one tap away and is always honest
+— it is built locally, saves no traveller trip or action data, and can never
+run the crew.
 
-But the demo profile must never masquerade as the person. Today a cold visitor
-gets LHR → HND departing in three days, wearing a fixture wearable, and
-**never once gets asked anything** — the one real personalisation question
-("on a day with nothing early planned, when do you naturally wake?") lives in
-the Edit sheet and on `/crew`, never on the landing surface.
+But the demo profile must never masquerade as the person. The saved route,
+the remembered wake answer and the plan's own baseline provenance decide what
+the numbers are; nothing fabricated is presented as measured.
 
-So: the demo trip stays, the demo tag stays, and the question appears
-*inline* the first time a number that depends on it is shown. One question,
-three chips, skippable, remembered.
+So: the example stays, the honesty tag stays, and the personalisation
+question appears *inline* the first time a number that depends on it is
+shown. One question, three chips, skippable, remembered.
 
 > The trust rule underneath it: **a number the app invented is never presented
 > as a number the traveller measured.** `TripSetupScreen` already carries the
@@ -78,30 +80,33 @@ must be either caused by the traveller or be the thing the screen exists for.
 This also keeps the hero honest: no rAF loop, no re-render of a planet every
 frame for a line that moves once a minute.
 
-### Rule 4 — The depth dial is the interface
+### Rule 4 — Explanation is progressive, not a dial
 
-Calm / **See why** / **Watch the crew** is the best idea in the app, and it is
-the reason a single surface can serve a jet-lagged traveller and the person who
-wants to read the phase-response curve. Protect it.
+The old Rule 4 was a persistent depth pill (Calm / See why / Watch the crew)
+as global chrome. What survives of it is the principle, recast: **Today is
+always the action surface; depth unfolds beneath it.** The body-clock
+projection is an opt-in `<details>` explanation that shares Today's data;
+the operator surface is a menu tap to `/crew`; `?depth=guided` still
+deep-links the visuals. No global mode picker is shown; a legacy remembered
+Guided preference and `?depth=guided` remain supported.
 
-Its current weakness is ordering, not mechanics: **Calm shows fabricated numbers
-with a footnote**, and See why is the first place a user discovers any of it is
-real. Fixing Rule 1 makes the dial land, because then the first number they see
-is theirs.
+The ordering lesson stands: the first number must be *theirs*, which is why
+the entry form exists before any plan preview is actionable.
 
 ---
 
 ## 2. The journey we are actually selling
 
-The promise is "Land at 100%". Today that promise is made in the nav and never
-cashed. The target loop:
+The promise is "Arrive better adjusted" — made on the entry form and cashed
+on the arrival screen. The loop:
 
 | Stage | Where | What must be true | |
 |---|---|---|---|
-| **Arrive** | `/` | Demo trip renders immediately. One question asked about *them*, not about the trip. | ✅ |
+| **Enter** | `/` | An explicit trip: two airports, a date, Continue — or the honest example. | ✅ |
 | **Orient** | `/` hero | The residual is legible: how far behind your dawn is, and how much is banked. | ✅ |
-| **Personalise** | `/` CTA | The crew run is watchable — progress is *announced*, not just animated, and a dropped stream never bricks the button. | ✅ |
-| **Live the shift** | `/` Today | One step, one tap. Taps persist and are attributable to the traveller. | ✅ |
+| **Personalise** | `/` Today | One inline question; the crew run is watchable — progress is *announced*, not just animated, and a dropped stream never bricks the button. | ✅ |
+| **Live the shift** | `/` Today | One step, one tap. Taps persist on a trip-scoped ledger attributable to the traveller. | ✅ |
+| **Understand** | `/` details | The body-clock explanation below Today — read-only, same marks, opt-in. | ✅ |
 | **Land** | `/arrival` | **The payoff.** First morning in the destination, scored against what was promised at the gate. | ✅ |
 | **Reflect** | `/outcome` | Reached from the arrival screen, where arriving makes it meaningful. Shows the plan it is grading. | ✅ |
 
@@ -110,9 +115,10 @@ persist and are attributable, a stalled run can't strand anyone, the run is
 announced as it works, the self-report can't fabricate a score, and the one
 question is asked and answered.
 
-**Every stage is now built.** The journey runs Arrive → Orient → Personalise →
-Live the shift → Land → Reflect, and "Land at 100%" is finally a promise the
-product keeps rather than one it makes.
+**Every stage is now built.** The current journey runs Enter → Orient →
+Personalise → Live the shift (+ optional Understand) → Land → Reflect. The
+plan carries estimates with an uncertainty band — it never promises a fixed
+level of adaptation.
 
 `/arrival` is the moment the whole thing was built toward: the residual the hero
 counted down for days is settled, the two dawn lines have fused, and the score is
@@ -385,18 +391,21 @@ fold, graph memory) — so invented data becomes training data. Labelling it
 "sample" is not enough once it is actionable.
 
 Rule 1's trust clause therefore extends: **a number the app invented is never
-actionable.** Until `baselineKind != demo-default`, steps render as preview —
-no Done/Skip, no `0 of 4`, no ledger writes — with the affordance reading
-`Preview from sample — answer 1 question to lock yours`. Same gate shape as
-`/outcome` (`1be902c`): no real input, nothing to grade, nothing to persist.
+actionable on a real ledger.** As shipped today, preview mode (the example,
+or a real route whose wake question is still unanswered) is an *in-memory
+rehearsal*: taps on Try/Skip still move the UI so the traveller can feel the
+interaction — but the action ledger's preview scope performs zero storage
+reads or writes, its send queue is derived empty, no mark is ever promoted
+to a `CheckIn`, and Home hands preview scopes no check-in callback at all.
+The example goes further: built locally from fixtures, no `/api/trip`, no
+saved plan, no reminders, no crew run, a "Plan my trip" door back to entry.
 
-**Shipped.** The gate is split across two functions in
-`domain/preview.ts` so the *display* rule (`isPreview`) and the *write*
-rule (`tapBecomesCheckIn`) cannot drift — both are asserted against the
-full truth table in `tests/preview.test.ts`. Hero button reads
-`Try this / Tried ✓`; meter says `Preview from the sample · N of M
-tried`; missed-list buttons say `Tried / Skip`. The wake question sits
-above the first dependent number; its copy is the floor promise (below).
+**Shipped.** The gate is split across `domain/preview.ts` (`isPreview` /
+`tapBecomesCheckIn`, asserted against the truth table in
+`tests/preview.test.ts`), the scoped store in `lib/use-trip-actions.ts`, and
+the send-path refusals in `NudgeFeedScreen` — the rehearsal can never reach
+`meridian:actions:*`, `meridian:checkins`, or the replan run. Same gate
+shape as `/outcome`: no real input, nothing to grade, nothing to persist.
 
 ### Calendar is the compliance surface
 
@@ -466,7 +475,8 @@ Tue`, not `shift`.
 Direction: the hero subhead under the residual names one fixed event with
 attendees at destination time plus its readiness
 (`Tue 09:00 workshop in Tokyo = 01:00 body time · 38% → 82% if locked`).
-"Land at 100%" is cashed on this screen (§2), not just in the nav.
+The original "Land at 100%" promise is cashed on this screen (§2), not just
+in the nav.
 
 **Shipped, with one gap.** `domain/hero.ts::heroMeeting()` is the B-shape;
 A renders the hero subhead under the dawn card. The block disappears when
@@ -650,11 +660,15 @@ landing look like mobile, then /crew looks proper?" confusion is closed.
 Cream day-side, ink night-side; both now feel like desktop on desktop,
 and phones see no change.
 
-**Round 8 (shipped 2026-10-24):** the Cinematic Dawn pass — the whole app
-retyped and restaged for the Base44 Challenge. The design system is now
-locked in [design.md](../design.md): Fraunces Variable (the crew's voice),
-Inter Variable (body), JetBrains Mono Variable (every number), and a 4pt
-spacing scale beside the existing motion vocabulary.
+**Round 8 (shipped 2026-10-24, superseded navigation):** the Cinematic Dawn
+pass — the whole app retyped and restaged for the Base44 Challenge. The
+design system it locked lives in [design.md](../design.md): Fraunces
+Variable (the crew's voice), Inter Variable (body), JetBrains Mono
+Variable (every number), and a 4pt spacing scale beside the existing
+motion vocabulary. Its navigation model — the Clock as a second view,
+the Timeline ↔ Clock crossfade — is **superseded by the current
+Today-stable contract** (see the status note at the top); the rest of
+this entry describes what shipped at the time.
 
 The structural move is the **stage**: the landing hero and the Clock view's
 action + dial share one grammar — a full-frame ink band that breaks out of

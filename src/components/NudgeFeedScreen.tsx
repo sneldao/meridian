@@ -41,6 +41,7 @@ import { secondTripCopy, secondTripProof } from "@/domain/second-trip";
 import { meetingReadiness } from "@/domain/readiness";
 import { friendlyDayLabel } from "@/lib/day-label";
 import { isTripFinished } from "@/lib/trip-status";
+import type { TripActions } from "@/lib/use-trip-actions";
 import { Bell, BellRing } from "lucide-react";
 import { VoiceControls } from "@/components/VoiceControls";
 import { useUndoToast } from "@/components/UndoToast";
@@ -118,20 +119,8 @@ export interface NudgeFeedScreenProps {
    *  day-level verdict. `lastMarkedDayIndex` lets the replan resume the day
    *  after the checked day. */
   onCheckIn?: (checkIns: CheckIn[], lastMarkedDayIndex: number) => void;
+  actions: TripActions;
 }
-
-/** A one-tap mark waiting to be told to the crew — turns timeline taps into
- *  structured check-ins (kind + startMin, so the early-skip floor learns). */
-type PendingMark = {
-  dayIndex: number;
-  kind?: InterventionKind;
-  startMin?: number;
-  status: "done" | "skipped";
-  /** Reads like what the wearer said — feeds the crew feed line and the
-   *  graph finding text ("skipped: Get outside light"). */
-  text: string;
-  at: number;
-};
 
 /** Nudge category → the intervention kind a did/skip mark refers to.
  *  Calendar/flight nudges record status + time but carry no kind — moving a
@@ -175,9 +164,10 @@ export function NudgeFeedScreen({
   runActiveLabel,
   runSunProgress,
   onCheckIn,
+  actions,
 }: NudgeFeedScreenProps) {
   const effectiveAdherence = adherence ?? ADHERENCE_PROFILE;
-  const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
+  const { completedIds, skippedIds, pendingMarks, ready: actionsReady } = actions;
   const [expandedWhyId, setExpandedWhyId] = useState<string | null>(null);
   const [showMissed, setShowMissed] = useState(false);
   const [heroWhyId, setHeroWhyId] = useState<string | null>(null);
@@ -215,172 +205,50 @@ export function NudgeFeedScreen({
   // fetched yet) counts as preview so fixture numbers are never shown as
   // measured before provenance is known.
   const previewMode = isPreview(baselineKind, wakeBand);
-  // Same rule, but stated as the action the renderer is allowed to perform.
-  // Kept as a separate symbol so the contract — "no tap becomes a CheckIn
-  // on preview" — can be asserted on its own.
   const tapsBecomeCheckIns = tapBecomesCheckIn(baselineKind, wakeBand);
 
-  // Trip-scoped persistence — ids are day-label-keyed, so a different trip
-  // must not inherit another trip's "done" state.
-  const completedKey = trip
-    ? `${trip.origin.code}-${trip.destination.code}-${trip.days[0]?.date ?? ""}`
-    : "none";
-
-  useEffect(() => {
-    const t = setTimeout(() => {
-      try {
-        const saved = localStorage.getItem(`meridian:completedNudges:${completedKey}`);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) setCompletedIds(new Set(parsed));
-        }
-      } catch {
-        /* ignore */
-      }
-    }, 0);
-    return () => clearTimeout(t);
-  }, [completedKey]);
-
-  const toggleComplete = useCallback((id: string) => {
-    setCompletedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      try {
-        localStorage.setItem(`meridian:completedNudges:${completedKey}`, JSON.stringify([...next]));
-      } catch {
-        /* ignore */
-      }
-      return next;
-    });
-  }, [completedKey]);
-
-  // Pending did/skip marks — the check-in ledger, trip-scoped like the done
-  // state. Marks queue on tap and flush when the traveller checks in; until
-  // then they survive a refresh.
-  const [pendingMarks, setPendingMarks] = useState<Map<string, PendingMark>>(new Map());
-  // Preview taps (item 11). Held in memory only — never persisted, never
-  // flushed to a CheckIn. Separate from `completedIds`/`pendingMarks` precisely
-  // so no code path can accidentally treat them as durable.
-  const [skippedPreview, setSkippedPreview] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    const t = setTimeout(() => {
-      try {
-        const saved = localStorage.getItem(`meridian:pendingCheckins:${completedKey}`);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) setPendingMarks(new Map(parsed));
-        }
-      } catch {
-        /* ignore */
-      }
-    }, 0);
-    return () => clearTimeout(t);
-  }, [completedKey]);
-
-  const savePending = useCallback((next: Map<string, PendingMark>) => {
-    try {
-      localStorage.setItem(
-        `meridian:pendingCheckins:${completedKey}`,
-        JSON.stringify([...next]),
-      );
-    } catch {
-      /* ignore */
-    }
-  }, [completedKey]);
-
-  /** One tap on Done — marks the step and queues a structured check-in.
-   *  Tapping again un-does both.
-   *
-   *  On preview (item 11) this is a dry run: the tap still moves the UI, but
-   *  nothing is written to `meridian:completedNudges` or
-   *  `meridian:pendingCheckins`, and so nothing becomes a `CheckIn`. A tap on
-   *  numbers the app invented must never become training data — the planner
-   *  folds these into the compliance floor and graph memory, which is how a
-   *  stranger's fabricated night would train the scorer. */
+  /** One tap on Done — records the mark on the Home-owned ledger and queues
+   *  a structured check-in. Tapping again un-does both. On preview this is a
+   *  dry run: nothing is written, nothing becomes a `CheckIn`. */
   const markDone = useCallback((s: TravelerNudge) => {
-    if (!tapsBecomeCheckIns) {
-      setCompletedIds((prev) => {
-        const next = new Set(prev);
-        if (next.has(s.id)) next.delete(s.id);
-        else next.add(s.id);
-        return next;
-      });
-      return;
-    }
-    const wasDone = completedIds.has(s.id);
-    toggleComplete(s.id);
-    const next = new Map(pendingMarks);
-    if (wasDone) next.delete(s.id);
-    else
-      next.set(s.id, {
+    if (!actionsReady) return;
+    actions.mark(
+      {
+        id: s.id,
         dayIndex: s.dayIndex,
         kind: CATEGORY_KIND[s.category],
         startMin: s.startMin,
-        status: "done",
         text: `did: ${s.title}`,
         at: Date.now(),
-      });
-    savePending(next);
-    setPendingMarks(next);
-  }, [pendingMarks, completedIds, toggleComplete, savePending, tapsBecomeCheckIns]);
+      },
+      "done",
+    );
+  }, [actions, actionsReady]);
 
   /** One tap on Skip — the adherence signal that matters most. Un-dones the
    *  step if it was marked done; tapping again un-skips. */
   const markSkipped = useCallback((s: TravelerNudge) => {
-    // Preview is a dry run here too — see markDone.
-    if (!tapsBecomeCheckIns) {
-      setSkippedPreview((prev) => {
-        const next = new Set(prev);
-        if (next.has(s.id)) next.delete(s.id);
-        else next.add(s.id);
-        return next;
-      });
-      setCompletedIds((prev) => {
-        if (!prev.has(s.id)) return prev;
-        const next = new Set(prev);
-        next.delete(s.id);
-        return next;
-      });
-      return;
-    }
-    if (completedIds.has(s.id)) toggleComplete(s.id);
-    const wasSkipped = pendingMarks.get(s.id)?.status === "skipped";
-    const next = new Map(pendingMarks);
-    if (wasSkipped) next.delete(s.id);
-    else
-      next.set(s.id, {
+    if (!actionsReady) return;
+    actions.mark(
+      {
+        id: s.id,
         dayIndex: s.dayIndex,
         kind: CATEGORY_KIND[s.category],
         startMin: s.startMin,
-        status: "skipped",
         text: `skipped: ${s.title}`,
         at: Date.now(),
-      });
-    savePending(next);
-    setPendingMarks(next);
-  }, [pendingMarks, completedIds, toggleComplete, savePending, tapsBecomeCheckIns]);
+      },
+      "skipped",
+    );
+  }, [actions, actionsReady]);
 
-  const skippedIds = useMemo(
-    () =>
-      new Set(
-        [...pendingMarks.entries()]
-          .filter(([, m]) => m.status === "skipped")
-          .map(([id]) => id),
-      ),
-    [pendingMarks],
-  );
-
-  // On preview the "skipped" set is the in-memory one, so the step resolves out
-  // of the hero and the miss list without anything durable changing.
-  const isSkipped = (id: string) =>
-    previewMode ? skippedPreview.has(id) : skippedIds.has(id);
+  const isSkipped = (id: string) => skippedIds.has(id);
 
   /** Send every queued mark to the crew — they become the replan's check-in
-   *  context. The ledger clears once it's handed over. */
+   *  context. The queue clears once it's handed over; the marks themselves
+   *  stay on the ledger so a skipped step stays skipped. */
   const sendPendingMarks = () => {
-    if (!onCheckIn || pendingMarks.size === 0) return;
+    if (!onCheckIn || pendingMarks.size === 0 || !tapsBecomeCheckIns) return;
     const marks = [...pendingMarks.values()];
     const last = Math.max(...marks.map((m) => m.dayIndex));
     const stamp = Date.now().toString(36);
@@ -393,10 +261,8 @@ export function NudgeFeedScreen({
       text: m.text,
       at: m.at,
     }));
-    const empty = new Map<string, PendingMark>();
-    setPendingMarks(empty);
-    savePending(empty);
     onCheckIn(checkIns, last);
+    actions.acknowledge(marks.map((m) => m.id));
   };
 
   const days = trip?.days ?? [];
@@ -415,7 +281,7 @@ export function NudgeFeedScreen({
    *  compiler treating it as an event handler (Date.now is render-impure). */
   const sendDayVerdict = useCallback(
     (status: CheckInStatus) => {
-      if (!onCheckIn || !activeDaySpec) return;
+      if (!onCheckIn || !activeDaySpec || !tapsBecomeCheckIns) return;
       const now = Date.now();
       onCheckIn(
         [
@@ -429,7 +295,7 @@ export function NudgeFeedScreen({
         activeDaySpec.dayIndex,
       );
     },
-    [onCheckIn, activeDaySpec],
+    [onCheckIn, activeDaySpec, tapsBecomeCheckIns],
   );
 
   // The city a step's time belongs to: origin-local through the flight day,
@@ -563,8 +429,8 @@ export function NudgeFeedScreen({
   // Skipped counts as resolved: "I'm not doing this" should drop the step out
   // of the hero slot and the missed list, not keep nagging with it.
   const resolvedIds = useMemo(
-    () => new Set([...completedIds, ...(previewMode ? skippedPreview : skippedIds)]),
-    [completedIds, skippedIds, skippedPreview, previewMode],
+    () => new Set([...completedIds, ...skippedIds]),
+    [completedIds, skippedIds],
   );
   // Every Done/Skip is undoable — the toast's Undo is just the same toggle.
   const doneTap = useCallback(
@@ -580,11 +446,11 @@ export function NudgeFeedScreen({
   );
   const skipTap = useCallback(
     (st: TravelerNudge) => {
-      const wasSkipped = previewMode ? skippedPreview.has(st.id) : skippedIds.has(st.id);
+      const wasSkipped = skippedIds.has(st.id);
       markSkipped(st);
       if (!wasSkipped) showUndo("Skipped", () => markSkipped(st));
     },
-    [previewMode, skippedPreview, skippedIds, markSkipped, showUndo],
+    [skippedIds, markSkipped, showUndo],
   );
   // The day verdict is a report on a day that happened — asking "how did a
   // future day go" is unanswerable. When today isn't inside the trip at all
@@ -1018,13 +884,10 @@ export function NudgeFeedScreen({
                   lot. */}
               {!tripFinished && (
                 <>
-                  <span
-                    className="tw"
-                    style={{ alignSelf: "flex-start", fontSize: "15px", fontWeight: 800 }}
-                  >
+                  <span className="tw now-line">
                     {countdown ?? ""}
                     {countdown ? " · " : ""}
-                    {fmtMin(heroNudge.startMin)} {cityFor(heroNudge.dayIndex)}
+                    {fmtMin(heroNudge.startMin)} · {cityFor(heroNudge.dayIndex)} local time
                   </span>
                   <div key={heroNudge.id} className="nudge-in">
                   <h2>{heroNudge.title}</h2>

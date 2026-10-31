@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useDeferredValue, useEffect, useRef, useState, ViewTransition } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { fmtMin } from "@/domain/circadian";
 import { todayDayIndex } from "@/domain/today";
-import { resolveBaseline, type WakeBand } from "@/domain/fixtures";
+import { resolveBaseline, buildTrip, calendarFor, GARMIN_BASELINE, type WakeBand } from "@/domain/fixtures";
 import { getFlightRecommendations } from "@/domain/nudges";
 import { summarizeCheckIn } from "@/domain/adherence";
 import type {
@@ -21,7 +21,7 @@ import type {
 } from "@/domain/types";
 import { type LogEntry } from "@/components/CrewFeed";
 import { NudgeFeedScreen } from "@/components/NudgeFeedScreen";
-import { MeridianDailyScreen } from "@/components/dial/MeridianDailyScreen";
+import { BodyClockDetails } from "@/components/dial/BodyClockDetails";
 import { DisclosureSheet } from "@/components/dial/DisclosureSheet";
 import { BottomNav } from "@/components/BottomNav";
 import dynamic from "next/dynamic";
@@ -34,6 +34,9 @@ const DeepDiveVisuals = dynamic(
 );
 const TripSetupScreen = dynamic(
   () => import("@/components/TripSetupScreen").then((m) => m.TripSetupScreen),
+);
+const TripEntryScreen = dynamic(
+  () => import("@/components/TripEntryScreen").then((m) => m.TripEntryScreen),
 );
 import { HandoffBanner } from "@/components/HandoffBanner";
 const AgentDrawer = dynamic(
@@ -50,6 +53,10 @@ import { useInstallPrompt } from "@/lib/use-install-prompt";
 import { useReminders } from "@/lib/use-reminders";
 import { useTheme } from "@/lib/use-theme";
 import { isTripFinished } from "@/lib/trip-status";
+import { isPreview } from "@/domain/preview";
+import { isValidHomeRoute, resolveHomeEntry, type HomeEntry, type HomeRoute } from "@/lib/home-entry";
+import { safeStorageGet } from "@/lib/local-data";
+import { useTripActions } from "@/lib/use-trip-actions";
 import { JourneySteps } from "@/components/JourneySteps";
 import { useRunState, calendarWithMoves, ledgerEvents, ghostGapDeg } from "@/state/run";
 import { meetingReadiness } from "@/domain/readiness";
@@ -79,10 +86,6 @@ interface TripData {
 /** Wall-clock time (HH:MM) in a city, from its DST-aware UTC offset. */
 function clockAt(offsetMin: number, now = new Date()): string {
   return fmtMin(now.getUTCHours() * 60 + now.getUTCMinutes() + offsetMin);
-}
-
-function isValidDate(v: string): boolean {
-  return /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v));
 }
 
 /** The day Home should open on: today when the trip spans it, else the first
@@ -129,9 +132,10 @@ const MEMORY_TOOL_NAMES = new Set([
 
 export default function Home() {
   const [setupOpen, setSetupOpen] = useState(false);
-  const [origin, setOrigin] = useState("LHR");
-  const [dest, setDest] = useState("HND");
+  const [origin, setOrigin] = useState("");
+  const [dest, setDest] = useState("");
   const [departureDate, setDepartureDate] = useState("");
+  const [entry, setEntry] = useState<HomeEntry | null>(null);
   /** Null means "the window we'd recommend for this route". Deriving the
    *  default from the trip (rather than hardcoding an id) is what makes the
    *  picker correct on westbound routes, where the east ids don't exist. */
@@ -142,27 +146,10 @@ export default function Home() {
   const [data, setData] = useState<TripData | null>(null);
   /** Self-reported natural wake — the one personalisation question. */
   const [wakeBand, setWakeBand] = useState<WakeBand | null>(null);
-  /** Whether the first /api/trip fetch has settled — keeps the setup sheet
-   *  (the no-trip branch) from flashing before the trip arrives. */
   const [tripResolved, setTripResolved] = useState(false);
+  const [tripFetchError, setTripFetchError] = useState(false);
+  const [fetchNonce, setFetchNonce] = useState(0);
   const [selectedDayLabel, setSelectedDayLabel] = useState<string>("D-1");
-  /** The two views of the same plan: the timeline (the default, and the calm
-   *  one) and the clock — the dial, the action card and the shift week. The
-   *  traveller picks; nothing is taken away from them. */
-  /**
-   * Which view of the plan the traveller is looking at.
-   *
-   * The default follows the plan: before there is one, the timeline is the
-   * calm surface and the one question and the one CTA; once the crew has
-   * locked days, the clock is the view that answers the question they are
-   * actually asking ("where is my body clock?"). An explicit choice sticks —
-   * the traveller's own preference outranks the default.
-   */
-  const [homeViewChoice, setHomeViewChoice] = useState<"timeline" | "clock" | null>(null);
-  /** The phone's tab: the same two views of the plan, switched in place by
-   *  the tab bar. On the desktop the in-page toggle governs and this is
-   *  ignored. */
-  const [phoneView, setPhoneView] = useState<"today" | "clock">("today");
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [briefingDismissed, setBriefingDismissed] = useState(false);
   /** A crew run that died mid-stream. Rendered on the Today surface, not only
@@ -198,6 +185,7 @@ export default function Home() {
   const [agentDrawerOpen, setAgentDrawerOpen] = useState(false);
   const [drawerUsed, setDrawerUsed] = useState(false);
   const [routeOpen, setRouteOpen] = useState(false);
+  const [routeDraft, setRouteDraft] = useState<HomeRoute | null>(null);
   const [bookingText, setBookingText] = useState("");
   const [bookingError, setBookingError] = useState(false);
   const assistant = useAssistantLink();
@@ -214,11 +202,38 @@ export default function Home() {
    *  is in the browser, so its inputs should be too. */
   const [restoredBaseline, setRestoredBaseline] = useState<WearableBaseline | null>(null);
   const [restoredTrip, setRestoredTrip] = useState<Trip | null>(null);
+  const [restoredBaselineKind, setRestoredBaselineKind] = useState<BaselineKind | null>(null);
+  const effectiveBaselineKind: BaselineKind =
+    data?.baselineSource === "garmin"
+      ? "garmin"
+      : wakeBand
+        ? "wake-band"
+        : (data?.baselineKind ??
+          restoredBaselineKind ??
+          "demo-default");
 
   const guideRef = useRef<HTMLDivElement | null>(null);
   const setupRef = useRef<HTMLDivElement | null>(null);
 
-  const trip = (run.trip ?? data?.trip ?? restoredTrip ?? null) as Trip | null;
+  const exampleTrip =
+    entry?.mode === "example" && departureDate
+      ? buildTrip("LHR", "HND", departureDate)
+      : null;
+  const trip = (
+    exampleTrip ??
+    run.trip ??
+    data?.trip ??
+    restoredTrip ??
+    null
+  ) as Trip | null;
+
+  const tripKey = trip
+    ? `${trip.origin.code}-${trip.destination.code}-${trip.days[0]?.date ?? ""}`
+    : null;
+  const tripActions = useTripActions(
+    tripKey,
+    entry?.mode === "example" || isPreview(effectiveBaselineKind, wakeBand),
+  );
 
   // The departure window the crew should plan around. Deriving the default from
   // the trip rather than hardcoding an id is what makes the picker correct on
@@ -235,9 +250,10 @@ export default function Home() {
    *  the traveller's answer when they have given it, the demo fixture
    *  otherwise. Declared here rather than further down because the run's
    *  briefing saves it with the plan. */
-  const baseline =
-    run.baseline ??
-    resolveBaseline(wakeBand, data?.baseline ?? restoredBaseline ?? undefined);
+  const baseline = exampleTrip
+    ? GARMIN_BASELINE
+    : (run.baseline ??
+      resolveBaseline(wakeBand, data?.baseline ?? restoredBaseline ?? undefined));
   const esRef = useRef<EventSource | null>(null);
   // Voice lives on /crew now; the first viewport no longer carries a voice
   // toggle (item 16 — Calm is "words + one number + one CTA"). We still
@@ -255,21 +271,41 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    // Set by the mount effect above (URL ?date= or today+3). Firing earlier
-    // would ask /api/trip for an empty date and 400.
-    if (!departureDate) return;
-    fetch("/api/trip" + tripQuery)
-      .then((r) => r.json())
+    if (!departureDate || entry?.mode !== "trip") return;
+    const ctrl = new AbortController();
+    fetch("/api/trip" + tripQuery, { signal: ctrl.signal })
+      .then((r) => {
+        if (!r.ok) throw new Error(`trip ${r.status}`);
+        return r.json();
+      })
       .then((d: TripData) => {
+        if (ctrl.signal.aborted) return;
+        const depDay = d?.trip?.days?.find((x) => x.dayIndex === d.trip.departureDayIndex);
+        if (
+          d?.trip?.origin?.code !== origin ||
+          d?.trip?.destination?.code !== dest ||
+          depDay?.date !== departureDate
+        ) {
+          setTripResolved(true);
+          setTripFetchError(true);
+          return;
+        }
         setTripResolved(true);
+        setTripFetchError(false);
         setData(d);
         // Open on the day that is actually today; fall back to the first
         // pre-flight day when the trip doesn't span today.
         const label = d?.trip ? pickHomeDayLabel(d.trip) : null;
         if (label) setSelectedDayLabel(label);
       })
-      .catch(() => setTripResolved(true));
-  }, [tripQuery, departureDate]);
+      .catch(() => {
+        if (ctrl.signal.aborted) return;
+        setTripResolved(true);
+        setTripFetchError(true);
+      });
+    return () => ctrl.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tripQuery, departureDate, entry?.mode, fetchNonce]);
 
   const hook = trip
     ? { body: clockAt(trip.origin.utcOffsetMin), dest: clockAt(trip.destination.utcOffsetMin) }
@@ -277,9 +313,10 @@ export default function Home() {
 
   useEffect(() => {
     const t = setTimeout(() => {
+      const read = (k: string) => safeStorageGet(() => localStorage.getItem(k));
       try {
-        initVoice().then(setVoiceAvail);
-        setHasSavedPlan(Boolean(localStorage.getItem("meridian:lastPlan")));
+        initVoice().then(setVoiceAvail).catch(() => {});
+        setHasSavedPlan(Boolean(read("meridian:lastPlan")));
         fetch("/api/memory")
           .then((r) => r.json())
           .then((d) => setRunCount(Array.isArray(d?.runs) ? d.runs.length : 0))
@@ -295,19 +332,19 @@ export default function Home() {
           .catch(() => {});
         if (typeof window !== "undefined") {
           const sp = new URLSearchParams(window.location.search);
-          if (sp.get("origin")) setOrigin(sp.get("origin")!);
-          if (sp.get("dest")) setDest(sp.get("dest")!);
-          const qDate = sp.get("date");
-          // Otherwise default to today + 3 so a fresh visitor always lands on a
-          // trip that has a "today". An explicit, well-formed ?date= still wins.
-          setDepartureDate(
-            qDate && isValidDate(qDate) ? qDate : defaultDepartureDate(),
+          const resolved = resolveHomeEntry(
+            sp,
+            read("meridian:activeTrip"),
+            read("meridian:lastTrip"),
           );
-          // ?view=clock opens the dial straight away — the phone's tab bar
-          // links here from the other pages.
-          if (sp.get("view") === "clock") {
-            setHomeViewChoice("clock");
-            setPhoneView("clock");
+          setEntry(resolved);
+          if (resolved.mode === "trip" && resolved.route) {
+            setOrigin(resolved.route.origin);
+            setDest(resolved.route.dest);
+            setDepartureDate(resolved.route.date);
+            try { localStorage.setItem("meridian:activeTrip", JSON.stringify(resolved.route)); } catch { /* best effort */ }
+          } else {
+            setDepartureDate(defaultDepartureDate());
           }
           if (sp.get("checkins")) setCheckInsParam(sp.get("checkins")!);
           const sd = Number(sp.get("startDay"));
@@ -352,9 +389,6 @@ export default function Home() {
           setEntries([{ kind: "system", text: "shift started — crew assembling" }]);
           setBriefingDismissed(false);
           runTripRef.current = e.trip;
-          if (e.trip.days[0]?.label) {
-            setSelectedDayLabel(e.trip.days[0].label);
-          }
           try {
             localStorage.setItem("meridian:onboarded", "1");
             localStorage.setItem("meridian:lastTrip", JSON.stringify(e.trip));
@@ -392,14 +426,12 @@ export default function Home() {
           push({ kind: "citation", citation: e.citation });
           break;
         case "plan_candidate":
-          setSelectedDayLabel(e.day.label);
           break;
         case "eval_result":
           push({ kind: "eval", result: e.result });
           break;
         case "day_locked":
           push({ kind: "locked", label: e.day.label });
-          setSelectedDayLabel(e.day.label);
           break;
         case "calendar_move":
           push({
@@ -440,6 +472,7 @@ export default function Home() {
                 // showing. Without it the arrival page falls back to the
                 // gate's own numbers — the claim, not the projection.
                 baseline,
+                baselineKind: effectiveBaselineKind,
                 savedAt: new Date().toISOString(),
               }),
             );
@@ -506,7 +539,7 @@ export default function Home() {
           break;
       }
     },
-    [push, stopVoice, data, baseline, run.errors.length],
+    [push, stopVoice, data, baseline, run.errors.length, effectiveBaselineKind],
   );
 
   const cancelShift = useCallback(() => {
@@ -519,6 +552,7 @@ export default function Home() {
   const beginStream = useCallback(
     (extra?: { checkins?: string; startDay?: number }) => {
       if (run.phase === "running") return;
+      if (entry?.mode !== "trip" || !isValidHomeRoute({ origin, dest, date: departureDate })) return;
       esRef.current?.close();
       reset();
       setEntries([]);
@@ -558,7 +592,7 @@ export default function Home() {
         reset();
       };
     },
-    [dispatch, handleSideEffects, push, reset, run.phase, tripQuery, checkInsParam, startDayParam, wakeBand, selectedFlightId],
+    [dispatch, handleSideEffects, push, reset, run.phase, tripQuery, checkInsParam, startDayParam, wakeBand, selectedFlightId, entry?.mode, origin, dest, departureDate],
   );
 
   const startShift = useCallback(() => beginStream(), [beginStream]);
@@ -644,11 +678,116 @@ export default function Home() {
   const openSetup = () => setSetupOpen(true);
   const closeSetup = () => setSetupOpen(false);
 
-  // Restore the saved plan after a reload — run state is memory-only, but
-  // `meridian:lastPlan` + `meridian:lastTrip` were written at briefing time.
-  // restorePlan vetoes any route/date mismatch, so editing the route drops
-  // back to the example preview.
+  const commitRoute = useCallback(
+    (route: HomeRoute) => {
+      if (!isValidHomeRoute(route)) return;
+      esRef.current?.close();
+      reset();
+      setOrigin(route.origin);
+      setDest(route.dest);
+      setDepartureDate(route.date);
+      setFlightChoice(null);
+      setEntry((prev) => ({ mode: "trip", route, clockOpen: prev?.clockOpen ?? false }));
+      setData(null);
+      setTripResolved(false);
+      setTripFetchError(false);
+      setStreamError(null);
+      setRestoredLocked(null);
+      setRestoredCitations([]);
+      setRestoredBaseline(null);
+      setRestoredTrip(null);
+      setRestoredBaselineKind(null);
+      setRouteOpen(false);
+      setRouteDraft(null);
+      setSetupOpen(false);
+      setMenuOpen(false);
+      try {
+        localStorage.setItem("meridian:activeTrip", JSON.stringify(route));
+      } catch {
+        /* best effort */
+      }
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.set("origin", route.origin);
+        url.searchParams.set("dest", route.dest);
+        url.searchParams.set("date", route.date);
+        url.searchParams.delete("example");
+        window.history.replaceState(null, "", url.toString());
+      } catch {
+        /* ignore */
+      }
+    },
+    [reset],
+  );
+
+  const openEntry = useCallback(() => {
+    esRef.current?.close();
+    reset();
+    setEntry({ mode: "setup", route: null, clockOpen: false });
+    setOrigin("");
+    setDest("");
+    setDepartureDate(defaultDepartureDate());
+    setFlightChoice(null);
+    setData(null);
+    setTripResolved(false);
+    setTripFetchError(false);
+    setStreamError(null);
+    setRestoredLocked(null);
+    setRestoredCitations([]);
+    setRestoredBaseline(null);
+    setRestoredTrip(null);
+    setRestoredBaselineKind(null);
+    setRouteOpen(false);
+    setRouteDraft(null);
+    setSetupOpen(false);
+    setMenuOpen(false);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("origin");
+      url.searchParams.delete("dest");
+      url.searchParams.delete("date");
+      url.searchParams.delete("example");
+      window.history.replaceState(null, "", url.toString());
+    } catch {
+      /* ignore */
+    }
+  }, [reset]);
+
+  const exploreExample = useCallback(() => {
+    esRef.current?.close();
+    reset();
+    setEntry({ mode: "example", route: null, clockOpen: false });
+    setOrigin("");
+    setDest("");
+    setDepartureDate(defaultDepartureDate());
+    setFlightChoice(null);
+    setData(null);
+    setTripResolved(true);
+    setTripFetchError(false);
+    setStreamError(null);
+    setRestoredLocked(null);
+    setRestoredCitations([]);
+    setRestoredBaseline(null);
+    setRestoredTrip(null);
+    setRestoredBaselineKind(null);
+    setRouteOpen(false);
+    setRouteDraft(null);
+    setSetupOpen(false);
+    setMenuOpen(false);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("origin");
+      url.searchParams.delete("dest");
+      url.searchParams.delete("date");
+      url.searchParams.set("example", "1");
+      window.history.replaceState(null, "", url.toString());
+    } catch {
+      /* ignore */
+    }
+  }, [reset]);
+
   useEffect(() => {
+    if (entry?.mode !== "trip") return;
     const t = setTimeout(() => {
       try {
         const r = restorePlan(
@@ -660,29 +799,35 @@ export default function Home() {
         setRestoredCitations(r?.citations ?? []);
         setRestoredBaseline(r?.baseline ?? null);
         setRestoredTrip(r?.trip ?? null);
+        setRestoredBaselineKind(r?.baselineKind ?? null);
       } catch {
         setRestoredLocked(null);
       }
     }, 0);
     return () => clearTimeout(t);
-  }, [origin, dest, departureDate, run.briefing]);
+  }, [entry?.mode, origin, dest, departureDate, run.briefing]);
 
-  const effectiveLocked = run.locked.size ? run.locked : (restoredLocked ?? EMPTY_LOCKED);
-  const homeView =
-    homeViewChoice ?? (effectiveLocked.size > 0 ? "clock" : "timeline");
-  /* Timeline and Clock are two views of one plan, so the switch is a
-     crossfade rather than a page swap. The pill flips on the urgent update;
-     the heavy view renders in the background value and the transition
-     animates the handoff (React ViewTransition, same-route pattern). */
-  const deferredView = useDeferredValue(homeView);
+  const effectiveLocked = exampleTrip
+    ? EMPTY_LOCKED
+    : run.locked.size
+      ? run.locked
+      : (restoredLocked ?? EMPTY_LOCKED);
   const effectivePhase =
     run.phase === "idle" && restoredLocked?.size ? "done" : run.phase;
 
   const { remindersOn, remindersBlocked, externalMark, toggleReminders } =
-    useReminders({ trip, lockedDays: effectiveLocked, onMarkDay: setSelectedDayLabel });
+    useReminders({
+      trip: exampleTrip ? null : trip,
+      lockedDays: exampleTrip ? EMPTY_LOCKED : effectiveLocked,
+      onMarkDay: setSelectedDayLabel,
+    });
 
   const providerFallback = run.errors.length > 0;
-  const rawCalendar = run.calendar.length > 0 ? run.calendar : (data?.calendar ?? []);
+  const rawCalendar = exampleTrip
+    ? calendarFor(exampleTrip)
+    : run.calendar.length > 0
+      ? run.calendar
+      : (data?.calendar ?? []);
   const currentEvents = run.calendar.length > 0 ? calendarWithMoves(run) : rawCalendar;
   const currentReadiness = trip
     ? meetingReadiness(trip, currentEvents, [...effectiveLocked.values()], baseline)
@@ -734,20 +879,6 @@ export default function Home() {
     return () => clearTimeout(t);
   }, []);
 
-  /** Calm ↔ Guided from the depth control. Changing depth never changes voice. */
-  const chooseDepth = (next: "calm" | "guided") => {
-    setDepth(next === "guided" ? "guided" : null);
-    const url = new URL(window.location.href);
-    if (next === "guided") url.searchParams.set("depth", "guided");
-    else url.searchParams.delete("depth");
-    window.history.replaceState(null, "", url.toString());
-    try {
-      localStorage.setItem(DEPTH_KEY, next);
-    } catch {
-      /* storage unavailable */
-    }
-  };
-
   return (
     <div className="root" ref={menuRef}>
       <div className="beam" />
@@ -761,7 +892,7 @@ export default function Home() {
         <div className="nav rise">
           <button type="button" className="brand" onClick={goGuide}>
             <b>MERIDIAN</b>
-            <span>Land at 100%</span>
+            <span>Arrive better adjusted</span>
           </button>
 
           <div className="right">
@@ -808,6 +939,9 @@ export default function Home() {
             )}
             <Link href="/history" className="m" role="menuitem" transitionTypes={["nav-forward"]} onClick={() => setMenuOpen(false)}>
               Past trips{runCount > 0 ? ` (${runCount})` : ""}
+            </Link>
+            <Link href="/crew" className="m" role="menuitem" transitionTypes={["nav-forward"]} onClick={() => setMenuOpen(false)}>
+              AI at work
             </Link>
             <Link href="/shift" className="m" role="menuitem" transitionTypes={["nav-forward"]} onClick={() => setMenuOpen(false)}>
               Shift work
@@ -991,18 +1125,65 @@ export default function Home() {
           </div>
         )}
 
-        {/* One flow: no trip → setup. Trip set → Today, with setup behind a
-            sheet. Until the first /api/trip resolves we render a quiet spacer,
-            not the setup sheet — the trip almost always exists. */}
-        {trip ? (
+
+        {entry === null ? (
+          <div ref={setupRef} aria-busy="true" aria-label="Loading your plan" style={{ padding: "24px 0" }}>
+            <span className="sr-only">Loading your plan…</span>
+            <div className="skel" style={{ width: "60%", height: 44, borderRadius: 999 }} />
+            <div className="skel card" style={{ marginTop: 18, padding: 20 }}>
+              <div className="skel" style={{ width: "40%", height: 14, borderRadius: 6 }} />
+              <div className="skel" style={{ width: "80%", height: 20, borderRadius: 6, marginTop: 12 }} />
+              <div className="skel" style={{ width: "65%", height: 14, borderRadius: 6, marginTop: 8 }} />
+              <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+                <div className="skel" style={{ width: 120, height: 44, borderRadius: 999 }} />
+                <div className="skel" style={{ width: 90, height: 44, borderRadius: 999 }} />
+              </div>
+            </div>
+            <div className="skel" style={{ width: "100%", height: 44, borderRadius: 999, marginTop: 22 }} />
+            {[0, 1, 2].map((i) => (
+              <div key={i} style={{ display: "flex", gap: 14, marginTop: 18, alignItems: "center" }}>
+                <div className="skel" style={{ width: 22, height: 22, borderRadius: 999 }} />
+                <div className="skel" style={{ width: 80, height: 14, borderRadius: 6 }} />
+                <div className="skel" style={{ flex: 1, height: 14, borderRadius: 6 }} />
+              </div>
+            ))}
+          </div>
+        ) : entry.mode === "setup" ? (
+          <div ref={setupRef}>
+            <TripEntryScreen
+              initialDate={departureDate || defaultDepartureDate()}
+              onContinue={commitRoute}
+              onExploreExample={exploreExample}
+            />
+          </div>
+        ) : trip ? (
           <>
+            {entry.mode === "trip" && tripFetchError && (
+              <div className="run-error" role="alert">
+                <span>We couldn&apos;t refresh this trip — your saved plan is still below.</span>
+                <button type="button" onClick={() => { setTripFetchError(false); setFetchNonce((n) => n + 1); }}>
+                  Retry
+                </button>
+              </div>
+            )}
+            {entry.mode === "example" && (
+              <div className="example-banner" role="note">
+                <span>Example trip — not your plan</span>
+                <button type="button" className="example-banner-cta" onClick={openEntry}>
+                  Plan my trip
+                </button>
+              </div>
+            )}
             <div ref={setupRef} className="reading">
-              {/* The trip as one line; the full picker opens on tap and closes
-                  after a pick. */}
               <button
                 type="button"
                 className="trip-chip"
-                onClick={() => setRouteOpen((v) => !v)}
+                onClick={() => {
+                  setRouteOpen((v) => {
+                    if (!v) setRouteDraft({ origin, dest, date: departureDate });
+                    return !v;
+                  });
+                }}
                 aria-expanded={routeOpen}
               >
                 {trip.origin.name} → {trip.destination.name} ·{" "}
@@ -1038,12 +1219,7 @@ export default function Home() {
                           setBookingError(true);
                           return;
                         }
-                        setOrigin(r.origin);
-                        setDest(r.dest);
-                        setDepartureDate(r.date);
-                        setFlightChoice(null);
-                        setRouteOpen(false);
-                        reset();
+                        commitRoute({ origin: r.origin, dest: r.dest, date: r.date });
                       }}
                     >
                       Use these details
@@ -1055,19 +1231,23 @@ export default function Home() {
                     )}
                   </div>
                   <RoutePicker
-                    origin={origin}
-                    dest={dest}
-                    date={departureDate}
+                    origin={routeDraft?.origin ?? origin}
+                    dest={routeDraft?.dest ?? dest}
+                    date={routeDraft?.date ?? departureDate}
                     surface="cream"
                     onChange={(next) => {
-                      setOrigin(next.origin);
-                      setDest(next.dest);
-                      setDepartureDate(next.date);
-                      setFlightChoice(null);
-                      setRouteOpen(false);
-                      reset();
+                      setRouteDraft({ origin: next.origin, dest: next.dest, date: next.date });
                     }}
                   />
+                  <button
+                    type="button"
+                    className="chip"
+                    style={{ marginTop: 8, minHeight: 44 }}
+                    disabled={!routeDraft || !isValidHomeRoute(routeDraft)}
+                    onClick={() => routeDraft && commitRoute(routeDraft)}
+                  >
+                    Save trip
+                  </button>
                 </div>
               )}
             </div>
@@ -1090,100 +1270,9 @@ export default function Home() {
                 />
               </div>
             )}
-
-            {/* Two views of the same plan: the timeline (the calm one, and
-                the default) and the clock — the dial, the action card and the
-                shift week. Available as soon as the trip is known, because
-                the clock is honest before there is a plan: it shows the
-                distance and what doing nothing would leave. */}
-            {trip && (
-              <div
-                className="pill depth view-toggle"
-                role="group"
-                aria-label="View"
-                style={{ margin: "10px 4px 0" }}
-              >
-                <button
-                  type="button"
-                  className={homeView === "timeline" ? "on" : undefined}
-                  aria-pressed={homeView === "timeline"}
-                  onClick={() => setHomeViewChoice("timeline")}
-                >
-                  Timeline
-                </button>
-                <button
-                  type="button"
-                  className={homeView === "clock" ? "on" : undefined}
-                  aria-pressed={homeView === "clock"}
-                  onClick={() => setHomeViewChoice("clock")}
-                >
-                  Clock
-                </button>
-              </div>
-            )}
-
-            {/* The one depth control: Simple is the calm viewport, Detailed
-                opens every evidence drawer, AI at work is the crew surface. */}
-            {trip && effectiveLocked.size > 0 && (
-              <div
-                className="pill depth"
-                role="group"
-                aria-label="View"
-                style={{ margin: "10px 4px 0" }}
-              >
-                <button
-                  type="button"
-                  className={depth !== "guided" ? "on" : undefined}
-                  aria-pressed={depth !== "guided"}
-                  onClick={() => chooseDepth("calm")}
-                >
-                  Simple
-                </button>
-                <button
-                  type="button"
-                  className={depth === "guided" ? "on" : undefined}
-                  aria-pressed={depth === "guided"}
-                  onClick={() => chooseDepth("guided")}
-                >
-                  Detailed
-                </button>
-                <Link href="/crew" transitionTypes={["nav-forward"]}>AI at work</Link>
-              </div>
-            )}
             </div>
 
             <div ref={guideRef} className="reading">
-              <ViewTransition
-                key={deferredView}
-                name="home-view"
-                share="auto"
-                enter="auto"
-                default="none"
-              >
-              {deferredView === "clock" ? (
-                <MeridianDailyScreen
-                  trip={trip}
-                  locked={effectiveLocked}
-                  drafts={run.drafts}
-                  verdicts={run.verdicts}
-                  baseline={baseline}
-                  baselineProvenance={
-                    data?.baselineSource === "garmin"
-                      ? "garmin"
-                      : data?.baselineKind === "wake-band"
-                        ? "self-reported"
-                        : data?.baselineKind === "demo-default"
-                          ? "demo"
-                          : "unknown"
-                  }
-                  calendarEvents={currentEvents}
-                  citations={activeCitations}
-                  selectedDayLabel={selectedDayLabel}
-                  onSelectDay={setSelectedDayLabel}
-                  onStartCrewSync={startShift}
-                  preview={data?.baselineKind === "demo-default"}
-                />
-              ) : (
               <NudgeFeedScreen
                 trip={trip}
                 phase={effectivePhase}
@@ -1201,18 +1290,31 @@ export default function Home() {
                 citations={activeCitations}
                 adherence={data?.adherence}
                 baselineSource={data?.baselineSource}
-                baselineKind={data?.baselineKind}
-                wakeBand={wakeBand}
-                onWakeBand={(b) => {
-                  setWakeBand(b);
-                  if (b) localStorage.setItem("meridian:wakeBand", b);
-                  else localStorage.removeItem("meridian:wakeBand");
-                }}
-                onStartCrewSync={startShift}
-                onCheckIn={sendDayCheckIn}
-                externalMark={externalMark}
+                baselineKind={entry.mode === "example" ? "demo-default" : effectiveBaselineKind}
+                wakeBand={entry.mode === "example" ? null : wakeBand}
+                onWakeBand={
+                  entry.mode === "example"
+                    ? undefined
+                    : (b) => {
+                        setWakeBand(b);
+                        try {
+                          if (b) localStorage.setItem("meridian:wakeBand", b);
+                          else localStorage.removeItem("meridian:wakeBand");
+                        } catch {
+                          /* memory-only answer when storage is blocked */
+                        }
+                      }
+                }
+                onStartCrewSync={entry.mode === "example" ? openEntry : startShift}
+                onCheckIn={
+                  entry.mode === "example" ||
+                  isPreview(effectiveBaselineKind, wakeBand)
+                    ? undefined
+                    : sendDayCheckIn
+                }
+                externalMark={entry.mode === "example" ? null : externalMark}
                 remindersOn={remindersOn}
-                onToggleReminders={toggleReminders}
+                onToggleReminders={entry.mode === "example" ? undefined : toggleReminders}
                 remindersBlocked={remindersBlocked}
                 feedStale={feedStale}
                 onCancelRun={cancelShift}
@@ -1220,9 +1322,28 @@ export default function Home() {
                 runActiveLabel={run.activeLabel}
                 runSunProgress={run.sunProgress}
                 pastRuns={pastRuns}
+                actions={tripActions}
               />
+              {effectiveLocked.size > 0 && baseline && (
+                <BodyClockDetails
+                  trip={trip}
+                  locked={effectiveLocked}
+                  baseline={baseline}
+                  calendarEvents={currentEvents}
+                  selectedDayLabel={selectedDayLabel}
+                  marks={tripActions.marks}
+                  baselineProvenance={
+                    effectiveBaselineKind === "garmin"
+                      ? "garmin"
+                      : effectiveBaselineKind === "wake-band"
+                        ? "self-reported"
+                        : effectiveBaselineKind === "demo-default"
+                          ? "demo"
+                          : "unknown"
+                  }
+                  open={entry.clockOpen}
+                />
               )}
-              </ViewTransition>
             </div>
 
             {/* Mechanism lives one dial away, never on the Calm rung. */}
@@ -1252,61 +1373,16 @@ export default function Home() {
               <div className="skel" style={{ width: "40%", height: 14, borderRadius: 6 }} />
               <div className="skel" style={{ width: "80%", height: 20, borderRadius: 6, marginTop: 12 }} />
               <div className="skel" style={{ width: "65%", height: 14, borderRadius: 6, marginTop: 8 }} />
-              <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-                <div className="skel" style={{ width: 120, height: 44, borderRadius: 999 }} />
-                <div className="skel" style={{ width: 90, height: 44, borderRadius: 999 }} />
-              </div>
             </div>
-            <div className="skel" style={{ width: "100%", height: 44, borderRadius: 999, marginTop: 22 }} />
-            {[0, 1, 2].map((i) => (
-              <div key={i} style={{ display: "flex", gap: 14, marginTop: 18, alignItems: "center" }}>
-                <div className="skel" style={{ width: 22, height: 22, borderRadius: 999 }} />
-                <div className="skel" style={{ width: 80, height: 14, borderRadius: 6 }} />
-                <div className="skel" style={{ flex: 1, height: 14, borderRadius: 6 }} />
-              </div>
-            ))}
           </div>
-        ) : (
-          <div ref={setupRef}>
-            <TripSetupScreen
-              trip={trip}
-              origin={origin}
-              dest={dest}
-              departureDate={departureDate}
-              baselineSource={data?.baselineSource}
-              baselineKind={data?.baselineKind}
-              wakeBand={wakeBand}
-              onWakeBand={(b) => {
-                setWakeBand(b);
-                if (b) localStorage.setItem("meridian:wakeBand", b);
-                else localStorage.removeItem("meridian:wakeBand");
-              }}
-              onChangeRoute={(next) => {
-                setOrigin(next.origin);
-                setDest(next.dest);
-                setDepartureDate(next.date);
-                // A window id from the old direction is meaningless on the new
-                // one; fall back to the new route's recommended window.
-                setFlightChoice(null);
-                reset();
-              }}
-              selectedFlightId={selectedFlightId}
-              onSelectFlightId={setFlightChoice}
-              baseline={baseline}
-              calendar={currentEvents}
-              calendarSource={data?.calendarSource}
-              readiness={currentReadiness}
-              hook={hook}
-              phase={run.phase}
-              lockedCount={run.locked.size}
-              totalDays={data?.trip?.days.length ?? 5}
-              sessionStartedAt={run.sessionStartedAt}
-              onStart={startShift}
-              onCancel={cancelShift}
-              onBackToGuide={goGuide}
-            />
+        ) : tripFetchError ? (
+          <div ref={setupRef} className="run-error" role="alert" style={{ marginTop: 18 }}>
+            <span>We couldn&apos;t load that trip — check your connection and try again.</span>
+            <button type="button" onClick={() => { setTripResolved(false); setTripFetchError(false); setFetchNonce((n) => n + 1); }}>
+              Retry
+            </button>
           </div>
-        )}
+        ) : null}
 
         {/* The edit sheet: the same setup body, as an overlay on Today. */}
         {setupOpen && trip && (
@@ -1333,18 +1409,19 @@ export default function Home() {
                 dest={dest}
                 departureDate={departureDate}
                 baselineSource={data?.baselineSource}
-                baselineKind={data?.baselineKind}
+                baselineKind={effectiveBaselineKind}
                 wakeBand={wakeBand}
                 onWakeBand={(b) => {
                   setWakeBand(b);
-                  if (b) localStorage.setItem("meridian:wakeBand", b);
-                  else localStorage.removeItem("meridian:wakeBand");
+                  try {
+                    if (b) localStorage.setItem("meridian:wakeBand", b);
+                    else localStorage.removeItem("meridian:wakeBand");
+                  } catch {
+                    /* memory-only answer when storage is blocked */
+                  }
                 }}
                 onChangeRoute={(next) => {
-                  setOrigin(next.origin);
-                  setDest(next.dest);
-                  setDepartureDate(next.date);
-                  reset();
+                  commitRoute({ origin: next.origin, dest: next.dest, date: next.date });
                 }}
                 selectedFlightId={selectedFlightId}
                 onSelectFlightId={setFlightChoice}
@@ -1470,13 +1547,7 @@ export default function Home() {
       />}
 
       <DisclosureSheet open={disclosureOpen} onClose={() => setDisclosureOpen(false)} />
-      <BottomNav
-        view={phoneView}
-        onViewChange={(v) => {
-          setPhoneView(v);
-          setHomeViewChoice(v === "clock" ? "clock" : "timeline");
-        }}
-      />
+      <BottomNav />
     </div>
   );
 }

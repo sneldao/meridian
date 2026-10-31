@@ -1,8 +1,8 @@
 # Meridian
 
-**Agents that fly ahead of you.** A crew of long-running agents resets your
-body clock before you land — turning a trip across time zones into a
-day-by-day circadian shift plan grounded in real literature and your actual
+**Agents that fly ahead of you.** A crew of long-running agents plans your
+body-clock adjustment before you land — a day-by-day sleep, light and
+caffeine plan timed to your trip, grounded in real literature and your actual
 calendar.
 
 Built at Accel AI Innovate London, Oct 2026.
@@ -50,8 +50,9 @@ Optional extras, all in `.env.local` — every one degrades gracefully when unse
 | Path | What |
 |---|---|
 | `/pitch` | *(removed — the deck retired with the pre-overhaul surface)* |
-| `/` | Today — the one step to do now, then the day timeline and readiness. No trip yet → setup; trip set → a trip chip with an Edit sheet. Asks one personalisation question inline when the baseline is still the demo one, and takes a departure window that the solver plans around. `?depth=guided` adds the deep-dive visuals. A **Clock** toggle (next to Simple/Detailed) opens the second view of the same plan: the 24-hour dial, the daily action card and the five-step setup — the projection, the do-nothing baseline and the uncertainty band, all from the same phase-response model the scorer gates with. **The Clock is the default once the crew has locked days**; the timeline stays for the first landing and as the other view |
+| `/` | Today — always the action checklist: the one step to do now, then the day timeline and readiness. No trip yet → an explicit entry form (blank airports, date defaulting to today + 3, **Continue**); a saved route restores its trip. The trip's route is a chip with an Edit sheet; the personalisation question is asked inline when the baseline is still the demo one. Once the plan has locked days, a native *"How my body clock is adjusting"* disclosure sits **below** Today — read-only: the 24-hour dial, the projection with its uncertainty band and the do-nothing baseline, from the same phase-response model the scorer gates with. `?view=clock` opens it; `?depth=guided` adds the deep-dive visuals; `?example=1` loads the sample trip without saving a trip, plan, or action marks |
 | `/arrival` | The payoff — first morning in the destination, scored against what the gate promised. Reached from Today once the last planned day passes, or `?date=` to score any trip (`?arrived=1` to preview) |
+| `/crew` | The operator rung — lens shell, crew feed, eval verdict cards, and the voice layer. Reached from the Home menu ("AI at work") |
 | `/review` | Saved plan: days, citations, .ics download |
 | `/history` | Past runs (with provider + fallback provenance) |
 | `/outcome` | Post-trip self-report (adherence, jetlag, notes); learned cross-run memory. Gated on a saved plan — no plan, nothing to grade |
@@ -65,9 +66,9 @@ Optional extras, all in `.env.local` — every one degrades gracefully when unse
 Design direction — where the product is going, and the rules every design
 decision is held to:
 
-- [Product vision](docs/vision.md) — the journey around the image: one question
-  at the right moment, caption-first interaction, the depth dial, and the
-  landing payoff
+- [Product vision](docs/vision.md) — the journey around the image: explicit
+  trip first, one question at the right moment, caption-first interaction,
+  progressive explanation, and the landing payoff
 - [Design system](design.md) — the locked *Cinematic Dawn* system: Fraunces /
   Inter / JetBrains Mono, the ink-stage grammar, and the rules every page is
   held to (kept in sync with `src/app/globals.css`)
@@ -96,6 +97,7 @@ Archive (frozen 2026-10-15 hackathon material — history, not current state):
 ## Checks
 
 ```bash
+bun test               # domain, entry, action-ledger, provenance, SSR markup
 bun run typecheck
 bun run lint
 bun run replay:check   # streams the replay transcript, prints eval verdicts
@@ -122,7 +124,9 @@ for Siri Shortcuts or any URL-fetching assistant.
 ## Tests
 
 ```bash
-bun test                 # pure-function tests (scorer, adherence)
+bun test                 # pure functions (scorer, adherence, home entry,
+                         # trip-action ledger, baseline provenance) plus
+                         # render-to-static-markup surface checks — no browser
 bun run smoke            # SSE smoke against a running dev server: night run + morning replan
 bun run replay:check     # streams the replay transcript; prints eval verdicts
 ```

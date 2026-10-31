@@ -21,11 +21,17 @@ stay legible.
 
 - **Landing (`/`)** · Marquee Hero — full-bleed globe stage with editorial
   display type overlaid; the day rail scrolls beneath as an instrument.
-- **Clock view (`/` → Clock)** · the hero's sibling stage: the daily action
-  and the 24-hour dial share one full-frame ink band (`.clock-stage`), gold
-  on ink, the action at display scale. Stages flip the `--m-*`/`--dial-*`
-  palette *within themselves* (scoped custom properties), so every
-  descendant component reads ink-appropriate in both themes.
+  Today is the stable, actionable checklist — plan progress updates its cards
+  in place rather than swapping the screen. The body-clock projection is
+  read-only explanation below Today (`<details>` · `?view=clock`), not a
+  competing view. First use is an explicit trip-entry form ("Arrive better
+  adjusted."); the example trip loads only on request and never saves
+  traveller trip, plan, or action data.
+- **Clock explanation (`/` → "How my body clock is adjusting")** · the dial
+  as read-only explanation below Today: the same locked plans and the same
+  action ledger, no setup or action controls. The gold-on-ink `.clock-stage`
+  styling remains with the retained legacy screen, not Home; dev and shift
+  surfaces continue to use the shared dial widgets.
 - **App pages** (`/review`, `/history`, `/outcome`, `/shift`, `/team`, `/crew`)
   · Workbench — instrument cards on the centred reading column
   (`.reading`, 720px), media allowed to break wider.
@@ -91,8 +97,9 @@ cubic-bezier(0.22, 1, 0.36, 1) · `--ease-settle` cubic-bezier(0.16, 1, 0.3, 1)
   content is visible without JS or scroll support.
 - Route continuity: React 19.3 `<ViewTransition>`. Typed navigations slide by
   direction (`nav-forward` / `nav-back`; untagged navigations, including the
-  browser back button, stay instant). The Timeline ↔ Clock switch crossfades
-  as "same place, different reading". The hero's dawn disc and the arrival
+  browser back button, stay instant). Today is stable — it never swaps out
+  for another view; the body-clock explanation opens as a `<details>`
+  beneath it, so there is no screen transition to animate. The hero's dawn disc and the arrival
   payoff's disc share `view-transition-name: dawn`, so the object the hero
   counted down to is the object that lands. Support is progressive: without
   the API, pages swap and the sweep still runs.

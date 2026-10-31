@@ -48,6 +48,22 @@ describe("restorePlan", () => {
     expect(restorePlan(JSON.stringify({ days: [] }), tripRaw, route)).toBeNull();
   });
 
+  test("baseline provenance rides along when the plan carries it", () => {
+    const withKind = JSON.stringify({
+      days: [day("D-3")],
+      baselineKind: "wake-band",
+    });
+    expect(restorePlan(withKind, tripRaw, route)?.baselineKind).toBe("wake-band");
+    const garmin = JSON.stringify({ days: [day("D-3")], baselineKind: "garmin" });
+    expect(restorePlan(garmin, tripRaw, route)?.baselineKind).toBe("garmin");
+  });
+
+  test("old saves carry no provenance — undefined, never invented", () => {
+    expect(restorePlan(plan, tripRaw, route)?.baselineKind).toBeUndefined();
+    const bogus = JSON.stringify({ days: [day("D-3")], baselineKind: "satellite" });
+    expect(restorePlan(bogus, tripRaw, route)?.baselineKind).toBeUndefined();
+  });
+
   test("null inputs restore nothing", () => {
     expect(restorePlan(null, tripRaw, route)).toBeNull();
     expect(restorePlan(plan, null, route)).toBeNull();

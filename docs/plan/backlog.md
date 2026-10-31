@@ -1,8 +1,26 @@
 # Backlog — next steps and open items
 
-Everything from the 2026-10-15→17 home overhaul, signature pass, and
-any-route pass is shipped on `main` (shipped plans deleted in the doc
-consolidation; commits are the record). These are the items that remain.
+**Current UX contract (supersedes historical rounds below).** Cold `/` is an
+explicit trip entry — blank airports, date defaulting to today + 3, Continue —
+or an honest example (`?example=1`, built locally, saves no traveller trip or
+action data, cannot run the crew). Returning `/` restores the saved route (`meridian:activeTrip`, with
+`lastTrip` legacy fallback); explicit malformed URL routes never fall back to
+a stale trip. Today is always the only action checklist; the body-clock
+projection is a read-only `<details>` explanation below it (`?view=clock`),
+sharing one Home-owned, trip-scoped action ledger (`meridian:actions:*`,
+migrating legacy `completedNudges`/`pendingCheckins`). Preview scopes are
+memory-only — no writes, no durable check-ins. Phone nav is three links
+(Today / My plan / Trips); "AI at work" is a menu route to `/crew`.
+
+Verified so far: `bun test` (pure functions + SSR markup), typecheck, lint,
+production build. **Open:** real visual/interactive QA — a browser pass over
+entry, restore, the example, the clock disclosure and the mobile nav — plus
+user validation; none has happened yet.
+
+The dated implementation rounds below are historical. Open proposals and
+unchecked tasks remain the backlog; the navigation contract above supersedes
+their old UI descriptions. The 2026-10-15→17 home overhaul, signature pass,
+and any-route pass shipped on `main` (commits are the record).
 
 Design direction lives in [docs/vision.md](../vision.md); current-state facts
 in [docs/reference/](../reference/).

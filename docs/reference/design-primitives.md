@@ -121,8 +121,8 @@ so a number reads as a measurement on every OS, not just the one with SF Mono.
 **Costs:** a noun is not a sentence, so the *first* run of a screen has to
 carry the sentence instead.
 
-**Ours:** the tab bar is Today / Clock / Plan / Trips; the setup's scenes are
-named the same way. Already true.
+**Ours:** the tab bar is Today / My plan / Trips — goals, not view modes. The
+body clock is explanation below Today, not a tab of its own.
 
 ### 9. The answer is the interface
 
@@ -133,7 +133,10 @@ already know is the thing you answer with.
 head.
 **Costs:** the dial needs a keyboard path, or it is a mouse-only answer.
 
-**Ours:** adopted — `SleepDial`, with both handles as focusable sliders.
+**Ours:** adopted as `SleepDial` — but as a legacy dev/shift control, not
+first-use Home. Entry on `/` is now explicit route fields (two airports + a
+date) *then* the one wake question on Today; the dial-as-answer idea is not
+an onboarding promise.
 
 ### 10. A press response
 

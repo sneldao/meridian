@@ -9,9 +9,9 @@ import "@fontsource-variable/jetbrains-mono";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Meridian — agents that fly ahead of you",
+  title: "Meridian — arrive better adjusted",
   description:
-    "A crew of long-running agents resets your body clock before you land.",
+    "A daily plan for sleep, light and caffeine, timed to your trip — so jet lag costs you less of it.",
   manifest: "/manifest.webmanifest",
 };
 

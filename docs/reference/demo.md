@@ -8,14 +8,17 @@
 AGENT_PROVIDER=replay bun run dev    # verified end-to-end, zero tokens, works offline
 ```
 
-Click **Make my plan** on Today. ~45 s of scripted-but-honest transcript: the
-scorer really runs, the rejections are real verdicts against real plans, and
-the `.ics` is a genuine artifact. Two visible recoveries (`CALENDAR_CONFLICT`
-on D-2 and D-1) — each one bounces red, goes back under Iris's scan line on the
-retry, then snaps locked — and five day locks. The plan it locks is the
-**solver's** plan: the replay path used to keep a second, weaker planner of
-its own, and the two had drifted. The mission clock ticks on wall
-time even while the model is quiet.
+On `/`, enter a trip — two airports and a departure date — and **Continue**
+(the route must be real: distinct known airports, a valid date). Today then
+loads the trip: answer the one wake question inline (or upload a Garmin
+export) so the baseline is real, then click **Make my plan**. A
+scripted-but-honest transcript: the scorer really runs, the rejections are
+real verdicts against real plans, and the `.ics` is a genuine artifact. Two
+visible recoveries (`CALENDAR_CONFLICT` on D-2 and D-1) — each one bounces
+red, goes back under Iris's scan line on the retry, then snaps locked — and
+five day locks. The plan it locks is the **solver's** plan: the replay path
+used to keep a second, weaker planner of its own, and the two had drifted.
+The mission clock ticks on wall time even while the model is quiet.
 
 Pacing knob: `REPLAY_BEAT_MS` env var (default `60`, read in `replay.ts` and
 `morning-replay.ts`) — ms between streamed events. Default is too fast to
@@ -23,13 +26,19 @@ narrate (~7.5 s for a full night shift); set `REPLAY_BEAT_MS=300` in
 `.env.local` on the stage machine (~40 s, narratable). Keep the default for
 tests and fixture recording — see `docs/archive/hackathon-plan.md` §11.
 
+The entry form's **Explore an example** loads the same sample trip (`?example=1`)
+built locally — no `/api/trip` call, no saved plan, no reminders, and **no
+crew run**: its "Make my plan" exits to the entry form. Marks tapped inside it
+are an in-memory rehearsal only. Use a committed trip for the scripted run.
+
 ## The morning replan (replay)
 
-The recorded morning beat needs no keys. Open the run with a start day and a
-check-in (base64 JSON array of `CheckIn`):
+The recorded morning beat needs no keys — but `/` only streams a run for a
+committed trip, so the URL needs a complete route alongside `startDay` and
+`checkins` (base64 JSON array of `CheckIn`):
 
 ```
-https://meridian-afud.onrender.com/?startDay=2&checkins=<base64 of [{"id":"c1","dayIndex":1,"kind":"light_exposure","startMin":300,"status":"skipped","text":"skipped the 5am light","at":0}]>
+https://meridian-afud.onrender.com/?origin=LHR&dest=HND&date=<YYYY-MM-DD>&startDay=2&checkins=<base64 of [{"id":"c1","dayIndex":1,"kind":"light_exposure","startMin":300,"status":"skipped","text":"skipped the 5am light","at":0}]>
 ```
 
 The feed shows `wearer reported: …` then `replan — …`. On the board, the
@@ -45,7 +54,8 @@ agent's colour, and the handoff is a multi-voice text-to-dialogue exchange —
 the crew talking the locked plan over in one call (the "huddle"). Without a
 key, voice reads as "unavailable" in the menu and everything else works.
 
-- Menu → voice toggle controls live speech; the BriefingCard **Listen** button
+- `/crew` is the voice operator surface — its menu holds the live-speech
+  toggle (Home's menu no longer toggles voice). The BriefingCard **Listen** button
   replays the handoff even when the toggle is off.
 - **Replay runs are instant and free after the first.** Audio is cached by
   content hash (memory + Supabase Storage bucket `meridian-voice`), and the
@@ -79,11 +89,13 @@ per day and may need tuning.
   days show the solver's own preview (scorer-checked, compliance-floor-capped).
   Post-flight days are planned after landing. `?depth=guided` adds the
   deep-dive visuals; `/crew` is the operator rung (lens shell + crew feed
-  + eval verdict cards).
-- `/` → **Clock** — the second view of the same plan, and the default once
-  the crew has locked days: the 24-hour dial, the daily action card, the
-  projection with its uncertainty band and the do-nothing baseline beside it.
-  The timeline stays for the first landing and as the other view.
+  + eval verdict cards). On a phone the tab bar is three links —
+  **Today / My plan / Trips**.
+- `/` → **"How my body clock is adjusting"** — the read-only explanation
+  below Today, once the crew (or a restored plan) has locked days: the
+  24-hour dial, the projection with its uncertainty band and the do-nothing
+  baseline beside it. `?view=clock` opens it as a link; it never replaces
+  Today and carries no setup or action controls.
 - `/shift` — the rotating night-shift week, on its own door: the anchor sleep
   window, the fixed and negotiable commitments, the one movable thing (the
   15:30 pickup, behind a hold), and the post-night-shift driving warning.
@@ -97,22 +109,26 @@ per day and may need tuning.
 
 | Key | Written by |
 |---|---|
-| `meridian:lastPlan` | `/` on briefing → read by `/review` |
-| `meridian:lastTrip` | `/` on `run_start` → read by `/review` |
+| `meridian:activeTrip` | `/` on a committed route (entry form, route editor "Save trip", booking paste, or a valid `?origin&dest&date` URL) → read back to restore the trip on return |
+| `meridian:lastPlan` | `/` on briefing (with `coverage`, `baseline` and `baselineKind` inside) → read by `/review`, and by `/arrival` to score the trip against the projection |
+| `meridian:lastTrip` | `/` on `run_start` → read by `/review`; also the legacy fallback route key `/` restores when no `activeTrip` is stored |
 | `meridian:history` | `/` on briefing → read by `/history` |
-| `meridian:onboarded` | `/` onboarding dismiss |
+| `meridian:onboarded` | `/` on `run_start` (the first run counts as onboarded) |
 | `meridian:outcomes` | `/outcome` submissions |
 | `meridian:checkins` | `/outcome` (structured via `/api/crew/checkin`) → read by replan runs |
 | `meridian:wakeBand` | the inline wake question on `/` → the wake-band baseline |
-| `meridian:lastPlan` (the `coverage` and `baseline` fields inside it) | the gate's promise and the baseline the plan was built on, read back by `/arrival` to score the trip against the projection |
-| `meridian:completedNudges:<origin>-<dest>-<date>` | per-step did/skip marks, trip-scoped |
-| `meridian:depth` | Calm / Guided depth dial |
-| `meridian:voice` | voice toggle |
+| `meridian:actions:<origin>-<dest>-<firstPlannedDayDate>` | Home's trip-scoped action ledger: `{completedIds, marks, pendingIds}` — done/skip are mutually exclusive, submitted marks are retained, the pending queue clears on acknowledge. Scoped by the trip's **first planned day** date |
+| `meridian:completedNudges:<same trip key>` | *legacy* — the old did list. Read once to migrate when no `actions` key exists; no longer written |
+| `meridian:pendingCheckins:<same trip key>` | *legacy* — the old unsent queue. Read once to migrate (a pending mark overrides a completed id); no longer written |
+| `meridian:depth` | legacy remembered depth preference — the persistent Calm/Guided pill is gone; `?depth=guided` still deep-links the visuals |
+| `meridian:voice` | `/crew` voice toggle only — Home no longer toggles speech |
 
 Per-traveller memory is **not** localStorage — a `meridian-tid` cookie scopes
 `artifacts/crew-memory-<tid>.json`, the adherence fold, graph writes and run
-records. Clearing localStorage does not reset a traveller's memory; see
-`reset all` on `/history`.
+records. **Delete all my data** on `/history` removes every browser-local
+`meridian:` key (active route and action ledgers included) and snapshots them
+for Undo — but it is a *browser* reset: it does not clear the tenant cookie,
+server artifacts, the graph or Supabase memory.
 
 ## Troubleshooting
 
@@ -124,8 +140,8 @@ records. Clearing localStorage does not reset a traveller's memory; see
 | No evidence chips in a step | By design — evidence only exists after a real crew run. On a machine whose provider is failing there is no plan, so there is nothing to show evidence about |
 | `/arrival` says "still London time" | It judges arrival at the **destination's** clock, which is correct. Pass a past `?date=` to see the payoff: `/arrival?date=YYYY-MM-DD`, and `&arrived=1` to pretend the trip is over |
 | `/arrival` says the plan carried nothing | It scores against the *projection* — what the day's timing can actually deliver — not the plan's declared shift. A plan that declared more than its light could carry is the case the page exists to name; the plan it was saved from is the solver's, and the clock shows the same number |
-| The Clock view is empty | The clock needs a plan: a trip and a baseline. Before the crew has run there is nothing to project, and it says so rather than showing a number |
+| "How my body clock is adjusting" is missing | The explanation only exists once a plan has locked days — before the crew has run there is nothing to project, so the disclosure isn't rendered. The interactive clock surface is legacy dev/shift chrome, not Home |
 | The dial looks washed out in the dark | The dial's colours are tokens that flip with the night theme. If a surface was restyled with hardcoded hex it will not flip — that is the bug the token work fixed |
 | Fresh clone, hooks silent | `git config core.hooksPath .githooks` |
 | Stage wifi dead | `replay` needs no network at all — that's the point |
-| Morning replan shows the night script | URL has no `startDay` or `checkins` — add them |
+| Morning replan shows the night script | URL has no `startDay` or `checkins` — add them. Shows the entry form instead? A run also needs a committed route — add a complete `?origin&dest&date` |

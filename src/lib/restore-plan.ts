@@ -1,4 +1,4 @@
-import type { Citation, DayPlan, Trip, WearableBaseline } from "@/domain/types";
+import type { BaselineKind, Citation, DayPlan, Trip, WearableBaseline } from "@/domain/types";
 
 /** Rebuilds the locked-days map from the saved plan + saved trip, but only
  *  when the pair still describes the route on screen: same airports and the
@@ -17,6 +17,7 @@ export function restorePlan(
   baseline?: WearableBaseline;
   /** The trip the plan belongs to, for the same reason. */
   trip?: Trip;
+  baselineKind?: BaselineKind;
 } | null {
   if (!lastPlanRaw || !lastTripRaw) return null;
   try {
@@ -42,6 +43,12 @@ export function restorePlan(
       citations: Array.isArray(plan.citations) ? plan.citations : [],
       baseline: plan.baseline as WearableBaseline | undefined,
       trip: trip as Trip,
+      baselineKind:
+        plan.baselineKind === "garmin" ||
+        plan.baselineKind === "wake-band" ||
+        plan.baselineKind === "demo-default"
+          ? plan.baselineKind
+          : undefined,
     };
   } catch {
     return null;
