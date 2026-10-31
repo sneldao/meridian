@@ -1619,6 +1619,15 @@ export function NudgeFeedScreen({
       )}
 
       {steps.some((n) => skippedIds.has(n.id)) && (
+        <div className="constraint-chips" role="group" aria-label="Active constraints">
+          {steps
+            .filter((n) => skippedIds.has(n.id))
+            .map((n) => (
+              <span key={n.id} className="constraint-chip">Can't: {n.title}</span>
+            ))}
+        </div>
+      )}
+      {steps.some((n) => skippedIds.has(n.id)) && (
         <div className="recovery-card" role="status">
           <strong>Missed a step?</strong>
           <ul className="recovery-list">
