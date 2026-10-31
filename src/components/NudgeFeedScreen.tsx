@@ -82,7 +82,7 @@ export interface NudgeFeedScreenProps {
   selectedDayLabel: string;
   onSelectDay: (label: string) => void;
   locked: Map<string, DayPlan>;
-  drafts: Map<string, { plan: DayPlan; attempt?: number }>;
+  drafts: Map<string, { plan: DayPlan; attempt?: number; solverDraft?: DayPlan }>;
   /** Per-day scorer verdicts — the "why" expander's evidence row. */
   verdicts: Map<string, EvalResult[]>;
   /** Days rejected at least once before locking. */
@@ -393,6 +393,7 @@ export function NudgeFeedScreen({
       dayRejected: rejected.has(activeDaySpec.label) || (verdicts.get(activeDaySpec.label) ?? []).some((v) => !v.feasible),
       memoryPath,
       adherence: effectiveAdherence,
+      solverDraft: drafts.get(activeDaySpec.label)?.solverDraft,
     });
     return [...raw].sort((a, b) => a.startMin - b.startMin);
   }, [trip, activeDaySpec, locked, drafts, preview, baseline, calendarEvents, moves, citations, verdicts, rejected, memoryPath, effectiveAdherence]);
@@ -416,6 +417,7 @@ export function NudgeFeedScreen({
       moves,
       citations,
       verdicts: verdicts.get(prevSpec.label),
+      solverDraft: drafts.get(prevSpec.label)?.solverDraft,
       dayRejected: rejected.has(prevSpec.label),
       memoryPath,
       adherence: effectiveAdherence,
@@ -1600,7 +1602,20 @@ export function NudgeFeedScreen({
       )}
 
       {!arrivalView && (
-      <section className={`tl rise wide${previewMode ? " preview" : ""}`} style={{ animationDelay: ".4s" }} aria-label={`${currentDayName} — steps`}>
+      <section
+        className={`tl rise wide${previewMode ? " preview" : ""}`}
+        style={{ animationDelay: ".4s" }}
+        aria-label={`${currentDayName} — steps`}
+        onTouchStart={(e) => { (window as any).__swipeX = e.touches[0].clientX; }}
+        onTouchEnd={(e) => {
+          const startX = (window as any).__swipeX;
+          if (typeof startX !== "number") return;
+          const dx = e.changedTouches[0].clientX - startX;
+          if (Math.abs(dx) < 50) return;
+          if (dx < 0 && activeDayIndex < days.length - 1) onSelectDay(days[activeDayIndex + 1].label);
+          if (dx > 0 && activeDayIndex > 0) onSelectDay(days[activeDayIndex - 1].label);
+        }}
+      >
         {/* Day stepper — ‹ › through the days; the centre label opens the
             full list for a direct jump. Real trip days only. It heads the
             rail it selects, inside the rail's own surface. */}
@@ -1827,6 +1842,11 @@ export function NudgeFeedScreen({
                               ? evalChipLabel(v.score, v.violations)
                               : "checked against sleep research",
                             ...(step.evidence!.draftRejected ? ["revised once"] : []),
+                            ...(step.evidence!.placedBy === "planner" && step.evidence!.movedMin != null
+                              ? [`planner moved ${step.evidence.movedMin > 0 ? "+" : ""}${step.evidence.movedMin}m`]
+                              : step.evidence!.placedBy === "solver"
+                                ? ["solver's slot"]
+                                : []),
                             ...(step.evidence!.memoryPath ? ["learned from your past trips"] : []),
                           ].join(" · ");
                         })()}

@@ -161,6 +161,30 @@ export function DayScene(props: DaySceneProps) {
           aria-valuetext={`${fmtMin(read.localMin)} ${scene.city.name} local; ${fmtMin(read.bodyMin)} estimated body time`}
           onChange={(e) => { setPlaying(false); setMinute(Number(e.target.value)); }}
         />
+        <div className="day-scene-stepper" role="group" aria-label="Step through the day">
+          <button
+            type="button"
+            onClick={() => {
+              setPlaying(false);
+              setMinute(Math.max(0, read.localMin - 15));
+              if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(10);
+            }}
+            aria-label="Back 15 minutes"
+          >
+            −15m
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setPlaying(false);
+              setMinute(Math.min(1439, read.localMin + 15));
+              if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(10);
+            }}
+            aria-label="Forward 15 minutes"
+          >
+            +15m
+          </button>
+        </div>
         <div className="day-scene-controls">
           <button
             type="button"

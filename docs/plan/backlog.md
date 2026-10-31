@@ -889,6 +889,35 @@ that collapses once output arrives. Consensus that matters here:
 - **Do not** build concept 2's tap-to-constrain until the check-in→replan
   path is visible end-to-end in a browser — the engine is real but the
   full loop has never had a visual pass.
+- **Depth model (`?depth=`).** The dial maps to *evidence depth*, not agent
+  visibility: `guided` expands the why-drawers, `operator` routes to
+  `/crew`. A `crew_question` asks at every depth — it is a decision, not
+  detail — and the trace stays collapsed at simple. Shipped alongside:
+  the menu's live-run row ("Crew working — Otto → submitDayPlan · 2/5
+  locked", links to `/crew`), per-cue provenance in `.evline`
+  (`solver's slot` / `planner moved +30m`, diffed against `solverDraft`),
+  and concept 2's first half — locked-day cue diamonds on the ShiftBoard
+  tap straight into the shared action ledger, so a mark there and a skip
+  on Today are the same constraint reaching the next replan.
+
+## Round 11 — The Core Mobile Experience, Ambient Glanceability & Recovery Pass (2026-10-31)
+
+Addresses the traveller's real-world environment (brain fog, mobile thumb reach, touch collisions, offline flights, and unexpected disruption).
+
+### Items (ranked)
+
+1. **UndoToast mobile elevation (P1, Bug/Ergonomics).** `UndoToast` sits at `bottom: 24px`, directly colliding with `.bottom-nav` on phones (`bottom: 0`, ~84px with safe-area padding). Move toast positioning to clear the bottom nav on mobile viewports (`calc(env(safe-area-inset-bottom, 0px) + 72px)` on narrow screens, `24px` on desktop) using CSS variable or responsive styling.
+2. **The "Right Now" glanceable status card (P1, Product/UX).** High-cognitive-fatigue travellers opening Today need an instant answer to *"What should I do right this second?"* Render a prominent ambient status banner at the top of Today / active day:
+   - Current active window (e.g. `☀️ Seek bright light · Active until 10:30 (45m left)`) or countdown to the next upcoming intervention (e.g. `☕ Caffeine curfew in 1h 15m (Cutoff at 14:00)`).
+   - Low cognitive load, high contrast, zero scrolling required to see immediate instruction.
+3. **Adaptive recovery on skipped interventions (P2, Product/Honesty).** Skipping a nudge currently registers a mark without offering guidance, feeling punitive or dead-end. When a critical intervention (morning light, caffeine, or sleep) is marked skipped:
+   - Show an immediate, non-punitive circadian recovery tip (e.g., *"Missed morning light? Get 20m of outdoor light at midday and avoid evening blue light"*).
+   - Clarify the scientific rationale without blaming the traveller.
+4. **Offline & in-flight reassurance badge (P2, Polish).** When a user is offline (airplane mode or poor cellular), show a calm indicator: *"Offline ready · Full plan saved on device"*.
+5. **Day navigation swipe affordance & scrubber micro-steps (P2, Mobile interaction).**
+   - Provide touch swipe support (touch start/end) across the day rail to switch days smoothly with a thumb.
+   - Add stepped ±15m micro-jump buttons alongside the 1440-minute slider so precise times can be selected on phone touchscreens.
+
 
 ## Later / deferred
 

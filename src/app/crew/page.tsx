@@ -640,6 +640,7 @@ export default function Home() {
                     locked={run.locked}
                     activeLabel={run.activeLabel}
                     activeAgent={run.activeAgent}
+                    tripKey={`${trip.origin.code}-${trip.destination.code}-${trip.days[0]?.date ?? ""}`}
                   />
                 )}
               </div>

@@ -46,6 +46,7 @@ import { RunAnnouncer } from "@/components/RunAnnouncer";
 import { CrewTrace } from "@/components/CrewTrace";
 import { CalendarApprovalCard } from "@/components/CalendarApprovalCard";
 import { CrewQuestionCard } from "@/components/CrewQuestionCard";
+import { CREW } from "@/agents/crew";
 import { useFocusTrap } from "@/lib/a11y";
 import { friendlyDayLabel } from "@/lib/day-label";
 import { restorePlan } from "@/lib/restore-plan";
@@ -1036,6 +1037,16 @@ export default function Home() {
         {/* Dropdown Menu */}
         {menuOpen && (
           <div className="menu rise" style={{ animationDelay: ".1s" }} role="menu">
+            {/* A run outlives its screen — while one is live, the menu's top
+                row is its current step and a way back to watch it. */}
+            {run.phase === "running" && (
+              <Link href="/crew" className="m" role="menuitem" transitionTypes={["nav-forward"]} onClick={() => setMenuOpen(false)}>
+                Crew working — {run.activeAgent ? CREW[run.activeAgent].name : "agents"}
+                {run.lastTool ? ` → ${run.lastTool.tool}` : run.activeLabel ? ` on ${run.activeLabel}` : ""}
+                {" · "}
+                {run.locked.size}/{trip?.days.length ?? "?"} locked
+              </Link>
+            )}
             {/* Real buttons, not focusable divs: as divs these were in the tab
                 order but Enter and Space did nothing, because a div has no
                 activation behaviour. The <Link> siblings below are real

@@ -2646,6 +2646,38 @@ select:focus-visible {
     to { opacity: 1; transform: translate(-50%, 0); }
   }
   .toast-in { animation: toast-in 0.2s ease-out; }
+  .undo-toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 90;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    border-radius: 999px;
+    background: var(--color-clay, #1e1b18);
+    color: var(--color-paper, #f5efe6);
+    font-size: 13px;
+    font-weight: 600;
+    box-shadow: 0 8px 28px rgba(30, 27, 24, 0.35);
+  }
+  @media (max-width: 768px) {
+    .undo-toast {
+      bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+    }
+  }
+  .undo-toast-btn {
+    background: none;
+    border: none;
+    padding: 6px 10px;
+    margin: -6px -8px -6px 0;
+    cursor: pointer;
+    color: var(--m-accent, #e99a6f);
+    font-weight: 800;
+    font-size: 13px;
+  }
   .toast-out { opacity: 0; transform: translate(-50%, 8px); transition: opacity var(--dur-glide) var(--ease-glide), transform var(--dur-glide) var(--ease-glide); }
   @keyframes check-draw {
     from { stroke-dashoffset: 10; }
@@ -5471,4 +5503,38 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
     animation: none !important;
     transition: none !important;
   }
+}
+
+.offline-badge {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--color-clay, #1e1b18);
+  color: var(--color-paper, #f5efe6);
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: 0 8px 28px rgba(30, 27, 24, 0.35);
+}
+
+.right-now-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  margin: 8px 0 12px;
+  border-radius: 12px;
+  background: var(--m-card, #fff);
+  border: 1px solid var(--m-border, #ddd);
+  font-size: 13px;
+  font-weight: 700;
+}
+.right-now-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--color-terracotta, #d96b43);
 }

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { buildDailyNudgesForDay, stepImpactMin, tasteStrip } from "../src/domain/nudges";
+import { buildDailyNudgesForDay, recoveryTip, stepImpactMin, tasteStrip } from "../src/domain/nudges";
 import { previewPlan } from "../src/domain/solver";
 import type { DayPlan } from "../src/domain/types";
 import { ADHERENCE_PROFILE, CALENDAR, DEMO_TRIP, GARMIN_BASELINE } from "../src/domain/fixtures";
@@ -160,3 +160,23 @@ describe("tasteStrip (bet 2 — destination taste surface)", () => {
     expect(out!.destination).toBe("Tokyo");
   });
 });
+
+describe("recoveryTip", () => {
+  test("provides sunlight advice distinguished by avoid vs seek", () => {
+    const seek = recoveryTip("sunlight", "Morning light window");
+    expect(seek).toContain("midday");
+    const avoid = recoveryTip("sunlight", "Avoid bright evening light");
+    expect(avoid).toContain("sunglasses");
+  });
+
+  test("provides caffeine advice under nutrition", () => {
+    const caffeine = recoveryTip("nutrition", "Caffeine cutoff at 14:00");
+    expect(caffeine).toContain("caffeine");
+  });
+
+  test("provides sleep and rhythm anchoring advice", () => {
+    const sleep = recoveryTip("sleep", "Anchor sleep window");
+    expect(sleep).toContain("target wake time");
+  });
+});
+

@@ -32,24 +32,7 @@ export function useUndoToast(): {
       key={item.key}
       role="status"
       aria-live="polite"
-      style={{
-        position: "fixed",
-        bottom: 24,
-        left: "50%",
-        transform: "translateX(-50%)",
-        zIndex: 90,
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        padding: "10px 16px",
-        borderRadius: 999,
-        background: "#1E1B18",
-        color: "#F5EFE6",
-        fontSize: 13,
-        fontWeight: 600,
-        boxShadow: "0 8px 28px rgba(30,27,24,0.35)",
-      }}
-      className="toast-in"
+      className="undo-toast toast-in"
     >
       <span>{item.message}</span>
       <button
@@ -58,16 +41,7 @@ export function useUndoToast(): {
           item.undo();
           hide();
         }}
-        style={{
-          background: "none",
-          border: "none",
-          padding: "6px 10px",
-          margin: "-6px -8px -6px 0",
-          cursor: "pointer",
-          color: "#e99a6f",
-          fontWeight: 800,
-          fontSize: 13,
-        }}
+        className="undo-toast-btn"
       >
         Undo
       </button>

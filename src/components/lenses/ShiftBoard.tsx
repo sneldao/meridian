@@ -1,12 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { CREW } from "@/agents/crew";
 import { fmtMin, passes } from "@/domain/circadian";
-import type { AgentId, DayPlan, DaySpec, EvalResult } from "@/domain/types";
+import type { AgentId, DayPlan, DaySpec, EvalResult, Intervention } from "@/domain/types";
 import { INTERVENTION_ICONS } from "@/lib/intervention-icons";
 import { springLock } from "@/lib/motion";
+import {
+  EMPTY_TRIP_ACTIONS,
+  readTripActions,
+  toggleTripAction,
+} from "@/lib/trip-actions";
 
 // The hero lens. Reads the run state the event stream builds (see the
 // hackathon plan, section 6) and draws each day as a row on a 24-hour clock.
@@ -38,7 +43,27 @@ export interface ShiftBoardProps {
   readOnly?: boolean;
   /** Plain row name in readOnly mode (e.g. "Thu 22 Oct" instead of "D-2"). */
   rowLabel?: (spec: DaySpec) => string;
+  /** Trip scope for the shared action ledger (`meridian:actions:{key}`).
+   *  When set, locked-day cue diamonds become tappable — a tap writes the
+   *  same skip mark the feed's "skip" writes, so the constraint folds into
+   *  the next replan through the same channel. */
+  tripKey?: string;
 }
+
+/** Intervention kind → the nudge id the feed marks, so a tap here and a
+ *  tap on Today land on the same ledger entry. */
+const NUDGE_SUFFIX_BY_KIND: Partial<Record<Intervention["kind"], string>> = {
+  light_exposure: "sunlight",
+  exercise: "run",
+  caffeine_cutoff: "nutrition",
+  avoid_light: "sleep",
+  sleep_window: "sleep",
+};
+
+const markIdFor = (label: string, kind: Intervention["kind"]) =>
+  `${label}-${NUDGE_SUFFIX_BY_KIND[kind] ?? kind}`;
+
+const actionsKey = (tripKey: string) => `meridian:actions:${tripKey}`;
 
 type RowState = "queued" | "draft" | "scanning" | "rejected" | "locked";
 
@@ -107,13 +132,79 @@ const STATE_COLOR: Record<RowState, string> = {
   locked: "var(--color-pass)",
 };
 
-export function ShiftBoard({ days, drafts, verdicts, locked, activeLabel, activeAgent, readOnly, rowLabel }: ShiftBoardProps) {
+export function ShiftBoard({ days, drafts, verdicts, locked, activeLabel, activeAgent, readOnly, rowLabel, tripKey }: ShiftBoardProps) {
   const reduce = useReducedMotion();
   // Morning dissolve: a replan drops a day's plan and the row snaps to queued
   // instantly. Keep the vanished plan for a beat and let it fade out, so the
   // "work unhappening" reads as a dissolve instead of a jump cut.
   const [dissolving, setDissolving] = useState<ReadonlyMap<string, DayPlan>>(new Map());
   const prevShown = useRef(new Map<string, DayPlan>());
+
+  // Tap-to-constrain: cue diamonds on locked days toggle "can't do this" in
+  // the shared action ledger — the same store the feed's skip writes — so
+  // the constraint reaches the next replan through the check-in channel
+  // rather than a parallel one. Marks hydrate from localStorage so a mark
+  // made on Today reads as marked here and vice versa.
+  const [marked, setMarked] = useState<Set<string>>(new Set());
+  const [stateRef] = useState<{ current: ReturnType<typeof readTripActions> }>({
+    current: EMPTY_TRIP_ACTIONS,
+  });
+  useEffect(() => {
+    // Deferred a tick: hydration reads localStorage, which is render-impure,
+    // and setState stays out of the effect body.
+    const t = setTimeout(() => {
+      if (!tripKey) {
+        setMarked(new Set());
+        return;
+      }
+      try {
+        const s = readTripActions(localStorage.getItem(actionsKey(tripKey)));
+        stateRef.current = s;
+        setMarked(
+          new Set(
+            Object.values(s.marks)
+              .filter((m) => m.status === "skipped")
+              .map((m) => m.id),
+          ),
+        );
+      } catch {
+        /* storage unavailable — the board stays read-only for marks */
+      }
+    }, 0);
+    return () => clearTimeout(t);
+  }, [tripKey, stateRef]);
+
+  // useCallback keeps the compiler treating it as an event handler —
+  // Date.now and localStorage are render-impure.
+  const toggleCueMark = useCallback((d: DaySpec, iv: Intervention) => {
+    if (!tripKey) return;
+    const id = markIdFor(d.label, iv.kind);
+    const next = toggleTripAction(
+      stateRef.current,
+      {
+        id,
+        dayIndex: d.dayIndex,
+        kind: iv.kind,
+        startMin: iv.startMin,
+        text: `can't do ${iv.kind.replace(/_/g, " ")} at ${fmtMin(iv.startMin)}`,
+        at: Date.now(),
+      },
+      "skipped",
+    );
+    stateRef.current = next;
+    try {
+      localStorage.setItem(actionsKey(tripKey), JSON.stringify(next));
+    } catch {
+      /* storage unavailable — the mark still shows for this session */
+    }
+    setMarked(
+      new Set(
+        Object.values(next.marks)
+          .filter((m) => m.status === "skipped")
+          .map((m) => m.id),
+      ),
+    );
+  }, [tripKey, stateRef]);
   useEffect(() => {
     const next = new Map<string, DayPlan>();
     const vanished: [string, DayPlan][] = [];
@@ -313,21 +404,50 @@ export function ShiftBoard({ days, drafts, verdicts, locked, activeLabel, active
                   />
                 ))}
 
-              {/* intervention markers */}
+              {/* intervention markers — on locked rows with a trip scope
+                  they are also buttons: tap marks "can't do this" on the
+                  shared ledger, and the constraint rides the next replan
+                  through the same check-in channel the feed uses. */}
               {shown &&
                 plan &&
-                plan.interventions.map((iv, j) => (
-                  <span
-                    key={j}
-                    className="absolute top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rotate-45"
-                    style={{
-                      left: `${pct(iv.startMin)}%`,
-                      background: INTERVENTION_ICONS[iv.kind].tint,
-                      boxShadow: `0 0 6px ${INTERVENTION_ICONS[iv.kind].tint}99`,
-                    }}
-                    title={`${iv.kind.replace(/_/g, " ")} ${fmtMin(iv.startMin)}`}
-                  />
-                ))}
+                plan.interventions.map((iv, j) => {
+                  const canMark = !readOnly && tripKey && state === "locked";
+                  const isMarked = marked.has(markIdFor(d.label, iv.kind));
+                  return canMark ? (
+                    <button
+                      key={j}
+                      type="button"
+                      aria-pressed={isMarked}
+                      aria-label={`${iv.kind.replace(/_/g, " ")} ${fmtMin(iv.startMin)} — mark can't do this`}
+                      onClick={() => toggleCueMark(d, iv)}
+                      className="absolute top-1/2 flex h-6 w-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-sm"
+                      style={{ left: `${pct(iv.startMin)}%` }}
+                      title={`${iv.kind.replace(/_/g, " ")} ${fmtMin(iv.startMin)} — tap to mark can't do this`}
+                    >
+                      <span
+                        className="h-2.5 w-2.5 rotate-45"
+                        style={{
+                          background: INTERVENTION_ICONS[iv.kind].tint,
+                          boxShadow: `0 0 6px ${INTERVENTION_ICONS[iv.kind].tint}99`,
+                          opacity: isMarked ? 0.45 : 1,
+                          outline: isMarked ? "1px dashed var(--color-fail)" : "none",
+                          outlineOffset: 2,
+                        }}
+                      />
+                    </button>
+                  ) : (
+                    <span
+                      key={j}
+                      className="absolute top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rotate-45"
+                      style={{
+                        left: `${pct(iv.startMin)}%`,
+                        background: INTERVENTION_ICONS[iv.kind].tint,
+                        boxShadow: `0 0 6px ${INTERVENTION_ICONS[iv.kind].tint}99`,
+                      }}
+                      title={`${iv.kind.replace(/_/g, " ")} ${fmtMin(iv.startMin)}`}
+                    />
+                  );
+                })}
 
               {/* the morning dissolve — a plan the replan just dropped fades
                   out on the now-queued row. Keyed on the plan so a second
@@ -420,6 +540,12 @@ export function ShiftBoard({ days, drafts, verdicts, locked, activeLabel, active
         <span>◆ = ask</span>
         {!readOnly && <span>dashed = draft</span>}
         {!readOnly && <span>solid = locked</span>}
+        {!readOnly && tripKey && <span>tap a ◆ on a locked day to mark it</span>}
+        {marked.size > 0 && (
+          <span className="text-mist">
+            {marked.size} marked — folds into your next update on Today
+          </span>
+        )}
       </div>
     </div>
   );

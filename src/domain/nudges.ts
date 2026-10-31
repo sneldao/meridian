@@ -33,6 +33,9 @@ export interface TravelerNudge {
   dayIndex: number;
   dayLabel: string;
   category: NudgeCategory;
+  /** The plan intervention this step renders, when it has one — what lets
+   *  provenance say "solver's slot" versus "the planner moved it". */
+  kind?: Intervention["kind"];
   title: string;
   timeWindow: string;
   startMin: number;
@@ -50,6 +53,12 @@ export interface TravelerNudge {
     evalVerdict?: { score: number; violations: string[] };
     memoryPath?: string;
     draftRejected?: boolean;
+    /** Where this cue sits relative to the solver's draft — "kept" means the
+     *  planner adopted the solver's slot; movedMin is the signed delta when
+     *  the submission placed it elsewhere. Only present when the run carried
+     *  a solverDraft to compare against. */
+    placedBy?: "solver" | "planner";
+    movedMin?: number;
   };
   calendarMove?: {
     eventTitle: string;
@@ -215,8 +224,11 @@ export function buildDailyNudgesForDay(params: {
   memoryPath?: string;
   /** Compliance floor for placing asks; wired in a follow-up. */
   adherence?: AdherenceProfile;
+  /** The solver's placement for this day, when the run carried it — the
+   *  baseline per-cue provenance is diffed against. */
+  solverDraft?: DayPlan;
 }): TravelerNudge[] {
-  const { trip, dayIndex, plan, calendarEvents, moves, citations, verdicts, dayRejected, memoryPath, adherence } = params;
+  const { trip, dayIndex, plan, calendarEvents, moves, citations, verdicts, dayRejected, memoryPath, adherence, solverDraft } = params;
 
   // No plan → no steps. The feed renders "not placed yet — personalise";
   // nothing here may invent times from a synthetic wake schedule.
@@ -266,6 +278,7 @@ export function buildDailyNudgesForDay(params: {
       dayIndex,
       dayLabel: spec.label,
       category: "sunlight",
+      kind: "light_exposure",
       title: isFlightDay
         ? "Cabin light and arrival daylight"
         : east
@@ -330,6 +343,7 @@ export function buildDailyNudgesForDay(params: {
       dayIndex,
       dayLabel: spec.label,
       category: "run",
+      kind: "exercise",
       title: isFlightDay
         ? "Pre-boarding walk"
         : isArrivalDay
@@ -368,6 +382,7 @@ export function buildDailyNudgesForDay(params: {
       dayIndex,
       dayLabel: spec.label,
       category: "nutrition",
+      kind: "caffeine_cutoff",
       title: isFlightDay
         ? "In-flight food and water"
         : `Last coffee ${fmtMin(cafMin)} · dinner by ${fmtMin(dinnerMin)}`,
@@ -468,6 +483,7 @@ export function buildDailyNudgesForDay(params: {
     dayIndex,
     dayLabel: spec.label,
     category: "sleep",
+    kind: "avoid_light",
     title: isFlightDay
       ? `Cabin sleep ${fmtMin(bedMin)}–${fmtMin(wakeMin)}`
       : `Lights down ${fmtMin(windDownMin)} · bed ${fmtMin(bedMin)}`,
@@ -498,11 +514,32 @@ export function buildDailyNudgesForDay(params: {
       }
     : undefined;
 
+  // Per-cue provenance: where this step sits relative to the solver's
+  // draft. "solver" = the planner kept the slot; "planner" + movedMin = the
+  // submission placed it elsewhere. Only computed when both plans carry
+  // the same kind — an absent draft or a cue the draft never had stays
+  // silent rather than claiming a comparison that isn't there.
+  const placementOf = (n: (typeof nudges)[number]) => {
+    if (!solverDraft || !n.kind) return {};
+    const draftIv = solverDraft.interventions.find((iv) => iv.kind === n.kind);
+    const planIv = plan.interventions.find((iv) => iv.kind === n.kind);
+    if (!draftIv || !planIv) return {};
+    return draftIv.startMin === planIv.startMin
+      ? { placedBy: "solver" as const }
+      : { placedBy: "planner" as const, movedMin: planIv.startMin - draftIv.startMin };
+  };
+
   return nudges
     .map((n) => ({
       ...n,
       ...(dayEvidence
-        ? { evidence: { ...dayEvidence, ...(n.citation ? { citationId: n.citation.id } : {}) } }
+        ? {
+            evidence: {
+              ...dayEvidence,
+              ...placementOf(n),
+              ...(n.citation ? { citationId: n.citation.id } : {}),
+            },
+          }
         : {}),
     }))
     .sort((a, b) => a.startMin - b.startMin);
@@ -573,4 +610,33 @@ export function stepImpactMin(plan: DayPlan, category: NudgeCategory): number {
   const total = W.reduce((s, [, x]) => s + x, 0);
   if (total === 0 || w === 0) return 0;
   return Math.round((shift * (w / total)) / 5) * 5;
+}
+
+/** Non-punitive, circadian-grounded adaptive guidance when a traveler misses or skips an intervention. */
+export function recoveryTip(category: NudgeCategory, title?: string): string {
+  const t = title?.toLowerCase() ?? "";
+  const isAvoid = t.includes("avoid") || t.includes("dim") || t.includes("dark");
+  const isCaffeine = t.includes("caffeine") || t.includes("coffee");
+  if (category === "sunlight") {
+    if (isAvoid) {
+      return "Wear sunglasses outdoors and set device screens to minimum brightness with night shift active.";
+    }
+    return "Aim for 20m of natural outdoor daylight around midday, and keep evening lighting extra dim to compensate.";
+  }
+  if (category === "nutrition") {
+    if (isCaffeine) {
+      return "Cut off caffeine now, switch to water or herbal tea, and move target bedtime back 20–30m.";
+    }
+    return "Keep your next meal light and aligned with destination meal times.";
+  }
+  if (category === "sleep") {
+    return "Protect your target wake time to anchor your circadian rhythm; limit any daytime naps to under 20m.";
+  }
+  if (category === "run") {
+    return "Swap intense workouts for gentle stretching or a light walk to keep core body temperature calm.";
+  }
+  if (category === "calendar") {
+    return "Protect at least 30m of quiet downtime before your next scheduled window.";
+  }
+  return "Stay well hydrated and align closely with your next planned window.";
 }
