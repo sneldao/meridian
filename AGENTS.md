@@ -20,4 +20,6 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   - `.env.base44-defaults` sets `AGENT_PROVIDER=replay` and `NEXT_PUBLIC_AGENT_PROVIDER=replay` so the app runs out-of-the-box with zero external API keys, while `/run/base44/app.env` is loaded last so any user-supplied provider or API keys (`ANTHROPIC_API_KEY`, `FEATHERLESS_API_KEY`, `NEBIUS_API_KEY`, `ELEVENLABS_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `COMPOSIO_API_KEY`, `TAVILY_API_KEY`, `QLOO_API_KEY`, `FIRECRAWL_API_KEY`) override the defaults.
 - **Verification**:
   - Check `curl -fsS http://localhost:3000/` and `curl -fsS http://localhost:3000/api/graph/health`.
+  - On a host `next dev` (outside the container), trust the port the server prints: `:3000` can be squatted by an unrelated service on a shared machine and Meridian then takes the next free one. Confirm the body is Meridian before believing a check.
+  - CI (`.github/workflows/ci.yml`) runs `bun run typecheck` + `bun test` with no services and no API keys, so a failure there is a real regression rather than a missing local FalkorDB or provider key.
   - Run tests and checks inside the container with `docker compose -f docker-compose.base44.yml exec -T web bun test` and `docker compose -f docker-compose.base44.yml exec -T web bun run typecheck`.

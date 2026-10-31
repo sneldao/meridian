@@ -109,6 +109,11 @@ bun run build
 Commits run `gitleaks` + typecheck + lint via `.githooks/` (enabled through
 `git config core.hooksPath .githooks` — already set in this clone).
 
+`.github/workflows/ci.yml` runs typecheck + the full suite on every push and
+pull request with no services and no API keys: `FALKORDB_URL` unset is a
+supported state and an unset `AGENT_PROVIDER` resolves to `replay`, so a suite
+that only passes on a laptop with a running FalkorDB can't be the only gate.
+
 ## Offline / PWA
 
 Meridian ships a minimal service worker (`public/sw.js`) that caches the app
@@ -131,3 +136,10 @@ bun test                 # pure functions (scorer, adherence, home entry,
 bun run smoke            # SSE smoke against a running dev server: night run + morning replan
 bun run replay:check     # streams the replay transcript; prints eval verdicts
 ```
+
+`tests/design-contract.test.ts` executes `design.md` instead of paraphrasing
+it: every step kind has a hue in every palette, a step with no kind claims no
+data colour, the `.wide` sites are the sanctioned instrument bands, only
+transform/opacity/paint animate, and a hedged state is hedged once. The
+token-over-literal and inline-style counts are ratchets frozen in that file —
+they may shrink, never grow, and a new file starts at zero.

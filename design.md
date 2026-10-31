@@ -11,6 +11,13 @@ terminator line becomes the visual grammar. Product rules from
 nothing is decorative, every visual read exists as words, motion is caused by
 the traveller or is the reason the screen exists, one accent, numbers in mono.
 
+Parts of this file are executable: `tests/design-contract.test.ts` parses
+`globals.css` and the chrome surfaces and fails the suite when a rule is
+broken — hues per palette, the unkinded-step fallback, the sanctioned `.wide`
+surfaces, the motion vocabulary, and the ratchets that let the token and
+inline-style counts only shrink. Amend the doc and the gate together; a rule
+written here and enforced nowhere is a rule that quietly lapses.
+
 ## Genre
 
 atmospheric (the night-side / cinematic school), crossed with the app's

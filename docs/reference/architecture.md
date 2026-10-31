@@ -223,6 +223,11 @@ src/domain/      types, circadian scorer + phase-response model, placement
                  solver + previewPlan, today (which day is now, next step),
                  sun (subsolar point, terminator, body-clock ghost), dawn-layers
                  (the shared day/night + ghost path builder both globes draw),
+                 theme (auto paints the destination's daylight rather than the
+                 device hour, falling back to the device only before a trip
+                 exists; `use-theme` caches the resolved paint so the
+                 pre-hydration script in `layout.tsx` opens on the right
+                 palette),
                  adherence, readiness, arrival (the landing read + headline),
                  arrival-rows (the `/arrival` cells, kept out of the component
                  so the numbers can be asserted), fixtures (trip horizon via
