@@ -6,16 +6,20 @@ import { RoutePicker } from "@/components/RoutePicker";
 import { isValidHomeRoute, type HomeRoute } from "@/lib/home-entry";
 import { SampleJourneys } from "@/components/SampleJourneys";
 import type { DemoScenarioId } from "@/domain/demo-scenarios";
-import { ADHERENCE_PROFILE, buildTrip, DEMO_TRIP } from "@/domain/fixtures";
+import { ADHERENCE_PROFILE, buildTrip, DEMO_TRIP, GARMIN_BASELINE } from "@/domain/fixtures";
 import { previewPlan, type SolvedDay } from "@/domain/solver";
+import { routeGapHeadline, routeGapLine, routeGapRead } from "@/domain/route-gap";
 import { coverageOf, fmtMin } from "@/domain/circadian";
 import { INTERVENTION_ICONS } from "@/lib/intervention-icons";
 import type { CityCode, Trip } from "@/domain/types";
 
 /** What a plan looks like when it lands — computed, not mocked. The example
- *  trip runs the real solver once and the tiles show real numbers. */
+ *  trip runs the real solver once and the tiles show real numbers. The demo
+ *  sleeper profile anchors it: the solver places no days without a baseline,
+ *  and the entry form has no wearable data yet, so the example's numbers are
+ *  model output for the demo profile — labelled example, never measured. */
 function demoArtifacts() {
-  const solved = previewPlan({ trip: DEMO_TRIP, calendar: [], adherence: ADHERENCE_PROFILE });
+  const solved = previewPlan({ trip: DEMO_TRIP, calendar: [], adherence: ADHERENCE_PROFILE, baseline: GARMIN_BASELINE });
   const days = [...solved.values()].filter((s): s is SolvedDay => !!s).map((s) => s.plan);
   const cov = coverageOf(DEMO_TRIP, days);
   const cues = (days[0]?.interventions ?? [])
@@ -24,15 +28,16 @@ function demoArtifacts() {
   return { shift: Math.abs(DEMO_TRIP.requiredShiftMin), cov, cues };
 }
 
-function planPreview(route: HomeRoute): { shift: number; lightStart?: number; covPct: number } | null {
+function planPreview(route: HomeRoute): { lightStart?: number; covPct: number } | null {
   try {
     const t: Trip = buildTrip(route.origin.toUpperCase() as CityCode, route.dest.toUpperCase() as CityCode, route.date);
-    const solved = previewPlan({ trip: t, calendar: [], adherence: ADHERENCE_PROFILE });
+    // Same demo baseline as the tiles above: a preview the solver can
+    // actually place, computed the moment the route resolves.
+    const solved = previewPlan({ trip: t, calendar: [], adherence: ADHERENCE_PROFILE, baseline: GARMIN_BASELINE });
     const days = [...solved.values()].filter((s): s is SolvedDay => !!s).map((s) => s.plan);
     if (!days.length) return null;
     const light = days.flatMap((d) => d.interventions).find((i) => i.kind === "light_exposure");
     return {
-      shift: Math.abs(t.requiredShiftMin),
       lightStart: light?.startMin,
       covPct: Math.round(coverageOf(t, days).ratio * 100),
     };
@@ -57,13 +62,20 @@ export function TripEntryScreen({ initialDate, onContinue, onExploreExample, onE
   const sameAirports =
     !!draft.origin && !!draft.dest && draft.origin.toUpperCase() === draft.dest.toUpperCase();
   const preview = useMemo(() => (valid ? planPreview(draft) : null), [draft, valid]);
+  // The stakes line, computed from the route being typed — the headline
+  // reacts the moment the draft resolves, not after the form is submitted.
+  const gap = useMemo(() => (valid ? routeGapRead(draft) : null), [draft, valid]);
   const artifacts = useMemo(() => demoArtifacts(), []);
 
   return (
     <div className="reading entry" role="group" aria-labelledby="entry-heading">
       <div className="entry-intro">
         <p className="entry-eyebrow">Arrive with a plan</p>
-        <h1 id="entry-heading" className="entry-title">Your 07:00 meeting in Tokyo is 23:00 body time.</h1>
+        <h1 id="entry-heading" className="entry-title">
+          {gap
+            ? routeGapHeadline(gap)
+            : "Your 07:00 meeting in Tokyo is 23:00 body time."}
+        </h1>
         <p className="entry-sub">Meridian&rsquo;s crew moves it — or moves you. Light, sleep and caffeine, timed to your route and shown to the minute.</p>
         <div className="entry-story" aria-label="How Meridian helps">
           <div><span>Before the big moment</span><p>Light and rest, timed to your journey.</p></div>
@@ -137,12 +149,22 @@ export function TripEntryScreen({ initialDate, onContinue, onExploreExample, onE
             See my trip plan <ArrowRight size={18} aria-hidden="true" />
           </button>
           {/* Live solver preview — computed as the route resolves, so the
-              landing reacts rather than promises. */}
-          {preview && (
+              landing reacts rather than promises. The gap read lands the
+              moment the airports resolve; the solver's line follows. */}
+          {(preview || gap) && (
             <p className="mt-2.5 text-2xs text-mist" aria-live="polite">
-              {(preview.shift / 60).toFixed(1)}h to move ·
-              lands {preview.covPct}% adapted
-              {preview.lightStart !== undefined && ` · first light ${fmtMin(preview.lightStart)}`}
+              {gap && (
+                <>
+                  {routeGapLine(gap)}
+                  {preview ? " · " : ""}
+                </>
+              )}
+              {preview && (
+                <>
+                  lands {preview.covPct}% adapted
+                  {preview.lightStart !== undefined && ` · first light ${fmtMin(preview.lightStart)}`}
+                </>
+              )}
             </p>
           )}
         </form>

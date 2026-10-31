@@ -977,15 +977,21 @@ is the honest version, phase 2 if wanted).
 
 ### Items (ranked)
 
-1. **Gap-led headline (P1, copy).** Lead with the stakes-as-arithmetic
-   register the rest of the product speaks: "Your 07:00 Tokyo meeting is
-   23:00 body time." / "Meridian's crew moves it — or moves you."
-2. **Form-reactive live preview (P1, the forward-thinking signal).** As
-   the RoutePicker draft becomes a valid route, a compact strip under the
-   form computes the trip live — `previewPlan` against the solver, no keys,
-   no faking: shift owed, first-day light window, days to land adapted.
-   The landing *reacts* — that's the agentic feel in miniature, and it
-   changes nothing about entry precedence.
+1. **Gap-led headline (P1, copy) — shipped `HEAD`.** Now computed, not
+   copy: `domain/route-gap.ts` reads the draft route and renders "A 07:00
+   morning in {dest} is {body} body time" (or the no-shift / unknown-airport
+   honest fallbacks). The static signature line is only the pre-typing
+   default. Lives in the domain so the DST and westbound maths are asserted,
+   not eyeballed.
+2. **Form-reactive live preview (P1, the forward-thinking signal) — shipped
+   `HEAD`.** The live line under the form now leads with the gap +
+   direction (`8.0h to move · eastbound`) from `routeGapRead`, then the
+   solver's adapted % and first light. **Bug found + fixed while wiring:**
+   the prior `planPreview` ran the solver with no baseline, and the solver
+   places *zero* days without one — so the "lands NN% adapted" figure never
+   rendered and the example triptych showed a 0h payoff. Both now pin
+   `GARMIN_BASELINE` (labelled example), which is also what surfaced real
+   numbers in the tiles.
 3. **Artifact triptych (P2, proof for scrollers).** Three tiles under the
    form, all computed once from `DEMO_TRIP` + `previewPlan` and labelled
    example: the CAS alignment score, one locked day's cue strip, and the

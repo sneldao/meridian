@@ -322,7 +322,11 @@ src/domain/      types, circadian scorer + phase-response model, placement
                  so the numbers can be asserted), arrival-passport (the
                  stamped record — a verdict, a figure and its honest
                  comparison, or nothing at all when the read carries neither
-                 a projection nor a gate promise), fixtures (trip horizon via
+                 a projection nor a gate promise), route-gap (the landing's
+                 stakes line, computed from the route as it is typed: the
+                 assumed first 07:00 morning at destination read on the body
+                 clock, the gap and direction, DST-honest via `cityOn` — null
+                 for unknown airports), fixtures (trip horizon via
                  horizonFor; Alex fixture for the demo route,
                  neutralCalendarFor elsewhere),
                  misalignment (the body-clock projection the dial shows:
@@ -343,7 +347,11 @@ src/agents/      providers, crew prompts, runtime, night replay, morning replay
                  draft the live path hands the planner)
 src/components/  NudgeFeedScreen (the Calm `/` surface: next step, timeline,
                  readiness), TripEntryScreen (the first-use form: blank route
-                 fields + a departure date, kept draft until Continue),
+                 fields + a departure date, kept draft until Continue; the
+                 headline and live line compute from `routeGapRead` +
+                 `previewPlan` the moment the draft resolves, so the landing
+                 reacts rather than promises — both previews pin the demo
+                 baseline, since the solver places no days without one),
                  BottomNav (the phone's tab bar — Today / Trips /
                  More; the plan is a view of Today and the payoff lives on
                  its trip, so neither gets a tab; directional
