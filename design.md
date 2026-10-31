@@ -208,3 +208,25 @@ the Dawn pass with `--font-body`, `--font-display`, `--text-display*`).
 
 Mechanical maps of the block above — omitted here until an export is actually
 requested; this project consumes `globals.css` directly.
+
+## Playable-day direction
+
+The interaction model now follows the direction documented in
+[docs/reference/interaction-research.md](docs/reference/interaction-research.md):
+a calm daily tool where the performance moment is the payoff, correctly timed
+light is the mechanism, and taste-ranked places are optional, personal rewards.
+
+The existing Cinematic Dawn system is retained — Fraunces/Inter/mono type,
+Dawn Ember tokens, purposeful stage and motion with static fallbacks and written
+equivalents for every interactive surface. This direction supersedes the earlier
+stacked-card emphasis for the main feed; it does not change clinical policies,
+the solver, the scorer, or the guided view.
+
+## Stage-sky direction
+
+`.hero`, `.clock-stage`, and `.arr` render a blue-black ink stage whose horizon
+band and origin-blue residue come from the same solar model as the Window
+Seat. `stageSkyFor` derives the body clock's sun altitude at the destination
+from the planned residual, then luminance-clamps the horizon colour so paper
+text stays readable. A null/hydrating date leaves the token defaults; the
+model describes an estimated body clock, not weather or measured adaptation.

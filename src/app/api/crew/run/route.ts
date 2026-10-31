@@ -5,6 +5,7 @@ import { fetchCalendar } from "@/tools/calendar";
 import { runCrew } from "@/agents/runtime";
 import { rateLimit, tooMany, RL_RUNS } from "@/lib/rateLimit";
 import { tenantOf } from "@/lib/tenant";
+import { parseTasteFavorites } from "@/domain/taste";
 import type { CheckIn } from "@/domain/types";
 
 export const dynamic = "force-dynamic";
@@ -28,6 +29,11 @@ export async function GET(req: NextRequest) {
   }
   if (!isValidDate(date)) {
     return new Response(JSON.stringify({ error: "invalid date" }), { status: 400 });
+  }
+
+  const tasteFavorites = parseTasteFavorites(sp.get("taste"));
+  if (tasteFavorites === null) {
+    return new Response(JSON.stringify({ error: "invalid taste favorites" }), { status: 400 });
   }
 
   const startDayRaw = sp.get("startDay");
@@ -70,7 +76,7 @@ export async function GET(req: NextRequest) {
   const stream = new ReadableStream({
     async start(controller) {
       try {
-        for await (const event of runCrew({ trip, calendar, calendarSource, baseline, baselineKind, checkIns, startDayIndex, tenant: tenantOf(req) })) {
+        for await (const event of runCrew({ trip, calendar, calendarSource, baseline, baselineKind, checkIns, startDayIndex, tenant: tenantOf(req), tasteFavorites })) {
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
         }
       } catch (err) {

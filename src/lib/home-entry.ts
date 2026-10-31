@@ -8,8 +8,11 @@ export interface HomeRoute {
 
 export type HomeEntryMode = "setup" | "trip" | "example";
 
+import { isDemoScenarioId, type DemoScenarioId } from "@/domain/demo-scenarios";
+
 export interface HomeEntry {
   mode: HomeEntryMode;
+  scenarioId?: DemoScenarioId;
 
   route: HomeRoute | null;
 
@@ -73,6 +76,11 @@ export function resolveHomeEntry(
   lastTripRaw: string | null,
 ): HomeEntry {
   const clockOpen = search.get("view") === "clock";
+  const exampleParam = search.get("example");
+  if (exampleParam !== null && exampleParam !== "1") {
+    if (isDemoScenarioId(exampleParam)) return { mode: "example", route: null, clockOpen, scenarioId: exampleParam };
+    return { mode: "setup", route: null, clockOpen };
+  }
   if (search.get("example") === "1") {
     return { mode: "example", route: null, clockOpen };
   }

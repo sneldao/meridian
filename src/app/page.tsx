@@ -57,6 +57,12 @@ import { isPreview } from "@/domain/preview";
 import { isValidHomeRoute, resolveHomeEntry, type HomeEntry, type HomeRoute } from "@/lib/home-entry";
 import { safeStorageGet } from "@/lib/local-data";
 import { useTripActions } from "@/lib/use-trip-actions";
+import { useTripTaste } from "@/lib/use-trip-taste";
+import { usePlaceChoices } from "@/lib/use-place-choices";
+import { shareTripContext } from "@/lib/share-trip";
+import { ScenarioExperience } from "@/components/ScenarioExperience";
+import type { DemoScenarioId } from "@/domain/demo-scenarios";
+import { isTasteItinerary, itineraryMatchesTrip, type TasteItinerary } from "@/domain/taste";
 import { JourneySteps } from "@/components/JourneySteps";
 import { useRunState, calendarWithMoves, ledgerEvents, ghostGapDeg } from "@/state/run";
 import { meetingReadiness } from "@/domain/readiness";
@@ -136,6 +142,7 @@ export default function Home() {
   const [dest, setDest] = useState("");
   const [departureDate, setDepartureDate] = useState("");
   const [entry, setEntry] = useState<HomeEntry | null>(null);
+  const [entryDraft, setEntryDraft] = useState<HomeRoute | null>(null);
   /** Null means "the window we'd recommend for this route". Deriving the
    *  default from the trip (rather than hardcoding an id) is what makes the
    *  picker correct on westbound routes, where the east ids don't exist. */
@@ -234,6 +241,15 @@ export default function Home() {
     tripKey,
     entry?.mode === "example" || isPreview(effectiveBaselineKind, wakeBand),
   );
+  const tasteScope =
+    entry?.mode === "trip"
+      ? `${origin}-${dest}-${departureDate}`
+      : entry?.mode === "example"
+        ? `example:${departureDate}`
+        : null;
+  const tasteProfile = useTripTaste(tasteScope, entry?.mode === "trip");
+  const placeChoices = usePlaceChoices(tasteScope, entry?.mode === "trip");
+  const [restoredItinerary, setRestoredItinerary] = useState<TasteItinerary | null>(null);
 
   // The departure window the crew should plan around. Deriving the default from
   // the trip rather than hardcoding an id is what makes the picker correct on
@@ -467,6 +483,7 @@ export default function Home() {
                 // honest to score the trip against. Without it the only number
                 // available after landing is the traveller's own recollection.
                 coverage: e.coverage,
+                tasteItinerary: e.tasteItinerary,
                 // The baseline the plan was built on, kept with it so the
                 // landing can be scored against the same model the clock was
                 // showing. Without it the arrival page falls back to the
@@ -503,6 +520,7 @@ export default function Home() {
                 score: e.score,
                 summary: e.summary,
                 days: e.days,
+                tasteItinerary: e.tasteItinerary,
                 provider: data?.provider,
                 fallback: run.errors.length > 0,
               };
@@ -553,6 +571,7 @@ export default function Home() {
     (extra?: { checkins?: string; startDay?: number }) => {
       if (run.phase === "running") return;
       if (entry?.mode !== "trip" || !isValidHomeRoute({ origin, dest, date: departureDate })) return;
+      if (!tasteProfile.ready) return;
       esRef.current?.close();
       reset();
       setEntries([]);
@@ -567,6 +586,9 @@ export default function Home() {
       // The flight window travels with the run, so fixed asks route around the
       // real departure slot rather than the fixture's.
       if (selectedFlightId) params.set("flight", selectedFlightId);
+      if (tasteProfile.ready && tasteProfile.favorites.length) {
+        params.set("taste", JSON.stringify(tasteProfile.favorites));
+      }
       const es = new EventSource("/api/crew/run?" + params.toString());
       esRef.current = es;
       lastEventAt.current = Date.now();
@@ -592,7 +614,7 @@ export default function Home() {
         reset();
       };
     },
-    [dispatch, handleSideEffects, push, reset, run.phase, tripQuery, checkInsParam, startDayParam, wakeBand, selectedFlightId, entry?.mode, origin, dest, departureDate],
+    [dispatch, handleSideEffects, push, reset, run.phase, tripQuery, checkInsParam, startDayParam, wakeBand, selectedFlightId, entry?.mode, origin, dest, departureDate, tasteProfile],
   );
 
   const startShift = useCallback(() => beginStream(), [beginStream]);
@@ -697,6 +719,7 @@ export default function Home() {
       setRestoredBaseline(null);
       setRestoredTrip(null);
       setRestoredBaselineKind(null);
+      setRestoredItinerary(null);
       setRouteOpen(false);
       setRouteDraft(null);
       setSetupOpen(false);
@@ -721,6 +744,7 @@ export default function Home() {
   );
 
   const openEntry = useCallback(() => {
+    setEntryDraft(null);
     esRef.current?.close();
     reset();
     setEntry({ mode: "setup", route: null, clockOpen: false });
@@ -737,6 +761,7 @@ export default function Home() {
     setRestoredBaseline(null);
     setRestoredTrip(null);
     setRestoredBaselineKind(null);
+    setRestoredItinerary(null);
     setRouteOpen(false);
     setRouteDraft(null);
     setSetupOpen(false);
@@ -753,10 +778,10 @@ export default function Home() {
     }
   }, [reset]);
 
-  const exploreExample = useCallback(() => {
+  const exploreExample = useCallback((scenarioId?: DemoScenarioId) => {
     esRef.current?.close();
     reset();
-    setEntry({ mode: "example", route: null, clockOpen: false });
+    setEntry({ mode: "example", route: null, clockOpen: false, ...(scenarioId ? { scenarioId } : {}) });
     setOrigin("");
     setDest("");
     setDepartureDate(defaultDepartureDate());
@@ -770,6 +795,7 @@ export default function Home() {
     setRestoredBaseline(null);
     setRestoredTrip(null);
     setRestoredBaselineKind(null);
+    setRestoredItinerary(null);
     setRouteOpen(false);
     setRouteDraft(null);
     setSetupOpen(false);
@@ -779,7 +805,7 @@ export default function Home() {
       url.searchParams.delete("origin");
       url.searchParams.delete("dest");
       url.searchParams.delete("date");
-      url.searchParams.set("example", "1");
+      url.searchParams.set("example", scenarioId ?? "1");
       window.history.replaceState(null, "", url.toString());
     } catch {
       /* ignore */
@@ -800,12 +826,22 @@ export default function Home() {
         setRestoredBaseline(r?.baseline ?? null);
         setRestoredTrip(r?.trip ?? null);
         setRestoredBaselineKind(r?.baselineKind ?? null);
+        setRestoredItinerary(r?.tasteItinerary ?? null);
       } catch {
         setRestoredLocked(null);
+        setRestoredItinerary(null);
       }
     }, 0);
     return () => clearTimeout(t);
   }, [entry?.mode, origin, dest, departureDate, run.briefing]);
+
+  const currentItinerary = run.briefing
+    ? (run.briefing.tasteItinerary ?? null)
+    : restoredItinerary;
+  const effectiveItinerary =
+    trip && currentItinerary && isTasteItinerary(currentItinerary) && itineraryMatchesTrip(currentItinerary, trip)
+      ? currentItinerary
+      : null;
 
   const effectiveLocked = exampleTrip
     ? EMPTY_LOCKED
@@ -998,13 +1034,15 @@ export default function Home() {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                      briefing: run.briefing,
+                      briefing: {
+                        ...run.briefing,
+                        ...(placeChoices.ready && Object.keys(placeChoices.state).length
+                          ? { tasteChoices: placeChoices.state }
+                          : {}),
+                      },
                       trip: trip
                         ? {
-                            origin: { name: trip.origin.name },
-                            destination: { name: trip.destination.name },
-                            requiredShiftMin: trip.requiredShiftMin,
-                            direction: trip.direction,
+                            ...shareTripContext(trip),
                             heroMeeting: heroMtg
                               ? {
                                   title: heroMtg.title,
@@ -1153,9 +1191,23 @@ export default function Home() {
             <TripEntryScreen
               initialDate={departureDate || defaultDepartureDate()}
               onContinue={commitRoute}
-              onExploreExample={exploreExample}
+              onExploreExample={() => exploreExample()}
+              onExploreScenario={(id) => exploreExample(id)}
+              initialRoute={entryDraft}
             />
           </div>
+        ) : entry.mode === "example" && entry.scenarioId ? (
+          <ScenarioExperience
+            key={`${entry.scenarioId}:${departureDate}`}
+            id={entry.scenarioId}
+            departureDate={departureDate || defaultDepartureDate()}
+            onChooseScenario={(id) => exploreExample(id)}
+            onMakeTrip={(route) => {
+              openEntry();
+              setEntryDraft(route);
+            }}
+            onBack={openEntry}
+          />
         ) : trip ? (
           <>
             {entry.mode === "trip" && tripFetchError && (
@@ -1323,6 +1375,12 @@ export default function Home() {
                 runSunProgress={run.sunProgress}
                 pastRuns={pastRuns}
                 actions={tripActions}
+                tasteProfile={tasteScope ? tasteProfile : undefined}
+                tasteItinerary={effectiveItinerary ?? undefined}
+                canFitTaste={entry.mode === "trip"}
+                placeChoices={tasteScope ? placeChoices : undefined}
+                calendarSource={data?.calendarSource ?? "fixture"}
+                sampleMode={entry.mode === "example"}
               />
               {effectiveLocked.size > 0 && baseline && (
                 <BodyClockDetails

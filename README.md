@@ -50,7 +50,7 @@ Optional extras, all in `.env.local` — every one degrades gracefully when unse
 | Path | What |
 |---|---|
 | `/pitch` | *(removed — the deck retired with the pre-overhaul surface)* |
-| `/` | Today — always the action checklist: the one step to do now, then the day timeline and readiness. No trip yet → an explicit entry form (blank airports, date defaulting to today + 3, **Continue**); a saved route restores its trip. The trip's route is a chip with an Edit sheet; the personalisation question is asked inline when the baseline is still the demo one. Once the plan has locked days, a native *"How my body clock is adjusting"* disclosure sits **below** Today — read-only: the 24-hour dial, the projection with its uncertainty band and the do-nothing baseline, from the same phase-response model the scorer gates with. `?view=clock` opens it; `?depth=guided` adds the deep-dive visuals; `?example=1` loads the sample trip without saving a trip, plan, or action marks |
+| `/` | Today — the playable plan: the important moment, destination/estimated body time, modeled sun and real seek/reduce/sleep windows, then optional Qloo place ideas and a privacy-gated day card. No trip yet → an explicit entry form; `?example=jason|cedric|alex` runs the disclosed fictional journeys without saving trip, plan, or marks. Once the plan has locked days, a native *"How my body clock is adjusting"* disclosure sits **below** Today — read-only: the 24-hour dial, projection and baseline from the same model the scorer gates with. `?view=clock` opens it; `?depth=guided` adds the guided visuals; `?example=1` remains the generic sample |
 | `/arrival` | The payoff — first morning in the destination, scored against what the gate promised. Reached from Today once the last planned day passes, or `?date=` to score any trip (`?arrived=1` to preview) |
 | `/crew` | The operator rung — lens shell, crew feed, eval verdict cards, and the voice layer. Reached from the Home menu ("AI at work") |
 | `/review` | Saved plan: days, citations, .ics download |
@@ -59,7 +59,7 @@ Optional extras, all in `.env.local` — every one degrades gracefully when unse
 | `/shift` | Shift work — the rotating night-shift week on its own door: the anchor sleep window, the fixed and negotiable commitments, the one movable thing (the 15:30 pickup, behind a hold), and the post-night-shift driving warning |
 | `/team` | Travel-manager view: 12 travellers, 12 crews in parallel (stretch) |
 | `/dev` | Lens workbench + recorded-event fixture playback + the dial workbench (dev only) |
-| `/api/*` | Server surface — run SSE, check-in, trip, wearable upload, team, persistence, memory, graph health, voice ([reference](docs/reference/architecture.md#api-surface)) |
+| `/api/*` | Server surface — run SSE, check-in, trip, wearable upload, team, persistence, memory, graph health, Qloo destination/favorite search, voice ([reference](docs/reference/architecture.md#api-surface)) |
 
 ## Docs
 
@@ -79,6 +79,7 @@ Reference (kept in sync with the code):
 - [Scoring](docs/reference/scoring.md) — the deterministic gate every plan must pass
 - [Providers](docs/reference/providers.md) — featherless / nebius / anthropic / replay, env vars, fallback chain
 - [Demo runbook](docs/reference/demo.md) — stage path, pacing, localStorage keys, troubleshooting
+- [Interaction research](docs/reference/interaction-research.md) — playable-day, modeled-stage and privacy-conscious sharing direction
 - [Evals](docs/reference/evals.md) — the harness that tracks plan quality over time (`bun run eval`), not a hillclimb yet, the shape of one
 - [Design primitives](docs/reference/design-primitives.md) — what the reference build does, what it buys, and what we took
 - [Backlog](docs/plan/backlog.md) — what's left, ranked

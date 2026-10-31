@@ -2,14 +2,29 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { coverageOf, fmtMin } from "@/domain/circadian";
+import { stageSkyFor } from "@/domain/stage-sky";
+import { useLiveDate } from "@/lib/use-live-date";
 import {
   buildDailyNudgesForDay,
   stepImpactMin,
-  tasteStrip,
   type NudgeCategory,
-  type TasteStrip,
   type TravelerNudge,
 } from "@/domain/nudges";
+import { TasteDiscovery } from "@/components/TasteDiscovery";
+import { TasteItineraryCard } from "@/components/TasteItineraryCard";
+import { ArrivalDayView } from "@/components/ArrivalDayView";
+import { PerformanceBrief } from "@/components/PerformanceBrief";
+import { LightWindowPanel } from "@/components/LightWindowPanel";
+import { performanceMoment } from "@/domain/trip-performance";
+import { DayScene } from "@/components/DayScene";
+import { buildDayScene } from "@/domain/day-scene";
+import { DayCardShare } from "@/components/DayCardShare";
+import { resolvePlaceChoice } from "@/lib/place-choices";
+import { tasteSelectionKey } from "@/domain/taste";
+import type { DestinationPlace } from "@/domain/taste";
+import type { PlaceChoices } from "@/lib/use-place-choices";
+import { isTasteResponse, type TasteItinerary, type TasteResponse } from "@/domain/taste";
+import type { TripTaste } from "@/lib/use-trip-taste";
 import { previewPlan } from "@/domain/solver";
 import {
   dayPlace,
@@ -36,7 +51,7 @@ const HeroDawnPanel = dynamic(
 );
 import { evalChipLabel, evalChipTitle } from "@/components/ui/eval-chip";
 import { isPreview, tapBecomesCheckIn } from "@/domain/preview";
-import { calendarSummary, heroMeeting } from "@/domain/hero";
+import { calendarSummary } from "@/domain/hero";
 import { secondTripCopy, secondTripProof } from "@/domain/second-trip";
 import { meetingReadiness } from "@/domain/readiness";
 import { friendlyDayLabel } from "@/lib/day-label";
@@ -120,6 +135,12 @@ export interface NudgeFeedScreenProps {
    *  after the checked day. */
   onCheckIn?: (checkIns: CheckIn[], lastMarkedDayIndex: number) => void;
   actions: TripActions;
+  tasteProfile?: TripTaste;
+  tasteItinerary?: TasteItinerary;
+  canFitTaste?: boolean;
+  placeChoices?: PlaceChoices;
+  calendarSource?: "google" | "fixture";
+  sampleMode?: boolean;
 }
 
 /** Nudge category → the intervention kind a did/skip mark refers to.
@@ -165,6 +186,12 @@ export function NudgeFeedScreen({
   runSunProgress,
   onCheckIn,
   actions,
+  tasteProfile,
+  tasteItinerary,
+  canFitTaste,
+  placeChoices,
+  calendarSource,
+  sampleMode,
 }: NudgeFeedScreenProps) {
   const effectiveAdherence = adherence ?? ADHERENCE_PROFILE;
   const { completedIds, skippedIds, pendingMarks, ready: actionsReady } = actions;
@@ -343,6 +370,8 @@ export function NudgeFeedScreen({
     if (lockedDays.length) return coverageOf(trip, lockedDays).residualMin;
     return landedResidualMin ?? Math.abs(trip.requiredShiftMin);
   }, [trip, lockedDays, landedResidualMin]);
+  // The stage's sky is the body clock's — live, so it drifts with the real sun.
+  const liveDate = useLiveDate();
 
   // One view: the day as a rail, in the order you live it.
   const steps = useMemo(() => {
@@ -555,6 +584,20 @@ export function NudgeFeedScreen({
   // step is a preview and stays secondary); afterwards the day's Done is the
   // primary and updating the plan drops to outline.
   const hasPlan = locked.size > 0;
+  const scenePlans = useMemo(
+    () =>
+      locked.size
+        ? [...locked.values()]
+        : [...(preview?.values() ?? [])].flatMap((s) => (s ? [s.plan] : [])),
+    [locked, preview],
+  );
+  const scene = useMemo(
+    () =>
+      trip && activeDaySpec
+        ? buildDayScene({ trip, dayIndex: activeDaySpec.dayIndex, plans: scenePlans, calendar: calendarEvents, baseline })
+        : null,
+    [trip, activeDaySpec, scenePlans, calendarEvents, baseline],
+  );
   const simple = !expandAllWhy;
 
   // Item 13 — the calendar is the compliance surface. The summary block sits
@@ -584,14 +627,12 @@ export function NudgeFeedScreen({
   // is ignored, and the hero falls back to the equal-values shape.
   const heroMtg = useMemo(() => {
     if (!trip) return null;
-    return heroMeeting({
-      trip,
-      calendar: calendarEvents,
-      locked: [...locked.values()],
-      previewLocked,
-      baseline,
-    });
-  }, [trip, calendarEvents, locked, previewLocked, baseline]);
+    const plans = locked.size
+      ? [...locked.values()]
+      : [...(preview?.values() ?? [])].flatMap((s) => (s ? [s.plan] : []));
+    return performanceMoment({ trip, calendar: calendarEvents, plans, baseline });
+  }, [trip, calendarEvents, locked, preview, baseline]);
+
 
   // B3 render — the retention loop made visible. `secondTripProof` reads the
   // persisted runs for the most recent prior trip on a different route;
@@ -610,34 +651,98 @@ export function NudgeFeedScreen({
   // fetched once per trip from /api/taste (Qloo-backed; `{ enabled: false }`
   // without a key). Rendered only on the arrival day via `tasteStrip`;
   // null (no key, no places) renders nothing. Notes only — never scorer.
-  const [taste, setTaste] = useState<{ destination?: string; places?: { name?: string; categories?: string[] }[] } | null>(null);
+  const destName = trip?.destination.name;
+  const destLon = trip?.destination.lon;
+  const destLat = trip?.destination.lat;
+  const destKey = destName !== undefined ? `${destName}:${destLon}:${destLat}` : null;
+  const [taste, setTaste] = useState<{ key: string; data: TasteResponse } | null>(null);
   useEffect(() => {
-    if (!trip) return;
+    if (!destKey || destName === undefined || destLon === undefined || destLat === undefined) return;
     let cancelled = false;
+    const controller = new AbortController();
     fetch(
-      `/api/taste?city=${encodeURIComponent(trip.destination.name)}&lon=${trip.destination.lon}&lat=${trip.destination.lat}`,
+      `/api/taste?city=${encodeURIComponent(destName)}&lon=${destLon}&lat=${destLat}`,
+      { signal: controller.signal },
     )
-      .then((r) => r.json())
-      .then((d) => {
-        if (!cancelled && d?.enabled && Array.isArray(d.places)) setTaste(d);
+      .then(async (r) => {
+        if (!r.ok) throw new Error("Taste unavailable");
+        const d: unknown = await r.json();
+        if (!isTasteResponse(d)) throw new Error("Invalid taste response");
+        return d;
       })
-      .catch(() => {});
+      .then((d) => {
+        if (!cancelled) setTaste({ key: destKey, data: d });
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setTaste({ key: destKey, data: { enabled: true, destination: destName, places: [], note: "unavailable" } });
+        }
+      });
     return () => {
       cancelled = true;
+      controller.abort();
     };
-  }, [trip]);
-  const tasteStripData: TasteStrip | null = useMemo(() => {
-    if (!trip || !activeDaySpec) return null;
-    return tasteStrip(taste, activeDaySpec.dayIndex, trip.departureDayIndex, trip.destination.name);
-  }, [taste, trip, activeDaySpec]);
+  }, [destKey, destName, destLon, destLat]);
+  const tasteData: TasteResponse | null = taste && destKey && taste.key === destKey ? taste.data : null;
+  const arrivalView =
+    !expandAllWhy && !!trip && !!activeDaySpec &&
+    activeDaySpec.dayIndex > trip.departureDayIndex && locked.has(activeDaySpec.label);
+  const activeSceneIdea = useMemo(() => {
+    const spec = arrivalView ? activeDaySpec : null;
+    const sug =
+      spec && tasteItinerary
+        ? tasteItinerary.suggestions.find((x) => x.dayIndex === spec.dayIndex)
+        : undefined;
+    return spec && tasteItinerary && sug
+      ? resolvePlaceChoice(tasteItinerary, sug, placeChoices?.state ?? {})
+      : undefined;
+  }, [arrivalView, activeDaySpec, tasteItinerary, placeChoices?.state]);
 
   return (
     <>
+      {expandAllWhy || !scene ? (
+        <PerformanceBrief
+          moment={heroMtg}
+          destination={trip?.destination.name ?? ""}
+          date={days.find((d) => d.label === heroMtg?.dayLabel)?.date}
+          example={calendarSource !== "google"}
+          exampleBaseline={baselineKind === "demo-default" && !wakeBand}
+          eventSource={calendarSource ?? "fixture"}
+          preview={locked.size === 0}
+          hasPlan={hasPlan || [...(preview?.values() ?? [])].some(Boolean)}
+        />
+      ) : (
+        <DayScene
+          key={`${scene.city.code}:${scene.date}:${scene.moment?.eventId ?? ""}:${scene.moment?.localMin ?? ""}`}
+          scene={scene}
+          example={sampleMode === true}
+          exampleBaseline={baselineKind === "demo-default" && !wakeBand}
+          preview={!locked.has(currentLabel)}
+          eventSource={calendarSource ?? "fixture"}
+          idea={activeSceneIdea}
+          onSelectDay={onSelectDay}
+        >
+          <DayCardShare
+            scene={scene}
+            fictionalTrip={sampleMode === true}
+            eventSource={calendarSource ?? "fixture"}
+            exampleBaseline={baselineKind === "demo-default" && !wakeBand}
+            preview={!locked.has(currentLabel)}
+            idea={activeSceneIdea}
+            favorites={tasteItinerary?.favorites}
+            recordedTaste={false}
+            staleTaste={
+              !!(tasteProfile?.ready && tasteItinerary &&
+                tasteSelectionKey(tasteProfile.favorites) !== tasteSelectionKey(tasteItinerary.favorites))
+            }
+          />
+        </DayScene>
+      )}
       {/* Split-Horizon Hero Card — the left panel is the trip's real dawn line:
           body clock against destination, with the next light window on it. */}
       <div
         className={`hero rise${simple && !globeOpen ? " slim" : ""}${firstVisit ? " first-visit" : ""}`}
-        style={{ animationDelay: ".2s" }}
+        style={{ animationDelay: ".2s", ...stageSkyFor(trip, dawnOwedMin, trip ? liveDate : null) }}
       >
         {trip && (!simple || globeOpen) && (
           <HeroDawnPanel
@@ -1137,6 +1242,97 @@ export function NudgeFeedScreen({
         </div>
       </div>
 
+      {/* Bet 2 — "spend your daylight here". Arrival day only, taste-ranked
+          venues inside the destination. Null (no key, no places, wrong day)
+          renders nothing — never filler. Notes only, never scorer/timing. */}
+      {expandAllWhy && activeDaySpec && (
+        <LightWindowPanel
+          plan={locked.get(currentLabel) ?? preview?.get(currentLabel)?.plan ?? null}
+          date={activeDaySpec.date}
+          city={cityFor(activeDaySpec.dayIndex)}
+          preview={!locked.has(currentLabel)}
+          example={baselineKind === "demo-default" && !wakeBand}
+        />
+      )}
+      {(() => {
+        const spec = arrivalView ? activeDaySpec : null;
+        const suggestion =
+          spec && tasteItinerary
+            ? tasteItinerary.suggestions.find((x) => x.dayIndex === spec!.dayIndex)
+            : undefined;
+        const resolved =
+          spec && tasteItinerary && suggestion
+            ? resolvePlaceChoice(tasteItinerary, suggestion, placeChoices?.state ?? {})
+            : undefined;
+        const interactive = !tripFinished && tapsBecomeCheckIns;
+        const writeChoice = (status: "kept" | "dismissed" | "swapped", place: DestinationPlace) => {
+          if (!spec || !tasteItinerary || !resolved || !placeChoices) return;
+          placeChoices.setChoice(spec.date, { status, place, tasteKey: tasteSelectionKey(tasteItinerary.favorites) });
+        };
+        return arrivalView && spec && trip ? (
+          <ArrivalDayView
+            destination={trip.destination.name}
+            date={spec.date}
+            steps={steps}
+            idea={resolved}
+            completedIds={completedIds}
+            skippedIds={skippedIds}
+            actionsReady={actionsReady}
+            interactive={interactive}
+            onDone={doneTap}
+            onSkip={skipTap}
+            onKeep={() => {
+              if (!resolved || !placeChoices) return;
+              writeChoice(resolved.status === "kept" ? "swapped" : "kept", resolved.place);
+            }}
+            onSwap={() => {
+              if (!resolved || !placeChoices || !resolved.alternatives.length) return;
+              writeChoice("swapped", resolved.alternatives[0]);
+            }}
+            onDismiss={() => {
+              if (!resolved || !placeChoices) return;
+              writeChoice("dismissed", resolved.place);
+            }}
+            onRestore={() => placeChoices?.clearChoice(spec.date)}
+            choicesReady={placeChoices?.ready ?? false}
+            storageAvailable={placeChoices?.storageAvailable ?? false}
+            planning={phase === "running"}
+            example={tasteItinerary?.planningMode === "replay"}
+            tasteFavorites={tasteItinerary?.favorites}
+            favoritesChanged={
+              !!(tasteItinerary && tasteProfile?.ready &&
+                tasteSelectionKey(tasteProfile.favorites) !== tasteSelectionKey(tasteItinerary.favorites))
+            }
+            tasteStatus={tasteItinerary?.status}
+            onUpdatePlan={canFitTaste ? onStartCrewSync : undefined}
+            updateDisabled={phase === "running" || (tasteProfile ? !tasteProfile.ready : false)}
+          />
+        ) : trip && tasteItinerary ? (
+          <TasteItineraryCard
+            itinerary={tasteItinerary}
+            favorites={tasteProfile?.ready ? tasteProfile.favorites : undefined}
+            onSelectDay={onSelectDay}
+            onUpdate={canFitTaste ? onStartCrewSync : undefined}
+            planning={phase === "running" || (tasteProfile ? !tasteProfile.ready : false)}
+            choices={placeChoices?.state}
+          />
+        ) : null;
+      })()}
+
+      {trip && destKey && (
+        <TasteDiscovery
+          key={`${trip.origin.code}-${trip.destination.code}-${trip.days.find((d) => d.dayIndex === trip.departureDayIndex)?.date ?? ""}`}
+          destination={{ name: trip.destination.name, lon: trip.destination.lon, lat: trip.destination.lat }}
+          initialTaste={tasteData}
+          favorites={tasteProfile?.favorites}
+          onFavoritesChange={tasteProfile?.setFavorites}
+          favoritesReady={tasteProfile?.ready ?? true}
+          storageAvailable={tasteProfile?.storageAvailable}
+          onFitPlan={canFitTaste ? onStartCrewSync : undefined}
+          planning={phase === "running"}
+        />
+      )}
+
       {simple && trip && (
         <div className="rise" style={{ animationDelay: ".25s", margin: "8px 4px 0", fontSize: "12px", color: "var(--m-muted)", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <span>
@@ -1159,7 +1355,7 @@ export function NudgeFeedScreen({
           dawn card so the body-time gap is read against the event it will
           decide. `null` from the contract renders nothing — a fixture
           meeting with no real attendees would be the worst possible fake. */}
-      {heroMtg &&
+      {expandAllWhy && heroMtg &&
         (!simple ||
           (() => {
             const mtgIdx = trip?.days.find((d) => d.label === heroMtg.dayLabel)?.dayIndex;
@@ -1382,41 +1578,6 @@ export function NudgeFeedScreen({
         </div>
       )}
 
-      {/* Bet 2 — "spend your daylight here". Arrival day only, taste-ranked
-          venues inside the destination. Null (no key, no places, wrong day)
-          renders nothing — never filler. Notes only, never scorer/timing. */}
-      {tasteStripData && (
-        <div
-          className="card rise"
-          style={{ animationDelay: ".35s", marginTop: "12px" }}
-        >
-          <div
-            style={{
-              fontSize: "11px",
-              fontWeight: 800,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              color: "var(--m-muted)",
-            }}
-          >
-            Things to do outside in {tasteStripData.destination} (daylight helps)
-          </div>
-          <ul style={{ margin: "8px 0 0", padding: 0, listStyle: "none" }}>
-            {tasteStripData.places.map((p) => (
-              <li
-                key={p.name}
-                style={{ fontSize: "13px", color: "var(--m-text)", padding: "4px 0" }}
-              >
-                <b>{p.name}</b>
-                {p.categories.length > 0 && (
-                  <span style={{ color: "var(--m-muted)" }}> · {p.categories.join(", ")}</span>
-                )}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
       {/* Check-in — the thumb-sized touch that keeps the plan honest. With
           per-step marks queued it becomes the send surface; without them the
           day-level verdicts still work in one tap. */}
@@ -1513,6 +1674,7 @@ export function NudgeFeedScreen({
         </div>
       )}
 
+      {!arrivalView && (
       <section className={`tl rise${previewMode ? " preview" : ""}`} style={{ animationDelay: ".4s" }} aria-label={`${currentDayName} — steps`}>
         <div className="tl-rows">
         {steps.map((step, stepIdx) => {
@@ -1710,6 +1872,7 @@ export function NudgeFeedScreen({
           </p>
         )}
       </section>
+      )}
 
       {/* Simple + a saved plan: the day's steps are the thing; re-running is
           the quiet second action at the bottom of the list. */}

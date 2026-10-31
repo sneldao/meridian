@@ -1,3 +1,5 @@
+import type { TasteItinerary } from "@/domain/taste";
+
 // Domain types for Meridian.
 // Shapes deliberately follow a longitudinal-care record model so the agent
 // layer can port back into a larger health platform later
@@ -229,6 +231,7 @@ export type CrewEvent =
        *  summary). Absent on old persisted events — clients fall back to
        *  reading `summary` in a single voice. */
       lines?: VoiceLine[];
+      tasteItinerary?: TasteItinerary;
     }
   | { type: "error"; message: string; recoverable: boolean }
   | { type: "check_in"; checkIn: CheckIn }

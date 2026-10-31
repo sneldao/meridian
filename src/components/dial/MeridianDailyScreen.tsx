@@ -15,7 +15,9 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { fmtMin } from "@/domain/circadian";
+import { coverageOf, fmtMin } from "@/domain/circadian";
+import { stageSkyFor } from "@/domain/stage-sky";
+import { useLiveDate } from "@/lib/use-live-date";
 import { type MascotTone } from "@/domain/mascot";
 import type { EpistemicTag } from "@/domain/evidence";
 import { computeTripTrajectory, directionOptions } from "@/domain/misalignment";
@@ -78,6 +80,13 @@ export function MeridianDailyScreen({
   preview,
 }: MeridianDailyScreenProps) {
   const [tone, setTone] = useState<MascotTone>("cheeky");
+  // The stage's sky is the body clock's; nothing locked yet means nothing
+  // banked, so the residual starts at the full required shift.
+  const liveDate = useLiveDate();
+  const stageOwedMin = useMemo(
+    () => (trip ? coverageOf(trip, [...locked.values()]).residualMin : 0),
+    [trip, locked],
+  );
   const [skippedDays, setSkippedDays] = useState<Set<number>>(new Set());
   const [alcoholDays, setAlcoholDays] = useState<Set<number>>(new Set());
   const [done, setDone] = useState(false);
@@ -472,7 +481,7 @@ export function MeridianDailyScreen({
       {/* One ink stage for the question and its clock — the hero's sibling
           surface (design.md · Clock view). The action and the dial share the
           band; the day switcher stays chrome above it. */}
-      <div className="clock-stage">
+      <div className="clock-stage" style={stageSkyFor(trip, stageOwedMin, trip ? liveDate : null)}>
       <div className="clock-stage-action">
       <DailyActionCard
         action={action}

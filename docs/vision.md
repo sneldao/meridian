@@ -696,3 +696,17 @@ never flips with the mode.
 
 Nothing about the engine moved: the planner, the scorer, the gate and the
 journey are unchanged — this round is type, surface and motion.
+
+**Round 9 (in progress):** the Qloo playable-day pass — "Show up for what
+matters." The first-use route flow leads with the important moment, then the
+interactive `DayScene` ties destination/local and estimated body time to
+modeled solar position and real seek/reduce/sleep windows. Optional Qloo
+place ideas fit around the verified schedule through `buildTasteItinerary`
+and keep/swap/dismiss/restore choices; venues never become light
+interventions or change timing. Three fictional sample journeys exercise
+Jason Calacanis, Cedric the Entertainer, and Alex Elias as imagined,
+disclosed examples. The stage itself now uses the shared sky model: its
+horizon band rises with the body clock's estimated sun while origin blue
+fades with the shift still owed. A frozen, privacy-gated Day Card exports
+PNG/SVG and a vertical story view — still images for recording, not video
+export or proof of completed steps.

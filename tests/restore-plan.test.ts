@@ -70,3 +70,70 @@ describe("restorePlan", () => {
     expect(restorePlan(null, null, route)).toBeNull();
   });
 });
+
+import type { TasteItinerary } from "../src/domain/taste";
+
+const itinerary = (over: Partial<TasteItinerary> = {}): TasteItinerary => ({
+  destinationCode: "HND",
+  destination: "Tokyo",
+  departureDate: depDate,
+  favorites: [{ id: "e1", name: "Björk", type: "artist" }],
+  status: "no-window",
+  planningMode: "live",
+  suggestions: [],
+  ...over,
+});
+
+describe("restorePlan taste itinerary", () => {
+  const withItinerary = (it: unknown) =>
+    JSON.stringify({ days: [day("D-3")], tasteItinerary: it });
+
+  test("a valid matching itinerary restores alongside the locked plan", () => {
+    const res = restorePlan(withItinerary(itinerary()), tripRaw, route);
+    expect(res).not.toBeNull();
+    expect(res!.tasteItinerary).toEqual(itinerary());
+    expect(res!.locked.size).toBe(1);
+  });
+
+  test("a valid ready itinerary for this trip restores", () => {
+    const postDay = trip.days.find((d) => d.dayIndex > trip.departureDayIndex)!;
+    const it = itinerary({
+      status: "ready",
+      suggestions: [
+        {
+          dayIndex: postDay.dayIndex,
+          date: postDay.date,
+          label: postDay.label,
+          startMin: 840,
+          endMin: 900,
+          place: { name: "Kissa Tanto", categories: ["listening bar"] },
+        },
+      ],
+    });
+    const res = restorePlan(withItinerary(it), tripRaw, route);
+    expect(res!.tasteItinerary).toEqual(it);
+  });
+
+  test("a mismatched or malformed itinerary is omitted — the plan still restores", () => {
+    const cases = [
+      itinerary({ destinationCode: "JFK" }),
+      itinerary({ departureDate: "2026-05-11" }),
+      itinerary({ status: "ready", suggestions: [] }),
+      { ...itinerary(), suggestions: [{ dayIndex: 4, date: "x", label: "D+1", startMin: 1, endMin: 2, place: { name: "", categories: [] } }] },
+      "not an itinerary",
+      42,
+    ];
+    for (const it of cases) {
+      const res = restorePlan(withItinerary(it), tripRaw, route);
+      expect(res).not.toBeNull();
+      expect(res!.tasteItinerary).toBeUndefined();
+      expect(res!.locked.size).toBe(1);
+    }
+  });
+
+  test("legacy saves without the field still restore", () => {
+    const res = restorePlan(plan, tripRaw, route);
+    expect(res).not.toBeNull();
+    expect(res!.tasteItinerary).toBeUndefined();
+  });
+});

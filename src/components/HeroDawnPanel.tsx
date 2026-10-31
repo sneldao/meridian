@@ -30,6 +30,7 @@ import { fmtMin } from "@/domain/circadian";
 import { nowMinOnDay } from "@/domain/today";
 import { dawnLayers } from "@/domain/dawn-layers";
 import { bodySubsolarPoint, isDaylight, subsolarPoint, terminatorCrossings, terminatorLat, wrapLon, type SubsolarPoint } from "@/domain/sun";
+import { stageSkyFor } from "@/domain/stage-sky";
 import type { Trip } from "@/domain/types";
 import { DawnScrubber } from "@/components/DawnScrubber";
 import { useWebGLAvailable } from "@/lib/webgl";
@@ -476,7 +477,7 @@ export function HeroDawnPanel({ trip, owedMin, beam, readinessPct, readinessSour
 
   return (
     <div className="hl">
-      <div className="bg term" aria-hidden="true" />
+      <div className="bg term" aria-hidden="true" style={stageSkyFor(trip, displayOwed, hydrated ? displayDate : null)} />
       <div className="sc" />
 
       <div className="hl-stage">

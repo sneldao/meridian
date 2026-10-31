@@ -1,0 +1,117 @@
+{
+  "capturedAt": "2026-10-31T01:36:03.338Z",
+  "profiles": [
+    {
+      "key": "bjork",
+      "favorites": [
+        {
+          "id": "01381184-B533-4E3C-B9DB-43A2FE326744",
+          "name": "Björk",
+          "type": "artist"
+        }
+      ],
+      "places": [
+        {
+          "id": "96DC569B-BC59-4DA8-B5F8-3A6BD6A30688",
+          "name": "St. Mary's Cathedral, Tokyo",
+          "categories": [
+            "Church",
+            "Tourist attraction",
+            "Catholic church",
+            "Cathedral",
+            "Catholic cathedral"
+          ],
+          "daytimeCandidate": true
+        },
+        {
+          "id": "175F1BBD-E883-4291-AB31-3806E330686E",
+          "name": "SCAI The Bathhouse",
+          "categories": [
+            "Art gallery",
+            "Place",
+            "Tourist attraction"
+          ],
+          "daytimeCandidate": true
+        },
+        {
+          "id": "2C22E484-392B-4AE2-A00E-E811AAED1075",
+          "name": "Mori Art Museum",
+          "categories": [
+            "Tourist attraction",
+            "Modern art museum",
+            "Art museum",
+            "Place",
+            "Museum"
+          ],
+          "daytimeCandidate": true
+        },
+        {
+          "id": "F5BB194F-7848-43EF-A7F8-9512D8F6A46A",
+          "name": "Sahsya Kanetanaka",
+          "categories": [
+            "Cafe",
+            "Authentic japanese restaurant",
+            "Place",
+            "Restaurant"
+          ],
+          "daytimeCandidate": true
+        },
+        {
+          "id": "848FCF28-4F58-47FF-918D-7A94078CA430",
+          "name": "MAHO KUBOTA GALLERY",
+          "categories": [
+            "Art gallery",
+            "Place",
+            "Tourist attraction"
+          ],
+          "daytimeCandidate": true
+        },
+        {
+          "id": "FAED09E0-38AE-4B21-90A2-137FA5898C63",
+          "name": "Ghibli Museum",
+          "categories": [
+            "Art museum",
+            "Place",
+            "Tourist attraction"
+          ],
+          "daytimeCandidate": true
+        }
+      ]
+    },
+    {
+      "key": "luke",
+      "favorites": [
+        {
+          "id": "3CBD78B1-D2F2-4551-A342-4621B6BDB5E2",
+          "name": "Luke Combs",
+          "type": "artist"
+        }
+      ],
+      "places": [
+        {
+          "id": "BCFED402-487D-40DD-A3B7-AEC91727A4A5",
+          "name": "MERRY and BRIGHT",
+          "categories": [
+            "Cafe",
+            "Coffee shop",
+            "Place",
+            "Restaurant"
+          ],
+          "daytimeCandidate": true
+        },
+        {
+          "id": "F05F0E9B-E7A7-46E7-BB4F-1A4DAE24BA7F",
+          "name": "Chagohan Tokyo",
+          "categories": [
+            "Tourist attraction",
+            "Soba noodle shop",
+            "Place",
+            "Cooking class",
+            "Traditional teahouse"
+          ],
+          "daytimeCandidate": true
+        }
+      ]
+    }
+  ]
+}

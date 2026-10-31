@@ -203,3 +203,33 @@ describe("run state reducer", () => {
     expect(next.priorAttempts).toBe(0);
   });
 });
+
+describe("briefing taste itinerary", () => {
+  const itinerary = {
+    destinationCode: "HND",
+    destination: "Tokyo",
+    departureDate: "2026-05-10",
+    favorites: [{ id: "e1", name: "Björk", type: "artist" }],
+    status: "no-window",
+    planningMode: "replay",
+    suggestions: [],
+  };
+
+  test("a briefing carrying an itinerary keeps it in run state", () => {
+    const briefing = events.find((e) => e.event.type === "briefing")!;
+    const run = reduceRun(initialRunState(), {
+      kind: "batch",
+      items: [
+        ...events.slice(0, events.indexOf(briefing)),
+        { ...briefing, event: { ...(briefing.event as { type: "briefing" }), tasteItinerary: itinerary } } as StampedEvent,
+      ],
+    });
+    expect(run.briefing?.tasteItinerary).toEqual(itinerary);
+  });
+
+  test("a legacy briefing with no itinerary stays undefined", () => {
+    const run = replay();
+    expect(run.briefing).toBeDefined();
+    expect(run.briefing?.tasteItinerary).toBeUndefined();
+  });
+});

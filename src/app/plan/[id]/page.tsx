@@ -2,6 +2,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { loadSharedPlan } from "@/lib/share";
 import { fmtMin } from "@/domain/circadian";
+import { TasteItineraryCard } from "@/components/TasteItineraryCard";
+import { isTasteItinerary, itineraryMatchesTrip, type TasteItinerary } from "@/domain/taste";
+import { parsePlaceChoices } from "@/lib/place-choices";
+import type { Trip } from "@/domain/types";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +30,12 @@ export default async function SharedPlan({ params }: { params: Promise<{ id: str
   // Absent on old shares — the card falls back to the plan summary, never
   // an invented meeting.
   const hero = trip?.heroMeeting ?? null;
+  const rawItinerary = (data as { briefing?: { tasteItinerary?: unknown } }).briefing?.tasteItinerary;
+  const tripForMatch = trip && Array.isArray((trip as Partial<Trip>).days) ? (trip as Trip) : null;
+  const itinerary: TasteItinerary | null =
+    isTasteItinerary(rawItinerary) && tripForMatch && itineraryMatchesTrip(rawItinerary, tripForMatch)
+      ? rawItinerary
+      : null;
 
   return (
     <main style={{ minHeight: "100vh", background: "#F5EFE6", color: "#5b4d41", fontFamily: "var(--font-body)", padding: "40px 20px" }}>
@@ -72,6 +82,20 @@ export default async function SharedPlan({ params }: { params: Promise<{ id: str
             {Math.round(Math.abs(totalShift))} min shifted · score {briefing.score.toFixed(2)} · {briefing.citations.length} papers cited
           </div>
         </div>
+
+        {itinerary && (
+          <TasteItineraryCard
+            itinerary={itinerary}
+            choices={(() => {
+              const raw = (data as { briefing?: { tasteChoices?: unknown } }).briefing?.tasteChoices;
+              try {
+                return raw ? parsePlaceChoices(JSON.stringify(raw)) : undefined;
+              } catch {
+                return undefined;
+              }
+            })()}
+          />
+        )}
 
         <Link href="/" style={{ display: "inline-block", marginTop: 20, background: "linear-gradient(90deg,#D96B43,#e99a6f)", color: "#fff8ef", borderRadius: 999, padding: "10px 22px", fontSize: 13, fontWeight: 800, textDecoration: "none" }}>
           Make your own plan →

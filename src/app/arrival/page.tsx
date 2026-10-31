@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { fmtMin } from "@/domain/circadian";
 import { arrivalHeadline, arrivalLede, arrivalRead, tripDebrief } from "@/domain/arrival";
+import { stageSkyFor } from "@/domain/stage-sky";
 import { INTERVENTION_LABELS } from "@/lib/intervention-icons";
 import { dayPlace } from "@/domain/today";
 import type { CheckIn, Trip, WearableBaseline } from "@/domain/types";
@@ -153,6 +154,8 @@ export default function ArrivalPage() {
 
   const trip = state.trip;
   const dest = trip.destination;
+  // The stage's sky is the body clock's: the residual the read still owes.
+  const stageVars = stageSkyFor(trip, read.promise?.coverage?.residualMin ?? 0, state.now);
   const arrivalDayIndex = trip.departureDayIndex + 1;
   const arrivedDay = trip.days.find((d) => d.dayIndex === arrivalDayIndex);
   const rows = arrivalRows(read, trip, state.checkIns);
@@ -160,7 +163,7 @@ export default function ArrivalPage() {
 
   if (!read.arrived) {
     return (
-      <main className="arr">
+      <main className="arr" style={stageVars}>
         <div className="arr-in">
           <span className="arr-kicker">Not yet</span>
           <h1>You&apos;re still on {dayPlace(trip, trip.departureDayIndex).city} time.</h1>
@@ -178,7 +181,7 @@ export default function ArrivalPage() {
   }
 
   return (
-    <main className="arr">
+    <main className="arr" style={stageVars}>
       <div className="arr-in">
         {/* The hero's dawn disc lands here — the same object, carried across
             the route by the view transition (shared element "dawn"). */}

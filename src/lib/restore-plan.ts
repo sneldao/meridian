@@ -1,4 +1,5 @@
 import type { BaselineKind, Citation, DayPlan, Trip, WearableBaseline } from "@/domain/types";
+import { isTasteItinerary, itineraryMatchesTrip, type TasteItinerary } from "@/domain/taste";
 
 /** Rebuilds the locked-days map from the saved plan + saved trip, but only
  *  when the pair still describes the route on screen: same airports and the
@@ -18,6 +19,7 @@ export function restorePlan(
   /** The trip the plan belongs to, for the same reason. */
   trip?: Trip;
   baselineKind?: BaselineKind;
+  tasteItinerary?: TasteItinerary;
 } | null {
   if (!lastPlanRaw || !lastTripRaw) return null;
   try {
@@ -49,6 +51,9 @@ export function restorePlan(
         plan.baselineKind === "demo-default"
           ? plan.baselineKind
           : undefined,
+      ...(isTasteItinerary(plan.tasteItinerary) && itineraryMatchesTrip(plan.tasteItinerary, trip)
+        ? { tasteItinerary: plan.tasteItinerary }
+        : {}),
     };
   } catch {
     return null;

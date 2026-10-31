@@ -8,6 +8,7 @@
 // Lenses take slices of `run` as props; see docs/plan/hackathon-plan.md §3.
 
 import { useCallback, useReducer, useRef } from "react";
+import type { TasteItinerary } from "@/domain/taste";
 import { passes, sunProgress } from "@/domain/circadian";
 import type {
   AgentId,
@@ -36,6 +37,7 @@ export interface Briefing {
   score: number;
   citations: Citation[];
   days: DayPlan[];
+  tasteItinerary?: TasteItinerary;
   /** Multi-voice handoff script when the run emitted one. */
   lines?: VoiceLine[];
   /** How much of the required shift the locked days cover. `undefined` on
@@ -301,8 +303,8 @@ function applyEventInner(s: RunState, event: CrewEvent, t: number): RunState {
       return { ...base, moves: [...s.moves, event.move] };
 
     case "briefing": {
-      const { summary, ics, score, citations, days, coverage, lines } = event;
-      return { ...base, briefing: { summary, ics, score, citations, days, coverage, lines } };
+      const { summary, ics, score, citations, days, coverage, lines, tasteItinerary } = event;
+      return { ...base, briefing: { summary, ics, score, citations, days, coverage, lines, tasteItinerary } };
     }
 
     case "error":

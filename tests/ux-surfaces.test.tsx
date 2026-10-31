@@ -23,12 +23,13 @@ describe("TripEntryScreen (first use)", () => {
   );
 
   test("states the honest value proposition", () => {
-    expect(html).toContain("Arrive better adjusted.");
-    expect(html).toContain("A daily plan for sleep, light and caffeine");
+    expect(html).toContain("Show up for what matters.");
+    expect(html).toContain("Arrive with a plan");
+    expect(html).toContain("Time your light, sleep and caffeine around the trip");
   });
 
   test("offers one primary action and the example", () => {
-    expect(html).toContain("Continue");
+    expect(html).toContain("See my trip plan");
     expect(html).toContain("Explore an example");
   });
 
