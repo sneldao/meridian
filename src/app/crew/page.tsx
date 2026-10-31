@@ -491,6 +491,7 @@ export default function Home() {
           onClick={startShift}
           disabled={run.phase === "running"}
           variant="primary"
+          title="Space — send the crew out"
         >
           {run.phase === "running" ? "Building your plan…" : run.phase === "done" ? "Make it again" : "Make my plan"}
         </Button>

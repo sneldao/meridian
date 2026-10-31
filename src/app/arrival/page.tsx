@@ -22,8 +22,8 @@ import { CountUp } from "@/components/CountUp";
 // being settled here, so the same vocabulary carries over: banked, owed, and the
 // honest case where nothing was promised at all.
 //
-// Reachable two ways, deliberately: automatically from Today once the traveller
-// is past touchdown, and by URL from the menu for anyone who wants to look.
+// Reachable two ways, deliberately: a link on Today once the traveller is
+// past touchdown, and by URL from the menu for anyone who wants to look.
 
 // The trip being scored. Mirrors the home surface: an explicit `?date=` wins
 // (which is what makes this page inspectable — you can score any trip), and

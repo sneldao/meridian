@@ -68,8 +68,20 @@ export function ScenarioExperience({ id, departureDate, onChooseScenario, onMake
     const url = new URL(window.location.href);
     if (nextStep === 0) url.searchParams.delete("step"); else url.searchParams.set("step", String(nextStep));
     if (nextDay === null) url.searchParams.delete("day"); else url.searchParams.set("day", String(nextDay));
-    window.history.replaceState(null, "", url.toString());
+    // pushState, not replace: Back should walk the steps it just walked.
+    window.history.pushState(null, "", url.toString());
   };
+
+  // ...and a pop lands here: re-read the step/day the URL now names.
+  useEffect(() => {
+    const onPop = () => {
+      setStep(readUrlStep() ?? initialStep);
+      setSelectedDay(readUrlDay(id, departureDate));
+      setMinute(null);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [id, departureDate, initialStep]);
   const goToStep = (next: 0 | 1 | 2) => {
     setStep(next);
     syncUrl(next, selectedDay);

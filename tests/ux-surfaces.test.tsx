@@ -56,17 +56,21 @@ describe("TripEntryScreen (first use)", () => {
 describe("BottomNav", () => {
   const html = renderToStaticMarkup(createElement(BottomNav));
 
-  test("shows exactly the three goal links", () => {
+  test("shows exactly the three goal links plus the More tab", () => {
     expect(html).toContain('href="/"');
     expect(html).toContain('href="/review"');
     expect(html).toContain('href="/history"');
     expect((html.match(/<a /g) ?? []).length).toBe(3);
+    // The fourth tab is a button that opens the More sheet — the way to the
+    // back-room surfaces (/crew, /shift, /team, /arrival) on the phone.
+    expect((html.match(/<button/g) ?? []).length).toBe(1);
+    expect(html).toContain('aria-label="More"');
   });
 
   test("no Clock tab and no view-state controls", () => {
     expect(html).not.toContain("view=clock");
     expect(html).not.toContain(">Clock<");
-    expect(html).not.toContain("<button");
+    expect(html).not.toContain("<select");
   });
 });
 

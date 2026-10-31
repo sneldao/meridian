@@ -8,6 +8,14 @@ const COOKIE = "meridian-tid";
 const HEADER = "x-meridian-tid";
 
 export function middleware(req: NextRequest) {
+  // `/?depth=operator` is a route, not a view mode — resolve it server-side
+  // so the crew surface loads directly instead of hydrating Home first.
+  if (req.nextUrl.searchParams.get("depth") === "operator") {
+    const url = req.nextUrl.clone();
+    url.pathname = "/crew";
+    url.searchParams.delete("depth");
+    return NextResponse.redirect(url);
+  }
   const existing = req.cookies.get(COOKIE)?.value;
   const tid = existing ?? crypto.randomUUID();
   const headers = new Headers(req.headers);
@@ -19,4 +27,4 @@ export function middleware(req: NextRequest) {
   return res;
 }
 
-export const config = { matcher: "/api/:path*" };
+export const config = { matcher: ["/api/:path*", "/"] };
