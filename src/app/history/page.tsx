@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { Card } from "@/components/ui";
 import { BottomNav } from "@/components/BottomNav";
 import { PageHeader } from "@/components/PageHeader";
@@ -9,13 +10,24 @@ import { secondTripCopy, secondTripProof } from "@/domain/second-trip";
 import { meridianStorageKeys } from "@/lib/local-data";
 import { scoreBand } from "@/domain/score";
 
+interface HistTrip {
+  origin: { code: string; name?: string };
+  destination: { code: string; name?: string };
+  requiredShiftMin: number;
+  direction: "east" | "west";
+  /** Present when the run persisted the whole Trip — carries the departure
+   *  date the deep links below need to reopen or score this exact journey. */
+  departureDayIndex?: number;
+  days?: { dayIndex: number; label: string; date?: string }[];
+}
+
 interface HistEntry {
   /** Local runs stamp `Date.now()`; Supabase rows carry a uuid. Rows written
    *  before `listRuns` selected the id have neither, so the render key falls
    *  back to `savedAt` rather than trusting `id` to exist. */
   id?: number | string;
   savedAt: string;
-  trip: { origin: { code: string }; destination: { code: string }; requiredShiftMin: number; direction: "east" | "west" } | null;
+  trip: HistTrip | null;
   score: number;
   summary: string;
   days: { label: string; shiftMin: number }[];
@@ -102,7 +114,7 @@ export default function HistoryPage() {
     <main className="mx-auto max-w-3xl px-6 py-8">
       <BottomNav />
       <PageHeader
-        title="Past trips"
+        title="Trips"
         actions={
           <>
             {items.length > 0 && (
@@ -114,7 +126,7 @@ export default function HistoryPage() {
       />
 
       {items.length === 0 && (
-        <p className="text-sm text-clay-2">No past trips yet. Plans you make will show up here.</p>
+        <p className="text-sm text-clay-2">No trips yet. Plans you make will show up here — each one keeps its plan, its gate score, and its arrival report.</p>
       )}
 
       <ul className="space-y-3">
@@ -139,7 +151,11 @@ export default function HistoryPage() {
  *  different route — what the crew carried into this one. Same-route and
  *  corrupt rows are skipped by the contract; a null proof renders nothing
  *  rather than an invented "remembers". Split out so the proof memo lives
- *  in a component, not in a map callback. */
+ *  in a component, not in a map callback.
+ *
+ *  The card is also the door to the journey's other rooms: Today can reopen
+ *  the trip, and the arrival report settles its payoff — so "Rate my trip"
+ *  is not a nav destination but an action on the trip it belongs to. */
 function HistoryCard({ entry: it, older }: { entry: HistEntry; older: HistEntry[] }) {
   const proof = useMemo(
     () =>
@@ -159,6 +175,14 @@ function HistoryCard({ entry: it, older }: { entry: HistEntry; older: HistEntry[
     band === "pass" ? "✓ Passed checks" : band === "warn" ? "Below our standard" : "Didn't pass";
   const bandTone =
     band === "pass" ? "text-pass" : band === "warn" ? "text-sun-dest" : "text-fail";
+  // The departure date rides in the persisted trip's days when the run saved
+  // the whole Trip; without it the links fall back to arrival's own defaults.
+  const depDate = it.trip?.days?.find((d) => d.dayIndex === it.trip?.departureDayIndex)?.date;
+  const tripParams = it.trip
+    ? `origin=${it.trip.origin.code}&dest=${it.trip.destination.code}${depDate ? `&date=${depDate}` : ""}`
+    : null;
+  const actionCls =
+    "rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-mist transition-colors hover:border-mist hover:text-paper";
   return (
     <li><Card className="p-4">
       <div className="flex items-baseline justify-between">
@@ -172,14 +196,34 @@ function HistoryCard({ entry: it, older }: { entry: HistEntry; older: HistEntry[
           <div className={`font-mono2 text-xs ${bandTone}`}>{bandWord}</div>
         </div>
       </div>
+      {it.trip?.origin.name && (
+        <div className="mt-1 text-sm font-semibold text-paper">
+          {it.trip.origin.name} <span className="text-sun-dest">→</span> {it.trip.destination.name}
+        </div>
+      )}
       <div className="mt-1 text-xs text-dim">
         {new Date(it.savedAt).toLocaleString()} · {it.days.length} {it.days.length === 1 ? "day" : "days"} planned
       </div>
+      {it.days.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {it.days.map((d) => (
+            <span key={d.label} className="rounded-full border border-line px-2 py-0.5 font-mono2 text-xs text-dim">
+              {d.label} {d.shiftMin === 0 ? "·" : `${d.shiftMin > 0 ? "+" : "−"}${Math.abs(d.shiftMin)}m`}
+            </span>
+          ))}
+        </div>
+      )}
       {proof ? (
         <div className="mt-2 text-xs text-dim" style={{ fontStyle: "italic" }}>
           {secondTripCopy(proof)}
         </div>
       ) : null}
+      {tripParams && (
+        <div className="mt-3 flex flex-wrap gap-2 border-t border-line/60 pt-3">
+          <Link href={`/?${tripParams}`} className={actionCls}>Open in Today</Link>
+          <Link href={`/arrival?${tripParams}`} className={actionCls}>Arrival report</Link>
+        </div>
+      )}
     </Card>
     </li>
   );

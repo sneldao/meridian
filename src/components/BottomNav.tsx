@@ -3,18 +3,21 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { CalendarClock, Ellipsis, History, Home } from "lucide-react";
+import { Ellipsis, History, Home } from "lucide-react";
 import { MoreSheet } from "@/components/MoreSheet";
 
+/* Two tabs, shaped like the journey: what do I do today, and what happened
+   on my trips. The plan is a view of Today (the Now / The plan switch), and
+   the payoff lives on the trip it belongs to — so neither gets a tab. */
 const TABS = [
   { href: "/", label: "Today", Icon: Home, active: (p: string) => p === "/" },
-  { href: "/review", label: "The plan", Icon: CalendarClock, active: (p: string) => p.startsWith("/review") },
   { href: "/history", label: "Trips", Icon: History, active: (p: string) => p.startsWith("/history") },
 ];
 
-/** Pages with no tab of their own — they live under More, so the tab shows
- *  where the traveller is standing rather than claiming they're on Today. */
-const MORE_PATHS = ["/crew", "/shift", "/team", "/arrival", "/outcome"];
+/** Pages with no tab of their own — they live under More or hang off a trip,
+ *  so the tab shows where the traveller is standing rather than claiming
+ *  they're on Today. */
+const MORE_PATHS = ["/crew", "/shift", "/team", "/arrival", "/outcome", "/review"];
 
 export function BottomNav() {
   const pathname = usePathname();

@@ -239,8 +239,11 @@ it is a decision, not detail — and the trace stays collapsed at simple.
 While a run is live the menu's top row is its current step ("Crew
 working — name → tool · n/m locked") and links back to the board. The
 menu's destination links (crew, shift, team, arrival) come from the one
-shared list the More sheet uses (`MoreSheet.PLACES`), so every place has
-exactly one name.
+shared list the More sheet uses (`MoreSheet.PLACE_GROUPS` — crew under
+"Inside Meridian", shift and team under "The same engine, other lives"),
+so every place has exactly one name. The payoff is not a destination:
+arrival is reached from the morning-after card on Today and from each
+trip's record on Trips.
 
 One ledger (`useTripActions`) serves both the Today checklist and the clock
 explanation: hydrated per trip scope before any write, and a preview scope
@@ -329,14 +332,17 @@ src/agents/      providers, crew prompts, runtime, night replay, morning replay
 src/components/  NudgeFeedScreen (the Calm `/` surface: next step, timeline,
                  readiness), TripEntryScreen (the first-use form: blank route
                  fields + a departure date, kept draft until Continue),
-                 BottomNav (the phone's tab bar — Today / The plan / Trips /
-                 More; directional `nav-forward`/`nav-back` transitions by
+                 BottomNav (the phone's tab bar — Today / Trips /
+                 More; the plan is a view of Today and the payoff lives on
+                 its trip, so neither gets a tab; directional
+                 `nav-forward`/`nav-back` transitions by
                  tab order; hidden above 480px, where the app is a document),
-                 MoreSheet + MoreNav (the 4th tab's sheet — the places links
-                 for /crew, /shift, /team, /arrival, /outcome; `aria-current`
-                 on the tab when any of those paths matches). Its exported
-                 `PLACES` list is the single source Home's Menu renders its
-                 destination links from, RightNowCard
+                 MoreSheet + MoreNav (the More tab's sheet — the grouped
+                 places links for /crew, /shift, /team; `aria-current`
+                 on the tab when any of those paths matches), PlanReview
+                 (the signed plan artifact — hosted inline on Today behind
+                 the Now / The plan switch, and as the full `/review` page),
+                 RightNowCard
                  (the glanceable "what now" at the top of Today),
                  OfflineBadge (connectivity + in-flight mode), PageHeader,
                  dial/ (the

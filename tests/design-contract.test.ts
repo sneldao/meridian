@@ -58,7 +58,7 @@ const CHROME = [
     "TripSetupScreen", "CalendarApprovalCard", "CrewQuestionCard", "UndoToast", "VoiceControls", "ArrivalDayView",
     "DaySkyStrip", "DayStrip", "CrewFeed", "DailyJourney", "DawnScrubber", "DayCardShare",
     "ScenarioExperience", "TasteItineraryCard", "LightWindowPanel", "PerformanceBrief",
-    "TimezoneClocks",
+    "TimezoneClocks", "PlanReview",
   ].map((n) => `src/components/${n}.tsx`),
   "src/components/ui/AgentCard.tsx",
   "src/components/ui/AgentChip.tsx",
@@ -85,6 +85,7 @@ const HEX_CEILING: Record<string, number> = {
 };
 
 const STYLE_CEILING: Record<string, number> = {
+  "src/components/PlanReview.tsx": 1,
   "src/components/NudgeFeedScreen.tsx": 72,
   "src/app/page.tsx": 44,
   "src/components/TripSetupScreen.tsx": 18,

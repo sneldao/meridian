@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { fmtMin } from "@/domain/circadian";
 import { todayDayIndex } from "@/domain/today";
 import { resolveBaseline, buildTrip, calendarFor, GARMIN_BASELINE, type WakeBand } from "@/domain/fixtures";
@@ -74,7 +74,8 @@ import { ScenarioExperience } from "@/components/ScenarioExperience";
 import type { DemoScenarioId } from "@/domain/demo-scenarios";
 import { isTasteItinerary, itineraryMatchesTrip, type TasteItinerary } from "@/domain/taste";
 import { JourneySteps } from "@/components/JourneySteps";
-import { PLACES } from "@/components/MoreSheet";
+import { PLACE_GROUPS } from "@/components/MoreSheet";
+import { PlanReview } from "@/components/PlanReview";
 import { TimezoneClocks } from "@/components/TimezoneClocks";
 import { SubscribeCalendar } from "@/components/SubscribeCalendar";
 import { PinnedDayRow } from "@/components/DayStrip";
@@ -178,6 +179,10 @@ const MEMORY_TOOL_NAMES = new Set([
 export default function Home() {
   const isOnline = useOnlineStatus();
   const [setupOpen, setSetupOpen] = useState(false);
+  // Today hosts the plan artifact inline — the Now/The plan switch. It is
+  // view state, not a destination: reset with the trip, never pushed to the
+  // URL, and the full-page /review stays for deep links and shares.
+  const [planView, setPlanView] = useState(false);
   const [origin, setOrigin] = useState("");
   const [dest, setDest] = useState("");
   const [departureDate, setDepartureDate] = useState("");
@@ -862,6 +867,7 @@ export default function Home() {
     setRouteDraft(null);
     setSetupOpen(false);
     setMenuOpen(false);
+    setPlanView(false);
   }, [reset]);
 
   const commitRoute = useCallback(
@@ -1134,21 +1140,27 @@ export default function Home() {
                 {run.locked.size}/{trip?.days.length ?? "?"} locked
               </Link>
             )}
-            {/* One list of destinations, shared with the More sheet and the
-                desktop headers (MoreSheet.PLACES) — every place has exactly
-                one name and one entry, instead of the menu and the sheet
-                carrying rival copies. */}
-            <p className="menu-label">Places</p>
-            {PLACES.map((p) => (
-              <Link
-                key={p.href}
-                href={p.href === "/arrival" ? `/arrival?origin=${origin}&dest=${dest}&date=${departureDate}` : p.href}
-                role="menuitem"
-                transitionTypes={["nav-forward"]}
-                onClick={() => setMenuOpen(false)}
-              >
-                {p.label}
-              </Link>
+            {/* One shared map of the back rooms, grouped by what they are —
+                the same structure the More sheet renders
+                (MoreSheet.PLACE_GROUPS), so every place has exactly one name
+                and one entry. The payoff is not here: "Rate my trip" lives
+                on the trip it belongs to — the Trips surface and the
+                morning-after card below. */}
+            {PLACE_GROUPS.map((g) => (
+              <Fragment key={g.label}>
+                <p className="menu-label">{g.label}</p>
+                {g.places.map((p) => (
+                  <Link
+                    key={p.href}
+                    href={p.href}
+                    role="menuitem"
+                    transitionTypes={["nav-forward"]}
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    {p.label}
+                  </Link>
+                ))}
+              </Fragment>
             ))}
             <p className="menu-label">This trip</p>
             {/* Real buttons, not focusable divs: as divs these were in the tab
@@ -1618,8 +1630,42 @@ export default function Home() {
             )}
             </div>
 
+            {/* The payoff finds the traveller: once the trip is over, Today
+                leads with the arrival report instead of leaving it behind a
+                menu. Example journeys never land — only the real trip does. */}
+            {entry.mode === "trip" && isTripFinished(trip, new Date()) && (
+              <div className="reading">
+                <Link
+                  href={`/arrival?origin=${origin}&dest=${dest}&date=${departureDate}`}
+                  className="landed-card"
+                  transitionTypes={["nav-forward"]}
+                >
+                  <span className="landed-card-title">You&apos;ve landed in {trip.destination.name} →</span>
+                  <span className="landed-card-sub">See how your body clock adjusted — the plan&apos;s promise, settled.</span>
+                </Link>
+              </div>
+            )}
+
             <div ref={guideRef} className="reading">
               {trip && <TripClocks trip={trip} locked={effectiveLocked} />}
+              {/* The plan is a view of Today, not another destination: one
+                  switch between the live feed and the signed artifact (the
+                  same component /review renders), shown only once a plan
+                  exists to look at. */}
+              {(effectiveLocked.size > 0 || run.briefing) && (
+                <div className="pill plan-switch" role="group" aria-label="Today or the full plan">
+                  <button type="button" className={planView ? "" : "on"} onClick={() => setPlanView(false)}>
+                    Now
+                  </button>
+                  <button type="button" className={planView ? "on" : ""} onClick={() => setPlanView(true)}>
+                    The plan
+                  </button>
+                </div>
+              )}
+              {planView ? (
+                <PlanReview inline />
+              ) : (
+                <>
               <NudgeFeedScreen
                 trip={trip}
                 phase={effectivePhase}
@@ -1700,6 +1746,8 @@ export default function Home() {
               )}
               {effectiveLocked.size > 0 && (
                 <PinnedDayRow days={trip.days} locked={effectiveLocked} />
+              )}
+                </>
               )}
             </div>
 

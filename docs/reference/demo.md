@@ -89,8 +89,8 @@ per day and may need tuning.
   days show the solver's own preview (scorer-checked, compliance-floor-capped).
   Post-flight days are planned after landing. `?depth=guided` adds the
   deep-dive visuals; `/crew` is the operator rung (lens shell + crew feed
-  + eval verdict cards). On a phone the tab bar is three links —
-  **Today / The plan / Trips**.
+  + eval verdict cards). On a phone the tab bar is two links —
+  **Today / Trips** — plus a More sheet for the back rooms.
 - `/` → **"How my body clock is adjusting"** — the read-only explanation
   below Today, once the crew (or a restored plan) has locked days: the
   24-hour dial, the projection with its uncertainty band and the do-nothing
@@ -100,9 +100,12 @@ per day and may need tuning.
   window, the fixed and negotiable commitments, the one movable thing (the
   15:30 pickup, behind a hold), and the post-night-shift driving warning.
 - `/review` — the artifact: plan, citations, `.ics` download (persists via
-  localStorage, survives refresh)
-- `/history` — past runs (`meridian:history` localStorage capped at 20, plus
-  Supabase `meridian_events` when `SUPABASE_URL` is configured)
+  localStorage, survives refresh). The same component renders inline on
+  Today behind the Now / The plan switch; the route stays for deep links.
+- `/history` — Trips: the journey ledger (`meridian:history` localStorage
+  capped at 20, plus Supabase `meridian_events` when `SUPABASE_URL` is
+  configured). Each record carries its day chips and gate score, and links
+  out to reopen the trip in Today or settle it with its arrival report.
 - `/outcome` — post-trip self-report; the hook for the adherence story
 
 ## localStorage keys
@@ -110,8 +113,8 @@ per day and may need tuning.
 | Key | Written by |
 |---|---|
 | `meridian:activeTrip` | `/` on a committed route (entry form, route editor "Save trip", booking paste, or a valid `?origin&dest&date` URL) → read back to restore the trip on return |
-| `meridian:lastPlan` | `/` on briefing (with `coverage`, `baseline` and `baselineKind` inside) → read by `/review`, and by `/arrival` to score the trip against the projection |
-| `meridian:lastTrip` | `/` on `run_start` → read by `/review`; also the legacy fallback route key `/` restores when no `activeTrip` is stored |
+| `meridian:lastPlan` | `/` on briefing (with `coverage`, `baseline` and `baselineKind` inside) → read by `PlanReview` (Today's The-plan view and `/review`), and by `/arrival` to score the trip against the projection |
+| `meridian:lastTrip` | `/` on `run_start` → read by `PlanReview`; also the legacy fallback route key `/` restores when no `activeTrip` is stored |
 | `meridian:history` | `/` on briefing → read by `/history` |
 | `meridian:onboarded` | `/` on `run_start` (the first run counts as onboarded) |
 | `meridian:outcomes` | `/outcome` submissions |

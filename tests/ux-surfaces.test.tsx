@@ -56,15 +56,16 @@ describe("TripEntryScreen (first use)", () => {
 describe("BottomNav", () => {
   const html = renderToStaticMarkup(createElement(BottomNav));
 
-  test("shows exactly the three goal links plus the More tab", () => {
+  test("shows exactly the two journey links plus the More tab", () => {
     expect(html).toContain('href="/"');
-    expect(html).toContain('href="/review"');
     expect(html).toContain('href="/history"');
-    expect((html.match(/<a /g) ?? []).length).toBe(3);
-    // The fourth tab is a button that opens the More sheet — the way to the
-    // back-room surfaces (/crew, /shift, /team, /arrival) on the phone.
+    expect((html.match(/<a /g) ?? []).length).toBe(2);
+    // The third tab is a button that opens the More sheet — the way to the
+    // back-room surfaces (/crew, /shift, /team) on the phone. The plan is a
+    // view of Today and the payoff lives on its trip, so neither is a tab.
     expect((html.match(/<button/g) ?? []).length).toBe(1);
     expect(html).toContain('aria-label="More"');
+    expect(html).not.toContain('href="/review"');
   });
 
   test("no Clock tab and no view-state controls", () => {

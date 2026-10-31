@@ -121,8 +121,9 @@ so a number reads as a measurement on every OS, not just the one with SF Mono.
 **Costs:** a noun is not a sentence, so the *first* run of a screen has to
 carry the sentence instead.
 
-**Ours:** the tab bar is Today / The plan / Trips — goals, not view modes. The
-body clock is explanation below Today, not a tab of its own.
+**Ours:** the tab bar is Today / Trips — goals, not view modes. The plan is a
+view of Today, the payoff lives on the trip it belongs to, and the body clock
+is explanation below Today — none of them tabs of their own.
 
 ### 9. The answer is the interface
 

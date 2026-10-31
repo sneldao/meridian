@@ -4,17 +4,33 @@ import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
 import { DisclosureSheet } from "@/components/dial/DisclosureSheet";
 
-/* The surfaces outside the three tabs — the app's back rooms. One list,
- *  shared by the phone's More tab, the desktop secondary pages and the home
- *  Menu, so no surface needs to remember what the others are called, every
- *  destination has exactly one name, and everything is one hop away instead
- *  of funneling back through Today. */
-export const PLACES = [
-  { href: "/crew", label: "AI at work", note: "watch the crew build the plan" },
-  { href: "/shift", label: "Shift work", note: "a week of nights, not a flight" },
-  { href: "/team", label: "Team view", note: "twelve crews, one stream" },
-  { href: "/arrival", label: "Rate my trip", note: "the morning after, scored" },
-] as const;
+/* The surfaces outside the two tabs — grouped by what they are, so the nav
+ *  reads as a story instead of a feature list. One shared structure for the
+ *  phone's More sheet, the desktop headers and the home Menu: every surface
+ *  gets exactly one name and one entry.
+ *
+ *  "Rate my trip" is deliberately not here — the payoff lives on the trip it
+ *  belongs to: the Trips surface links each journey to its arrival report,
+ *  and Today surfaces it the morning after landing. */
+export interface Place { href: string; label: string; note: string }
+export interface PlaceGroup { label: string; places: readonly Place[] }
+
+export const PLACE_GROUPS: readonly PlaceGroup[] = [
+  {
+    label: "Inside Meridian",
+    places: [{ href: "/crew", label: "AI at work", note: "watch the crew build the plan" }],
+  },
+  {
+    label: "The same engine, other lives",
+    places: [
+      { href: "/shift", label: "Shift work", note: "a week of nights, not a flight" },
+      { href: "/team", label: "Team view", note: "twelve crews, one stream" },
+    ],
+  },
+];
+
+/** Flat form, for consumers that just need the destinations. */
+export const PLACES = PLACE_GROUPS.flatMap((g) => g.places);
 
 export function MoreSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [disclosure, setDisclosure] = useState(false);
@@ -39,17 +55,22 @@ export function MoreSheet({ open, onClose }: { open: boolean; onClose: () => voi
       />
       <div role="dialog" aria-modal="true" aria-label="More" className="more-sheet">
         <nav aria-label="More places">
-          {PLACES.map((p) => (
-            <Link
-              key={p.href}
-              href={p.href}
-              transitionTypes={["nav-forward"]}
-              onClick={onClose}
-              className="more-sheet-item"
-            >
-              <span>{p.label}</span>
-              <small>{p.note}</small>
-            </Link>
+          {PLACE_GROUPS.map((g) => (
+            <div key={g.label}>
+              <p className="more-sheet-label">{g.label}</p>
+              {g.places.map((p) => (
+                <Link
+                  key={p.href}
+                  href={p.href}
+                  transitionTypes={["nav-forward"]}
+                  onClick={onClose}
+                  className="more-sheet-item"
+                >
+                  <span>{p.label}</span>
+                  <small>{p.note}</small>
+                </Link>
+              ))}
+            </div>
           ))}
         </nav>
         <button
