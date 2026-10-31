@@ -241,6 +241,9 @@ export interface CrewQuestionAnswer {
   optionId: string;
   label: string;
   skipped: boolean;
+  /** The `crew_answer` event's effect clause, carried so the card that asked
+   *  can say what the answer changed. Absent when the pick moved nothing. */
+  effect?: string;
 }
 
 export type CrewEvent =

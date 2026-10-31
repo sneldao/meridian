@@ -56,7 +56,7 @@ const CHROME = [
   ...[
     "NudgeFeedScreen", "RoutePicker", "HeroDawnPanel", "DayScene", "DeepDiveVisuals",
     "TripSetupScreen", "CalendarApprovalCard", "CrewQuestionCard", "UndoToast", "VoiceControls", "ArrivalDayView",
-    "DaySkyStrip", "CrewFeed", "DailyJourney", "DawnScrubber", "DayCardShare",
+    "DaySkyStrip", "DayStrip", "CrewFeed", "DailyJourney", "DawnScrubber", "DayCardShare",
     "ScenarioExperience", "TasteItineraryCard", "LightWindowPanel", "PerformanceBrief",
   ].map((n) => `src/components/${n}.tsx`),
   "src/components/ui/AgentCard.tsx",
@@ -91,6 +91,7 @@ const STYLE_CEILING: Record<string, number> = {
   "src/components/CalendarApprovalCard.tsx": 11,
   "src/components/CrewQuestionCard.tsx": 8,
   "src/components/DaySkyStrip.tsx": 4,
+  "src/components/DayStrip.tsx": 3,
   "src/components/dial/ShiftScreen.tsx": 3,
   "src/components/CrewFeed.tsx": 3,
   "src/components/dial/DisclosureSheet.tsx": 2,
@@ -122,7 +123,6 @@ const MOTION_DEBT: Record<string, number> = {
 // they appear on the page. Adding one is a contract change, so it is a list.
 const INSTRUMENT_BANDS = [
   "marks-waiting banner",
-  "day stepper",
   "check-in card",
   "calendar summary",
   "the rail card",

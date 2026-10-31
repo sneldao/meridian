@@ -40,6 +40,7 @@ const CREW_ANSWER_SPECIMEN: CrewQuestionAnswer = {
   optionId: "earlier45",
   label: "I can do 06:15",
   skipped: false,
+  effect: "morning light can start at 06:15",
 };
 
 export default function DevLenses() {

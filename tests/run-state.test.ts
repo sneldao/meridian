@@ -289,3 +289,27 @@ describe("calendar approval events", () => {
     expect(run.calendar).toEqual(start.calendar);
   });
 });
+
+describe("crew answer in run state", () => {
+  const answer = (effect?: string): StampedEvent => ({
+    t: 0,
+    event: {
+      type: "crew_answer",
+      questionId: "q1",
+      optionId: "earlier45",
+      label: "I can do 06:15",
+      skipped: false,
+      ...(effect ? { effect } : {}),
+    },
+  });
+
+  test("the effect clause rides through to the state the card reads", () => {
+    const run = reduceRun(initialRunState(), { kind: "batch", items: [answer("morning light can start at 06:15")] });
+    expect(run.questionAnswer?.effect).toBe("morning light can start at 06:15");
+  });
+
+  test("an answer that moved nothing leaves no effect to claim", () => {
+    const run = reduceRun(initialRunState(), { kind: "batch", items: [answer()] });
+    expect(run.questionAnswer?.effect).toBeUndefined();
+  });
+});

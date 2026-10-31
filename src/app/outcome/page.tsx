@@ -92,9 +92,11 @@ export default function OutcomePage() {
     <main className="mx-auto max-w-2xl px-6 py-8">
       <PageHeader title="How did your trip go?" />
 
-      <p className="text-sm leading-relaxed text-mist">
-        Two quick questions — answers shape your next plan.
-      </p>
+      {hasPlan !== false && (
+        <p className="text-sm leading-relaxed text-mist">
+          Two quick questions — answers shape your next plan.
+        </p>
+      )}
 
       {hasPlan === false ? (
         <Card className="mt-6 p-4">

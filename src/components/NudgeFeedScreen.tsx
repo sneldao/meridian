@@ -1325,20 +1325,6 @@ export function NudgeFeedScreen({
         ) : null;
       })()}
 
-      {trip && destKey && (
-        <TasteDiscovery
-          key={`${trip.origin.code}-${trip.destination.code}-${trip.days.find((d) => d.dayIndex === trip.departureDayIndex)?.date ?? ""}`}
-          destination={{ name: trip.destination.name, lon: trip.destination.lon, lat: trip.destination.lat }}
-          initialTaste={tasteData}
-          favorites={tasteProfile?.favorites}
-          onFavoritesChange={tasteProfile?.setFavorites}
-          favoritesReady={tasteProfile?.ready ?? true}
-          storageAvailable={tasteProfile?.storageAvailable}
-          onFitPlan={canFitTaste ? onStartCrewSync : undefined}
-          planning={phase === "running"}
-        />
-      )}
-
       {simple && trip && (
         <div className="rise" style={{ animationDelay: ".25s", margin: "8px 4px 0", fontSize: "12px", color: "var(--m-muted)", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <span>
@@ -1501,73 +1487,6 @@ export function NudgeFeedScreen({
         </div>
       )}
 
-      {/* Day stepper — ‹ › through the days; the centre label opens the
-          full list for a direct jump. Real trip days only. */}
-      {days.length > 0 && activeDaySpec && (
-        <div className="rise wide" style={{ animationDelay: ".3s", marginTop: "22px", position: "relative" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-            <button
-              type="button"
-              aria-label="Previous day"
-              disabled={activeDayIndex <= 0}
-              onClick={() => days[activeDayIndex - 1] && onSelectDay(days[activeDayIndex - 1].label)}
-              className="day-step"
-            >
-              ‹
-            </button>
-            <button
-              type="button"
-              onClick={() => setDayListOpen((v) => !v)}
-              aria-expanded={dayListOpen}
-              aria-current={todayIdx === activeDaySpec.dayIndex ? "date" : undefined}
-              className="day"
-              style={{ flex: 1 }}
-            >
-              <span style={{ display: "block" }}>
-                {currentDayName}
-                {todayIdx === activeDaySpec.dayIndex ? " · Today" : ""} ▾
-              </span>
-              {totalSteps > 0 && (
-                <span style={{ display: "block", marginTop: 4 }}>
-                  <span style={{ display: "block", height: 3, borderRadius: 999, background: "var(--m-border-2)", overflow: "hidden" }}>
-                    <span style={{ display: "block", height: "100%", width: `${progressPct}%`, background: "#D96B43", transition: "width 0.3s ease-out" }} />
-                  </span>
-                  <span style={{ fontSize: 10, fontWeight: 600, color: todayIdx === activeDaySpec.dayIndex ? "var(--m-on-accent)" : "var(--m-muted)" }}>
-                    {previewMode ? `Example plan · ${completedCount} of ${totalSteps} done` : `${completedCount} of ${totalSteps} done`}
-                  </span>
-                </span>
-              )}
-            </button>
-            <button
-              type="button"
-              aria-label="Next day"
-              disabled={activeDayIndex >= days.length - 1}
-              onClick={() => days[activeDayIndex + 1] && onSelectDay(days[activeDayIndex + 1].label)}
-              className="day-step"
-            >
-              ›
-            </button>
-          </div>
-          {dayListOpen && (
-            <div className="card" style={{ position: "absolute", zIndex: 30, top: "calc(100% + 4px)", left: 0, right: 0, padding: 6, display: "flex", flexDirection: "column", gap: 2 }}>
-              {days.map((d) => (
-                <button
-                  key={d.dayIndex}
-                  type="button"
-                  onClick={() => { onSelectDay(d.label); setDayListOpen(false); }}
-                  aria-current={todayIdx === d.dayIndex ? "date" : undefined}
-                  className={`day ${d.label === currentLabel ? "on" : ""}`}
-                  style={{ width: "100%", textAlign: "left" }}
-                >
-                  {friendlyDayLabel(d, trip?.departureDayIndex)}
-                  {todayIdx === d.dayIndex ? " · Today" : ""}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Guided ribbon — the day's crew beats in one line */}
       {dayBeat && (
         <div
@@ -1682,6 +1601,73 @@ export function NudgeFeedScreen({
 
       {!arrivalView && (
       <section className={`tl rise wide${previewMode ? " preview" : ""}`} style={{ animationDelay: ".4s" }} aria-label={`${currentDayName} — steps`}>
+        {/* Day stepper — ‹ › through the days; the centre label opens the
+            full list for a direct jump. Real trip days only. It heads the
+            rail it selects, inside the rail's own surface. */}
+        {days.length > 0 && activeDaySpec && (
+          <div className="rise" style={{ position: "relative" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+              <button
+                type="button"
+                aria-label="Previous day"
+                disabled={activeDayIndex <= 0}
+                onClick={() => days[activeDayIndex - 1] && onSelectDay(days[activeDayIndex - 1].label)}
+                className="day-step"
+              >
+                ‹
+              </button>
+              <button
+                type="button"
+                onClick={() => setDayListOpen((v) => !v)}
+                aria-expanded={dayListOpen}
+                aria-current={todayIdx === activeDaySpec.dayIndex ? "date" : undefined}
+                className="day"
+                style={{ flex: 1 }}
+              >
+                <span style={{ display: "block" }}>
+                  {currentDayName}
+                  {todayIdx === activeDaySpec.dayIndex ? " · Today" : ""} ▾
+                </span>
+                {totalSteps > 0 && (
+                  <span style={{ display: "block", marginTop: 4 }}>
+                    <span style={{ display: "block", height: 3, borderRadius: 999, background: "var(--m-border-2)", overflow: "hidden" }}>
+                      <span style={{ display: "block", height: "100%", width: `${progressPct}%`, background: "#D96B43", transition: "width 0.3s ease-out" }} />
+                    </span>
+                    <span style={{ fontSize: 10, fontWeight: 600, color: todayIdx === activeDaySpec.dayIndex ? "var(--m-on-accent)" : "var(--m-muted)" }}>
+                      {previewMode ? `Example plan · ${completedCount} of ${totalSteps} done` : `${completedCount} of ${totalSteps} done`}
+                    </span>
+                  </span>
+                )}
+              </button>
+              <button
+                type="button"
+                aria-label="Next day"
+                disabled={activeDayIndex >= days.length - 1}
+                onClick={() => days[activeDayIndex + 1] && onSelectDay(days[activeDayIndex + 1].label)}
+                className="day-step"
+              >
+                ›
+              </button>
+            </div>
+            {dayListOpen && (
+              <div className="card" style={{ position: "absolute", zIndex: 30, top: "calc(100% + 4px)", left: 0, right: 0, padding: 6, display: "flex", flexDirection: "column", gap: 2 }}>
+                {days.map((d) => (
+                  <button
+                    key={d.dayIndex}
+                    type="button"
+                    onClick={() => { onSelectDay(d.label); setDayListOpen(false); }}
+                    aria-current={todayIdx === d.dayIndex ? "date" : undefined}
+                    className={`day ${d.label === currentLabel ? "on" : ""}`}
+                    style={{ width: "100%", textAlign: "left" }}
+                  >
+                    {friendlyDayLabel(d, trip?.departureDayIndex)}
+                    {todayIdx === d.dayIndex ? " · Today" : ""}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         <DaySkyStrip steps={steps} resolvedIds={resolvedIds} nowMin={nowMin} label={currentDayName} />
         <div className="tl-rows">
         {steps.map((step, stepIdx) => {
@@ -1876,6 +1862,23 @@ export function NudgeFeedScreen({
           </p>
         )}
       </section>
+      )}
+
+      {/* Taste discovery is enrichment, not instrument — it trails the day's
+          rail rather than splitting the action blocks from the list they
+          control. */}
+      {trip && destKey && (
+        <TasteDiscovery
+          key={`${trip.origin.code}-${trip.destination.code}-${trip.days.find((d) => d.dayIndex === trip.departureDayIndex)?.date ?? ""}`}
+          destination={{ name: trip.destination.name, lon: trip.destination.lon, lat: trip.destination.lat }}
+          initialTaste={tasteData}
+          favorites={tasteProfile?.favorites}
+          onFavoritesChange={tasteProfile?.setFavorites}
+          favoritesReady={tasteProfile?.ready ?? true}
+          storageAvailable={tasteProfile?.storageAvailable}
+          onFitPlan={canFitTaste ? onStartCrewSync : undefined}
+          planning={phase === "running"}
+        />
       )}
 
       {/* Simple + a saved plan: the day's steps are the thing; re-running is

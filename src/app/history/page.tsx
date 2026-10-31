@@ -105,7 +105,9 @@ export default function HistoryPage() {
         title="Past trips"
         actions={
           <>
-            <button onClick={clear} className="text-xs text-clay-2 hover:text-clay-fail">Clear history</button>
+            {items.length > 0 && (
+              <button onClick={clear} className="text-xs text-clay-2 hover:text-clay-fail">Clear history</button>
+            )}
             <button onClick={deleteAll} className="text-xs text-clay-2 hover:text-clay-fail">Delete all my data</button>
           </>
         }

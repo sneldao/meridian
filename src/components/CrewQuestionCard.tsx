@@ -55,7 +55,9 @@ export function CrewQuestionCard({ question, answer }: Props) {
       </p>
       {decided ? (
         <p role="status" style={{ margin: "12px 0 0", fontSize: 12, color: "var(--m-text)" }}>
-          {decided.skipped ? "No answer — the crew decided." : `You answered: ${decided.label}`}
+          {decided.skipped
+            ? "No answer — the crew decided."
+            : `You answered: ${decided.label}${decided.effect ? ` — ${decided.effect}` : ""}`}
         </p>
       ) : (
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>

@@ -8,7 +8,7 @@ import {
   useTransform,
   type MotionValue,
 } from "framer-motion";
-import { useRef } from "react";
+import { useCallback, useRef, useSyncExternalStore } from "react";
 import { fmtMin } from "@/domain/circadian";
 import { INTERVENTION_ICONS } from "@/lib/intervention-icons";
 import type { DayPlan, DaySpec } from "@/domain/types";
@@ -27,6 +27,39 @@ function easeInOutCubic(t: number) {
 const PIN_CARD_W = 180;
 const PIN_CARD_H = 88;
 const PIN_GAP = 16;
+
+/** Resolved through useSyncExternalStore so the first paint and the hydration
+ *  pass agree (server snapshot: the query does not match). */
+function useMediaQuery(query: string) {
+  const subscribe = useCallback(
+    (onChange: () => void) => {
+      if (typeof window === "undefined" || !window.matchMedia) return () => {};
+      const mq = window.matchMedia(query);
+      mq.addEventListener("change", onChange);
+      return () => mq.removeEventListener("change", onChange);
+    },
+    [query],
+  );
+  return useSyncExternalStore(
+    subscribe,
+    () => (typeof window !== "undefined" && window.matchMedia ? window.matchMedia(query).matches : false),
+    () => false,
+  );
+}
+
+/** One locked day, as the traveller reads it. Shared by the pinned morph and
+ *  the narrow-viewport column, so the two never drift apart. */
+function DayCardBody({ label, plan }: { label: string; plan: DayPlan }) {
+  return (
+    <>
+      <div className="text-xs font-bold text-pass">{label}</div>
+      <div className="mt-1 font-mono2 text-xs text-paper">
+        <div>bed {fmtMin(plan.targetBedtimeMin)}</div>
+        <div>wake {fmtMin(plan.targetWakeMin)}</div>
+      </div>
+    </>
+  );
+}
 
 function PinnedDayCard({
   label,
@@ -56,11 +89,7 @@ function PinnedDayCard({
       style={{ position: "absolute", left: 0, top: 0, x, y, opacity, width: PIN_CARD_W, height: PIN_CARD_H }}
       className="rounded-lg border border-pass/20 bg-ink-3 px-3 py-2"
     >
-      <div className="text-xs font-bold text-pass">{label}</div>
-      <div className="mt-1 font-mono2 text-xs text-paper">
-        <div>bed {fmtMin(plan.targetBedtimeMin)}</div>
-        <div>wake {fmtMin(plan.targetWakeMin)}</div>
-      </div>
+      <DayCardBody label={label} plan={plan} />
     </motion.div>
   );
 }
@@ -100,6 +129,10 @@ export function PinnedDayRow({ days, locked }: { days: DaySpec[]; locked: Map<st
 }
 
 export function DayStrip({ days, locked, activeLabel, rejectedLabels }: Props) {
+  // `layout` projects through WAAPI, which the global flatten rule in
+  // globals.css cannot reach — gate it here. Position-only, because a stretched
+  // grid cell's size is set by the row: scaling the box only distorts its text.
+  const reduce = useReducedMotion();
   return (
     <div className="grid grid-cols-5 gap-2">
       {days.map((d) => {
@@ -109,7 +142,7 @@ export function DayStrip({ days, locked, activeLabel, rejectedLabels }: Props) {
         return (
           <motion.div
             key={d.dayIndex}
-            layout
+            layout={reduce ? false : "position"}
             className={`rounded-lg border px-3 py-2 transition-colors ${
               plan
                 ? "border-pass/20 bg-ink-3"

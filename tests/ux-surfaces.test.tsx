@@ -1,6 +1,7 @@
 import { afterAll, describe, expect, mock, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createElement } from "react";
+import type { CrewQuestion } from "../src/domain/types";
 
 mock.module("next/navigation", () => ({
   usePathname: () => "/",
@@ -10,6 +11,8 @@ afterAll(() => mock.restore());
 const { TripEntryScreen } = await import("../src/components/TripEntryScreen");
 const { BottomNav } = await import("../src/components/BottomNav");
 const { BodyClockDetails } = await import("../src/components/dial/BodyClockDetails");
+const { CrewQuestionCard } = await import("../src/components/CrewQuestionCard");
+const { Ledger } = await import("../src/components/lenses/Ledger");
 const { buildTrip, GARMIN_BASELINE, CALENDAR, ADHERENCE_PROFILE } = await import("../src/domain/fixtures");
 const { solveDay } = await import("../src/domain/solver");
 
@@ -117,5 +120,65 @@ describe("BodyClockDetails (explanatory clock)", () => {
     ]) {
       expect(html).not.toContain(bad);
     }
+  });
+});
+
+describe("the crew's answer, where the traveller reads it", () => {
+  const question: CrewQuestion = {
+    id: "q1",
+    runId: "r1",
+    agent: "analyst",
+    text: "Your log says asks before 07:00 get skipped. Still right?",
+    context: "An earlier floor lets the morning light go earlier.",
+    options: [
+      { id: "keep", label: "Still true — keep 07:00" },
+      { id: "earlier45", label: "I can do 06:15" },
+    ],
+    expiresAt: "2099-01-01T00:00:00.000Z",
+  };
+
+  test("the card that asked says what the answer unlocked", () => {
+    const html = renderToStaticMarkup(
+      createElement(CrewQuestionCard, {
+        question,
+        answer: {
+          questionId: "q1",
+          optionId: "earlier45",
+          label: "I can do 06:15",
+          skipped: false,
+          effect: "morning light can start at 06:15",
+        },
+      }),
+    );
+    expect(html).toContain("You answered: I can do 06:15 — morning light can start at 06:15");
+  });
+
+  test("a pick that moved nothing claims no effect", () => {
+    const html = renderToStaticMarkup(
+      createElement(CrewQuestionCard, {
+        question,
+        answer: { questionId: "q1", optionId: "keep", label: "Still true — keep 07:00", skipped: false },
+      }),
+    );
+    expect(html).toContain("You answered: Still true — keep 07:00");
+    expect(html).not.toContain("can start at");
+  });
+
+  test("the ledger row carries the same clause", () => {
+    const html = renderToStaticMarkup(
+      createElement(Ledger, {
+        events: [
+          {
+            type: "crew_answer",
+            questionId: "q1",
+            optionId: "earlier45",
+            label: "I can do 06:15",
+            skipped: false,
+            effect: "morning light can start at 06:15",
+          },
+        ],
+      }),
+    );
+    expect(html).toContain("answered · I can do 06:15 — morning light can start at 06:15");
   });
 });

@@ -352,7 +352,7 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
         label: picked.label,
         skipped: ans.skipped,
         ...(newFloor !== floor
-          ? { effect: `compliance floor ${fmtMin(floor)} → ${fmtMin(newFloor)} — morning light can start at ${fmtMin(newFloor)}` }
+          ? { effect: `morning light can start at ${fmtMin(newFloor)}` }
           : {}),
       });
       logLine(

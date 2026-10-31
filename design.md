@@ -170,8 +170,9 @@ cubic-bezier(0.22, 1, 0.36, 1) · `--ease-settle` cubic-bezier(0.16, 1, 0.3, 1)
 - The day's instrument surfaces MAY break to ≈960px via `.wide` — the same
   `--hero-out` math the stages use, capped so small viewports only reach the
   frame edge. Sanctioned surfaces, in page order: the marks-waiting banner,
-  the day stepper, the check-in card, the calendar summary, the rail card.
-  Prose stays in the 720px `.reading` column.
+  the check-in card, the calendar summary, the rail card — the day stepper
+  rides inside the rail, heading the list it selects. Prose stays in the
+  720px `.reading` column.
 - Statement pages (`/arrival`) may use one atmospheric ink gradient — the
   sunrise already earned there.
 

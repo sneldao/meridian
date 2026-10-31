@@ -334,6 +334,7 @@ function applyEventInner(s: RunState, event: CrewEvent, t: number): RunState {
           optionId: event.optionId,
           label: event.label,
           skipped: event.skipped,
+          ...(event.effect ? { effect: event.effect } : {}),
         },
       };
 

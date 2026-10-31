@@ -79,7 +79,10 @@ function describe(e: CrewEvent): Row {
     case "crew_answer":
       return {
         who: "wearer",
-        what: e.skipped ? "skipped the question — the crew used its default" : `answered · ${e.label}`,
+        what:
+          e.skipped
+            ? "skipped the question — the crew used its default"
+            : `answered · ${e.label}${e.effect ? ` — ${e.effect}` : ""}`,
         tone: "var(--color-mist)",
       };
     case "done":
