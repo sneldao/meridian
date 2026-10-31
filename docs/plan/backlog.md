@@ -1027,10 +1027,12 @@ fallback mode.
 - **Orphaned routes** — `/dev` and `/team` are complete with zero inbound
   links; `/crew`'s "Trip Setup" pill links to `?screen=setup`, which nothing
   reads. Link or hide.
-- **Server-minted arrival share link** — the passport currently leaves the
-  app as a client-side image/text export. A `/api/share` variant that
-  persists `{arrival,trip}` and renders a live post-landing receipt page
-  (claimed vs delivered) would make the record a URL, not a file.
+- ~~**Server-minted arrival share link**~~ — shipped 2026-10-31: `POST
+  /api/share` accepts `{arrival,trip}` receipts (claimed vs delivered from
+  the landing projection), renders on `/plan/{id}` with an OG variant, and
+  the recipient CTA lands on `/?via={id}` with a prefill + `recipient_count`
+  funnel counter. The client-side PNG/SVG passport export remains for
+  image-first posts.
 - **Video re-record** — shot list refreshed (hackathon-submissions.md §One
   video for all): check-in loop is the signature shot, flight picker is real,
   memory is per-traveller. Record after item 7 lands — the arrival surface is
