@@ -60,7 +60,10 @@
   --color-clay-fail: #b23a2e;
 
   /* Typography: a fluid ramp so the UI breathes across viewports. */
-  --text-2xs: clamp(0.65rem, 0.7vw, 0.7rem);
+  /* 12px is the declared body floor (design.md), so the smallest step on the
+     ramp tops out at 0.75rem — 10px labels were the first thing a tired
+     traveller couldn't read. */
+  --text-2xs: clamp(0.7rem, 0.8vw, 0.75rem);
   --text-xs: clamp(0.7rem, 0.85vw, 0.8rem);
   --text-sm: clamp(0.8rem, 1vw, 0.9rem);
   --text-base: clamp(0.9rem, 1.1vw, 1rem);
@@ -164,7 +167,9 @@ body {
   top: -120px;
   width: 1100px;
   height: 900px;
-  background: radial-gradient(ellipse at 30% 20%, rgba(157, 184, 255, 0.14), rgba(255, 196, 107, 0.08) 45%, transparent 70%);
+  /* Halved: the beam is atmosphere for the landing, not a tint tax on the
+     working surface the feed is read through. */
+  background: radial-gradient(ellipse at 30% 20%, rgba(157, 184, 255, 0.07), rgba(255, 196, 107, 0.04) 45%, transparent 70%);
   animation: beam 14s ease-in-out infinite alternate;
   z-index: 0;
   pointer-events: none;
@@ -332,7 +337,7 @@ body {
   position: absolute;
   right: 32px;
   top: 66px;
-  width: 210px;
+  width: 240px;
   background: var(--m-bg);
   border: 1px solid var(--m-border);
   border-radius: 14px;
@@ -366,6 +371,23 @@ body {
 .menu a.m,
 .menu button.m {
   color: var(--m-muted);
+}
+/* Group eyebrows inside the menu — <p>, so the div/a/button item rules
+   (hover background included) don't reach them. */
+.menu p.menu-label {
+  margin: 6px 0 0;
+  padding: 8px 10px 3px;
+  border-top: 1px solid var(--m-border-2);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--m-muted);
+}
+.menu p.menu-label:first-child {
+  margin: 0;
+  padding-top: 2px;
+  border-top: 0;
 }
 /* A crew run that died mid-stream. Deliberately not an `.evchip`-shaped thing:
    this is a report about the app, not a finding about the traveller's day. */
@@ -2500,10 +2522,13 @@ html[data-theme="night"] .evline-cite,
   --m-card: #fff8ef;
   --m-text: #3a2e23;
   --m-ink: #1E1B18;
-  --m-muted: #7a6a5c;
+  /* Muted and faint are deepened for contrast on cream: muted 4.5→5.8:1 so
+     12px chrome reads without effort, faint 2.6→3.8:1 so even the tertiary
+     spent rows stay legible. */
+  --m-muted: #6a5a4a;
   --m-border: #e3d5c3;
   --m-border-2: #eee3d6;
-  --m-faint: #a39282;
+  --m-faint: #877663;
   --m-card-2: #f3e9dc;
   --m-tag: rgba(217, 107, 67, 0.12);
   --m-accent: #D96B43;
@@ -2522,7 +2547,8 @@ html[data-theme="night"] {
   --m-card-2: #171d2e;
   --m-border: #26304a;
   --m-border-2: #1c2436;
-  --m-faint: #5c6478;
+  /* 3.3→4.9:1 on the night background: the old faint vanished at 11px. */
+  --m-faint: #75809a;
   --m-text: #F5EFE6;
   --m-ink: #F5EFE6;
   --m-muted: #a89a8c;

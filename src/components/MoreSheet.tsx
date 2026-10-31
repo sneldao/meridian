@@ -5,10 +5,11 @@ import { useEffect, useState, type ReactNode } from "react";
 import { DisclosureSheet } from "@/components/dial/DisclosureSheet";
 
 /* The surfaces outside the three tabs — the app's back rooms. One list,
- *  shared by the phone's More tab and the desktop secondary pages, so no
- *  page needs to remember what the others are called, and every surface is
- *  one hop from every other instead of funneling back through Today. */
-const PLACES = [
+ *  shared by the phone's More tab, the desktop secondary pages and the home
+ *  Menu, so no surface needs to remember what the others are called, every
+ *  destination has exactly one name, and everything is one hop away instead
+ *  of funneling back through Today. */
+export const PLACES = [
   { href: "/crew", label: "AI at work", note: "watch the crew build the plan" },
   { href: "/shift", label: "Shift work", note: "a week of nights, not a flight" },
   { href: "/team", label: "Team view", note: "twelve crews, one stream" },

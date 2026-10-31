@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 
-const STEPS = ["Your trip", "Your plan", "Each day", "After you land"] as const;
+// The plan rung now reads "The plan" — the same words as the tab bar — so the
+// two maps of the same app never disagree about what a destination is called.
+const STEPS = ["Your trip", "The plan", "Each day", "After you land"] as const;
 
 /** Where the traveller is in the journey — one quiet line under the route
  *  picker. `current` is the live step; steps before it read as done. When

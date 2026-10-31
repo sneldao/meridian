@@ -10,7 +10,7 @@ projection is a read-only `<details>` explanation below it (`?view=clock`),
 sharing one Home-owned, trip-scoped action ledger (`meridian:actions:*`,
 migrating legacy `completedNudges`/`pendingCheckins`). Preview scopes are
 memory-only — no writes, no durable check-ins. Phone nav is three links
-(Today / My plan / Trips); "AI at work" is a menu route to `/crew`.
+(Today / The plan / Trips); "AI at work" is a menu route to `/crew`.
 
 Verified so far: `bun test` (pure functions + SSR markup), typecheck, lint,
 production build. **Open:** real visual/interactive QA — a browser pass over

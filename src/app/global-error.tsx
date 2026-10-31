@@ -68,7 +68,7 @@ export default function GlobalError({
             Reload
           </button>
           {error.digest && (
-            <p style={{ fontSize: 11, color: "#7a6a5c", marginTop: 18 }}>
+            <p style={{ fontSize: 11, color: "#6a5a4a", marginTop: 18 }}>
               Reference <code>{error.digest}</code>
             </p>
           )}

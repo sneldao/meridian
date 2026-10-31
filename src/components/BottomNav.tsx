@@ -8,7 +8,7 @@ import { MoreSheet } from "@/components/MoreSheet";
 
 const TABS = [
   { href: "/", label: "Today", Icon: Home, active: (p: string) => p === "/" },
-  { href: "/review", label: "My plan", Icon: CalendarClock, active: (p: string) => p.startsWith("/review") },
+  { href: "/review", label: "The plan", Icon: CalendarClock, active: (p: string) => p.startsWith("/review") },
   { href: "/history", label: "Trips", Icon: History, active: (p: string) => p.startsWith("/history") },
 ];
 

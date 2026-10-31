@@ -46,7 +46,7 @@ export default async function SharedPlan({ params }: { params: Promise<{ id: str
         <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 600, letterSpacing: "-0.02em", margin: "10px 0 4px" }}>
           {trip ? `${trip.origin.name} → ${trip.destination.name}` : "Shift plan"}
         </h1>
-        <p style={{ fontSize: 13, color: "#7a6a5c", margin: "0 0 20px" }}>{briefing.summary}</p>
+        <p style={{ fontSize: 13, color: "#6a5a4a", margin: "0 0 20px" }}>{briefing.summary}</p>
 
         {hero && hero.bodyWithoutPlanMin !== hero.bodyMin && (
           <div
@@ -78,7 +78,7 @@ export default async function SharedPlan({ params }: { params: Promise<{ id: str
               <span>{d.shiftMin} min shift · {d.interventions.length} steps</span>
             </div>
           ))}
-          <div style={{ fontSize: 12, color: "#7a6a5c", marginTop: 10 }}>
+          <div style={{ fontSize: 12, color: "#6a5a4a", marginTop: 10 }}>
             {Math.round(Math.abs(totalShift))} min shifted · score {briefing.score.toFixed(2)} · {briefing.citations.length} papers cited
           </div>
         </div>

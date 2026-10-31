@@ -90,8 +90,10 @@ Dark always wins.
 - Type scale anchor: `--text-display: clamp(2.6rem, 6vw, 5rem)` for hero
   statements; hero headlines ≤ 7 words sit at `--text-display`, longer
   statements cap at `--text-display-s: clamp(2rem, 4vw, 3.25rem)`.
-- Body floor: 12px (existing rule); UI labels step 10px → 11–12px where the
-  layout allows.
+- Body floor: 12px — enforced by the ramp itself, not by convention:
+  `--text-2xs` is the smallest step and tops out at `0.75rem`, so nothing
+  fluid renders below ~11px. (It used to read "UI labels step 10px → 11–12px
+  where the layout allows"; the 10px labels that line hedged are gone.)
 
 ## Spacing
 

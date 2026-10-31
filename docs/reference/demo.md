@@ -90,7 +90,7 @@ per day and may need tuning.
   Post-flight days are planned after landing. `?depth=guided` adds the
   deep-dive visuals; `/crew` is the operator rung (lens shell + crew feed
   + eval verdict cards). On a phone the tab bar is three links —
-  **Today / My plan / Trips**.
+  **Today / The plan / Trips**.
 - `/` → **"How my body clock is adjusting"** — the read-only explanation
   below Today, once the crew (or a restored plan) has locked days: the
   24-hour dial, the projection with its uncertainty band and the do-nothing
@@ -120,7 +120,7 @@ per day and may need tuning.
 | `meridian:actions:<origin>-<dest>-<firstPlannedDayDate>` | Home's trip-scoped action ledger: `{completedIds, marks, pendingIds}` — done/skip are mutually exclusive, submitted marks are retained, the pending queue clears on acknowledge. Scoped by the trip's **first planned day** date |
 | `meridian:completedNudges:<same trip key>` | *legacy* — the old did list. Read once to migrate when no `actions` key exists; no longer written |
 | `meridian:pendingCheckins:<same trip key>` | *legacy* — the old unsent queue. Read once to migrate (a pending mark overrides a completed id); no longer written |
-| `meridian:depth` | legacy remembered depth preference — the persistent Calm/Guided pill is gone; `?depth=guided` still deep-links the visuals |
+| `meridian:depth` | written by the menu's "Detailed view" toggle (Calm clears it); `?depth=guided` still deep-links the visuals, and the toggle strips the param from the URL once applied |
 | `meridian:voice` | `/crew` voice toggle only — Home no longer toggles speech |
 
 Per-traveller memory is **not** localStorage — a `meridian-tid` cookie scopes

@@ -42,7 +42,7 @@ const SWAP_CLASSES: Record<Surface, string> = {
 
 const DATE_INPUT_CLASSES: Record<Surface, string> = {
   default: "min-w-0 bg-transparent text-mist [color-scheme:dark]",
-  cream: "min-w-0 bg-transparent text-[#7a6a5c] [color-scheme:light]",
+  cream: "min-w-0 bg-transparent text-[#6a5a4a] [color-scheme:light]",
 };
 
 const SHIFT_BADGE: Record<Surface, string> = {
@@ -52,7 +52,7 @@ const SHIFT_BADGE: Record<Surface, string> = {
 
 const SHIFT_LABEL: Record<Surface, string> = {
   default: "text-mist",
-  cream: "text-[#7a6a5c]",
+  cream: "text-[#6a5a4a]",
 };
 
 const FIELD_LABEL: Record<Surface, string> = {

@@ -218,17 +218,29 @@ Entry-mode transitions (`commitRoute` → trip, `openEntry` → setup,
 `exploreExample` → example) share `resetTripView` — the teardown that
 closes the stream, resets the run, and clears restored-plan state —
 and **push** history entries rather than replacing them, so the browser's
-Back walks the states instead of exiting the app. A `popstate` listener
-re-runs the same `resolveHomeEntry` the mount effect uses and syncs
-`meridian:activeTrip` to whatever the popped URL says, so a subsequent
-load resolves identically.
+Back walks the states instead of exiting the app. The URL is the only
+source of truth for that walk: on mount, if `resolveHomeEntry` fell back
+to `meridian:activeTrip`/`lastTrip` storage, the mount effect
+**replaceStates** the trip params into the address bar, and the
+`popstate` listener re-resolves **from the URL alone** (passing no
+storage) and syncs `meridian:activeTrip` to whatever the popped URL
+says. The storage fallback is skipped on pops because storage is written
+mid-session by `commitRoute`, which used to make two identical-looking
+`/` entries resolve to different states depending on when Back was
+pressed.
 
 The `?depth` param shapes explanation depth, not agent visibility:
 `?depth=guided` opens every evidence drawer, `?depth=operator` routes to
-`/crew`. A `crew_question` asks at every depth — it is a decision, not
-detail — and the trace stays collapsed at simple. While a run is live the
-menu's top row is its current step ("Crew working — name → tool · n/m
-locked") and links back to the board.
+`/crew`. The menu's "Detailed view" row toggles depth in place (persisted
+via `meridian:depth`) — it is a button, not a link, so switching never
+reloads the page or kills a live run — and strips the param from the URL
+if one came in via a deep link. A `crew_question` asks at every depth —
+it is a decision, not detail — and the trace stays collapsed at simple.
+While a run is live the menu's top row is its current step ("Crew
+working — name → tool · n/m locked") and links back to the board. The
+menu's destination links (crew, shift, team, arrival) come from the one
+shared list the More sheet uses (`MoreSheet.PLACES`), so every place has
+exactly one name.
 
 One ledger (`useTripActions`) serves both the Today checklist and the clock
 explanation: hydrated per trip scope before any write, and a preview scope
@@ -317,12 +329,14 @@ src/agents/      providers, crew prompts, runtime, night replay, morning replay
 src/components/  NudgeFeedScreen (the Calm `/` surface: next step, timeline,
                  readiness), TripEntryScreen (the first-use form: blank route
                  fields + a departure date, kept draft until Continue),
-                 BottomNav (the phone's tab bar — Today / My plan / Trips /
+                 BottomNav (the phone's tab bar — Today / The plan / Trips /
                  More; directional `nav-forward`/`nav-back` transitions by
                  tab order; hidden above 480px, where the app is a document),
                  MoreSheet + MoreNav (the 4th tab's sheet — the places links
                  for /crew, /shift, /team, /arrival, /outcome; `aria-current`
-                 on the tab when any of those paths matches), RightNowCard
+                 on the tab when any of those paths matches). Its exported
+                 `PLACES` list is the single source Home's Menu renders its
+                 destination links from, RightNowCard
                  (the glanceable "what now" at the top of Today),
                  OfflineBadge (connectivity + in-flight mode), PageHeader,
                  dial/ (the

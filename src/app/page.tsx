@@ -74,6 +74,7 @@ import { ScenarioExperience } from "@/components/ScenarioExperience";
 import type { DemoScenarioId } from "@/domain/demo-scenarios";
 import { isTasteItinerary, itineraryMatchesTrip, type TasteItinerary } from "@/domain/taste";
 import { JourneySteps } from "@/components/JourneySteps";
+import { PLACES } from "@/components/MoreSheet";
 import { TimezoneClocks } from "@/components/TimezoneClocks";
 import { SubscribeCalendar } from "@/components/SubscribeCalendar";
 import { PinnedDayRow } from "@/components/DayStrip";
@@ -122,7 +123,7 @@ function TripClocks({ trip, locked }: { trip: Trip; locked: ReadonlyMap<string, 
   const bodyMin = now.getUTCHours() * 60 + now.getUTCMinutes() + trip.origin.utcOffsetMin + moved;
   return (
     <p
-      className="m-0 mb-3 font-mono2 text-2xs text-dim"
+      className="m-0 mb-3 font-mono2 text-xs text-dim"
       title="home · destination · estimated body-clock phase"
     >
       🏠 {trip.origin.code} {clockAt(trip.origin.utcOffsetMin, now)}&ensp;·&ensp;
@@ -401,6 +402,19 @@ export default function Home() {
             setDest(resolved.route.dest);
             setDepartureDate(resolved.route.date);
             try { localStorage.setItem("meridian:activeTrip", JSON.stringify(resolved.route)); } catch { /* best effort */ }
+            /* When the trip came from storage rather than the URL, write it
+               into the URL (replace, not push). The address bar becomes the
+               single source of truth, so Back from a later state lands on
+               this trip instead of re-resolving storage and looking broken. */
+            if (sp.get("origin") === null) {
+              try {
+                const url = new URL(window.location.href);
+                url.searchParams.set("origin", resolved.route.origin);
+                url.searchParams.set("dest", resolved.route.dest);
+                url.searchParams.set("date", resolved.route.date);
+                window.history.replaceState(null, "", url.toString());
+              } catch { /* ignore */ }
+            }
           } else {
             setDepartureDate(defaultDepartureDate());
           }
@@ -928,13 +942,13 @@ export default function Home() {
   useEffect(() => {
     const onPop = () => {
       try {
-        const read = (k: string) => safeStorageGet(() => localStorage.getItem(k));
         const sp = new URLSearchParams(window.location.search);
-        const resolved = resolveHomeEntry(
-          sp,
-          read("meridian:activeTrip"),
-          read("meridian:lastTrip"),
-        );
+        /* Resolve from the URL alone: storage is written *during* the session
+           (commitRoute saves the trip), so using it as a fallback made two
+           identical-looking `/` entries resolve differently depending on when
+           Back was pressed. With the URL as the only source of truth, Back
+           walks exactly the states the traveller walked forward through. */
+        const resolved = resolveHomeEntry(sp, null, null);
         resetTripView();
         setEntry(resolved);
         setTripResolved(resolved.mode === "example");
@@ -1120,9 +1134,26 @@ export default function Home() {
                 {run.locked.size}/{trip?.days.length ?? "?"} locked
               </Link>
             )}
+            {/* One list of destinations, shared with the More sheet and the
+                desktop headers (MoreSheet.PLACES) — every place has exactly
+                one name and one entry, instead of the menu and the sheet
+                carrying rival copies. */}
+            <p className="menu-label">Places</p>
+            {PLACES.map((p) => (
+              <Link
+                key={p.href}
+                href={p.href === "/arrival" ? `/arrival?origin=${origin}&dest=${dest}&date=${departureDate}` : p.href}
+                role="menuitem"
+                transitionTypes={["nav-forward"]}
+                onClick={() => setMenuOpen(false)}
+              >
+                {p.label}
+              </Link>
+            ))}
+            <p className="menu-label">This trip</p>
             {/* Real buttons, not focusable divs: as divs these were in the tab
                 order but Enter and Space did nothing, because a div has no
-                activation behaviour. The <Link> siblings below are real
+                activation behaviour. The <Link> siblings above are real
                 anchors, so this also makes the menu homogeneous. */}
             <button
               type="button"
@@ -1135,22 +1166,36 @@ export default function Home() {
             >
               Trip settings
             </button>
-            <Link href="/?depth=guided" className="m" role="menuitem" onClick={() => setMenuOpen(false)}>
-              Detailed view
-            </Link>
-            <Link href="/crew" className="m" role="menuitem" transitionTypes={["nav-forward"]} onClick={() => setMenuOpen(false)}>
-              AI at work
-            </Link>
-            <Link href="/shift" className="m" role="menuitem" transitionTypes={["nav-forward"]} onClick={() => setMenuOpen(false)}>
-              Shift work
-            </Link>
-            <Link href="/team" className="m" role="menuitem" transitionTypes={["nav-forward"]} onClick={() => setMenuOpen(false)}>
-              Team view
-            </Link>
+            {/* Depth is a view choice, not a place — toggling it used to be a
+                Link to /?depth=guided, which reloaded the whole page (killing
+                any live run) and left the param stuck in the URL. */}
+            <button
+              type="button"
+              className="m"
+              role="menuitem"
+              onClick={() => {
+                const next = depth === "guided" ? null : "guided";
+                setDepth(next);
+                try {
+                  if (next) localStorage.setItem(DEPTH_KEY, next);
+                  else localStorage.removeItem(DEPTH_KEY);
+                } catch { /* storage unavailable */ }
+                try {
+                  const url = new URL(window.location.href);
+                  if (url.searchParams.has("depth")) {
+                    url.searchParams.delete("depth");
+                    window.history.replaceState(null, "", url.toString());
+                  }
+                } catch { /* ignore */ }
+                setMenuOpen(false);
+              }}
+            >
+              {depth === "guided" ? "Calm view" : "Detailed view"}
+            </button>
             {/* The medical boundary and the privacy note, one tap from
                 anywhere. They used to live at the end of the five-step setup,
                 which meant a traveller who never opened the setup never read
-                them. */}
+                them. The arrival link is in Places above, carrying the trip. */}
             <button
               type="button"
               className="m"
@@ -1162,17 +1207,6 @@ export default function Home() {
             >
               What Meridian is, and is not
             </button>
-            {/* Carries the trip being scored, so "Rate my trip" opens the
-                journey you were actually on rather than the default one. */}
-            <Link
-              href={`/arrival?origin=${origin}&dest=${dest}&date=${departureDate}`}
-              className="m"
-              role="menuitem"
-              transitionTypes={["nav-forward"]}
-              onClick={() => setMenuOpen(false)}
-            >
-              Rate my trip
-            </Link>
             {run.briefing && (
               <button
                 type="button"
@@ -1227,6 +1261,7 @@ export default function Home() {
                 Share plan →
               </button>
             )}
+            <p className="menu-label">App</p>
             <button
               type="button"
               role="menuitem"
