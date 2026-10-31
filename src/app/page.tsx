@@ -122,7 +122,7 @@ function TripClocks({ trip, locked }: { trip: Trip; locked: ReadonlyMap<string, 
   const bodyMin = now.getUTCHours() * 60 + now.getUTCMinutes() + trip.origin.utcOffsetMin + moved;
   return (
     <p
-      className="m-0 mb-3 font-mono2 text-2xs text-dim tracking-wide"
+      className="m-0 mb-3 font-mono2 text-2xs text-dim"
       title="home · destination · estimated body-clock phase"
     >
       🏠 {trip.origin.code} {clockAt(trip.origin.utcOffsetMin, now)}&ensp;·&ensp;
