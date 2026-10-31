@@ -9,7 +9,7 @@
 // never when a cron tick is missed. Dead endpoints (404/410) are culled.
 import { rateLimit } from "@/lib/rateLimit";
 import { readFeed } from "@/lib/feed-store";
-import { upcomingReminders } from "@/lib/reminders";
+import { dueReminders } from "@/lib/reminders";
 import {
   deleteSubscription,
   listSubscriptions,
@@ -54,8 +54,9 @@ export async function GET(req: Request) {
       gone++;
       continue;
     }
-    // Shift "now" back so just-missed steps are included too.
-    const due = upcomingReminders(
+    // Shift "now" back so just-missed steps are included too. dueReminders
+    // is the step list plus the morning-after outcome knock (round 17).
+    const due = dueReminders(
       feed.trip,
       feed.days,
       new Date(nowMs - LATE_MS),
@@ -69,6 +70,8 @@ export async function GET(req: Request) {
         title: r.title,
         body: r.body,
         id: r.id,
+        url: r.url,
+        ttlSec: r.ttlSec,
       });
       if (res === "ok") {
         sentMap[r.id] = nowMs;

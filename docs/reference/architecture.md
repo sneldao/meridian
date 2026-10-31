@@ -408,7 +408,12 @@ src/lib/         voice/ (engine, config, cache, split, align, huddle),
                  writer/reader: Supabase with a filesystem fallback),
                  use-morph-transition (the surface-morph wrapper:
                  startViewTransition where the API exists, a direct update
-                 where it doesn't)
+                 where it doesn't), funnel (the five-stage journey meter —
+                 entry → run → handoff → arrival → outcome, once per stage
+                 per trip, fire-and-forget to /api/funnel), reminders (the
+                 timed plan steps plus the morning-after outcome knock —
+                 08:00 destination time, DST-honest via `cityOn`, one
+                 delivery via the dispatch sent-map)
 src/mcp/         MCP server: JSON-RPC dispatch + tool catalogue
 src/app/         pages + api routes (/, /arrival, /review, /history, /outcome,
                  /crew, /shift, /dev)
@@ -457,3 +462,37 @@ rules, all verified by `tests/motion-language.test.ts`:
    little lower than the last) so scrolling riffls through journeys; the
    covered card recedes behind a `view()` scroll-driven animation where
    supported.
+
+## Observability & the closed loop (round 17)
+
+**The funnel.** `src/lib/funnel.ts` records five stages — entry, run,
+handoff, arrival, outcome — once per stage per trip (`ORIGIN-DEST-DATE`
+key) into a localStorage ring (`meridian:funnel`, capped at 200) and
+fire-and-forgets each event to `/api/funnel`. The route validates the
+locked stage vocabulary, rate-limits, and writes a `meridian_funnel` row
+when Supabase is configured — otherwise it no-ops with an honest 204.
+Instrumentation is a metric, never a dependency: nothing in the funnel may
+block, throw into, or re-render the UI. Wire points: `commitRoute` (entry),
+`beginStream` (run), the briefing handoff (handoff), `/arrival`'s trip load
+(arrival), `/outcome`'s save (outcome).
+
+**Push pairing.** The Web Push pipeline (`use-reminders` → subscription →
+cron `/api/cron/dispatch` → `sendPush` → `sw.js`) delivers two kinds of
+reminders: timed plan steps (Done/Skip actions, 5-minute TTL) and the
+morning-after outcome knock — one push at 08:00 destination time on the
+morning after the last planned day, tapping through to `/outcome`. The knock
+carries a `url` in its payload (no actions), a 12-hour TTL so an asleep
+phone still gets it, and a stable id (`outcome-<DEST>-<lastDate>`) so the
+dispatch's sent-map delivers it exactly once. The offset is resolved for the
+knock's own date via `cityOn`, so trips spanning a DST change knock at a
+real local 08:00. The morning-after card on Home is the in-app half of the
+same pair.
+
+**Visual regression.** `visual/meridian.spec.ts` (Playwright) screenshots
+the load-bearing surfaces — entry, home under its own sky, the more sheet,
+the trips deck — with the clock frozen (`page.clock.setFixedTime`) and CSS
+animations disabled at capture. The suite lives outside `tests/` so
+`bun test` never loads the Playwright API; it runs in CI's `visual` job
+against a reproducible build. Baselines are platform-specific and are
+regenerated on the runner itself: dispatch the workflow with
+`update_baselines=true` and the job commits the fresh PNGs back.

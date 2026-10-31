@@ -21,5 +21,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - **Verification**:
   - Check `curl -fsS http://localhost:3000/` and `curl -fsS http://localhost:3000/api/graph/health`.
   - On a host `next dev` (outside the container), trust the port the server prints: `:3000` can be squatted by an unrelated service on a shared machine and Meridian then takes the next free one. Confirm the body is Meridian before believing a check.
-  - CI (`.github/workflows/ci.yml`) runs `bun run typecheck` + `bun test` with no services and no API keys, so a failure there is a real regression rather than a missing local FalkorDB or provider key.
-  - Run tests and checks inside the container with `docker compose -f docker-compose.base44.yml exec -T web bun test` and `docker compose -f docker-compose.base44.yml exec -T web bun run typecheck`.
+  - CI (`.github/workflows/ci.yml`) runs `bun run typecheck` + `bun run test`
+    (scoped to `tests/` — the Playwright visual suite in `visual/` runs in the
+    separate `visual` job, whose baselines are refreshed by dispatching the
+    workflow with `update_baselines=true`) with no services and no API keys,
+    so a failure there is a real regression rather than a missing local
+    FalkorDB or provider key.
+  - Run tests and checks inside the container with `docker compose -f docker-compose.base44.yml exec -T web bun run test` and `docker compose -f docker-compose.base44.yml exec -T web bun run typecheck`.

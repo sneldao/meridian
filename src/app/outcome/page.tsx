@@ -7,6 +7,7 @@ import { Card } from "@/components/ui";
 import { BottomNav } from "@/components/BottomNav";
 import { PageHeader } from "@/components/PageHeader";
 import { INTERVENTION_LABELS } from "@/lib/intervention-icons";
+import { funnelKey, recordFunnel } from "@/lib/funnel";
 
 interface Outcome {
   savedAt: string;
@@ -43,6 +44,21 @@ export default function OutcomePage() {
 
   const save = async () => {
     if (adherence === null || jetlag === null) return;
+    // Funnel: the loop closes only when the traveller rates the trip. The
+    // key comes from the last trip the run saved — this page resolves no
+    // route of its own.
+    recordFunnel("outcome", (() => {
+      try {
+        const t = JSON.parse(localStorage.getItem("meridian:lastTrip") || "null") as
+          | { origin?: { code?: string }; destination?: { code?: string }; days?: { date?: string }[] }
+          | null;
+        return t?.origin?.code && t?.destination?.code
+          ? funnelKey(t.origin.code, t.destination.code, t.days?.[0]?.date ?? "")
+          : null;
+      } catch {
+        return null;
+      }
+    })());
     const o: Outcome = { savedAt: new Date().toISOString(), adherence, jetlag, notes };
     try {
       const prev = JSON.parse(localStorage.getItem("meridian:outcomes") || "[]");

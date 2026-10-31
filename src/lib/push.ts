@@ -94,13 +94,18 @@ export async function markSent(
 export async function sendPush(
   endpoint: string,
   keys: PushKeys,
-  payload: { title: string; body: string; id: string },
+  payload: { title: string; body: string; id: string; url?: string; ttlSec?: number },
 ): Promise<"ok" | "gone" | "error"> {
+  const { url, ttlSec, ...note } = payload;
   try {
     await webpush.sendNotification(
       { endpoint, keys },
-      JSON.stringify(payload),
-      { vapidDetails: vapidDetails(), TTL: 300 },
+      // The deep link travels only when present — step reminders keep the
+      // payload they always had.
+      JSON.stringify(url ? { ...note, url } : note),
+      // Steps are time-critical and die fast; morning knocks (round 17)
+      // carry their own hours-long TTL so an asleep phone still gets one.
+      { vapidDetails: vapidDetails(), TTL: ttlSec ?? 300 },
     );
     return "ok";
   } catch (e) {

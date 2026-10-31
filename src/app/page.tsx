@@ -67,6 +67,7 @@ import { isTripFinished } from "@/lib/trip-status";
 import { isPreview } from "@/domain/preview";
 import { isValidHomeRoute, resolveHomeEntry, type HomeEntry, type HomeRoute } from "@/lib/home-entry";
 import { useMorphTransition } from "@/lib/use-morph-transition";
+import { funnelKey, recordFunnel } from "@/lib/funnel";
 import { useLightSweep } from "@/components/LightSweep";
 import { safeStorageGet } from "@/lib/local-data";
 import { useTripActions } from "@/lib/use-trip-actions";
@@ -655,6 +656,17 @@ export default function Home() {
           } catch {
             /* ignore */
           }
+          // Funnel: the plan just changed hands — the run's third stage.
+          // Keyed off the run's trip (the briefing event carries none).
+          {
+            const t = runTripRef.current;
+            if (t) {
+              recordFunnel(
+                "handoff",
+                funnelKey(t.origin.code, t.destination.code, t.days[0]?.date ?? ""),
+              );
+            }
+          }
           push({ kind: "system", text: "morning handoff ready" });
           break;
         case "error":
@@ -722,6 +734,7 @@ export default function Home() {
       const runId = crypto.randomUUID();
       runIdRef.current = runId;
       params.set("runId", runId);
+      recordFunnel("run", funnelKey(origin, dest, departureDate));
       try { localStorage.setItem("meridian:activeRunId", runId); } catch { /* ignore */ }
       const es = new EventSource("/api/crew/run?" + params.toString());
       esRef.current = es;
@@ -913,6 +926,7 @@ export default function Home() {
   const commitRoute = useCallback(
     (route: HomeRoute) => {
       if (!isValidHomeRoute(route)) return;
+      recordFunnel("entry", funnelKey(route.origin, route.dest, route.date));
       resetTripView();
       setOrigin(route.origin);
       setDest(route.dest);

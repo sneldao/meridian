@@ -16,6 +16,7 @@ import { friendlyDayLabel } from "@/lib/day-label";
 import { CountUp } from "@/components/CountUp";
 import { shareTripContext } from "@/lib/share-trip";
 import { shareLink } from "@/lib/share-client";
+import { funnelKey, recordFunnel } from "@/lib/funnel";
 
 // The payoff. "Land at 100%" is promised in the nav on every screen, and until
 // now nothing ever cashed it — the journey ended at the plan and the only
@@ -70,6 +71,8 @@ export default function ArrivalPage() {
     fetch(`/api/trip?origin=${origin}&dest=${dest}&date=${date}`)
       .then((r) => r.json())
       .then((d2: { trip: Trip }) => {
+        // Funnel: the traveller reached the payoff for this trip.
+        recordFunnel("arrival", funnelKey(origin, dest, date));
         const t = setTimeout(() => {
           if (cancelled) return;
           let planRaw: string | null = null;

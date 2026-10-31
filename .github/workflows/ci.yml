@@ -4,6 +4,12 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+    inputs:
+      update_baselines:
+        description: "Regenerate visual baselines on this runner and commit them"
+        type: boolean
+        default: false
 
 jobs:
   verify:
@@ -22,4 +28,58 @@ jobs:
 
       - run: bun run typecheck
 
-      - run: bun test
+      # Scoped to tests/ — the Playwright visual suite lives in visual/ and
+      # runs in the `visual` job below.
+      - run: bun test tests
+
+  # Visual regression (round 17). Screenshots are platform-specific, so they
+  # are generated and compared on this runner only. Baselines are refreshed by
+  # dispatching this workflow with update_baselines=true — the job runs the
+  # suite with --update-snapshots and commits the new PNGs back to the branch.
+  # The suite lives in visual/, outside tests/, so `bun test` never loads it.
+  visual:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.ref_name || github.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.2.17
+
+      - run: bun install --frozen-lockfile
+
+      - run: bunx playwright install --with-deps chromium
+
+      - run: bun run build
+        env:
+          AGENT_PROVIDER: replay
+          NEXT_PUBLIC_AGENT_PROVIDER: replay
+
+      - name: Compare against baselines
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.update_baselines) }}
+        run: bunx playwright test
+
+      - name: Regenerate baselines
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.update_baselines }}
+        run: bunx playwright test --update-snapshots
+
+      - name: Commit baselines
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.update_baselines }}
+        run: |
+          git config user.name "meridian-ci"
+          git config user.email "ci@meridian.local"
+          git add visual playwright.config.ts
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: refresh visual baselines"
+            git push
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: visual-diffs
+          path: test-results/
+          retention-days: 7

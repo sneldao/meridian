@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { DayPlan, Trip } from "@/domain/types";
 import { dropPushSubscription, ensurePushSubscription } from "@/lib/push-client";
-import { scheduleReminders, upcomingReminders } from "@/lib/reminders";
+import { dueReminders, scheduleReminders } from "@/lib/reminders";
 
 const REM_KEY = "meridian:reminders";
 
@@ -77,7 +77,7 @@ export function useReminders(opts: {
     if (typeof Notification === "undefined" || Notification.permission !== "granted")
       return;
     return scheduleReminders(
-      upcomingReminders(trip, [...lockedDays.values()], new Date()),
+      dueReminders(trip, [...lockedDays.values()], new Date(), 24 * 3600 * 1000),
     );
   }, [remindersOn, trip, lockedDays]);
 

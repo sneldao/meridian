@@ -13,7 +13,8 @@
     "provider:check": "bun scripts/provider-check.ts",
     "verify:commit": "AGENT_PROVIDER=replay REPLAY_BEAT_MS=1 bun scripts/verify-commit.ts",
     "eval": "bun scripts/eval.ts",
-    "test": "bun test",
+    "test": "bun test tests",
+    "test:visual": "playwright test",
     "smoke": "bun scripts/smoke.ts",
     "seed:graph": "bun scripts/seed-graph.ts"
   },
@@ -42,6 +43,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.7",
+    "@playwright/test": "1.64.1",
     "@tailwindcss/postcss": "4.3.3",
     "@types/d3-geo": "^3.1.1",
     "@types/geojson": "^7946.0.16",

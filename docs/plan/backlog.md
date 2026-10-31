@@ -1117,3 +1117,34 @@ Cold `/` should show, not ask: render the example trip's Today (read-only) as th
 hero, with the entry form demoted to "Make it yours". Tease three artifacts
 (body-clock dial + CAS, arrival scorecard, shareable passport card). Lead the
 headline with the gap ("Your 07:00 Tokyo meeting is 23:00 body time").
+
+## Round 17 — Measure the journey, close the loop (2026-11-01)
+
+The app now moves like light; this round makes the journey observable and
+self-closing. Three items:
+
+1. **Visual regression in CI.** `@playwright/test` joins devDependencies with
+   a dedicated `visual` job: reproducible build, `next start` under
+   `AGENT_PROVIDER=replay`, clock-frozen screenshots of the five load-bearing
+   surfaces (entry, home day, arrival payoff, trips deck, more sheet).
+   Baselines are generated on the runner itself via a `workflow_dispatch`
+   input (`update_baselines`) and committed back — no local Docker needed,
+   and rendering always matches the machine that compares.
+2. **Funnel instrumentation.** `src/lib/funnel.ts` records the five stages —
+   entry → run → handoff → arrival → outcome — once per stage per trip into a
+   localStorage ring, and fire-and-forgets each event to `/api/funnel`, which
+   writes a `meridian_funnel` row when Supabase is configured and no-ops
+   honestly otherwise. The question it answers: where do travellers leak out
+   of the journey?
+3. **Push pairing for the morning-after.** The existing Web Push pipeline
+   (`reminders.ts` → cron `/api/cron/dispatch` → `sw.js`) gains one new
+   reminder: at 08:00 destination time the morning after the last planned
+   day, a push asks "How did you actually sleep?" and taps through to
+   `/outcome`. Payloads grow `url` + `ttl` (12h, not the 5-minute step TTL);
+   the sent-map dedupe guarantees exactly one knock. The morning-after card
+   on Home is the in-app half of the same pair.
+
+**Contract:** funnel writes are fire-and-forget and may never block or throw
+into the UI; the outcome reminder only exists where a feed does (push needs a
+subscription, which needs a feed); the visual suite lives in `visual/` —
+deliberately outside `tests/` so `bun test` never loads the Playwright API.
