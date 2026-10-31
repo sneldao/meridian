@@ -126,6 +126,11 @@ cubic-bezier(0.22, 1, 0.36, 1) · `--ease-settle` cubic-bezier(0.16, 1, 0.3, 1)
   its new value (`TweenNumber` — the owed gap, readiness, day gaps). First
   paint and unit changes snap, so a number never reads a unit it doesn't have;
   the true value is what is announced.
+- Layout morph: a reorder or resize of cards glides by framer-motion `layout`
+  (transform-based, so it stays inside the transform/opacity rule). The crew
+  day strip (`DayStrip`) uses it. The layout-switch spike (`/spike/layout-switch`)
+  morphs a stacked column into a row over a pinned scroll range, eased with
+  ease-in-out cubic; reduced motion shows the row with no scroll link.
 - Reduced-motion fallback: global flatten rule already in `globals.css`
   stands; spatial motion collapses to ≤ 150ms opacity.
 - Only `transform` and `opacity` animate. Paint crossfades (`color`,

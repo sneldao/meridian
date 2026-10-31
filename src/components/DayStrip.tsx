@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { fmtMin } from "@/domain/circadian";
 import { INTERVENTION_ICONS } from "@/lib/intervention-icons";
 import type { DayPlan, DaySpec } from "@/domain/types";
@@ -19,8 +20,9 @@ export function DayStrip({ days, locked, activeLabel, rejectedLabels }: Props) {
         const active = d.label === activeLabel;
         const rejected = rejectedLabels.has(d.label);
         return (
-          <div
+          <motion.div
             key={d.dayIndex}
+            layout
             className={`rounded-lg border px-3 py-2 transition-colors ${
               plan
                 ? "border-pass/20 bg-ink-3"
@@ -55,7 +57,7 @@ export function DayStrip({ days, locked, activeLabel, rejectedLabels }: Props) {
                 {active ? "planning…" : rejected ? "replanning…" : "queued"}
               </div>
             )}
-          </div>
+          </motion.div>
         );
       })}
     </div>

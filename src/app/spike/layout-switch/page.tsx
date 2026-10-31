@@ -22,6 +22,10 @@ const DAYS = [
   { label: "Wed 21 Oct", note: "Lights down 21:00" },
 ];
 
+function easeInOutCubic(t: number) {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
 const CARD_W = 180;
 const CARD_H = 72;
 const GAP = 16;
@@ -71,8 +75,10 @@ export default function LayoutSwitchSpike() {
   const reduced = useReducedMotion();
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end end"] });
-  // Morph across the middle of the scroll range, held at each end.
-  const scrolled = useTransform(scrollYProgress, [0.1, 0.8], [0, 1]);
+  // Morph across the middle of the scroll range, held at each end, with an
+  // ease-in-out cubic so the cards accelerate in and settle softly.
+  const linear = useTransform(scrollYProgress, [0.1, 0.8], [0, 1]);
+  const scrolled = useTransform(linear, easeInOutCubic);
   const settled = useMotionValue(1);
   const progress = reduced ? settled : scrolled;
 
