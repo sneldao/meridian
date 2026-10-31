@@ -5,6 +5,7 @@ import Link from "next/link";
 import { fmtMin } from "@/domain/circadian";
 import { arrivalHeadline, arrivalLede, arrivalRead, tripDebrief } from "@/domain/arrival";
 import { arrivalPassport } from "@/domain/arrival-passport";
+import { sunSelfRead } from "@/domain/sun-self";
 import { ArrivalPassportCard } from "@/components/ArrivalPassportCard";
 import { stageSkyFor } from "@/domain/stage-sky";
 import { INTERVENTION_LABELS } from "@/lib/intervention-icons";
@@ -204,6 +205,22 @@ export default function ArrivalPage() {
   // (no projection, no gate promise), in which case no card renders.
   const passport = arrivalPassport(read, trip);
 
+  // The portrait on the record: the same face the stage sky shows, computed
+  // from this trip — residual debt, what the plan banked, how much of the
+  // window was lived. A passport is a portrait of that trip, not a logo.
+  const passportSun = (() => {
+    if (!passport) return undefined;
+    const p = read.projection;
+    if (!p) return undefined;
+    return sunSelfRead({
+      owedMin: p.hours * 60,
+      deliveredMin: p.deliveredHours * 60,
+      requiredMin: p.requiredHours * 60,
+      direction: trip.direction,
+      daysLocked: Math.max(0, trip.days.length - read.daysRemaining),
+    });
+  })();
+
   if (!read.arrived) {
     return (
       <main className="arr" style={stageVars}>
@@ -340,7 +357,7 @@ export default function ArrivalPage() {
         {passport && (
           <>
             <span className="arr-section-label" data-rise="10">Your arrival record</span>
-            <ArrivalPassportCard passport={passport} rise={10} />
+            <ArrivalPassportCard passport={passport} rise={10} sun={passportSun} />
           </>
         )}
 

@@ -5,7 +5,9 @@ import { ArrowRight } from "lucide-react";
 import { RoutePicker } from "@/components/RoutePicker";
 import { isValidHomeRoute, type HomeRoute } from "@/lib/home-entry";
 import { SampleJourneys } from "@/components/SampleJourneys";
+import { SunSelf } from "@/components/SunSelf";
 import type { DemoScenarioId } from "@/domain/demo-scenarios";
+import { sunSelfSleeping } from "@/domain/sun-self";
 import { ADHERENCE_PROFILE, buildTrip, DEMO_TRIP, GARMIN_BASELINE } from "@/domain/fixtures";
 import { previewPlan, type SolvedDay } from "@/domain/solver";
 import { routeGapHeadline, routeGapLine, routeGapRead } from "@/domain/route-gap";
@@ -70,6 +72,11 @@ export function TripEntryScreen({ initialDate, onContinue, onExploreExample, onE
   return (
     <div className="reading entry" role="group" aria-labelledby="entry-heading">
       <div className="entry-intro">
+        {/* The brand's face, asleep — no route yet, so no debt yet. It wakes
+            on the stage the moment a trip exists. */}
+        <div className="entry-sunself">
+          <SunSelf read={sunSelfSleeping()} size={56} />
+        </div>
         <p className="entry-eyebrow">Arrive with a plan</p>
         <h1 id="entry-heading" className="entry-title">
           {gap

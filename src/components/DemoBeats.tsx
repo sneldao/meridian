@@ -227,7 +227,9 @@ function DemoBeatsInner() {
                 <div className="demo-stamp-burst" aria-hidden="true" />
                 <div
                   className="demo-passport-frame"
-                  dangerouslySetInnerHTML={{ __html: arrivalPassportSvg(journey.passport) }}
+                  dangerouslySetInnerHTML={{
+                    __html: arrivalPassportSvg(journey.passport, sunSelfForBeat(journey, "payoff")),
+                  }}
                 />
               </div>
             )}

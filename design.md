@@ -456,3 +456,39 @@ Phase C/D follow: the stage sky's sun becomes the traveller (glyph at
 `--stage-sun-x`), the dial's center marker becomes the glyph, check-ins
 pulse it, and the passport carries it — every passport becomes a portrait
 of that trip.
+
+## Round 24 — One face family, every place it belongs (2026-11-01)
+
+Phase C + D of the sun-self, plus a discovery that reshaped the plan:
+**Meridian already had a face** — SolLuna, the half-sun/half-moon mascot
+in the dial, whose split is the misalignment gap. Shipping a second
+creature would have split the brand, so this round converges instead of
+adding:
+
+- **One face family, two roles.** The sun-self is the traveller; SolLuna
+  is the crew's alignment readout. SolLuna's sun half now speaks the
+  sun-self's language — the same lids law (`sunSelfLidForDebt`, shared
+  from the domain), the same gentle closed-lid arc, three rays crowning
+  the sun half. The moon half stays a moon: it is where the night should
+  be. Locked by tests on both renderings.
+- **The stage sky carries the traveller (C).** The face sits on the
+  horizon band of Today's stage, computed live: debt for lids, banked
+  shift for glow, locked days for rays. It lights on every genuine step
+  forward — a done check-in remounts the pulse by key; a skip changes
+  nothing (zero-guilt: the light simply stays where it is).
+- **The empty entry sleeps, it does not sulk (C).** No route yet means no
+  debt yet: `sunSelfSleeping()` — lids closed, no rays, "the sun rises
+  when the trip does."
+- **The passport is a portrait (D).** `arrivalPassportSvg(pp, sun?)`
+  carries the traveller's meridian beside the stamp with a caption —
+  "THE TRAVELLER'S MERIDIAN — {mood}" — in the live card, the download
+  pipeline, the demo payoff, the landing artifacts, and the OG image.
+  No computed read, no portrait: the export never invents a face.
+- **The exported twin.** `sun-self-svg.ts` renders the same geometry as
+  the React component from the same read — tests lock ray counts, the
+  closed-lid threshold, and the halo formula across both renderers, so
+  the image that leaves the app can't drift from the face inside it.
+
+Verification: 892 tests (13 new), 9/9 round-24 browser checks, full
+regression stack (13/13 · 20/20 · 22/22 · 10/10), OG regenerated.
+Baselines refresh for entry, home, stage and the demo payoff.

@@ -6882,3 +6882,25 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   justify-content: center;
   margin: 16px 0 6px;
 }
+
+/* ---- round 24 · the sun-self takes its places -------------------------
+ * The face is the traveller's own meridian, so it lives where the light
+ * lives: on the stage horizon, asleep at the empty entry, beside the
+ * passport's stamp, and wearing SolLuna's sun half in the dial. */
+.today-stage { position: relative; }
+.stage-sunself {
+  position: absolute;
+  left: 18px;
+  /* sit on the horizon band: half-risen, where a sun belongs */
+  bottom: calc(var(--stage-horizon-h, 26%) - 24px);
+  z-index: 1;
+  pointer-events: none;
+}
+.entry-sunself { margin: 0 0 14px; width: fit-content; }
+.arr-passport-face {
+  position: absolute;
+  top: 92px;
+  right: 26px;
+  width: fit-content;
+  pointer-events: none;
+}

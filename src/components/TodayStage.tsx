@@ -2,9 +2,11 @@
 
 import { useMemo } from "react";
 import { TimezoneClocks } from "@/components/TimezoneClocks";
+import { SunSelf } from "@/components/SunSelf";
 import { fmtMin } from "@/domain/circadian";
 import type { TravelerNudge } from "@/domain/nudges";
 import { stageSkyFor } from "@/domain/stage-sky";
+import { sunSelfRead } from "@/domain/sun-self";
 import { nowMinOnDay, pickNextStep, todayDayIndex } from "@/domain/today";
 import type { ActionMark } from "@/lib/trip-actions";
 import { useLiveDate } from "@/lib/use-live-date";
@@ -29,6 +31,8 @@ export interface TodayStageProps {
   marks: ActionMark[];
   routeOpen: boolean;
   onChip: () => void;
+  /** How many days of the window the crew has locked — the sky face's rays. */
+  daysLocked?: number;
 }
 
 export function TodayStage({
@@ -39,6 +43,7 @@ export function TodayStage({
   marks,
   routeOpen,
   onChip,
+  daysLocked = 0,
 }: TodayStageProps) {
   // The sky and the next line share one clock — the live date ticks so both
   // drift with the real sun without a page-level re-render.
@@ -55,6 +60,21 @@ export function TodayStage({
   }, [trip, nudges, marks, liveDate]);
 
   const departure = trip.days.find((d) => d.dayIndex === trip.departureDayIndex);
+
+  // The sun in this sky is the traveller: the same face the demo shows and
+  // the passport stamps — debt for lids, banked shift for light, locked days
+  // for rays. It lights on every genuine step forward (a done check-in
+  // remounts the pulse by key); a skip changes nothing — zero-guilt by
+  // design, the light simply stays where it is.
+  const required = Math.abs(trip.requiredShiftMin);
+  const sun = sunSelfRead({
+    owedMin,
+    deliveredMin: Math.max(0, required - owedMin),
+    requiredMin: required,
+    direction: trip.direction,
+    daysLocked,
+  });
+  const lastDone = marks.filter((m) => m.status === "done").at(-1);
   const dateLabel = departure?.date
     ? new Date(`${departure.date}T12:00:00`).toLocaleDateString(undefined, {
         weekday: "short",
@@ -67,8 +87,12 @@ export function TodayStage({
     <section
       className="today-stage"
       style={stageSkyFor(trip, owedMin, liveDate)}
-      aria-label="Today"
+      aria-label={`Today — ${trip.destination.name}. ${sun.line}`}
     >
+      {/* the traveller's meridian, on the horizon where the sun belongs */}
+      <div className="stage-sunself">
+        <SunSelf read={sun} size={64} tone="ink" pulseKey={lastDone?.at ?? null} />
+      </div>
       <div className="today-stage-inner">
         <button
           type="button"

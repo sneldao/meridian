@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { clockLabel, demoJourney } from "@/domain/demo-beats";
+import { clockLabel, demoJourney, sunSelfForBeat } from "@/domain/demo-beats";
 import { arrivalPassportSvg } from "@/lib/arrival-passport-svg";
 import { CountUp } from "@/components/CountUp";
 
@@ -126,7 +126,7 @@ export function LandingArtifacts() {
             <span
               className="ld-passport"
               aria-label="Example stamped arrival passport"
-              dangerouslySetInnerHTML={{ __html: arrivalPassportSvg(journey.passport) }}
+              dangerouslySetInnerHTML={{ __html: arrivalPassportSvg(journey.passport, sunSelfForBeat(journey, "payoff")) }}
             />
           ) : (
             <p className="ld-score">

@@ -2,8 +2,10 @@
 
 import { useId, useState } from "react";
 import { passportText, type ArrivalPassport } from "@/domain/arrival-passport";
+import type { SunSelfRead } from "@/domain/sun-self";
 import { downloadArrivalPassport } from "@/lib/download-arrival-passport";
 import { CountUp } from "@/components/CountUp";
+import { SunSelf } from "@/components/SunSelf";
 
 /**
  * The arrival record as a stamped card, and the means to send it.
@@ -14,10 +16,14 @@ import { CountUp } from "@/components/CountUp";
 export function ArrivalPassportCard({
   passport,
   rise,
+  sun,
 }: {
   passport: ArrivalPassport;
   /** This card's beat in the arrival reveal choreography. */
   rise?: number;
+  /** The traveller's meridian, computed from this trip — the portrait the
+   *  card and its export both carry. Omitted when nothing computed it. */
+  sun?: SunSelfRead;
 }) {
   const [pending, setPending] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -67,6 +73,11 @@ export function ArrivalPassportCard({
           <span className="arr-passport-stamp-word">{passport.stamp}</span>
           <span className="arr-passport-stamp-detail">{passport.stampDetail}</span>
         </div>
+        {sun && (
+          <div className="arr-passport-face" aria-label={`Your meridian — ${sun.line}`}>
+            <SunSelf read={sun} size={64} tone="ink" />
+          </div>
+        )}
         <div className="arr-passport-stat"><CountUp value={passport.stat} ms={900} /></div>
         <div className="arr-passport-label">{passport.statLabel}</div>
         <div className="arr-passport-sub">{passport.statSub}</div>
@@ -90,7 +101,7 @@ export function ArrivalPassportCard({
           className="arr-btn"
           disabled={pending}
           onClick={() =>
-            run(() => downloadArrivalPassport(passport, "png"), "Preparing image…", "Passport downloaded.")
+            run(() => downloadArrivalPassport(passport, "png", sun), "Preparing image…", "Passport downloaded.")
           }
         >
           Download passport
@@ -100,7 +111,7 @@ export function ArrivalPassportCard({
           className="arr-btn ghost"
           disabled={pending}
           onClick={() =>
-            run(() => downloadArrivalPassport(passport, "svg"), "Preparing image…", "SVG downloaded.")
+            run(() => downloadArrivalPassport(passport, "svg", sun), "Preparing image…", "SVG downloaded.")
           }
         >
           SVG

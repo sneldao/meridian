@@ -24,6 +24,7 @@ export const SUNSELF_SEVERE_DEBT_MIN = 540;
 const MAX_AWAKE_LID = 0.85;
 
 export type SunSelfMood =
+  | "sleeping"
   | "drained"
   | "waiting"
   | "lifting"
@@ -118,6 +119,26 @@ export function sunSelfRead(input: SunSelfInput): SunSelfRead {
   };
 }
 
+/** The lids-close law, shared by every face in the family: debt maps to
+ *  lid weight, capped — worse than nine hours is never a sadder face. */
+export function sunSelfLidForDebt(owedMin: number): number {
+  return clamp01(Math.max(0, owedMin) / SUNSELF_SEVERE_DEBT_MIN) * MAX_AWAKE_LID;
+}
+
+/** No route yet — the empty-state face. Asleep, not sad: a traveller
+ *  without a trip owes nothing. */
+export function sunSelfSleeping(): SunSelfRead {
+  return {
+    lid: 1,
+    glow: 0.08,
+    tiltDeg: 0,
+    raysLit: 0,
+    rayCount: SUNSELF_RAY_COUNT,
+    mood: "sleeping",
+    line: "No route yet — the sun rises when the trip does.",
+  };
+}
+
 /** The mood as a word a traveller would use — aria labels and captions. */
 export function sunSelfMoodWord(mood: SunSelfMood): string {
   switch (mood) {
@@ -131,5 +152,7 @@ export function sunSelfMoodWord(mood: SunSelfMood): string {
       return "warming up";
     case "drained":
       return "drained";
+    case "sleeping":
+      return "asleep";
   }
 }

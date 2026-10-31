@@ -2,8 +2,10 @@ import { describe, expect, test } from "bun:test";
 import {
   SUNSELF_RAY_COUNT,
   SUNSELF_SEVERE_DEBT_MIN,
+  sunSelfLidForDebt,
   sunSelfMoodWord,
   sunSelfRead,
+  sunSelfSleeping,
 } from "@/domain/sun-self";
 
 /* The sun-self is the brand's honesty test (round 23): a face computed from
@@ -89,5 +91,25 @@ describe("sunSelfRead", () => {
     expect(sunSelfMoodWord("drained")).toBe("drained");
     expect(sunSelfMoodWord("waiting")).toBe("warming up");
     expect(sunSelfMoodWord("half-lit")).toBe("half-lit");
+  });
+
+  test("the lids law is shared: debt maps to lid weight, capped", () => {
+    expect(sunSelfLidForDebt(0)).toBe(0);
+    expect(sunSelfLidForDebt(270)).toBeGreaterThan(0.3);
+    // worse than nine hours is never a sadder face
+    expect(sunSelfLidForDebt(2000)).toBe(sunSelfLidForDebt(540));
+    expect(sunSelfLidForDebt(-90)).toBe(0);
+    // and the face obeys the same law
+    const r = sunSelfRead({ owedMin: 270, deliveredMin: 0, requiredMin: 540, direction: "east" });
+    expect(r.lid).toBeCloseTo(sunSelfLidForDebt(270), 5);
+  });
+
+  test("sleeping: no route yet means no debt yet", () => {
+    const s = sunSelfSleeping();
+    expect(s.mood).toBe("sleeping");
+    expect(s.lid).toBe(1);
+    expect(s.raysLit).toBe(0);
+    expect(s.tiltDeg).toBe(0);
+    expect(sunSelfMoodWord(s.mood)).toBe("asleep");
   });
 });

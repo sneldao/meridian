@@ -1269,3 +1269,23 @@ flowing.
 879/879 suite, 13/13 + 22/22 + 20/20 browser checks. Baselines refresh
 for the changed demo beats. **Carried to round 24:** phase C (stage sky,
 dial center, check-in pulses) and phase D (passport portrait, OG).
+
+## Round 24 — One face family, every place it belongs (2026-11-01)
+
+1. **Convergence over addition** — SolLuna (the dial's existing mascot)
+   adopts the sun-self's face language: shared lids law from the domain,
+   three rays on the sun half, the moon untouched.
+2. **Stage sky** — the traveller's face on the horizon, computed from
+   debt/banked/locked; done check-ins pulse it, skips change nothing.
+3. **Empty entry** — the sleeping sun: no route yet means no debt yet.
+4. **Passport portrait** — the face joins the live card, PNG/SVG
+   downloads, the demo payoff, the landing artifacts and the OG image;
+   omitted (never invented) without a computed read.
+5. **Exported twin** — `sun-self-svg.ts` string renderer; geometry-parity
+   tests keep it locked to the component.
+
+**Verification:** 892/892 tests, 9/9 new browser checks + full regression
+(55 checks across four harnesses), OG regenerated with the portrait.
+**Next candidates:** a body-clock portrait share card (standalone face
+export for Wrapped-style sharing), push-icon face, SolLuna states mapped
+onto the lids law end-to-end.

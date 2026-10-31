@@ -1156,6 +1156,13 @@ export default function Home() {
     () => [...effectiveLocked.values()].reduce((s, d) => s + d.shiftMin, 0),
     [effectiveLocked],
   );
+  // How many days the crew has locked — the sky face's rays. Locked days win;
+  // before any run, the preview plans stand in (same fallback the feed uses).
+  const stageDaysLocked = useMemo(() => {
+    if (effectiveLocked.size) return effectiveLocked.size;
+    if (!stagePreview) return 0;
+    return [...stagePreview.values()].filter((s) => s !== null).length;
+  }, [effectiveLocked, stagePreview]);
   const stageNudges = useMemo(() => {
     if (!trip) return null;
     const idx = todayDayIndex(trip, new Date());
@@ -1712,6 +1719,7 @@ export default function Home() {
                   bodyShiftMin={stageBodyShiftMin}
                   nudges={stageNudges}
                   marks={tripActions.marks}
+                  daysLocked={stageDaysLocked}
                   routeOpen={routeOpen}
                   onChip={() => {
                     setRouteOpen((v) => {

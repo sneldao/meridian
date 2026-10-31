@@ -1,4 +1,6 @@
 import type { ArrivalPassport } from "@/domain/arrival-passport";
+import type { SunSelfRead } from "@/domain/sun-self";
+import { sunSelfCaption, sunSelfSvgGroup } from "@/lib/sun-self-svg";
 
 // The arrival passport as a standalone SVG — the same export pipeline the day
 // card uses (SVG string → <img> → canvas → PNG), so the landing can leave the
@@ -45,7 +47,7 @@ function wrap(text: string, budget: number): string[] {
 const stampColor = (stamp: ArrivalPassport["stamp"]) =>
   stamp === "ADJUSTED" ? GOLD : stamp === "ALMOST" ? PAPER : STAMP_RED;
 
-export function arrivalPassportSvg(pp: ArrivalPassport): string {
+export function arrivalPassportSvg(pp: ArrivalPassport, sun?: SunSelfRead): string {
   const color = stampColor(pp.stamp);
   const statLines = pp.stat;
   const subLines = wrap(pp.statSub, 52);
@@ -122,6 +124,18 @@ export function arrivalPassportSvg(pp: ArrivalPassport): string {
     fill="${MUTED}">${esc(l)}</text>`,
     )
     .join("\n  ")}
+
+  <!-- the traveller's meridian — the same face the stage sky shows, computed
+       from this trip's debt and banked shift: an export is a portrait, not a logo -->
+  ${
+    sun
+      ? `<g transform="translate(${W - 250} 690)">
+    ${sunSelfSvgGroup(sun, { r: 88, palette: { disc: GOLD, face: INK, rayLit: GOLD, rayDim: MUTED, halo: GOLD } })}
+  </g>
+  <text x="${W - 250}" y="816" text-anchor="middle" font-family="${MONO}" font-size="20"
+    letter-spacing="3" fill="${MUTED}">${esc(sunSelfCaption(sun))}</text>`
+      : ""
+  }
 
   <!-- the traveller's own account -->
   ${

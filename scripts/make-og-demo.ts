@@ -9,14 +9,14 @@
  *  Rendering happens in headless Chromium (Playwright), so what ships is
  *  exactly what browsers draw — no second SVG implementation to drift. */
 import { chromium } from "@playwright/test";
-import { demoJourney } from "../src/domain/demo-beats";
+import { demoJourney, sunSelfForBeat } from "../src/domain/demo-beats";
 import { arrivalPassportSvg } from "../src/lib/arrival-passport-svg";
 import path from "node:path";
 
-const journey = demoJourney("jason");
+const journey = demoJourney("miles");
 const passport = journey.passport;
 if (!passport) throw new Error("the demo journey must carry a stampable passport");
-const passportSvg = arrivalPassportSvg(passport);
+const passportSvg = arrivalPassportSvg(passport, sunSelfForBeat(journey, "payoff"));
 
 const html = `<!doctype html>
 <html><head><style>
