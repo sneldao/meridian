@@ -53,6 +53,7 @@ const HeroDawnPanel = dynamic(
 );
 import { evalChipLabel, evalChipTitle } from "@/components/ui/eval-chip";
 import { isPreview, tapBecomesCheckIn } from "@/domain/preview";
+import { constraintsFromSkips, checkInsFromConstraints } from "@/domain/constraints";
 import { calendarSummary } from "@/domain/hero";
 import { secondTripCopy, secondTripProof } from "@/domain/second-trip";
 import { meetingReadiness } from "@/domain/readiness";
@@ -1644,13 +1645,8 @@ export function NudgeFeedScreen({
               className="constraint-replan"
               onClick={() => {
                 const skipped = steps.filter((n) => skippedIds.has(n.id));
-                const checkIns = skipped.map((n) => ({
-                  id: n.id,
-                  dayIndex: n.dayIndex,
-                  dayLabel: n.dayLabel,
-                  status: "skipped" as const,
-                  at: Date.now(),
-                }));
+                const constraints = constraintsFromSkips(skipped);
+                const checkIns = checkInsFromConstraints(constraints);
                 onReplanConstraints(checkIns, activeDaySpec?.dayIndex ?? 0);
               }}
             >
