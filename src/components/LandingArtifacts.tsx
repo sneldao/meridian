@@ -80,7 +80,7 @@ function MiniDial({ localMin, bodyMin }: { localMin: number; bodyMin: number }) 
 }
 
 export function LandingArtifacts() {
-  const journey = useMemo(() => demoJourney("jason"), []);
+  const journey = useMemo(() => demoJourney("miles"), []);
   const { ref, seen } = useInViewOnce<HTMLDivElement>();
   const p = journey.read.projection;
 

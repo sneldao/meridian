@@ -152,17 +152,17 @@ export function ScenarioExperience({ id, departureDate, onChooseScenario, onMake
         <span className="scenario-airport">{demo.trip.destination.code}<small>{demo.trip.destination.name}</small></span>
         <span className="scenario-departure">Departing<time dateTime={departureDate}>{departureDate}</time></span>
       </div>
-      {id === "jason" && (
+      {id === "miles" && (
         <fieldset className="scenario-toggle">
           <legend>What if the meeting time changes?</legend>
           <button type="button" aria-pressed={meetingTime === "morning"} onClick={() => chooseMeetingTime("morning")} className="taste-button taste-button--ghost">10:00 morning</button>
           <button type="button" aria-pressed={meetingTime === "afternoon"} onClick={() => chooseMeetingTime("afternoon")} className="taste-button taste-button--ghost">16:00 afternoon</button>
         </fieldset>
       )}
-      {id === "jason" && refitting && (
+      {id === "miles" && refitting && (
         <p role="status" className="scenario-source">Refitting the day around the {meetingTime === "morning" ? "10:00" : "16:00"} meeting…</p>
       )}
-      {id === "jason" && meetingTime === "morning" && !demo.plans.some((p) => p.dayIndex === demo.trip.departureDayIndex + 1) && (
+      {id === "miles" && meetingTime === "morning" && !demo.plans.some((p) => p.dayIndex === demo.trip.departureDayIndex + 1) && (
         <p role="status" className="taste-note">
           Doesn&apos;t fit a 10:00 start: the current model could not fit this day around the morning meeting.{" "}
                     <button type="button" className="taste-button taste-button--ghost" onClick={() => chooseMeetingTime("afternoon")}>Try 16:00</button>

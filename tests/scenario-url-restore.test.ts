@@ -29,16 +29,16 @@ describe("scenario URL restore", () => {
 
   test("day restores only a day that exists in the scenario", () => {
     setSearch("?day=0");
-    expect(readUrlDay("jason", "2026-11-02")).toBe(0);
+    expect(readUrlDay("miles", "2026-11-02")).toBe(0);
     setSearch("?day=999");
-    expect(readUrlDay("jason", "2026-11-02")).toBeNull();
+    expect(readUrlDay("miles", "2026-11-02")).toBeNull();
     setSearch("?day=nope");
-    expect(readUrlDay("jason", "2026-11-02")).toBeNull();
+    expect(readUrlDay("miles", "2026-11-02")).toBeNull();
   });
 
   test("with no window (server render) both return null", () => {
     delete g.window;
     expect(readUrlStep()).toBeNull();
-    expect(readUrlDay("jason", "2026-11-02")).toBeNull();
+    expect(readUrlDay("miles", "2026-11-02")).toBeNull();
   });
 });

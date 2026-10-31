@@ -6823,3 +6823,62 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   from { opacity: 0; transform: translateY(22px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* ── The sun-self (round 23) ────────────────────────────────────────────
+   The dial's sun stepped off the ring, with eyelids — the traveller's own
+   body clock given a face. Colours come in two tones (cream surfaces, and
+   the stage's night sky); the pulse is transform + opacity only, guarded,
+   and the face never shows a state the numbers don't carry. */
+.sunself { display: block; }
+.sunself-ray { stroke-width: 3; stroke-linecap: round; }
+.sunself-lid, .sunself-mouth { fill: none; stroke-width: 2.6; stroke-linecap: round; }
+
+.sunself-paper {
+  --sunself-disc: #f2b95c;
+  --sunself-halo: #f2b95c;
+  --sunself-face: #3a2c1e;
+  --sunself-ray-lit: #d96b43;
+  --sunself-ray-dim: #dccfbc;
+}
+.sunself-ink {
+  --sunself-disc: #ffc46b;
+  --sunself-halo: #ffc46b;
+  --sunself-face: #0c1220;
+  --sunself-ray-lit: #e99a6f;
+  --sunself-ray-dim: rgba(255, 255, 255, 0.18);
+}
+.sunself-disc { fill: var(--sunself-disc); }
+.sunself-halo { fill: var(--sunself-halo); }
+.sunself-eye { fill: var(--sunself-face); }
+.sunself-lid, .sunself-mouth { stroke: var(--sunself-face); }
+.sunself-ray.lit { stroke: var(--sunself-ray-lit); }
+.sunself-ray.dim { stroke: var(--sunself-ray-dim); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .sunself.enter {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: sunself-pulse 700ms var(--ease-drift);
+  }
+  .sunself-halo {
+    transition: opacity 420ms var(--ease-drift);
+  }
+}
+@keyframes sunself-pulse {
+  0% { transform: scale(1); }
+  38% { transform: scale(1.07); }
+  100% { transform: scale(1); }
+}
+
+/* Demo persona + sun-self placement (round 23). */
+.demo-persona {
+  margin: 10px 0 0;
+  font-size: var(--text-sm);
+  color: var(--m-muted);
+}
+.demo-persona b { color: var(--m-text); }
+.demo-glyph {
+  display: flex;
+  justify-content: center;
+  margin: 16px 0 6px;
+}

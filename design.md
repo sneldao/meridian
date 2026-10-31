@@ -421,3 +421,38 @@ Three closures on the round-21 open list:
   trip-level conversion with honest nulls for empty denominators, and a
   trailing-week pulse. Queries and semantics live in
   docs/reference/funnel.md.
+
+## Round 23 — The sun-self: the body clock given a face (2026-11-01)
+
+Research (Tavily sweep: Finch, the Tamagotchi effect, mascot placement
+systems, procedural SVG, Wrapped-style sharing) settled the shape of it:
+
+- **Not a pet — the traveller's own meridian.** Every wellness app ships a
+  companion to care for. Meridian's creature is the traveller's body clock
+  itself: you can't neglect it, because it's you. That also kills the guilt
+  problem at the root — Finch's zero-guilt law is kept anyway: a skipped
+  window closes the lids gently; nothing wilts, nothing turns red.
+- **One geometry, everywhere.** The dial is a sun on a ring with twelve
+  ticks; the sun-self is that same sun stepped off the ring, with eyelids.
+  Twelve rays (locked days light them), a halo (delivered/required), lids
+  (residual debt, capped — worse than 9h is not a sadder face), a tilt
+  (east leans into tomorrow, west leans back). `src/domain/sun-self.ts`
+  computes the face; `src/components/SunSelf.tsx` draws it — procedural
+  SVG, zero assets, zero inline styles, hex lives in CSS.
+- **The face is the honesty contract made visible.** States map 1:1 to the
+  numbers the passport stamps: OWED 4.5h of 9h renders half-lit, never
+  radiant. `sunSelfForBeat` in demo-beats fixes what each beat may show.
+- **The personas are fictional now, and sharper.** Real celebrity names
+  were a right-of-publicity liability (fictional quotes under real names);
+  the trio became archetypes of the travellers we serve: Miles Mercer
+  (the deal-flyer), Danny Rivers (the comic), Sofia Marchetti (the
+  taste-first founder). Legacy `?s=cedric|alex` links fall back to Miles
+  instead of erroring.
+- **Immediate visible response.** The glyph's pulse replays on mount by
+  key — transform-only, guarded — ready for the round-24 wiring where
+  every genuine step forward (check-in, day locked) lights the face.
+
+Phase C/D follow: the stage sky's sun becomes the traveller (glyph at
+`--stage-sun-x`), the dial's center marker becomes the glyph, check-ins
+pulse it, and the passport carries it — every passport becomes a portrait
+of that trip.

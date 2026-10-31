@@ -1249,3 +1249,23 @@ new components carry zero inline styles.
 **Not carried forward:** none of the three items surfaced a product bug —
 the degradations held, the scenarios were honest, the events were already
 flowing.
+
+## Round 23 — The sun-self, phase A + B (2026-11-01)
+
+1. **State model** — `src/domain/sun-self.ts`: lid ← debt, glow ←
+   delivered/required, tilt ← direction, rays ← days locked. Nine tests
+   lock the honesty mapping (no division by zero, severe-debt cap,
+   adjusted needs both, delivered never outshines required).
+2. **The glyph** — `src/components/SunSelf.tsx`: one procedural SVG, paper
+   and ink tones, pulse on mount by key, zero inline styles.
+3. **The demo embodies the story** — drained face on the stakes, a ray
+   igniting per locked day on the crew beat, the honestly half-lit face on
+   the payoff. `sunSelfForBeat` computes each face from the journey.
+4. **The persona pass** — fictional archetypes replace real names
+   (Miles Mercer / Danny Rivers / Sofia Marchetti), each with a persona
+   line on the stakes beat; legacy scenario URLs degrade to the default.
+
+**Verification:** 9 + 4 new domain tests, 2 motion-language locks,
+879/879 suite, 13/13 + 22/22 + 20/20 browser checks. Baselines refresh
+for the changed demo beats. **Carried to round 24:** phase C (stage sky,
+dial center, check-in pulses) and phase D (passport portrait, OG).

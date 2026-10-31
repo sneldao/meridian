@@ -372,3 +372,29 @@ describe("motion language · round 21 — the stamp lands", () => {
     expect(demo.match(/style=\{/g)?.length ?? 0).toBe(0);
   });
 });
+
+describe("motion language · round 23 — the sun-self", () => {
+  it("the pulse is transform-only and guarded", () => {
+    const kf = block("@keyframes sunself-pulse");
+    expect(kf).toContain("transform");
+    expect(kf).not.toContain("opacity");
+    expect(kf).not.toContain("box-shadow");
+    expect(kf).not.toContain("filter");
+    const idx = css.indexOf(".sunself.enter {");
+    expect(idx).toBeGreaterThan(0);
+    const guardIdx = css.lastIndexOf("@media (prefers-reduced-motion: no-preference)", idx);
+    expect(guardIdx).toBeGreaterThan(0);
+  });
+
+  it("the glyph is computed, not authored — one component, zero inline styles", () => {
+    const glyph = fs.readFileSync(
+      path.join(import.meta.dir, "..", "src", "components", "SunSelf.tsx"),
+      "utf8",
+    );
+    expect(glyph.match(/style=\{/g)?.length ?? 0).toBe(0);
+    // The face comes from the domain read; the component never invents state.
+    expect(glyph).toContain("SunSelfRead");
+    expect(glyph).toContain("read.raysLit");
+    expect(glyph).toContain("read.lid");
+  });
+});

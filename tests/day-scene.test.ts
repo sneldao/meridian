@@ -26,7 +26,7 @@ describe("day-scene clocks and solar geometry", () => {
   });
 
   test("all three post-flight moments agree with the existing conservative model", () => {
-    for (const [id, localMin, bodyMin] of [["jason", 960, 510], ["cedric", 1200, 750], ["alex", 840, 390]] as const) {
+    for (const [id, localMin, bodyMin] of [["miles", 960, 510], ["danny", 1200, 750], ["sofia", 840, 390]] as const) {
       const demo = buildDemoScenario(id, "2026-11-04");
       const original = JSON.stringify(demo);
       const scene = buildDayScene({ ...demo, dayIndex: demo.event.dayIndex })!;
@@ -42,7 +42,7 @@ describe("day-scene clocks and solar geometry", () => {
   });
 
   test("pre-flight frame stays in origin and only earlier days shift the estimate", () => {
-    const demo = buildDemoScenario("jason", "2026-11-04");
+    const demo = buildDemoScenario("miles", "2026-11-04");
     const plans = [{ ...demo.plans[0], dayIndex: 0, shiftMin: -30 }];
     const first = buildDayScene({ ...demo, plans, dayIndex: 0 })!;
     const next = buildDayScene({ ...demo, plans, dayIndex: 1 })!;
@@ -63,7 +63,7 @@ describe("day-scene clocks and solar geometry", () => {
 });
 
 describe("day-scene dated windows", () => {
-  const demo = buildDemoScenario("jason", "2026-11-04");
+  const demo = buildDemoScenario("miles", "2026-11-04");
   const plan: DayPlan = {
     ...demo.plans[0],
     dayIndex: 0,

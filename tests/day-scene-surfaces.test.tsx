@@ -7,7 +7,7 @@ import { buildDemoScenario } from "../src/domain/demo-scenarios";
 import type { ResolvedPlaceChoice } from "../src/lib/place-choices";
 
 describe("DayScene (SSR)", () => {
-  const d = buildDemoScenario("jason", "2026-11-04");
+  const d = buildDemoScenario("miles", "2026-11-04");
   const sceneIdx = d.trip.departureDayIndex + 1;
   const scene = buildDayScene({ trip: d.trip, dayIndex: sceneIdx, plans: d.plans, calendar: d.calendar, baseline: d.baseline })!;
 

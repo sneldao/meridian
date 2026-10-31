@@ -5,10 +5,11 @@ import type { CalendarEvent, DayPlan } from "@/domain/types";
 
 export const DEMO_SCENARIOS = [
   {
-    id: "jason",
-    name: "Jason Calacanis",
-    shortName: "Jason",
+    id: "miles",
+    name: "Miles Mercer",
+    shortName: "Miles",
     role: "The Investor Sprint",
+    persona: "Venture partner — one meeting that funds the year.",
     title: "Be there for the big decision.",
     moment: "Investment meeting",
     startMin: 960,
@@ -17,10 +18,11 @@ export const DEMO_SCENARIOS = [
     profile: "luke",
   },
   {
-    id: "cedric",
-    name: "Cedric the Entertainer",
-    shortName: "Cedric",
+    id: "danny",
+    name: "Danny Rivers",
+    shortName: "Danny",
     role: "The Show Must Go On",
+    persona: "Stand-up comic — an evening show at the end of a red-eye.",
     title: "Save something for the spotlight.",
     moment: "Evening performance",
     startMin: 1200,
@@ -29,10 +31,11 @@ export const DEMO_SCENARIOS = [
     profile: "bjork",
   },
   {
-    id: "alex",
-    name: "Alex Elias",
-    shortName: "Alex",
+    id: "sofia",
+    name: "Sofia Marchetti",
+    shortName: "Sofia",
     role: "Taste Meets Time Zones",
+    persona: "Founder — customer keynote first, the food always.",
     title: "Bring your best ideas with you.",
     moment: "Customer keynote",
     startMin: 840,
@@ -60,7 +63,7 @@ export function buildDemoScenario(
     new Date(`${departureDate}T00:00:00Z`).toISOString().slice(0, 10) !== departureDate
   ) throw new Error("Invalid demo departure date");
   const trip = buildTrip("LHR", "HND", departureDate);
-  const morningMeeting = id === "jason" && meetingTime === "morning";
+  const morningMeeting = id === "miles" && meetingTime === "morning";
   const event: CalendarEvent = {
     id: `sample-${id}-moment`,
     title: scenario.moment,

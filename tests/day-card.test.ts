@@ -6,7 +6,7 @@ import { resolvePlaceChoice } from "../src/lib/place-choices";
 import { sampleTasteProfile } from "../src/lib/sample-taste";
 import { defaultDayCardOptions, publicDayCard, snapshotDayCard } from "../src/lib/day-card";
 
-const demo = buildDemoScenario("jason", "2026-11-04");
+const demo = buildDemoScenario("miles", "2026-11-04");
 const scene = buildDayScene({ ...demo, dayIndex: demo.event.dayIndex })!;
 const profile = sampleTasteProfile("luke")!;
 const itinerary = buildTasteItinerary(demo.trip, demo.plans, demo.calendar, { ...profile, status: "ready" }, "replay");

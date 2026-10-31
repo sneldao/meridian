@@ -10,8 +10,8 @@ last-human-standing's speed-run). One link, ninety seconds, no account.
 > 90 seconds: your 07:00 Tokyo meeting is 23:00 body time, and a crew of
 > agents moves it. Ends with an honest stamp on the first morning.
 
-Variants: `/demo?s=cedric` (a stage, not a boardroom), `/demo?s=alex`
-(taste-first traveller). The landing CTA "Watch the ninety-second example"
+Variants: `/demo?s=danny` (Danny Rivers — a stage, not a boardroom),
+`/demo?s=sofia` (Sofia Marchetti — keynote first, the food always). The landing CTA "Watch the ninety-second example"
 points at the same door; `/?demo=1` redirects there too.
 
 The link unfurls with its own preview (`public/og-demo.png` — the real
@@ -22,7 +22,9 @@ the visitor's last action is passing it on.
 
 ## The arc (do not reorder)
 
-1. **The stakes** — one moment, two clocks, the gap. Nothing else.
+1. **The stakes** — the traveller in person (Miles, Danny or Sofia), one
+   moment, two clocks, the gap — and their sun-self drained by it. The
+   face is the stakes; the numbers are the proof.
 2. **The crew at work** — the plan is solved live in the visitor's browser;
    say so. Canned numbers would poison the trust the payoff needs.
 3. **The plan** — arrival day, timed to the minute, in traveller words.
@@ -34,7 +36,9 @@ the visitor's last action is passing it on.
 ## Rules
 
 - Every number on a beat traces to `src/domain/demo-beats.ts`; a beat may
-  not display a figure that module does not compute.
+  not display a figure that module does not compute. The sun-self's face
+  is computed there too (`sunSelfForBeat`) — OWED 4.5h of 9h shows
+  half-lit, never radiant.
 - The demo never asks for an account, a wearable, or a key.
 - Reduced-motion visitors get the same story without the choreography.
 - If the solver's example output ever changes, the tests in

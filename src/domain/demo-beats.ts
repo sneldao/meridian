@@ -6,6 +6,7 @@ import type { HeroMeeting } from "./hero";
 import type { InterventionKind } from "./types";
 import type { DayPlan, Trip, WearableBaseline } from "./types";
 import { INTERVENTION_LABELS } from "@/lib/intervention-icons";
+import { sunSelfRead, type SunSelfRead } from "./sun-self";
 
 /** The demo journey as data (round 19).
  *
@@ -45,7 +46,7 @@ export const DEMO_BEAT_TITLES: Record<DemoBeatId, string> = {
  *  the visitor. */
 export const DEMO_DEPARTURE_DATE = "2026-11-03";
 
-export function demoJourney(scenarioId: DemoScenarioId = "jason"): DemoJourney {
+export function demoJourney(scenarioId: DemoScenarioId = "miles"): DemoJourney {
   const { scenario, trip, baseline, plans, moment } = buildDemoScenario(
     scenarioId,
     DEMO_DEPARTURE_DATE,
@@ -125,3 +126,50 @@ export function planRows(journey: DemoJourney): DemoPlanRow[] {
 
 /** Every scenario, for the picker the demo's footer offers. */
 export const demoScenarios = DEMO_SCENARIOS;
+
+/** The sun-self state each beat is allowed to show (round 23). Same law as
+ *  the passport: the face is computed from the journey's real numbers — the
+ *  stakes show the unadjusted debt, the crew shows the banked preview, and
+ *  the payoff shows exactly what the projection carries. */
+export function sunSelfForBeat(journey: DemoJourney, beat: DemoBeatId): SunSelfRead {
+  const required = Math.abs(journey.trip.requiredShiftMin);
+  const direction = journey.trip.direction;
+
+  if (beat === "stakes") {
+    return sunSelfRead({
+      owedMin: stakesGapHours(journey.moment) * 60,
+      deliveredMin: 0,
+      requiredMin: required,
+      direction,
+    });
+  }
+
+  if (beat === "payoff") {
+    const p = journey.read.projection;
+    if (p) {
+      return sunSelfRead({
+        owedMin: p.hours * 60,
+        deliveredMin: p.deliveredHours * 60,
+        requiredMin: p.requiredHours * 60,
+        direction,
+        daysLocked: journey.plans.length,
+      });
+    }
+    // No model on file: the honest face is the full debt, nothing banked.
+    return sunSelfRead({ owedMin: required, deliveredMin: 0, requiredMin: required, direction });
+  }
+
+  // crew + plan: the days the solver locked, banked as a preview. Shifts
+  // are signed (an advance is negative minutes), so bank what they carry.
+  const banked = Math.min(
+    required,
+    journey.plans.reduce((s, d) => s + Math.abs(d.shiftMin), 0),
+  );
+  return sunSelfRead({
+    owedMin: Math.max(0, required - banked),
+    deliveredMin: banked,
+    requiredMin: required,
+    direction,
+    daysLocked: journey.plans.length,
+  });
+}

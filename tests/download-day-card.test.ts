@@ -4,7 +4,7 @@ import { publicDayCard, snapshotDayCard } from "../src/lib/day-card";
 import { buildDayScene } from "../src/domain/day-scene";
 import { buildDemoScenario } from "../src/domain/demo-scenarios";
 
-const d = buildDemoScenario("jason", "2026-11-04");
+const d = buildDemoScenario("miles", "2026-11-04");
 const scene = buildDayScene({ trip: d.trip, dayIndex: d.trip.departureDayIndex + 1, plans: d.plans, calendar: d.calendar, baseline: d.baseline })!;
 const card = publicDayCard(snapshotDayCard(scene, { fictionalTrip: true }), { includeSchedule: true, includeEvent: true, includeBodyTime: true, includeTaste: true });
 

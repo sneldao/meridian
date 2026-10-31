@@ -11,7 +11,7 @@ import type { DayPlan, Intervention } from "../src/domain/types";
 import { NudgeFeedScreen, type NudgeFeedScreenProps } from "../src/components/NudgeFeedScreen";
 
 describe("PerformanceBrief (SSR)", () => {
-  const d = buildDemoScenario("cedric", "2026-11-04");
+  const d = buildDemoScenario("danny", "2026-11-04");
   test("shows model numbers, source and disclaimer — no % or cure claims", () => {
     const h = renderToStaticMarkup(createElement(PerformanceBrief, { moment: d.moment, destination: "Tokyo", date: "2026-11-05", eventSource: "fixture", example: true }));
     expect(h).toContain("A fictional moment that matters");
@@ -31,7 +31,7 @@ describe("PerformanceBrief (SSR)", () => {
 });
 
 describe("LightWindowPanel (SSR)", () => {
-  const d = buildDemoScenario("cedric", "2026-11-04");
+  const d = buildDemoScenario("danny", "2026-11-04");
   const plan = d.plans.find((p) => p.dayIndex === d.trip.departureDayIndex + 1)!;
   test("seek + reduce rows with real times", () => {
     const h = renderToStaticMarkup(createElement(LightWindowPanel, { plan, date: "2026-11-05", city: "Tokyo", example: true }));
@@ -57,20 +57,20 @@ describe("entry + selector (SSR)", () => {
     expect(h).toContain("Your 07:00 meeting in Tokyo is 23:00 body time.");
     expect(h).toContain("Arrive with a plan");
     expect(h).toContain("See my trip plan");
-    expect(h).toContain("Try Jason");
-    expect(h).toContain("Try Cedric");
-    expect(h).toContain("Try Alex");
+    expect(h).toContain("Try Miles");
+    expect(h).toContain("Try Danny");
+    expect(h).toContain("Try Sofia");
     expect(h).toContain("Imagined demo scenarios");
     expect(h).toContain("Before the big moment");
     expect(h).toContain("Between the commitments");
   });
   test("home entry resolves known/legacy/unknown example params", () => {
     const sp = (v: string) => new URLSearchParams(`example=${v}`);
-    expect(resolveHomeEntry(sp("jason"), null, null).scenarioId).toBe("jason");
+    expect(resolveHomeEntry(sp("miles"), null, null).scenarioId).toBe("miles");
     expect(resolveHomeEntry(sp("1"), null, null).scenarioId).toBeUndefined();
     expect(resolveHomeEntry(sp("1"), null, null).mode).toBe("example");
     expect(resolveHomeEntry(sp("bogus"), null, null).mode).toBe("setup");
-    expect(resolveHomeEntry(sp("jason"), JSON.stringify({ origin: "SFO", dest: "SIN", date: "2026-05-10" }), null).route).toBeNull();
+    expect(resolveHomeEntry(sp("miles"), JSON.stringify({ origin: "SFO", dest: "SIN", date: "2026-05-10" }), null).route).toBeNull();
   });
 });
 
@@ -79,7 +79,7 @@ describe("ScenarioExperience + prefill (SSR)", () => {
     const saved = globalThis.fetch;
     globalThis.fetch = (async () => { throw new Error("must not fetch"); }) as unknown as typeof fetch;
     try {
-      for (const id of ["jason", "cedric", "alex"] as const) {
+      for (const id of ["miles", "danny", "sofia"] as const) {
         const h = renderToStaticMarkup(createElement(ScenarioExperience, { id, departureDate: "2026-11-04", onChooseScenario: () => {}, onMakeTrip: () => {}, onBack: () => {} }));
         expect(h).toContain("Imagined demo scenarios");
         expect(h).toContain("not their actual data or endorsements");
@@ -94,8 +94,8 @@ describe("ScenarioExperience + prefill (SSR)", () => {
     } finally {
       globalThis.fetch = saved;
     }
-    const jason = renderToStaticMarkup(createElement(ScenarioExperience, { id: "jason", departureDate: "2026-11-04", onChooseScenario: () => {}, onMakeTrip: () => {}, onBack: () => {} }));
-    expect(jason).toContain("Jason Calacanis");
+    const jason = renderToStaticMarkup(createElement(ScenarioExperience, { id: "miles", departureDate: "2026-11-04", onChooseScenario: () => {}, onMakeTrip: () => {}, onBack: () => {} }));
+    expect(jason).toContain("Miles Mercer");
     expect(jason).toContain("10:00 morning");
     expect(jason).toContain("16:00 afternoon");
     expect(jason).toContain("Be there for the big decision.");
@@ -121,7 +121,7 @@ describe("ScenarioExperience + prefill (SSR)", () => {
   });
 });
 describe("provenance and edge cases (SSR)", () => {
-  const d = buildDemoScenario("cedric", "2026-11-04");
+  const d = buildDemoScenario("danny", "2026-11-04");
   test("google event + example baseline: real event, sample sleep copy", () => {
     const h = renderToStaticMarkup(createElement(PerformanceBrief, { moment: d.moment, destination: "Tokyo", date: "2026-11-05", eventSource: "google", exampleBaseline: true }));
     expect(h).toContain("Example sleep profile");
@@ -153,7 +153,7 @@ describe("provenance and edge cases (SSR)", () => {
 
 describe("feed ordering (SSR)", () => {
   test("performance > hero > light > taste; no duplicated hero-meeting", () => {
-    const d = buildDemoScenario("cedric", "2026-11-04");
+    const d = buildDemoScenario("danny", "2026-11-04");
     const props: NudgeFeedScreenProps = {
       trip: d.trip, phase: "idle" as const, selectedDayLabel: "D-1", onSelectDay: () => {},
       locked: new Map(), drafts: new Map(), verdicts: new Map(), rejected: new Set<string>(),

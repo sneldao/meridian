@@ -6,6 +6,7 @@ import {
   demoJourney,
   planRows,
   stakesGapHours,
+  sunSelfForBeat,
 } from "@/domain/demo-beats";
 
 /* The demo journey (round 19) is a claim about the product, so it is built
@@ -14,7 +15,7 @@ import {
  * tell — every number on screen must trace back here. */
 
 describe("demoJourney", () => {
-  const j = demoJourney("jason");
+  const j = demoJourney("miles");
 
   test("runs on the fixed example week", () => {
     expect(DEMO_DEPARTURE_DATE).toBe("2026-11-03");
@@ -56,7 +57,7 @@ describe("demoJourney", () => {
   });
 
   test("every scenario produces a complete journey", () => {
-    for (const id of ["jason", "cedric", "alex"] as const) {
+    for (const id of ["miles", "danny", "sofia"] as const) {
       const s = demoJourney(id);
       expect(s.plans.length).toBeGreaterThan(0);
       expect(s.read.arrived).toBe(true);
@@ -67,7 +68,7 @@ describe("demoJourney", () => {
 
 describe("planRows", () => {
   test("reads the arrival day in clock order, in the traveller-facing words", () => {
-    const rows = planRows(demoJourney("jason"));
+    const rows = planRows(demoJourney("miles"));
     const times = rows.map((r) => r.time);
     expect([...times].sort()).toEqual(times);
     // Canonical vocabulary only — no raw snake_case ever reaches a screen.
@@ -90,5 +91,44 @@ describe("clockLabel", () => {
 describe("the beats", () => {
   test("are the journey spine in story order", () => {
     expect(DEMO_BEAT_IDS).toEqual(["stakes", "crew", "plan", "payoff"]);
+  });
+});
+
+describe("sunSelfForBeat — the face never outruns the numbers (round 23)", () => {
+  const j = demoJourney("miles");
+
+  test("the stakes face is drained: full gap owed, nothing banked", () => {
+    const s = sunSelfForBeat(j, "stakes");
+    expect(s.mood).toBe("drained");
+    expect(s.glow).toBe(0);
+    expect(s.lid).toBeGreaterThan(0.7);
+    expect(s.raysLit).toBe(0);
+  });
+
+  test("the crew face lights a ray per locked day", () => {
+    const s = sunSelfForBeat(j, "crew");
+    expect(s.raysLit).toBe(j.plans.length);
+    expect(s.glow).toBeGreaterThan(0);
+    expect(s.glow).toBeLessThan(1);
+  });
+
+  test("the payoff face matches the projection — OWED means half-lit, not radiant", () => {
+    const s = sunSelfForBeat(j, "payoff");
+    const p = j.read.projection!;
+    expect(s.glow).toBeCloseTo(p.deliveredHours / p.requiredHours, 5);
+    expect(s.mood).not.toBe("adjusted");
+    // The line says what the stamp says: the owed hours, to a decimal.
+    expect(s.line).toContain(p.hours.toFixed(1));
+  });
+
+  test("every scenario's faces stay honest end to end", () => {
+    for (const id of ["miles", "danny", "sofia"] as const) {
+      const journey = demoJourney(id);
+      const stakes = sunSelfForBeat(journey, "stakes");
+      const payoff = sunSelfForBeat(journey, "payoff");
+      expect(stakes.glow).toBe(0);
+      expect(payoff.glow).toBeGreaterThan(stakes.glow);
+      expect(payoff.lid).toBeLessThanOrEqual(stakes.lid);
+    }
   });
 });
