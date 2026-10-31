@@ -165,7 +165,7 @@ export function DayStrip({ days, locked, activeLabel, rejectedLabels }: Props) {
           <motion.div
             key={d.dayIndex}
             layout={reduce ? false : "position"}
-            className={`rounded-lg border px-3 py-2 transition-colors ${
+            className={`rise-item rounded-lg border px-3 py-2 transition-colors ${
               plan
                 ? "border-pass/20 bg-ink-3"
                 : active

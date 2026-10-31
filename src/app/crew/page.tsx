@@ -450,7 +450,7 @@ export default function Home() {
     <main className="flex min-h-screen flex-col p-4 pb-20 lg:h-screen lg:pb-4">
       <RunAnnouncer run={run} />
       <div className="dawnIn" aria-hidden="true" />
-      <header className="mb-4 flex flex-wrap items-center gap-3">
+      <header className="mb-4 flex flex-wrap items-center gap-3" data-place-head="crew">
         <div className="shrink-0">
           <div className="flex items-baseline gap-3">
             <h1 className="text-lg font-bold tracking-[0.3em] text-clay">

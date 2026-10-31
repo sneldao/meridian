@@ -1685,6 +1685,26 @@ body {
       animation-timeline: view();
       animation-range: entry 2% cover 18%;
     }
+    /* Item-level waterfall: siblings rise in sequence, not as one slab. The
+       stagger is a longer cover range per child, not a delay — it still
+       tracks scroll position rather than playing on a clock. Vertical
+       stacks only; the horizontal-scroller rule above still stands. */
+    .rise-item,
+    .journey-step {
+      /* backwards, not both: a completed fill would pin transform:none over
+         any later framer-motion `layout` morph on the same element. */
+      animation: reveal-up var(--dur-drift) var(--ease-drift) backwards;
+      animation-timeline: view();
+      animation-range: entry 2% cover 18%;
+    }
+    .rise-item:nth-child(2),
+    .journey-step:nth-child(2) { animation-range: entry 2% cover 22%; }
+    .rise-item:nth-child(3),
+    .journey-step:nth-child(3) { animation-range: entry 2% cover 26%; }
+    .rise-item:nth-child(4),
+    .journey-step:nth-child(4) { animation-range: entry 2% cover 30%; }
+    .rise-item:nth-child(n+5),
+    .journey-step:nth-child(n+5) { animation-range: entry 2% cover 34%; }
   }
 }
 
@@ -3549,49 +3569,15 @@ select:focus-visible {
   letter-spacing: 0.02em;
 }
 
-/* ── Dawn pass · view transitions (React 19.3 <ViewTransition>) ───────────
-   Continuity instead of page swaps: the home view crossfades (same place,
-   different reading), and typed navigations slide by direction. Untyped
-   navigations — browser back included — stay instant. */
+/* ── Dawn pass · view transitions ────────────────────────────────────────
+   Continuity instead of page swaps. Typed navigations (Link's
+   transitionTypes) wipe like light — the dawn reveal, declared below under
+   the motion language. Untyped navigations — browser back included — stay
+   on the platform crossfade. An earlier draft of this section addressed
+   `::view-transition-old(.nav-forward)`; that selector matches nothing, so
+   the rules were dead and have been replaced by the typed selectors. */
 ::view-transition {
   pointer-events: none;
-}
-::view-transition-old(home-view),
-::view-transition-new(home-view) {
-  animation-duration: 320ms;
-  animation-timing-function: var(--ease-glide);
-}
-::view-transition-old(.nav-forward) {
-  --slide-offset: -48px;
-  animation:
-    160ms ease-in both vt-fade reverse,
-    360ms var(--ease-glide) both vt-slide reverse;
-}
-::view-transition-new(.nav-forward) {
-  --slide-offset: 48px;
-  animation:
-    220ms ease-out 140ms both vt-fade,
-    380ms var(--ease-glide) both vt-slide;
-}
-::view-transition-old(.nav-back) {
-  --slide-offset: 48px;
-  animation:
-    160ms ease-in both vt-fade reverse,
-    360ms var(--ease-glide) both vt-slide reverse;
-}
-::view-transition-new(.nav-back) {
-  --slide-offset: -48px;
-  animation:
-    220ms ease-out 140ms both vt-fade,
-    380ms var(--ease-glide) both vt-slide;
-}
-@keyframes vt-fade {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-@keyframes vt-slide {
-  from { translate: var(--slide-offset); }
-  to { translate: 0; }
 }
 
 /* Shared element: the dawn the hero counts down to is the same object on the
@@ -3651,6 +3637,146 @@ select:focus-visible {
   .arr-in [data-rise="9"] { animation-delay: 1240ms; }  /* debrief */
   .arr-in [data-rise="10"] { animation-delay: 1520ms; } /* the passport */
   .arr-in [data-rise="11"] { animation-delay: 1600ms; } /* footer */
+}
+
+/* ── Motion language · round 16 (design.md) ──────────────────────────
+   Light moves, things morph, nothing slides up from nowhere. */
+
+/* 1 · Surface morphs — the trigger grows into its panel. The name lives on
+   the trigger while the panel is closed and moves to the panel while it is
+   open (the classes are assigned conditionally in React), so a pair never
+   holds two named elements at once. */
+.vt-morph-more { view-transition-name: morph-more; }
+.vt-morph-settings { view-transition-name: morph-settings; }
+.vt-morph-trip { view-transition-name: morph-trip; }
+.vt-morph-voice { view-transition-name: morph-voice; }
+
+::view-transition-group(morph-more),
+::view-transition-group(morph-settings),
+::view-transition-group(morph-trip),
+::view-transition-group(morph-voice) {
+  animation-duration: var(--dur-settle);
+  animation-timing-function: var(--ease-settle);
+}
+
+/* 2 · The dawn reveal — typed route changes wipe like light. Forward, the
+   incoming page rises from below the horizon while the outgoing one settles
+   away; back is the sun going down. The shared dawn disc rides above the
+   wipe in its own group, so the sun leads its own sunrise. `clip-path` is
+   paint-only (design.md's allowance). */
+@keyframes vt-rise-in {
+  from { clip-path: inset(100% 0 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+@keyframes vt-descend-in {
+  from { clip-path: inset(0 0 100% 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+@keyframes vt-set-away {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: scale(0.985); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html:active-view-transition-type(nav-forward)::view-transition-old(root) {
+    animation: vt-set-away var(--dur-drift) var(--ease-drift) both;
+    mix-blend-mode: normal;
+  }
+  html:active-view-transition-type(nav-forward)::view-transition-new(root) {
+    animation: vt-rise-in var(--dur-drift) var(--ease-drift) both;
+    mix-blend-mode: normal;
+  }
+  html:active-view-transition-type(nav-back)::view-transition-old(root) {
+    animation: vt-set-away var(--dur-drift) var(--ease-drift) both;
+    mix-blend-mode: normal;
+  }
+  html:active-view-transition-type(nav-back)::view-transition-new(root) {
+    animation: vt-descend-in var(--dur-drift) var(--ease-drift) both;
+    mix-blend-mode: normal;
+  }
+}
+
+/* 3 · The light sweep — in-page mode switches pass two stage layers across
+   the content: horizon gold first, then a band of the page's own ground.
+   Transform-only, staggered, and never rendered under reduced motion (the
+   hook stands down). */
+.light-sweep {
+  position: fixed;
+  inset: 0;
+  z-index: 210;
+  pointer-events: none;
+  overflow: hidden;
+}
+.light-sweep-layer {
+  position: absolute;
+  inset: 0;
+  transform: translateY(102%);
+}
+.light-sweep-layer.gold {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 217, 138, 0) 0%,
+    rgba(255, 196, 107, 0.5) 46%,
+    rgba(217, 107, 67, 0.34) 100%
+  );
+  animation: sweep-pass 560ms var(--ease-drift) both;
+}
+.light-sweep-layer.ground {
+  background: var(--m-bg);
+  opacity: 0.94;
+  animation: sweep-pass 560ms var(--ease-drift) 90ms both;
+}
+@keyframes sweep-pass {
+  from { transform: translateY(102%); }
+  to { transform: translateY(-102%); }
+}
+
+/* 4 · Places morph into their pages — the More sheet's rows carry the same
+   names as the destination headers, so the row you tapped becomes the page
+   you land on across the route transition. Scoped to the sheet so the home
+   menu's links can never double-book a name. */
+.more-sheet [data-place="crew"] { view-transition-name: place-crew; }
+.more-sheet [data-place="shift"] { view-transition-name: place-shift; }
+.more-sheet [data-place="team"] { view-transition-name: place-team; }
+.menu [data-place="crew"] { view-transition-name: place-crew; }
+.menu [data-place="shift"] { view-transition-name: place-shift; }
+.menu [data-place="team"] { view-transition-name: place-team; }
+[data-place-head="crew"] { view-transition-name: place-crew; }
+[data-place-head="shift"] { view-transition-name: place-shift; }
+[data-place-head="team"] { view-transition-name: place-team; }
+
+/* 5 · The trips deck — /history is a card deck: each journey pins under the
+   header and the next one covers it, so the list reads as riffling through
+   trips. The covered card recedes where scroll-driven animations exist;
+   without them the sticky stack still reads as a deck. */
+.trip-deck {
+  display: grid;
+  gap: 18px;
+}
+.trip-deck-card {
+  position: sticky;
+  top: calc(20px + var(--deck-i, 0) * 14px);
+  transform-origin: 50% 0;
+}
+.trip-deck-card:nth-child(1) { --deck-i: 0; }
+.trip-deck-card:nth-child(2) { --deck-i: 1; }
+.trip-deck-card:nth-child(3) { --deck-i: 2; }
+.trip-deck-card:nth-child(4) { --deck-i: 3; }
+.trip-deck-card:nth-child(5) { --deck-i: 4; }
+.trip-deck-card:nth-child(6) { --deck-i: 5; }
+.trip-deck-card:nth-child(7) { --deck-i: 6; }
+.trip-deck-card:nth-child(n + 8) { --deck-i: 7; }
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .trip-deck-card {
+      animation: deck-recede linear both;
+      animation-timeline: view();
+      animation-range: exit 0% exit 100%;
+    }
+    @keyframes deck-recede {
+      to { transform: scale(0.955) translateY(-6px); opacity: 0.72; }
+    }
+  }
 }
 
 /* ── Dawn pass · the run on the stage ────────────────────────────────────

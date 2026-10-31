@@ -26,7 +26,7 @@ export default function ShiftPage() {
     <main className="root">
       <div style={{ padding: "18px 0 8px" }}>
         <div className="dial-head">
-          <h1 className="page-title" style={{ fontSize: "var(--text-2xl)" }}>
+          <h1 className="page-title" style={{ fontSize: "var(--text-2xl)" }} data-place-head="shift">
             Meridian for shift work
           </h1>
           <div className="dial-actions">

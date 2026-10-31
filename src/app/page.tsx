@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { fmtMin } from "@/domain/circadian";
 import { todayDayIndex } from "@/domain/today";
 import { resolveBaseline, buildTrip, calendarFor, GARMIN_BASELINE, type WakeBand } from "@/domain/fixtures";
@@ -65,6 +66,8 @@ import { useTheme } from "@/lib/use-theme";
 import { isTripFinished } from "@/lib/trip-status";
 import { isPreview } from "@/domain/preview";
 import { isValidHomeRoute, resolveHomeEntry, type HomeEntry, type HomeRoute } from "@/lib/home-entry";
+import { useMorphTransition } from "@/lib/use-morph-transition";
+import { useLightSweep } from "@/components/LightSweep";
 import { safeStorageGet } from "@/lib/local-data";
 import { useTripActions } from "@/lib/use-trip-actions";
 import { useTripTaste } from "@/lib/use-trip-taste";
@@ -221,11 +224,23 @@ export default function Home() {
   const [pastRuns, setPastRuns] = useState<
     { savedAt: string; trip?: { origin?: { code?: string }; destination?: { code?: string }; requiredShiftMin?: number; direction?: "east" | "west" } | null; score: number }[]
   >([]);
-  const [menuOpen, setMenuOpen] = useState(false);
+  // Openness is derived from the path the menu was opened on: place links
+  // navigate without pre-closing it (the tapped row must survive into the
+  // transition's old snapshot to morph into the destination header), and the
+  // moment the route changes the derived mismatch folds the menu away.
+  const pathname = usePathname();
+  const [menuOpenedAt, setMenuOpenedAt] = useState<string | null>(null);
+  const menuOpen = menuOpenedAt !== null && menuOpenedAt === pathname;
   // The utilities that used to crowd the menu (activity, appearance, install,
   // voice, the disclosure) live in their own sheet now, one hop from the
   // menu's last row.
   const [settingsOpen, setSettingsOpen] = useState(false);
+  /* The motion language's morph wrapper: in-place surface changes run inside
+     a same-document view transition where the API exists (design.md). */
+  const morph = useMorphTransition();
+  /* Mode switches pass light across the page instead of snapping (design.md
+     · Motion language). The node mounts itself only while a pass runs. */
+  const { sweep, node: sweepNode } = useLightSweep();
   const [disclosureOpen, setDisclosureOpen] = useState(false);
   const [agentDrawerOpen, setAgentDrawerOpen] = useState(false);
   const [drawerUsed, setDrawerUsed] = useState(false);
@@ -461,7 +476,7 @@ export default function Home() {
     const handler = (e: MouseEvent) => {
       const t = e.target as Node;
       if (menuRef.current?.contains(t) || menuBtnRef.current?.contains(t)) return;
-      setMenuOpen(false);
+      setMenuOpenedAt(null);
     };
     window.addEventListener("mousedown", handler);
     return () => window.removeEventListener("mousedown", handler);
@@ -822,18 +837,18 @@ export default function Home() {
       // must work even from inside a text field. (It previously didn't: the old
       // handler returned early for INPUT/TEXTAREA before reaching Escape.)
       if (e.code === "Escape") {
-        if (assistant.open) assistant.closeSheet();
-        else if (setupOpen) setSetupOpen(false);
+        if (assistant.open) morph(() => assistant.closeSheet());
+        else if (setupOpen) morph(() => setSetupOpen(false));
         else if (agentDrawerOpen) setAgentDrawerOpen(false);
         else if (routeOpen) setRouteOpen(false);
-        else if (settingsOpen) setSettingsOpen(false);
-        else if (menuOpen) setMenuOpen(false);
+        else if (settingsOpen) morph(() => setSettingsOpen(false));
+        else if (menuOpen) setMenuOpenedAt(null);
         else if (run.phase === "running") cancelShift();
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [run.phase, cancelShift, agentDrawerOpen, menuOpen, settingsOpen, setupOpen, routeOpen, assistant]);
+  }, [run.phase, cancelShift, agentDrawerOpen, menuOpen, settingsOpen, setupOpen, routeOpen, assistant, morph]);
 
   // Wedge watchdog. Runs only while a run is live, and reports the same
   // recoverable state `onerror` does — the CTA comes back either way.
@@ -862,8 +877,11 @@ export default function Home() {
   };
 
   // Setup is no longer a screen you navigate to — it's a sheet over Today.
-  const openSetup = () => setSetupOpen(true);
-  const closeSetup = () => setSetupOpen(false);
+  // Both directions run inside a same-document view transition so the menu
+  // row morphs into the sheet instead of a drawer sliding up (design.md ·
+  // Motion language).
+  const openSetup = () => morph(() => setSetupOpen(true));
+  const closeSetup = () => morph(() => setSetupOpen(false));
 
   /* The blank-slate half of every entry-mode change: kill the stream and the
      run, clear the trip and anything restored for it, and fold the overlays
@@ -887,7 +905,7 @@ export default function Home() {
     setRouteOpen(false);
     setRouteDraft(null);
     setSetupOpen(false);
-    setMenuOpen(false);
+    setMenuOpenedAt(null);
     setSettingsOpen(false);
     setPlanView(false);
   }, [reset]);
@@ -1140,6 +1158,7 @@ export default function Home() {
 
   return (
     <div className="root">
+      {sweepNode}
       <div className="beam" />
       <div className="in">
         {/* The one live region on the page. Mounted here rather than inside the
@@ -1170,7 +1189,7 @@ export default function Home() {
               type="button"
               ref={menuBtnRef}
               className="btn"
-              onClick={() => setMenuOpen((v) => !v)}
+              onClick={() => setMenuOpenedAt(menuOpen ? null : pathname)}
               aria-expanded={menuOpen}
               aria-haspopup="menu"
             >
@@ -1185,7 +1204,7 @@ export default function Home() {
             {/* A run outlives its screen — while one is live, the menu's top
                 row is its current step and a way back to watch it. */}
             {run.phase === "running" && (
-              <Link href="/crew" className="m" role="menuitem" transitionTypes={["nav-forward"]} onClick={() => setMenuOpen(false)}>
+              <Link href="/crew" className="m" role="menuitem" transitionTypes={["nav-forward"]} onClick={() => setMenuOpenedAt(null)}>
                 Crew working — {run.activeAgent ? CREW[run.activeAgent].name : "agents"}
                 {run.lastTool ? ` → ${run.lastTool.tool}` : run.activeLabel ? ` on ${run.activeLabel}` : ""}
                 {" · "}
@@ -1207,7 +1226,7 @@ export default function Home() {
                     href={p.href}
                     role="menuitem"
                     transitionTypes={["nav-forward"]}
-                    onClick={() => setMenuOpen(false)}
+                    data-place={p.href.slice(1)}
                   >
                     {p.label}
                   </Link>
@@ -1221,11 +1240,11 @@ export default function Home() {
                 anchors, so this also makes the menu homogeneous. */}
             <button
               type="button"
-              className="m"
+              className={`m${setupOpen ? "" : " vt-morph-trip"}`}
               role="menuitem"
               onClick={() => {
                 openSetup();
-                setMenuOpen(false);
+                setMenuOpenedAt(null);
               }}
             >
               Trip settings
@@ -1238,6 +1257,7 @@ export default function Home() {
               className="m"
               role="menuitem"
               onClick={() => {
+                sweep();
                 const next = depth === "guided" ? null : "guided";
                 setDepth(next);
                 try {
@@ -1251,7 +1271,7 @@ export default function Home() {
                     window.history.replaceState(null, "", url.toString());
                   }
                 } catch { /* ignore */ }
-                setMenuOpen(false);
+                setMenuOpenedAt(null);
               }}
             >
               {depth === "guided" ? "Calm view" : "Detailed view"}
@@ -1301,7 +1321,7 @@ export default function Home() {
                     }),
                   });
                   const { url } = await r.json();
-                  setMenuOpen(false);
+                  setMenuOpenedAt(null);
                   await shareLink(url, "My Meridian shift plan");
                 }}
               >
@@ -1315,11 +1335,13 @@ export default function Home() {
                 two taps from anywhere. */}
             <button
               type="button"
-              className="m"
+              className={`m${settingsOpen ? "" : " vt-morph-settings"}`}
               role="menuitem"
               onClick={() => {
-                setMenuOpen(false);
-                setSettingsOpen(true);
+                morph(() => {
+                  setMenuOpenedAt(null);
+                  setSettingsOpen(true);
+                });
               }}
             >
               Settings &amp; about
@@ -1332,8 +1354,8 @@ export default function Home() {
             panel on wider screens. */}
         {settingsOpen && (
           <>
-            <div className="more-sheet-backdrop" role="presentation" onClick={() => setSettingsOpen(false)} />
-            <div role="dialog" aria-modal="true" aria-label="Settings and about" className="more-sheet">
+            <div className="more-sheet-backdrop" role="presentation" onClick={() => morph(() => setSettingsOpen(false))} />
+            <div role="dialog" aria-modal="true" aria-label="Settings and about" className="more-sheet vt-morph-settings">
               <p className="more-sheet-label">Settings</p>
               <button
                 type="button"
@@ -1350,7 +1372,10 @@ export default function Home() {
               <button
                 type="button"
                 className="more-sheet-item"
-                onClick={cycleTheme}
+                onClick={() => {
+                  sweep();
+                  cycleTheme();
+                }}
               >
                 <span>Appearance</span>
                 <small>{themeLabel} — tap to change</small>
@@ -1371,10 +1396,12 @@ export default function Home() {
               {hasSavedPlan && (
                 <button
                   type="button"
-                  className="more-sheet-item"
+                  className={`more-sheet-item${assistant.open ? "" : " vt-morph-voice"}`}
                   onClick={() => {
-                    setSettingsOpen(false);
-                    void assistant.openSheet();
+                    morph(() => {
+                      setSettingsOpen(false);
+                      void assistant.openSheet();
+                    });
                   }}
                 >
                   <span>Voice assistant</span>
@@ -1720,10 +1747,24 @@ export default function Home() {
                   exists to look at. */}
               {(effectiveLocked.size > 0 || run.briefing) && (
                 <div className="pill plan-switch" role="group" aria-label="Today or the full plan">
-                  <button type="button" className={planView ? "" : "on"} onClick={() => setPlanView(false)}>
+                  <button
+                    type="button"
+                    className={planView ? "" : "on"}
+                    onClick={() => {
+                      if (planView) sweep();
+                      setPlanView(false);
+                    }}
+                  >
                     Now
                   </button>
-                  <button type="button" className={planView ? "on" : ""} onClick={() => setPlanView(true)}>
+                  <button
+                    type="button"
+                    className={planView ? "on" : ""}
+                    onClick={() => {
+                      if (!planView) sweep();
+                      setPlanView(true);
+                    }}
+                  >
                     The plan
                   </button>
                 </div>
@@ -1864,7 +1905,7 @@ export default function Home() {
             aria-label="Trip settings"
             onClick={closeSetup}
           >
-            <div className="sheet-panel" ref={setupPanelRef} onClick={(e) => e.stopPropagation()}>
+            <div className="sheet-panel vt-morph-trip" ref={setupPanelRef} onClick={(e) => e.stopPropagation()}>
               <button
                 type="button"
                 className="sheet-close"
@@ -1919,13 +1960,13 @@ export default function Home() {
             role="dialog"
             aria-modal="true"
             aria-label="Voice assistant"
-            onClick={assistant.closeSheet}
+            onClick={() => morph(() => assistant.closeSheet())}
           >
-            <div className="sheet-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="sheet-panel vt-morph-voice" onClick={(e) => e.stopPropagation()}>
               <button
                 type="button"
                 className="sheet-close"
-                onClick={assistant.closeSheet}
+                onClick={() => morph(() => assistant.closeSheet())}
                 aria-label="Close"
               >
                 ×

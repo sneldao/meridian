@@ -345,7 +345,10 @@ src/tools/       science (SMR → Firecrawl → static), tavily, qloo,
 src/agents/      providers, crew prompts, runtime, night replay, morning replay
                  (the replay path's plan is the solver's plan — the same
                  draft the live path hands the planner)
-src/components/  NudgeFeedScreen (the Calm `/` surface: next step, timeline,
+src/components/  LightSweep (the mode-switch light pass: two staggered
+                 transform-only layers, self-unmounting, silent under
+                 reduced motion),
+                 NudgeFeedScreen (the Calm `/` surface: next step, timeline,
                  readiness), TripEntryScreen (the first-use form: blank route
                  fields + a departure date, kept draft until Continue; the
                  headline and live line compute from `routeGapRead` +
@@ -402,7 +405,10 @@ src/lib/         voice/ (engine, config, cache, split, align, huddle),
                  arrival-passport-svg + download-arrival-passport (the
                  passport's export twin — the standalone SVG and its
                  SVG→canvas→PNG pipeline), share (the `/plan/{id}` payload
-                 writer/reader: Supabase with a filesystem fallback)
+                 writer/reader: Supabase with a filesystem fallback),
+                 use-morph-transition (the surface-morph wrapper:
+                 startViewTransition where the API exists, a direct update
+                 where it doesn't)
 src/mcp/         MCP server: JSON-RPC dispatch + tool catalogue
 src/app/         pages + api routes (/, /arrival, /review, /history, /outcome,
                  /crew, /shift, /dev)
@@ -416,3 +422,38 @@ scripts/         replay-check, provider-check, smoke (night + morning),
                  eval, seed-graph, verify-commit
 docs/            this documentation
 ```
+
+## Motion language (round 16)
+
+Light moves, things morph, nothing slides up from nowhere (design.md). Five
+rules, all verified by `tests/motion-language.test.ts`:
+
+1. **Surface morphs.** The More tab, Settings row, Trip-settings row and
+   Voice row grow into their panels instead of launching a drawer: trigger
+   and panel share one `view-transition-name` (`morph-*`), the name living
+   on the trigger while closed and on the panel while open
+   (`src/lib/use-morph-transition.ts` wraps the state update in
+   `document.startViewTransition`, degrading to an instant update without
+   the API or under reduced motion).
+2. **The dawn reveal.** Typed route changes wipe like light:
+   `nav-forward` rises from below the horizon
+   (`clip-path: inset(100% 0 0 0) → inset(0)`), `nav-back` descends — via
+   `html:active-view-transition-type(...)` selectors on the root
+   pseudo-elements. The shared `dawn` disc rides above the wipe in its own
+   group. An earlier draft of this section addressed
+   `::view-transition-old(.nav-forward)` — that selector matches nothing,
+   so the slide rules were dead and were removed.
+3. **The light sweep.** In-page mode switches (Now↔The plan, Calm↔Detailed,
+   theme) pass two layers — horizon gold, then a band of the page's own
+   `--m-bg` — up across the content (`LightSweep`).
+4. **Places morph into their pages.** More-sheet and menu rows carry
+   `data-place`; crew/shift/team headers carry `data-place-head`; both
+   resolve to the same `place-*` name. The rows deliberately do not
+   pre-close their container — openness is derived from the path it was
+   opened at (`menuOpenedAt`/`moreOpenedAt`), so the tapped row survives
+   into the transition's old snapshot and the container folds the moment
+   the route changes.
+5. **The trips deck.** `/history` cards pin (`position: sticky`, each one a
+   little lower than the last) so scrolling riffls through journeys; the
+   covered card recedes behind a `view()` scroll-driven animation where
+   supported.

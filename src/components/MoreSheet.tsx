@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
 import { DisclosureSheet } from "@/components/dial/DisclosureSheet";
+import { useMorphTransition } from "@/lib/use-morph-transition";
 
 /* The surfaces outside the two tabs — grouped by what they are, so the nav
  *  reads as a story instead of a feature list. One shared structure for the
@@ -53,7 +54,7 @@ export function MoreSheet({ open, onClose }: { open: boolean; onClose: () => voi
         role="presentation"
         onClick={onClose}
       />
-      <div role="dialog" aria-modal="true" aria-label="More" className="more-sheet">
+      <div role="dialog" aria-modal="true" aria-label="More" className="more-sheet vt-morph-more">
         <nav aria-label="More places">
           {PLACE_GROUPS.map((g) => (
             <div key={g.label}>
@@ -63,7 +64,7 @@ export function MoreSheet({ open, onClose }: { open: boolean; onClose: () => voi
                   key={p.href}
                   href={p.href}
                   transitionTypes={["nav-forward"]}
-                  onClick={onClose}
+                  data-place={p.href.slice(1)}
                   className="more-sheet-item"
                 >
                   <span>{p.label}</span>
@@ -98,18 +99,19 @@ export function MoreNav({
   children?: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const morph = useMorphTransition();
   return (
     <>
       <button
         type="button"
-        className={className}
+        className={`${className ?? ""}${open ? "" : " vt-morph-more"}`}
         aria-expanded={open}
         aria-haspopup="dialog"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => morph(() => setOpen((v) => !v))}
       >
         {children ?? "More"}
       </button>
-      <MoreSheet open={open} onClose={() => setOpen(false)} />
+      <MoreSheet open={open} onClose={() => morph(() => setOpen(false))} />
     </>
   );
 }

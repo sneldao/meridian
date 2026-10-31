@@ -79,7 +79,7 @@ export default function TeamPage() {
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-8 pb-20 font-mono2 text-paper md:pb-8">
-      <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
+      <header className="mb-6 flex flex-wrap items-end justify-between gap-4" data-place-head="team">
         <div>
           <Link href="/" transitionTypes={["nav-back"]} className="text-xs text-mist hover:text-paper">
             ← run a shift

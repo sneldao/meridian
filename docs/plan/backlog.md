@@ -1021,6 +1021,36 @@ tested end to end: mint → recipient page renders the body-clock passport
 line → OG image returns a real PNG → `artifacts/share/*.json` written in
 fallback mode.
 
+## Round 16 — Motion language: light moves, things morph (2026-10-31)
+
+User feedback: the app reads as drawers expanding — a simplified experience
+without intuitively designed transitions between sections. The fix is a
+motion language drawn from the Codrops archive (Morphing Buttons Concept,
+Multi-Layer Page Reveal Effects, Image Layer Animations with Clip-Path,
+Grid Item Animation Layout / ImageToContent Flip, On-Scroll 3D Stack
+Motion), restated in Meridian's own terms: **light moves, things morph,
+nothing slides up from nowhere.**
+
+1. **Surface morphs.** Triggers become their panels via same-document view
+   transitions (`useMorphTransition` + paired `view-transition-name`s):
+   More tab → More sheet, Settings row → settings sheet, trip chip → trip
+   editor, Voice row → assistant. Sheet-from-nowhere slides are the fallback
+   for browsers without the API.
+2. **The dawn reveal.** `nav-forward` wipes the incoming page in from the
+   horizon up (`clip-path: inset` on the root view-transition pseudos),
+   `nav-back` reverses it; the shared dawn disc flies above the wipe.
+3. **Light sweep.** Mode switches (Now ↔ The plan, Calm ↔ Detailed, theme
+   flip) pass two stage layers across the content — transform-only,
+   staggered, skipped under reduced motion.
+4. **Places morph into pages.** `place-*` names pair the More rows with the
+   destination headers across the MPA transition.
+5. **The trips deck.** `/history` as sticky stacked cards with scroll-driven
+   recede where supported.
+
+Contract: `clip-path` joins the paint-only allowance in design.md; everything
+degrades under `@supports not (view-transition-name)` and
+`prefers-reduced-motion: reduce`.
+
 ## Later / deferred
 
 - **Visual pass on `/spike/globe`** — the ring pulse, flight hairline and

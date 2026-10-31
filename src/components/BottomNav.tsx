@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Ellipsis, History, Home } from "lucide-react";
 import { MoreSheet } from "@/components/MoreSheet";
+import { useMorphTransition } from "@/lib/use-morph-transition";
 
 /* Two tabs, shaped like the journey: what do I do today, and what happened
    on my trips. The plan is a view of Today (the Now / The plan switch), and
@@ -21,7 +22,13 @@ const MORE_PATHS = ["/crew", "/shift", "/team", "/arrival", "/outcome", "/review
 
 export function BottomNav() {
   const pathname = usePathname();
-  const [moreOpen, setMoreOpen] = useState(false);
+  // The sheet is open *at the path it was opened on*: a place link navigates
+  // without closing it first (the row must survive into the transition's old
+  // snapshot to morph into the destination header), and the derived mismatch
+  // folds it away the moment the route changes — no effect, no flash.
+  const [moreOpenedAt, setMoreOpenedAt] = useState<string | null>(null);
+  const moreOpen = moreOpenedAt !== null && moreOpenedAt === pathname;
+  const morph = useMorphTransition();
   const currentIdx = TABS.findIndex((t) => t.active(pathname));
   const onMorePage = MORE_PATHS.some((p) => pathname.startsWith(p));
   return (
@@ -42,18 +49,18 @@ export function BottomNav() {
         ))}
         <button
           type="button"
-          className="bottom-nav-item"
+          className={`bottom-nav-item${moreOpen ? "" : " vt-morph-more"}`}
           aria-label="More"
           aria-expanded={moreOpen}
           aria-haspopup="dialog"
           data-on={onMorePage || undefined}
-          onClick={() => setMoreOpen(true)}
+          onClick={() => morph(() => setMoreOpenedAt(pathname))}
         >
           <Ellipsis size={18} aria-hidden="true" />
           <span>More</span>
         </button>
       </nav>
-      <MoreSheet open={moreOpen} onClose={() => setMoreOpen(false)} />
+      <MoreSheet open={moreOpen} onClose={() => morph(() => setMoreOpenedAt(null))} />
     </>
   );
 }

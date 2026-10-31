@@ -119,6 +119,31 @@ cubic-bezier(0.22, 1, 0.36, 1) · `--ease-settle` cubic-bezier(0.16, 1, 0.3, 1)
   payoff's disc share `view-transition-name: dawn`, so the object the hero
   counted down to is the object that lands. Support is progressive: without
   the API, pages swap and the sweep still runs.
+- Motion language (round 16): **light moves, things morph, nothing slides up
+  from nowhere.** Panels do not arrive from off-screen; the element you
+  touched grows into the surface. Four rules carry it:
+  - *Surface morphs.* Same-document view transitions pair each trigger with
+    its panel under one `view-transition-name` (`morph-more`, `morph-settings`,
+    `morph-trip`, `morph-voice`): the More tab becomes the More sheet, the
+    Settings row becomes its sheet, the trip chip becomes the trip editor,
+    the Voice row becomes the assistant. Only one element holds a name at a
+    time; without the API the existing sheet motion is the fallback.
+  - *The dawn reveal.* Typed route changes wipe like light: `nav-forward`
+    unveils the incoming page from the horizon up (`clip-path: inset` on
+    `::view-transition-new(root)`) while the outgoing page settles; `nav-back`
+    reverses it — travelling back is the sun going down. The shared dawn disc
+    flies above the wipe, so the sun leads its own sunrise.
+  - *Light sweep.* In-page mode switches (Now ↔ The plan, Calm ↔ Detailed,
+    theme flip) pass two stage layers — horizon gold, then ink — across the
+    content, transform-only, staggered. A mode change reads as light crossing
+    the page, not a drawer.
+  - *Places morph into pages.* The place rows in More carry
+    `view-transition-name: place-*`; the destination page's header carries the
+    same name, so the card you tapped becomes the page you land on.
+  - *The trips deck.* `/history` is a card deck: journeys stack with
+    `position: sticky` and the covered card recedes on scroll where
+    `animation-timeline` is supported. Riffling through trips, not scrolling
+    a table.
 - Page entrance: the terminator hairline sweeps once per navigation; a
   first-visit-only streak (remembered in `meridian:visited`) crosses the
   stage once per browser.
@@ -136,7 +161,9 @@ cubic-bezier(0.22, 1, 0.36, 1) · `--ease-settle` cubic-bezier(0.16, 1, 0.3, 1)
 - Reduced-motion fallback: global flatten rule already in `globals.css`
   stands; spatial motion collapses to ≤ 150ms opacity.
 - Only `transform` and `opacity` animate. Paint crossfades (`color`,
-  `background`, `box-shadow`) cost nothing to composite and stay; anything
+  `background`, `box-shadow`) cost nothing to composite and stay; `clip-path`
+  joins them — it is compositor-friendly and carries the dawn reveal and the
+  light-sweep masks without moving any box. Anything
   animating a box (`width`, `height`, `margin`, `padding`, `inset`) reflows
   and does not. Remaining box animations are frozen debt, counted by exact
   declaration text in `tests/design-contract.test.ts`.

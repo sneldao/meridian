@@ -129,7 +129,11 @@ export default function HistoryPage() {
         <p className="text-sm text-clay-2">No trips yet. Plans you make will show up here — each one keeps its plan, its gate score, and its arrival report.</p>
       )}
 
-      <ul className="space-y-3">
+      {/* The deck (design.md · Motion language): journeys stack and pin —
+          scrolling riffls through trips instead of walking a table. Plain
+          sticky stacking everywhere; the covered-card recede rides
+          scroll-driven animations where they exist. */}
+      <ul className="trip-deck">
         {items.map((it, idx) => (
           <HistoryCard
             // `id` when we have one, `savedAt` when we don't. Two runs in the
@@ -184,7 +188,7 @@ function HistoryCard({ entry: it, older }: { entry: HistEntry; older: HistEntry[
   const actionCls =
     "rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-mist transition-colors hover:border-mist hover:text-paper";
   return (
-    <li><Card className="p-4">
+    <li className="trip-deck-card"><Card className="p-4">
       <div className="flex items-baseline justify-between">
         <div className="font-mono2 text-xs text-paper">
           {it.trip
