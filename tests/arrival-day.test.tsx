@@ -36,7 +36,10 @@ const base = {
 describe("ArrivalDayView (SSR)", () => {
   test("place idea sits in chronological order between steps", () => {
     const html = renderToStaticMarkup(createElement(ArrivalDayView, { ...base, idea: idea() }));
-    const i1 = html.indexOf("Step a"), i2 = html.indexOf("Kissa Tanto"), i3 = html.indexOf("Step b");
+    // The sky strip above the list names every step in its aria-label, so row
+    // order is asserted inside the row list rather than across the document.
+    const rows = html.slice(html.indexOf("arrival-day-rows"));
+    const i1 = rows.indexOf("Step a"), i2 = rows.indexOf("Kissa Tanto"), i3 = rows.indexOf("Step b");
     expect(i1).toBeGreaterThan(-1);
     expect(i1).toBeLessThan(i2);
     expect(i2).toBeLessThan(i3);
