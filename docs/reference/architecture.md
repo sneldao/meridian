@@ -336,7 +336,11 @@ src/domain/      types, circadian scorer + phase-response model, placement
                  citations (the one catalogue of papers the app may cite),
                  marks (the traveller's own skips, read back for the
                  projection),
-                 mascot (the mascot's voice rules), shift-work (the rotating
+                 mascot (the mascot's voice rules), sun-self (the traveller's
+                 body clock given a face: lid ← debt, glow ← delivered/required,
+                 tilt ← direction, rays ← days locked — one geometry everywhere,
+                 computed, never authored; SolLuna's sun half obeys the same
+                 lids law), shift-work (the rotating
                  night-shift week: an authored seed, a computed clock),
                  draft (the planner's submission merged over the solver's
                  draft, and the drift between them)
@@ -490,6 +494,29 @@ rules, all verified by `tests/motion-language.test.ts`:
    page to the plan; `.today-flow` sections rise on arrival. `.root` must
    stay `overflow: clip` — `hidden` would make it a scroll container and
    silently freeze every scroll-driven timeline inside it.
+10. **The demo becomes a gift (rounds 21–22).** The payoff beat lands the
+    passport stamp as the peak moment (one scale/rotate impact + ink burst),
+    offers Web Share with a clipboard fallback, and `/?demo=1` and `/demo`
+    are the same door. OG preview composes the real demo passport + stage
+    sky (`scripts/make-og-demo.ts`). Funnel instrumentation is a metric,
+    never a dependency — `src/lib/funnel-summary.ts` aggregates, and
+    `GET /api/funnel/summary` is key-gated and honestly no-ops (unset key
+    → 403, no Supabase → `{configured: false}`). Visual baselines are
+    runner-owned; `--update-snapshots=all` — since Playwright 1.50 the bare
+    flag only rewrites snapshots that *fail* comparison, and a deliberate
+    redesign under the 2% pixel threshold would silently keep the stale
+    baseline.
+11. **One face family (rounds 23–24).** The sun-self is the traveller's own
+    body clock given a face — not a pet: you can't neglect it because it's
+    you. Fictional archetypes (Miles Mercer, Danny Rivers, Sofia Marchetti)
+    replaced real celebrity names; every figure on every beat traces to
+    `src/domain/demo-beats.ts`. One geometry, many places: the stage sky's
+    horizon (done check-ins pulse it; skips change nothing — zero-guilt),
+    the empty entry (asleep, not sulking), SolLuna's sun half in the dial,
+    the demo beats (drained → a ray per locked day → honestly half-lit),
+    and the passport portrait (`arrivalPassportSvg(pp, sun?)` — no computed
+    read, no portrait; the export never invents a face). The exported twin
+    (`src/lib/sun-self-svg.ts`) is geometry-locked to the component.
 
 ## Observability & the closed loop (round 17)
 

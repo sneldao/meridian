@@ -167,6 +167,20 @@ One media query that flattens every animation and transition.
 transition, and the press response opts out of its own transform. The globe
 and the voice already honoured it; the CSS entrances did not.
 
+### 13. The traveller's face (the sun-self)
+
+One procedural glyph — the dial's sun stepped off the ring, with eyelids —
+that is the traveller's body clock itself, not a pet to care for.
+
+**Ours:** the state is always computed, never authored: lid ← residual
+debt (capped — worse than nine hours is never a sadder face), glow ←
+delivered/required, tilt ← direction, rays ← days locked. The face is the
+honesty contract made visible: OWED 4.5h of 9h renders half-lit, never
+radiant. One geometry everywhere — the stage horizon, the empty entry
+(asleep, not sulking), SolLuna's sun half, the demo beats, the passport
+portrait. Zero-guilt by law: a done step lights the face; a skip changes
+nothing — tired, never ashamed, warm tones only.
+
 ## What actually makes it feel easy
 
 Not any one of these. The **ratio**: one accent, one column, one idea per

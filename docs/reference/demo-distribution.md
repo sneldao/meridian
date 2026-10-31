@@ -26,10 +26,14 @@ the visitor's last action is passing it on.
    moment, two clocks, the gap — and their sun-self drained by it. The
    face is the stakes; the numbers are the proof.
 2. **The crew at work** — the plan is solved live in the visitor's browser;
-   say so. Canned numbers would poison the trust the payoff needs.
+   say so. Canned numbers would poison the trust the payoff needs. One ray
+   ignites on the traveller's sun-self per locked day — the crew's work,
+   made visible on the face it works for.
 3. **The plan** — arrival day, timed to the minute, in traveller words.
-4. **The payoff** — scorecard, then the passport stamped OWED 4.5h: the
-   example deliberately does not promise full adjustment, and saying so is
+4. **The payoff** — scorecard, then the passport stamped OWED 4.5h, carrying
+   the traveller's portrait: honestly half-lit, never radiant — 4.5h banked
+   of 9h is exactly what the face shows. The example deliberately does not
+   promise full adjustment, and saying so is
    the pitch. CTAs: "Make it yours" (entry form) and "Wander this trip in
    the app" (`/?example=1`, the full dashboard for the curious).
 
