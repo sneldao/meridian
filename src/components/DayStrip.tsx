@@ -1,6 +1,14 @@
 "use client";
 
-import { motion } from "framer-motion";
+import {
+  motion,
+  useMotionValue,
+  useReducedMotion,
+  useScroll,
+  useTransform,
+  type MotionValue,
+} from "framer-motion";
+import { useRef } from "react";
 import { fmtMin } from "@/domain/circadian";
 import { INTERVENTION_ICONS } from "@/lib/intervention-icons";
 import type { DayPlan, DaySpec } from "@/domain/types";
@@ -10,6 +18,85 @@ interface Props {
   locked: Map<string, DayPlan>;
   activeLabel?: string;
   rejectedLabels: Set<string>;
+}
+
+function easeInOutCubic(t: number) {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+const PIN_CARD_W = 180;
+const PIN_CARD_H = 88;
+const PIN_GAP = 16;
+
+function PinnedDayCard({
+  label,
+  plan,
+  progress,
+  index,
+  count,
+}: {
+  label: string;
+  plan: DayPlan;
+  progress: MotionValue<number>;
+  index: number;
+  count: number;
+}) {
+  const rowW = count * PIN_CARD_W + (count - 1) * PIN_GAP;
+  const colH = count * PIN_CARD_H + (count - 1) * PIN_GAP;
+  const colX = (rowW - PIN_CARD_W) / 2;
+  const rowY = (colH - PIN_CARD_H) / 2;
+  // Stacked column slot -> row slot.
+  const x = useTransform(progress, [0, 1], [colX, index * (PIN_CARD_W + PIN_GAP)]);
+  const y = useTransform(progress, [0, 1], [index * (PIN_CARD_H + PIN_GAP), rowY]);
+  // Cards arrive in sequence rather than all at once.
+  const start = index * 0.12;
+  const opacity = useTransform(progress, [start, Math.min(start + 0.3, 1)], [0.35, 1]);
+  return (
+    <motion.div
+      style={{ position: "absolute", left: 0, top: 0, x, y, opacity, width: PIN_CARD_W, height: PIN_CARD_H }}
+      className="rounded-lg border border-pass/20 bg-ink-3 px-3 py-2"
+    >
+      <div className="text-xs font-bold text-pass">{label}</div>
+      <div className="mt-1 font-mono2 text-xs text-paper">
+        <div>bed {fmtMin(plan.targetBedtimeMin)}</div>
+        <div>wake {fmtMin(plan.targetWakeMin)}</div>
+      </div>
+    </motion.div>
+  );
+}
+
+/** Locked days as one row that morphs from a stacked column as the page scrolls
+ *  through a pinned section. Reduced motion shows the row with no scroll link. */
+export function PinnedDayRow({ days, locked }: { days: DaySpec[]; locked: Map<string, DayPlan> }) {
+  const reduced = useReducedMotion();
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end end"] });
+  const linear = useTransform(scrollYProgress, [0.1, 0.8], [0, 1]);
+  const eased = useTransform(linear, easeInOutCubic);
+  const settled = useMotionValue(1);
+  const rows = days.flatMap((d) => {
+    const plan = locked.get(d.label);
+    return plan ? [{ label: d.label, plan }] : [];
+  });
+  if (rows.length === 0) return null;
+
+  const count = rows.length;
+  const rowW = count * PIN_CARD_W + (count - 1) * PIN_GAP;
+  const colH = count * PIN_CARD_H + (count - 1) * PIN_GAP;
+  // Reduced motion: the final row, with the scroll link removed.
+  const progress = reduced ? settled : eased;
+
+  return (
+    <div ref={ref} style={{ height: "250vh" }}>
+      <div className="sticky top-0 flex h-screen items-center justify-center overflow-hidden">
+        <div style={{ position: "relative", width: rowW, height: colH }}>
+          {rows.map((r, i) => (
+            <PinnedDayCard key={r.label} label={r.label} plan={r.plan} progress={progress} index={i} count={count} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function DayStrip({ days, locked, activeLabel, rejectedLabels }: Props) {

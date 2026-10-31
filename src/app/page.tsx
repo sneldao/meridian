@@ -67,6 +67,7 @@ import { ScenarioExperience } from "@/components/ScenarioExperience";
 import type { DemoScenarioId } from "@/domain/demo-scenarios";
 import { isTasteItinerary, itineraryMatchesTrip, type TasteItinerary } from "@/domain/taste";
 import { JourneySteps } from "@/components/JourneySteps";
+import { PinnedDayRow } from "@/components/DayStrip";
 import { useRunState, calendarWithMoves, ledgerEvents, ghostGapDeg } from "@/state/run";
 import { meetingReadiness } from "@/domain/readiness";
 import {
@@ -1521,6 +1522,9 @@ export default function Home() {
                   }
                   open={entry.clockOpen}
                 />
+              )}
+              {effectiveLocked.size > 0 && (
+                <PinnedDayRow days={trip.days} locked={effectiveLocked} />
               )}
             </div>
 
