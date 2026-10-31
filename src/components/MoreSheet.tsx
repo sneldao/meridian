@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
-import { DisclosureSheet } from "@/components/dial/DisclosureSheet";
+import { DisclosureBody } from "@/components/dial/DisclosureSheet";
 import { useMorphTransition } from "@/lib/use-morph-transition";
 
 /* The surfaces outside the two tabs — grouped by what they are, so the nav
@@ -34,19 +34,32 @@ export const PLACE_GROUPS: readonly PlaceGroup[] = [
 export const PLACES = PLACE_GROUPS.flatMap((g) => g.places);
 
 export function MoreSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  // The inner dialog only mounts while open, so the disclosure choice is
+  // fresh every time the sheet opens — no effect needed to reset it.
+  if (!open) return null;
+  return <MoreSheetDialog onClose={onClose} />;
+}
+
+function MoreSheetDialog({ onClose }: { onClose: () => void }) {
   const [disclosure, setDisclosure] = useState(false);
+  const morph = useMorphTransition();
 
   useEffect(() => {
-    if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key !== "Escape") return;
+      // Escape backs out one layer at a time: disclosure first, then the
+      // sheet itself.
+      if (disclosure) morph(() => setDisclosure(false));
+      else onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+  }, [disclosure, onClose, morph]);
 
-  if (!open) return null;
-
+  // Round 18: the disclosure swaps the sheet's contents in place instead of
+  // stacking a second sheet on top. The panel keeps its morph name through
+  // the swap, so the body crossfades inside the surface the traveller
+  // already holds.
   return (
     <>
       <div
@@ -55,35 +68,49 @@ export function MoreSheet({ open, onClose }: { open: boolean; onClose: () => voi
         onClick={onClose}
       />
       <div role="dialog" aria-modal="true" aria-label="More" className="more-sheet vt-morph-more">
-        <nav aria-label="More places">
-          {PLACE_GROUPS.map((g) => (
-            <div key={g.label}>
-              <p className="more-sheet-label">{g.label}</p>
-              {g.places.map((p) => (
-                <Link
-                  key={p.href}
-                  href={p.href}
-                  transitionTypes={["nav-forward"]}
-                  data-place={p.href.slice(1)}
-                  className="more-sheet-item"
-                >
-                  <span>{p.label}</span>
-                  <small>{p.note}</small>
-                </Link>
+        {disclosure ? (
+          <div className="more-sheet-swap">
+            <button
+              type="button"
+              className="more-sheet-item"
+              onClick={() => morph(() => setDisclosure(false))}
+            >
+              <span>← Back to More</span>
+            </button>
+            <DisclosureBody />
+          </div>
+        ) : (
+          <>
+            <nav aria-label="More places">
+              {PLACE_GROUPS.map((g) => (
+                <div key={g.label}>
+                  <p className="more-sheet-label">{g.label}</p>
+                  {g.places.map((p) => (
+                    <Link
+                      key={p.href}
+                      href={p.href}
+                      transitionTypes={["nav-forward"]}
+                      data-place={p.href.slice(1)}
+                      className="more-sheet-item"
+                    >
+                      <span>{p.label}</span>
+                      <small>{p.note}</small>
+                    </Link>
+                  ))}
+                </div>
               ))}
-            </div>
-          ))}
-        </nav>
-        <button
-          type="button"
-          className="more-sheet-item"
-          onClick={() => setDisclosure(true)}
-        >
-          <span>What Meridian is, and is not</span>
-        </button>
-        <p className="more-sheet-note">Timing guidance, not medical advice.</p>
+            </nav>
+            <button
+              type="button"
+              className="more-sheet-item"
+              onClick={() => morph(() => setDisclosure(true))}
+            >
+              <span>What Meridian is, and is not</span>
+            </button>
+            <p className="more-sheet-note">Timing guidance, not medical advice.</p>
+          </>
+        )}
       </div>
-      <DisclosureSheet open={disclosure} onClose={() => setDisclosure(false)} />
     </>
   );
 }

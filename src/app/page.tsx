@@ -852,7 +852,7 @@ export default function Home() {
       if (e.code === "Escape") {
         if (assistant.open) morph(() => assistant.closeSheet());
         else if (setupOpen) morph(() => setSetupOpen(false));
-        else if (agentDrawerOpen) setAgentDrawerOpen(false);
+        else if (agentDrawerOpen) morph(() => setAgentDrawerOpen(false));
         else if (routeOpen) setRouteOpen(false);
         else if (settingsOpen) morph(() => setSettingsOpen(false));
         else if (menuOpen) setMenuOpenedAt(null);
@@ -1373,12 +1373,17 @@ export default function Home() {
               <p className="more-sheet-label">Settings</p>
               <button
                 type="button"
-                className="more-sheet-item"
-                onClick={() => {
-                  setSettingsOpen(false);
-                  setDrawerUsed(true);
-                  setAgentDrawerOpen(true);
-                }}
+                className="more-sheet-item vt-morph-crew"
+                onClick={() =>
+                  // Round 18: the row grows into the crew panel — one view
+                  // transition carries the settings sheet closing and the
+                  // drawer opening together.
+                  morph(() => {
+                    setSettingsOpen(false);
+                    setDrawerUsed(true);
+                    setAgentDrawerOpen(true);
+                  })
+                }
               >
                 <span>Activity log</span>
                 <small>everything the crew did, in order</small>
@@ -1425,11 +1430,14 @@ export default function Home() {
               <p className="more-sheet-label">About</p>
               <button
                 type="button"
-                className="more-sheet-item"
-                onClick={() => {
-                  setSettingsOpen(false);
-                  setDisclosureOpen(true);
-                }}
+                className="more-sheet-item vt-morph-disclosure"
+                onClick={() =>
+                  // Round 18: the row grows into the disclosure panel.
+                  morph(() => {
+                    setSettingsOpen(false);
+                    setDisclosureOpen(true);
+                  })
+                }
               >
                 <span>What Meridian is, and is not</span>
                 <small>timing guidance, not medical advice</small>
@@ -1649,7 +1657,7 @@ export default function Home() {
               />
               {routeOpen && (
                 <div style={{ marginTop: 8 }}>
-                  <div className="card" style={{ padding: "12px 14px", marginBottom: 10 }}>
+                  <div className="card rise" style={{ padding: "12px 14px", marginBottom: 10 }}>
                     <b style={{ fontSize: "12px", color: "var(--m-text)" }}>Paste your booking</b>
                     <textarea
                       value={bookingText}
@@ -2060,7 +2068,7 @@ export default function Home() {
 
       {drawerUsed && <AgentDrawer
         open={agentDrawerOpen}
-        onClose={() => setAgentDrawerOpen(false)}
+        onClose={() => morph(() => setAgentDrawerOpen(false))}
         entries={entries}
         events={ledgerEvents(run)}
         running={run.phase === "running"}
@@ -2069,7 +2077,11 @@ export default function Home() {
         lockedDays={run.locked.size}
       />}
 
-      <DisclosureSheet open={disclosureOpen} onClose={() => setDisclosureOpen(false)} />
+      <DisclosureSheet
+        open={disclosureOpen}
+        onClose={() => morph(() => setDisclosureOpen(false))}
+        panelClassName="vt-morph-disclosure"
+      />
       <BottomNav />
     </div>
   );

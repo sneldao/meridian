@@ -43,7 +43,7 @@ export function AgentDrawer({
       aria-label="Behind the scenes AI crew activity"
     >
       <div
-        className="flex h-full w-full max-w-lg flex-col border-l border-line bg-ink-2 shadow-2xl"
+        className="vt-morph-crew flex h-full w-full max-w-lg flex-col border-l border-line bg-ink-2 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

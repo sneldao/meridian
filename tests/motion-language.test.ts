@@ -146,6 +146,77 @@ describe("motion language — the five rules are declared", () => {
   });
 });
 
+describe("motion language — round 18 closed the drawer critique", () => {
+  it("1 · the crew panel morphs out of its trigger", () => {
+    expect(css).toContain(".vt-morph-crew { view-transition-name: morph-crew; }");
+    expect(css).toContain("::view-transition-group(morph-crew),");
+    const drawer = fs.readFileSync(
+      path.join(import.meta.dir, "..", "src", "components", "AgentDrawer.tsx"),
+      "utf8",
+    );
+    // The panel always carries the name — it only mounts while open, so the
+    // name can never double-book against the trigger.
+    expect(drawer).toContain("vt-morph-crew");
+    const home = fs.readFileSync(path.join(import.meta.dir, "..", "src", "app", "page.tsx"), "utf8");
+    expect(home).toContain("more-sheet-item vt-morph-crew");
+  });
+
+  it("2 · the disclosure never stacks a sheet on a sheet", () => {
+    const sheet = fs.readFileSync(
+      path.join(import.meta.dir, "..", "src", "components", "MoreSheet.tsx"),
+      "utf8",
+    );
+    // The More sheet swaps its own body in place…
+    expect(sheet).toContain("DisclosureBody");
+    expect(sheet).not.toContain("<DisclosureSheet");
+    // …while the settings sheet and the shift page morph their rows into
+    // the shared disclosure panel.
+    expect(css).toContain(".vt-morph-disclosure { view-transition-name: morph-disclosure; }");
+    const disclosure = fs.readFileSync(
+      path.join(import.meta.dir, "..", "src", "components", "dial", "DisclosureSheet.tsx"),
+      "utf8",
+    );
+    expect(disclosure).toContain("panelClassName");
+    expect(disclosure).toContain("export function DisclosureBody()");
+    const shift = fs.readFileSync(
+      path.join(import.meta.dir, "..", "src", "app", "shift", "page.tsx"),
+      "utf8",
+    );
+    // The shift trigger keeps the name only while the panel is gone.
+    expect(shift).toContain('sheetOpen ? "" : " vt-morph-disclosure"');
+  });
+
+  it("3 · expanders breathe in instead of materializing", () => {
+    const feed = fs.readFileSync(
+      path.join(import.meta.dir, "..", "src", "components", "NudgeFeedScreen.tsx"),
+      "utf8",
+    );
+    expect(feed).toContain('className="drawer rise"');
+    expect(feed).toContain('className="drawer tl-drawer rise"');
+    const home = fs.readFileSync(path.join(import.meta.dir, "..", "src", "app", "page.tsx"), "utf8");
+    expect(home).toContain('className="card rise"');
+  });
+
+  it("4 · the feed reads as a sequence, not a wall", () => {
+    const rule = block(".tl-rows > .tl-row");
+    expect(rule).toContain("tl-enter");
+    expect(rule).toContain("animation-timeline: view()");
+    const enter = block("@keyframes tl-enter");
+    // The translate property keeps the swipe gesture's inline transform
+    // untouched — a transform here would fight it.
+    expect(enter).toContain("translate: 0 14px");
+    expect(enter).not.toContain("transform");
+    // Guarded like the deck: the nearest support + motion guards wrap it.
+    const ruleIdx = css.indexOf(".tl-rows > .tl-row");
+    const supportsIdx = css.lastIndexOf("@supports (animation-timeline: view())", ruleIdx);
+    expect(supportsIdx).toBeGreaterThan(0);
+    expect(ruleIdx).toBeGreaterThan(supportsIdx);
+    expect(
+      css.slice(supportsIdx, ruleIdx).includes("@media (prefers-reduced-motion: no-preference)"),
+    ).toBe(true);
+  });
+});
+
 describe("motion language — the hooks and markup exist", () => {
   it("the morph wrapper degrades instead of failing", async () => {
     const { useMorphTransition } = await import("../src/lib/use-morph-transition");

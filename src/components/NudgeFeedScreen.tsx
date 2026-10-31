@@ -1040,7 +1040,7 @@ export function NudgeFeedScreen({
                   <p className="s">{heroNudge.actionSummary}</p>
                 </div>
                   {expandAllWhy || heroWhyId === heroNudge.id ? (
-                    <div className="drawer">
+                    <div className="drawer rise">
                       <b>Why this helps</b>
                       <p>{heroNudge.whyItHelps}</p>
                     </div>
@@ -1885,7 +1885,7 @@ export function NudgeFeedScreen({
                   </span>
                 </h3>
                 {isOpen && (
-                  <div className="drawer tl-drawer">
+                  <div className="drawer tl-drawer rise">
                     <p>{step.actionSummary}</p>
                     <p>{step.whyItHelps}</p>
                     <button

@@ -119,15 +119,22 @@ cubic-bezier(0.22, 1, 0.36, 1) · `--ease-settle` cubic-bezier(0.16, 1, 0.3, 1)
   payoff's disc share `view-transition-name: dawn`, so the object the hero
   counted down to is the object that lands. Support is progressive: without
   the API, pages swap and the sweep still runs.
-- Motion language (round 16): **light moves, things morph, nothing slides up
-  from nowhere.** Panels do not arrive from off-screen; the element you
-  touched grows into the surface. Four rules carry it:
+- Motion language (round 16, completed round 18): **light moves, things
+  morph, nothing slides up from nowhere.** Panels do not arrive from
+  off-screen; the element you touched grows into the surface. The rules:
   - *Surface morphs.* Same-document view transitions pair each trigger with
     its panel under one `view-transition-name` (`morph-more`, `morph-settings`,
-    `morph-trip`, `morph-voice`): the More tab becomes the More sheet, the
+    `morph-trip`, `morph-voice`, and — round 18 — `morph-crew` and
+    `morph-disclosure`): the More tab becomes the More sheet, the
     Settings row becomes its sheet, the trip chip becomes the trip editor,
-    the Voice row becomes the assistant. Only one element holds a name at a
-    time; without the API the existing sheet motion is the fallback.
+    the Voice row becomes the assistant, the Activity-log row becomes the
+    crew panel, and the disclosure rows become the disclosure panel. Only
+    one element holds a name at a time; without the API the existing sheet
+    motion is the fallback.
+  - *No sheet stacks a sheet (round 18).* Inside the More sheet the
+    disclosure swaps the sheet's own body in place — the panel keeps its
+    morph name, the content crossfades inside it, and Escape backs out one
+    layer at a time.
   - *The dawn reveal.* Typed route changes wipe like light: `nav-forward`
     unveils the incoming page from the horizon up (`clip-path: inset` on
     `::view-transition-new(root)`) while the outgoing page settles; `nav-back`
@@ -144,6 +151,13 @@ cubic-bezier(0.22, 1, 0.36, 1) · `--ease-settle` cubic-bezier(0.16, 1, 0.3, 1)
     `position: sticky` and the covered card recedes on scroll where
     `animation-timeline` is supported. Riffling through trips, not scrolling
     a table.
+  - *Expanders breathe in (round 18).* Evidence "why" blocks and inline
+    cards (the booking paste) enter with the `rise` keyframe — opacity +
+    transform — instead of materializing.
+  - *Feed cadence (round 18).* The Today timeline is a sequence, not a
+    wall: `.tl-rows > .tl-row` reveals on scroll via `animation-timeline:
+    view()`, animated with the `translate` property so the swipe gesture's
+    inline `transform` is never fought. Preview strips stay static.
 - Page entrance: the terminator hairline sweeps once per navigation; a
   first-visit-only streak (remembered in `meridian:visited`) crosses the
   stage once per browser.

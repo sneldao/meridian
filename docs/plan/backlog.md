@@ -1148,3 +1148,29 @@ self-closing. Three items:
 into the UI; the outcome reminder only exists where a feed does (push needs a
 subscription, which needs a feed); the visual suite lives in `visual/` —
 deliberately outside `tests/` so `bun test` never loads the Playwright API.
+
+## Round 18 — Closing the drawer critique (2026-11-01)
+
+Round 16 morphed the four signature surfaces; an audit found the leftovers:
+the AgentDrawer (the most-visible overlay during a live run) still popped in
+as a classic right-side drawer, evidence expanders materialized without
+motion, the disclosure stacked a sheet on a sheet, and the Today feed read
+as a wall of identical blocks. All four are now inside the motion language:
+
+1. **The crew panel morphs.** Activity-log row and panel share
+   `morph-crew`; opening runs both surface changes (settings closes, panel
+   opens) inside one view transition. Closing without an anchor degrades to
+   a quiet fade — still no drawer slam.
+2. **The disclosure never stacks.** In the More sheet it swaps the sheet's
+   body in place (`DisclosureBody` extracted; Escape backs out one layer at
+   a time). From the settings sheet and `/shift`, the trigger row morphs
+   into the shared panel (`morph-disclosure`); the shift trigger only holds
+   the name while the panel is gone.
+3. **Expanders breathe in.** The hero "why", the timeline drawers and the
+   booking-paste card enter with the existing `rise` keyframe.
+4. **Feed cadence.** Timeline rows reveal on scroll
+   (`animation-timeline: view()`, `translate` property so swipe gestures are
+   untouched), guarded by support + reduced motion, scoped to live rows.
+
+**Verification:** `tests/motion-language.test.ts` locks all four; 831 tests
+green; browser-verified morph pairs and the in-place swap.

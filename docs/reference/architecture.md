@@ -428,9 +428,9 @@ scripts/         replay-check, provider-check, smoke (night + morning),
 docs/            this documentation
 ```
 
-## Motion language (round 16)
+## Motion language (rounds 16–18)
 
-Light moves, things morph, nothing slides up from nowhere (design.md). Five
+Light moves, things morph, nothing slides up from nowhere (design.md). The
 rules, all verified by `tests/motion-language.test.ts`:
 
 1. **Surface morphs.** The More tab, Settings row, Trip-settings row and
@@ -462,6 +462,18 @@ rules, all verified by `tests/motion-language.test.ts`:
    little lower than the last) so scrolling riffls through journeys; the
    covered card recedes behind a `view()` scroll-driven animation where
    supported.
+6. **No drawers remain (round 18).** The crew activity panel grows out of
+   the Activity-log row (`morph-crew`) — one view transition carries the
+   settings sheet closing and the panel opening. The disclosure never
+   stacks: inside the More sheet it swaps the panel's body in place
+   (`DisclosureBody`, Escape backs out one layer at a time); from the
+   settings sheet and `/shift` the trigger row morphs into the shared panel
+   (`morph-disclosure`, held by the trigger only while the panel is gone).
+   Evidence expanders and the booking card enter with the `rise` keyframe.
+7. **Feed cadence (round 18).** Today's timeline rows reveal on scroll via
+   `animation-timeline: view()` on `.tl-rows > .tl-row`, animated with the
+   `translate` property so the swipe gesture's inline `transform` is never
+   fought; preview strips are out of scope.
 
 ## Observability & the closed loop (round 17)
 

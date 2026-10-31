@@ -16,9 +16,54 @@ import { useFocusTrap } from "@/lib/a11y";
 export interface DisclosureSheetProps {
   open: boolean;
   onClose: () => void;
+  /** Round 18: the trigger that opens the sheet can share a morph name
+   *  with the panel, so it grows into the disclosure instead of the
+   *  disclosure popping over it. */
+  panelClassName?: string;
 }
 
-export function DisclosureSheet({ open, onClose }: DisclosureSheetProps) {
+/** The disclosure's words, without its chrome — shared by the sheet form and
+ *  the in-place swap inside the More sheet (round 18: a sheet never stacks
+ *  another sheet). */
+export function DisclosureBody() {
+  return (
+    <>
+      <h3 className="dial-title">What Meridian is, and is not</h3>
+      <div className="dac-evidence">
+          <p>
+            <b>What it is.</b> A deterministic circadian timing planner. It reads
+            your sleep baseline, your calendar and the literature, and places
+            the light and the dark so your body clock has somewhere to go. Every
+            number it shows is computed by a model, and the model is the same
+            one the crew&apos;s plans are judged against.
+          </p>
+          <p>
+            <b>What it is not.</b> Not a medical device. It does not diagnose
+            anything, it does not measure your melatonin phase directly, and it
+            never recommends a supplement, a medicine or a dose — the crew
+            advises on <i>when</i>, never on <i>how much</i>. It cannot tell you
+            whether you are fit to drive.
+          </p>
+          <p>
+            <b>What the papers mean.</b> The studies behind each step support
+            the mechanism. They do not validate Meridian&apos;s own arithmetic,
+            and the number on the dial is an estimate with an uncertainty band,
+            not a measurement.
+          </p>
+          <p>
+            <b>What happens to your data.</b> Your trip, calendar and answers are
+            kept in this browser so your plan is there when you come back. If
+            the deployment has persistence configured, the plan and your
+            check-ins are also stored in the project&apos;s database. The
+            wearable import is simulated in this build — nothing is read from a
+            wearable.
+          </p>
+        </div>
+    </>
+  );
+}
+
+export function DisclosureSheet({ open, onClose, panelClassName }: DisclosureSheetProps) {
   const panelRef = useRef<HTMLDivElement | null>(null);
   useFocusTrap(panelRef, open);
 
@@ -52,40 +97,10 @@ export function DisclosureSheet({ open, onClose }: DisclosureSheetProps) {
         role="dialog"
         aria-modal="true"
         aria-label="What Meridian is, and is not"
-        className="dial"
+        className={`dial${panelClassName ? ` ${panelClassName}` : ""}`}
         style={{ maxWidth: 520, width: "100%", maxHeight: "85vh", overflow: "auto" }}
       >
-        <h3 className="dial-title">What Meridian is, and is not</h3>
-        <div className="dac-evidence">
-          <p>
-            <b>What it is.</b> A deterministic circadian timing planner. It reads
-            your sleep baseline, your calendar and the literature, and places
-            the light and the dark so your body clock has somewhere to go. Every
-            number it shows is computed by a model, and the model is the same
-            one the crew&apos;s plans are judged against.
-          </p>
-          <p>
-            <b>What it is not.</b> Not a medical device. It does not diagnose
-            anything, it does not measure your melatonin phase directly, and it
-            never recommends a supplement, a medicine or a dose — the crew
-            advises on <i>when</i>, never on <i>how much</i>. It cannot tell you
-            whether you are fit to drive.
-          </p>
-          <p>
-            <b>What the papers mean.</b> The studies behind each step support
-            the mechanism. They do not validate Meridian&apos;s own arithmetic,
-            and the number on the dial is an estimate with an uncertainty band,
-            not a measurement.
-          </p>
-          <p>
-            <b>What happens to your data.</b> Your trip, calendar and answers are
-            kept in this browser so your plan is there when you come back. If
-            the deployment has persistence configured, the plan and your
-            check-ins are also stored in the project&apos;s database. The
-            wearable import is simulated in this build — nothing is read from a
-            wearable.
-          </p>
-        </div>
+        <DisclosureBody />
         <div className="dial-actions">
           <button type="button" className="dial-btn" onClick={onClose}>
             Close

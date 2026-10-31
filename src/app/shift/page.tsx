@@ -13,6 +13,7 @@
 // computed from it.
 
 import { useState } from "react";
+import { useMorphTransition } from "@/lib/use-morph-transition";
 import Link from "next/link";
 import { ShiftScreen } from "@/components/dial/ShiftScreen";
 import { DisclosureSheet } from "@/components/dial/DisclosureSheet";
@@ -21,6 +22,7 @@ import { MoreNav } from "@/components/MoreSheet";
 
 export default function ShiftPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
+  const morph = useMorphTransition();
 
   return (
     <main className="root">
@@ -35,8 +37,8 @@ export default function ShiftPage() {
             </Link>
             <button
               type="button"
-              className="dial-btn"
-              onClick={() => setSheetOpen(true)}
+              className={`dial-btn${sheetOpen ? "" : " vt-morph-disclosure"}`}
+              onClick={() => morph(() => setSheetOpen(true))}
             >
               What Meridian is, and is not
             </button>
@@ -49,7 +51,11 @@ export default function ShiftPage() {
         </p>
       </div>
       <ShiftScreen />
-      <DisclosureSheet open={sheetOpen} onClose={() => setSheetOpen(false)} />
+      <DisclosureSheet
+        open={sheetOpen}
+        onClose={() => morph(() => setSheetOpen(false))}
+        panelClassName="vt-morph-disclosure"
+      />
       <BottomNav />
     </main>
   );
