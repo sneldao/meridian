@@ -108,6 +108,30 @@ function clockAt(offsetMin: number, now = new Date()): string {
   return fmtMin(now.getUTCHours() * 60 + now.getUTCMinutes() + offsetMin);
 }
 
+/** Ambient grounding for a disoriented traveller: home, here, and where the
+ *  body clock currently sits — origin time plus the shift the locked days
+ *  have actually moved it (no locked days → body ≈ home). */
+function TripClocks({ trip, locked }: { trip: Trip; locked: ReadonlyMap<string, DayPlan> }) {
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 30_000);
+    return () => clearInterval(id);
+  }, []);
+  const now = new Date();
+  const moved = [...locked.values()].reduce((s, d) => s + d.shiftMin, 0);
+  const bodyMin = now.getUTCHours() * 60 + now.getUTCMinutes() + trip.origin.utcOffsetMin + moved;
+  return (
+    <p
+      className="m-0 mb-3 font-mono2 text-2xs text-dim tracking-wide"
+      title="home · destination · estimated body-clock phase"
+    >
+      🏠 {trip.origin.code} {clockAt(trip.origin.utcOffsetMin, now)}&ensp;·&ensp;
+      ✈ {trip.destination.code} {clockAt(trip.destination.utcOffsetMin, now)}&ensp;·&ensp;
+      🧬 body ~{fmtMin(bodyMin)}
+    </p>
+  );
+}
+
 /** The day Home should open on: today when the trip spans it, else the first
  *  pre-flight day, else the first day. Used at fetch time and again when a
  *  run finishes — while it runs, the day pills follow the crew's locks. */
@@ -1506,6 +1530,7 @@ export default function Home() {
             </div>
 
             <div ref={guideRef} className="reading">
+              {trip && <TripClocks trip={trip} locked={effectiveLocked} />}
               <NudgeFeedScreen
                 trip={trip}
                 phase={effectivePhase}
