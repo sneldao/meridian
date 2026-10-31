@@ -117,8 +117,9 @@ when a `solverDraft` is supplied, writes `evidence.placedBy` /
 or "planner moved +30m" per step rather than only per day.
 
 Errors are `recoverable: true` where the run can continue (e.g. planner
-submitted nothing → `continue`). A provider-level throw mid-run retries once on
-`AGENT_PROVIDER_FALLBACK`, then drains the replay transcript — see
+submitted nothing → `continue`). A provider-level throw mid-run retries the
+whole run on each `AGENT_PROVIDER_FALLBACK` entry in order, then drains the
+replay transcript — see
 [providers.md](providers.md).
 
 The voice layer is a consumer of the same stream: `agent_token` deltas are

@@ -22,7 +22,7 @@
 // accessible way to read a number, and the numbers are the point.
 
 import { useId, useState } from "react";
-import { fmtMin } from "@/domain/circadian";
+import { fmtMin, circadianAlignmentScore } from "@/domain/circadian";
 import { getEvidenceForKind, type EpistemicTag } from "@/domain/evidence";
 import { type MascotTone } from "@/domain/mascot";
 import { wrapClockMin } from "@/domain/misalignment";
@@ -188,6 +188,7 @@ export function CircadianDial(props: CircadianDialProps) {
   const bandStart = estimatedBody.startMin - uncertaintyHalfWidthMin;
   const bandEnd = estimatedBody.endMin + uncertaintyHalfWidthMin;
   const bandHours = `±${(uncertaintyHalfWidthMin / 60).toFixed(1)}h`;
+  const cas = circadianAlignmentScore(plannedSleep.startMin, plannedSleep.endMin, estimatedBody.endMin);
 
   const description = [
     `24-hour dial for ${dayLabel}, ${mode === "TRIP" ? "travel" : "shift"} mode.`,
@@ -233,6 +234,9 @@ export function CircadianDial(props: CircadianDialProps) {
           <span className="dial-sub">
             {" "}
             ({misalignmentLowHours.toFixed(1)}–{misalignmentHighHours.toFixed(1)}h, {epistemicTag.toLowerCase()})
+          </span>
+          <span className="dial-cas" title="Circadian Alignment Score: percentage of sleep inside biological gate">
+            CAS {cas}%
           </span>
         </p>
       </div>
@@ -383,6 +387,10 @@ export function CircadianDial(props: CircadianDialProps) {
               ))}
           </div>
         </div>
+      </div>
+
+      <div className="dial-cas" aria-label={`Circadian alignment score ${cas}%`}>
+        CAS {cas}% · aligned sleep
       </div>
 
       {asList && (

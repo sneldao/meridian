@@ -16,11 +16,12 @@ One runtime (`src/agents/runtime.ts`), four model backends selected by
 
 ## `AGENT_PROVIDER_FALLBACK`
 
-One live provider name (`featherless` / `nebius` / `anthropic`). If the primary
-crew run throws, `runCrew` emits a recoverable `error` event and retries the
-whole run once on the fallback before draining the replay transcript — the
-demo never dies on stage. Ignored when unset, invalid, or the same as the
-primary. The chain is `AGENT_PROVIDER` → `AGENT_PROVIDER_FALLBACK` → replay;
+Comma-separated live provider names (`featherless` / `nebius` / `anthropic`).
+If the primary crew run throws, `runCrew` emits a recoverable `error` event
+and retries the whole run on each fallback in order before draining the
+replay transcript — the demo never dies on stage. Unknown names, duplicates
+and the primary itself are dropped. The chain is `AGENT_PROVIDER` → each
+`AGENT_PROVIDER_FALLBACK` entry in order → replay;
 each `orchestrate` emits `run_start` with the provider actually in use, and
 the artifacts record the provider that finished the run.
 
@@ -63,7 +64,7 @@ the provider, forces one tool call, prints the round-trip.
 |---|---|
 | `FEATHERLESS_BASE_URL` | Default `https://api.featherless.ai/v1` |
 | `NEBIUS_BASE_URL` | Default `https://api.tokenfactory.nebius.com/v1` |
-| `AGENT_PROVIDER_FALLBACK` | One live provider retried once before replay — see above |
+| `AGENT_PROVIDER_FALLBACK` | Comma-separated live providers retried in order before replay — see above |
 | `FIRECRAWL_API_KEY` | Optional second science provider. Chain: ScienceMadeReadable (free, no key) → Firecrawl → verified static citations |
 | `TAVILY_API_KEY` | Live web search — gives Jun a `searchWeb` tool (and MCP `search_web`). Hits inform the read; never enter the citation set |
 | `QLOO_API_KEY` · `QLOO_BASE_URL` | Destination taste for Otto via `destinationTaste` (and MCP `destination_taste`). Hackathon keys only work against `hackathon.api.qloo.com` with the `X-Api-Key` header |

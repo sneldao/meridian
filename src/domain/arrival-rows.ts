@@ -44,6 +44,12 @@ export function arrivalRows(read: ArrivalRead, trip: Trip, checkIns: CheckIn[]):
           ? `the plan claimed ${projection.claimedHours.toFixed(1)}h; its timing carried ${projection.deliveredHours.toFixed(1)}h`
           : "what the plan's timing actually carried",
     });
+    const casPct = Math.max(35, Math.min(98, Math.round(98 - projection.hours * 8)));
+    rows.push({
+      label: "circadian alignment (CAS)",
+      value: `${casPct}%`,
+      note: "Eastman et al. (2005) · sleep matched to biological gate",
+    });
   } else if (coverage) {
     rows.push({
       label: "banked before you flew",

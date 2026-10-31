@@ -16,14 +16,32 @@ export function providerKind(): ProviderKind {
   return "replay";
 }
 
-// Secondary live provider. If the primary crew run throws, runCrew retries the
-// whole run once on this provider before draining the replay transcript. Ignored
-// when unset, invalid, or identical to the primary — replay is always the end
-// of the chain.
+// Secondary live provider(s). If the primary crew run throws, runCrew retries
+// the whole run on each configured fallback in order before draining the
+// replay transcript. Ignored when unset, invalid, or identical to the primary
+// — replay is always the end of the chain.
+/** The retry chain after the primary, in order. `AGENT_PROVIDER_FALLBACK`
+ *  accepts a comma-separated list — `nebius,featherless` means try nebius
+ *  first, then featherless — before the run drains the replay transcript.
+ *  Unknown names and the primary itself are dropped; duplicates collapse. */
+export function providerFallbacks(): ProviderKind[] {
+  const primary = providerKind();
+  const out: ProviderKind[] = [];
+  for (const raw of (process.env.AGENT_PROVIDER_FALLBACK ?? "").split(",")) {
+    const p = raw.trim();
+    if (
+      (p === "anthropic" || p === "featherless" || p === "nebius") &&
+      p !== primary &&
+      !out.includes(p)
+    ) {
+      out.push(p);
+    }
+  }
+  return out;
+}
+
 export function providerFallback(): ProviderKind | null {
-  const p = process.env.AGENT_PROVIDER_FALLBACK;
-  if (p !== "anthropic" && p !== "featherless" && p !== "nebius") return null;
-  return p === providerKind() ? null : p;
+  return providerFallbacks()[0] ?? null;
 }
 
 export function resolveModel(

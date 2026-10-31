@@ -2746,6 +2746,19 @@ select:focus-visible {
   .circadian-pill:hover {
     background: var(--m-border);
   }
+  .dial-cas {
+    display: inline-block;
+    margin-left: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: var(--m-tag);
+    border: 1px solid var(--m-border);
+    color: var(--m-accent);
+    vertical-align: middle;
+    font-family: var(--font-mono2);
+  }
   .right-now-card {
     display: flex;
     flex-direction: column;
@@ -5686,4 +5699,12 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   border: 1px solid var(--m-border, #ddd);
   font-size: 13px;
   line-height: 1.4;
+}
+
+.dial-cas {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--m-muted);
+  margin: 6px 0;
 }

@@ -32,7 +32,7 @@ import { loadMemory, memoryBriefWithCrossTrip, recordRun } from "@/domain/memory
 } from "@/domain/types";
 import { CREW, type CrewMember } from "./crew";
 import { handoffLines } from "./handoff";
-import { providerFallback, providerKind, resolveModel, type ProviderKind } from "./providers";
+import { providerFallbacks, providerKind, resolveModel, type ProviderKind } from "./providers";
 import { runReplay } from "./replay";
 import { runMorningReplay } from "./morning-replay";
 import { buildIcs, fetchCalendar, proposeMove } from "@/tools/calendar";
@@ -126,18 +126,24 @@ export function runCrew(opts?: {
             opts?.signal,
             opts?.interactive,
           );
-        const primary = providerKind();
-        try {
-          await run(primary);
-        } catch (err) {
-          const fallback = providerFallback();
-          if (!fallback) throw err;
-          emit({
-            type: "error",
-            message: `${primary} uplink failed: ${err instanceof Error ? err.message : String(err)} — retrying the crew on ${fallback}`,
-            recoverable: true,
-          });
-          await run(fallback);
+        // Retry chain: primary, then each configured fallback in order —
+        // an uplink failure emits a recoverable error per hop, and only
+        // when every live provider has thrown does the outer catch drain
+        // the replay transcript.
+        const chain = [providerKind(), ...providerFallbacks()];
+        for (let i = 0; i < chain.length; i++) {
+          try {
+            await run(chain[i]);
+            break;
+          } catch (err) {
+            const next = chain[i + 1];
+            if (!next) throw err;
+            emit({
+              type: "error",
+              message: `${chain[i]} uplink failed: ${err instanceof Error ? err.message : String(err)} — retrying the crew on ${next}`,
+              recoverable: true,
+            });
+          }
         }
       }
     } catch (err) {
