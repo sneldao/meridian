@@ -1598,7 +1598,8 @@ body {
    horizon band rising from the floor, the origin-blue ghost residue, and the
    blue-black ink — the var()s resolve per-element from the tokens above or
    the inline values stageSkyFor sets. */
-.hero, .clock-stage, .arr, .today-stage, .example-stage, .demo-root, .hero .hl .bg.term {
+.hero, .clock-stage, .arr, .today-stage, .example-stage, .demo-root, .hero .hl .bg.term,
+.ls-track[data-staged="yes"] .landing-stage {
   background:
     /* the horizon line — soft, elliptical, fades out at the ends */
     radial-gradient(ellipse 62% 2px at var(--stage-sun-x) calc(100% - var(--stage-horizon-h)),
@@ -7297,5 +7298,190 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   text-transform: uppercase;
   color: var(--color-sun-dest);
 }
+
+/* ---- round 30 · the landing is the flight -------------------------------
+ * One pinned ink stage scrubbed by scroll: the gap (two dawns held apart by
+ * the shift still owed) → the night before (the crew) → the crossing (the
+ * sun travels its arc, hours bank, the dawns close) → the first morning
+ * (the jagged takeover). Every figure is landingFrame() model output —
+ * sky, sun, dawn separation and face all recompute per frame.
+ *
+ * The track is plain height when unstaged: SSR and reduced motion render
+ * the same beats as stacked written sections — the performed stage
+ * degrades to its written read (Rule 2), never to a blank. Stage vars are
+ * written imperatively per scroll frame, so this stage stays OUT of the
+ * shared --stage-* transition block (a transition would lag the scrub). */
+.ls-track { position: relative; }
+.ls-track[data-staged="yes"] { height: 440vh; }
+@media (max-width: 720px) {
+  .ls-track[data-staged="yes"] { height: 380vh; }
+}
+.landing-stage { position: relative; }
+.ls-track[data-staged="yes"] .landing-stage {
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  overflow: hidden;
+  /* Ink-stage tokens, same override the demo root carries — stages are ink
+     in both themes, so the story never jumps palette. */
+  --m-bg: #0b0e16;
+  --m-card: rgba(255, 255, 255, 0.05);
+  --m-text: #c9d2e4;
+  --m-muted: #8b93a7;
+  --m-faint: #6b7590;
+  --m-border: rgba(255, 255, 255, 0.12);
+  --m-line: rgba(255, 255, 255, 0.12);
+  --m-accent: #e99a6f;
+  color: var(--m-text);
+  text-align: center;
+}
+
+/* The two dawns: the destination's line fixed, the body's ghost drawn in
+   origin blue at a separation that IS the owed ratio (--ls-gap). As hours
+   bank the ghost converges — the gap closing is the thing you watch. */
+.ls-dawns { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
+.ls-dawn {
+  position: absolute;
+  top: 10%;
+  bottom: 12%;
+  width: 2px;
+  border-radius: 2px;
+}
+.ls-dawn-dest {
+  left: 64%;
+  background: linear-gradient(180deg, transparent 0%, var(--stage-horizon) 50%, transparent 100%);
+}
+.ls-dawn-ghost {
+  left: calc(64% - var(--ls-gap, 1) * 34%);
+  background: linear-gradient(180deg, transparent 0%, var(--stage-origin) 50%, transparent 100%);
+}
+.ls-dawn-tag {
+  position: absolute;
+  bottom: 7%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--m-faint);
+  white-space: nowrap;
+}
+.ls-dawn-tag-dest { left: 64%; }
+.ls-dawn-tag-ghost { left: calc(64% - var(--ls-gap, 1) * 34%); }
+/* Westbound travel drags the body clock the other way — the ghost sits on
+   the far side of the destination line. */
+.ls-dawns.west .ls-dawn-ghost { left: calc(64% + var(--ls-gap, 1) * 34%); }
+.ls-dawns.west .ls-dawn-tag-ghost { left: calc(64% + var(--ls-gap, 1) * 34%); }
+.ls-track[data-staged="no"] .ls-dawns { display: none; }
+
+/* The dawn-drag (beat 0): explore the plan's honest range — full debt down
+   to what the plan carries. Bounds come from the frame, not the copy. */
+.ls-drag {
+  margin: 6px 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.ls-drag input[type="range"] { width: 220px; accent-color: var(--m-accent); }
+.ls-drag-note {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--m-faint);
+}
+
+/* The beats: absolute layers when staged (scroll owns their opacity and
+   visibility — hidden beats leave the tab order entirely), plain stacked
+   sections when not. */
+.ls-track[data-staged="yes"] .ls-beat {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+}
+.ls-track[data-staged="no"] .ls-beat { padding: 30px 0; }
+.ls-hero .landing-tease-title { color: var(--m-text); }
+.ls-pain { font-size: 17px; font-weight: 700; color: var(--m-text); margin: 0; }
+.ls-mech { font-size: 14px; color: var(--m-muted); margin: 0; max-width: 46ch; }
+.ls-cta-row {
+  display: flex;
+  gap: 10px;
+  margin: 10px 0 0;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.ls-cta-ghost {
+  display: inline-block;
+  padding: 12px 20px;
+  border-radius: 999px;
+  border: 1px solid var(--m-border);
+  color: var(--m-text);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.ls-moment {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--m-accent);
+  margin: 0;
+}
+.ls-caption { font-size: 12px; color: var(--m-faint); margin: 0; }
+.ls-crew .crew-perf { max-width: 560px; width: 100%; margin: 0 auto; text-align: left; }
+
+/* The crossing HUD — the written read of the crossing beat: both clocks
+   and the honest tally, pinned low so the sun owns the sky. */
+.ls-hud {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+}
+.ls-track[data-staged="yes"] .ls-hud {
+  position: absolute;
+  inset: auto 0 0 0;
+  z-index: 2;
+  padding: 18px 20px 22px;
+}
+.ls-track[data-staged="no"] .ls-hud { padding: 8px 0 26px; }
+.ls-hud-dial svg { width: 72px; height: 72px; display: block; }
+.ls-hud-nums { margin: 0; font-size: 14px; color: var(--m-text); text-align: left; }
+.ls-hud-nums .ls-moment { display: block; margin: 0 0 3px; }
+.ls-hud-nums b { font-weight: 800; }
+.ls-hud-owed { display: block; font-size: 12px; color: var(--m-muted); margin-top: 3px; }
+
+/* The morning takeover: clips in along the lookbook's jagged edge (the
+   polygon grammar at stage scale). A faint warm wash over the ink says the
+   light changed; the cards are the same honest artifacts, reseated. */
+.ls-track[data-staged="yes"] .ls-morning {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background:
+    linear-gradient(180deg, var(--stage-horizon) 0%, transparent 34%),
+    linear-gradient(180deg, rgba(12, 18, 32, 0.2) 0%, rgba(12, 18, 32, 0.55) 100%);
+}
+.ls-morning-inner { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.ls-morning-cards { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.ls-morning .ld-card { max-width: 260px; }
+
+/* The traveller rides above every beat — the object the hero promised is
+   the object the morning lands. Hidden in the stacked written read: the
+   faces return in the lookbook epilogue that follows the stage. */
+.landing-stage .stage-sun { z-index: 3; }
+.ls-track[data-staged="no"] .landing-stage .stage-sun { display: none; }
 
 

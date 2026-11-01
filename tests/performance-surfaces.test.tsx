@@ -54,15 +54,13 @@ describe("LightWindowPanel (SSR)", () => {
 describe("entry + selector (SSR)", () => {
   test("new copy, real CTA, sample buttons", () => {
     const h = renderToStaticMarkup(createElement(TripEntryScreen, { initialDate: "2026-05-10", onContinue: () => {}, onExploreExample: () => {}, onExploreScenario: () => {} }));
-    expect(h).toContain("Your 07:00 meeting in Tokyo is 23:00 body time.");
+    expect(h).toContain("Your turn.");
     expect(h).toContain("Arrive with a plan");
     expect(h).toContain("See my trip plan");
     expect(h).toContain("Try Miles");
     expect(h).toContain("Try Danny");
     expect(h).toContain("Try Sofia");
     expect(h).toContain("Imagined demo scenarios");
-    expect(h).toContain("Before the big moment");
-    expect(h).toContain("Between the commitments");
   });
   test("home entry resolves known/legacy/unknown example params", () => {
     const sp = (v: string) => new URLSearchParams(`example=${v}`);

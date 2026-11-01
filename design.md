@@ -703,6 +703,77 @@ fine-pointer hover guard), typecheck + lint + production build clean,
 browser checks — phone tap pin/unpin, desktop hover/pin/leave/keyboard,
 reduced-motion instant reveal, zero page errors.
 
+## Round 30 — The landing is the flight (2026-11-01)
+
+The tester feedback that ended the exhibit era: the landing read as a list
+of proof, not a journey — pain stated once then abandoned, the mechanism
+never said in plain words, no protagonist, no time axis. The fix is not
+better exhibits; it is one stage the visitor scrubs with their scroll.
+
+- **One pinned stage, scroll-scrubbed.** `LandingStage` pins a 100dvh ink
+  stage inside a 440vh track; `useScroll` progress is the only driver —
+  the page's own DawnScrubber law applied to the whole trip. The beats:
+  the gap (two dawn lines held apart by the owed ratio, the body's drawn
+  in origin blue) → D-5 · the night before (the crew performs) →
+  mid-crossing (the sun travels its modeled arc, the tally counts) → the
+  first morning (the jagged takeover, honestly scored). The lookbook
+  follows as the epilogue — the states you just flew through, free to
+  explore.
+- **Every figure is `landingFrame(journey, p)`** — one domain function
+  per frame: `stageSky`, the body-solar altitude (fixed at the meeting
+  instant, `LANDING_INSTANT`), the ghost separation and the sun-self read
+  all recompute from `owedMin` as banked hours ease in. Nothing is
+  tweened by hand: at p=0 the face *is* `sunSelfForBeat(stakes)`, at p=1
+  it *is* `sunSelfForBeat(payoff)` — locked by test, not by inspection.
+- **New vocabulary, written here first (the MOTION.md rule):**
+  - *The stage scrubs.* Scroll position maps to model state; reversing
+    scroll reverses the flight. Stage vars are written imperatively per
+    frame, so this stage stays out of the shared `--stage-*` transition
+    block — a transition would lag the scrub.
+  - *Smear rides velocity.* Scroll speed, not drag speed, stretches the
+    halo — the showreel's tempo law applied to a scrubbed page.
+  - *The takeover scales.* The lookbook's jagged clip-path edge now
+    crosses the whole stage to reveal the morning — same polygon grammar,
+    stage scale.
+  - *Hidden beats leave the tab order.* `visibility` follows each beat's
+    scroll window, so a faded beat is never focusable — opacity alone
+    was not enough.
+  - *The traveller is the constant.* The sun-self face rides above every
+    beat and is the object the hero promised and the morning lands.
+- **Copy surgery.** Pain said once (hero), mechanism said once (one plain
+  sentence), "moves it — or moves you" retired, the entry's story tiles
+  and demo-artifact tiles cut (the stage already proved them), the entry
+  headline stops restating the demo's pain and says "Your turn." until the
+  draft resolves into *their* gap. EverydayRhythm leaves the funnel —
+  below the form now.
+- **The stacked read stands.** Unstaged (SSR, reduced motion, no JS) the
+  same markup renders the beats as plain sections with the crew
+  transcript and both artifacts complete — `data-staged` flips only on
+  the client when motion is allowed. The sun and dawn lines hide; their
+  facts all have written carriers.
+- **Two ways in from beat 0:** "Start with your trip" anchors to
+  `#trip-entry` (the form is now the hero CTA's target — the page is
+  about the visitor's pain, not just the demo's), beside the demo link.
+- **The last act is theirs (phase 3).** `TripEntryScreen` reports the
+  resolved `RouteGapRead` + solver coverage upward; the stage replays the
+  same arc at the visitor's scale — their gap, their direction (west
+  draws the ghost on the far side), their destination's sky, and the
+  solver's own coverage as the banked cap. `RouteGapRead` carries
+  `signedShiftMin`/`destLat`/`destLon` so the body sun rises over *their*
+  route, not the demo's.
+- **The dawn-drag.** Beat 0 offers a range input over the ghost line:
+  the visitor may explore owedMin, but only inside the plan's honest
+  range — `[required − bankedCap, required]`, clamped in the domain, so
+  nobody can merge the dawns past what the plan actually carries. The
+  dawns, sun, sky and face all answer live through the same frame.
+
+Verification: 955 tests (landingFrame locks — endpoints equal the beats'
+own reads, visitor scaling/direction, drag bounded by the plan's range,
+banked monotonic, ghost never merges; SSR written-read + visitor-route
+completeness; 7 motion-language locks), typecheck + lint + production
+build clean, browser check — staged arms, all four beats perform with
+model values, zero console errors.
+
 ## Round 27–29 direction — the example becomes a performance (2026-11-01)
 
 Testing found the funnel's real leak: the shared link lands people on the

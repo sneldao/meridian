@@ -45,9 +45,9 @@ const TripEntryScreen = dynamic(
   () => import("@/components/TripEntryScreen").then((m) => m.TripEntryScreen),
 );
 import { HandoffBanner } from "@/components/HandoffBanner";
-import { LandingArtifacts } from "@/components/LandingArtifacts";
-import { LandingCrewStrip } from "@/components/LandingCrewStrip";
+import { LandingStage } from "@/components/LandingStage";
 import { LookbookOfStates } from "@/components/LookbookOfStates";
+import type { RouteGapRead } from "@/domain/route-gap";
 const AgentDrawer = dynamic(
   () => import("@/components/AgentDrawer").then((m) => m.AgentDrawer),
 );
@@ -173,6 +173,9 @@ export default function Home() {
   const [departureDate, setDepartureDate] = useState("");
   const [entry, setEntry] = useState<HomeEntry | null>(null);
   const [entryDraft, setEntryDraft] = useState<HomeRoute | null>(null);
+  // Round 30 phase 3: the route the visitor is typing, resolved — the
+  // landing stage plays their gap, their direction, their sky.
+  const [visitorInfo, setVisitorInfo] = useState<{ gap: RouteGapRead; covPct: number | null } | null>(null);
   /* ?via={shareId} — arrived from a shared card. The payload is fetched for
      the acknowledgment line and the route prefill; the id is kept so a
      committed trip counts back against the share (the funnel's bottom). */
@@ -1642,29 +1645,20 @@ export default function Home() {
         ) : entry.mode === "setup" ? (
           <div ref={setupRef}>
             <div className="landing-tease" role="region" aria-label="What you get">
-              <h2 className="landing-tease-title">Arrive better adjusted</h2>
-              <p className="landing-tease-sub">
-                Your 07:00 Tokyo meeting is 23:00 body time. Meridian moves it — or moves you.
-              </p>
-              {/* Round 28: the differentiator performs in the first viewport
-                  — agents speak, cues land, days lock with the gate's real
-                  verdict. Artifacts and the story link follow below. */}
-              <div className="landing-crew" aria-label="The crew at work">
-                <p className="landing-crew-eyebrow">The crew at work</p>
-                <LandingCrewStrip />
-              </div>
-              {/* Round 19: the landing shows the artifacts instead of naming
-                  them — dial, scorecard and passport render live from the
-                  same demo journey the beats tell. */}
-              <LandingArtifacts />
-              {/* Round 29: the lookbook — the traveller's meridian as a
-                  portrait gallery, five computed states, one face per hour. */}
+              {/* Round 30: the landing is the flight — one pinned stage
+                  scrubbed by scroll (the gap, the night before, the crossing,
+                  the first morning), every figure recomputed from the demo
+                  journey at that frame. Without motion it degrades to the
+                  written read: the same beats, stacked. */}
+              <LandingStage visitor={visitorInfo} />
+              {/* Round 29: the lookbook — the epilogue. The stage just flew
+                  through these five states; here is the face each one
+                  earned, free to explore. */}
               <LookbookOfStates />
               <Link href="/demo" className="landing-tease-cta" transitionTypes={["nav-forward"]}>
                 Watch the ninety-second example
               </Link>
             </div>
-            <EverydayRhythm />
             {via && (
               /* The shared card that brought them here, acknowledged with its
                  own numbers — receipt when there is one, route always. */
@@ -1684,7 +1678,11 @@ export default function Home() {
               onExploreExample={() => exploreExample()}
               onExploreScenario={(id) => exploreExample(id)}
               initialRoute={entryDraft}
+              onGapChange={(gap, covPct) => setVisitorInfo(gap ? { gap, covPct } : null)}
             />
+            {/* Round 30: the habit tracker leaves the funnel — after the
+                form, for the visitor who is still looking around. */}
+            <EverydayRhythm />
           </div>
         ) : entry.mode === "example" && entry.scenarioId ? (
           <ScenarioExperience

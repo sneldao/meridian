@@ -26,7 +26,7 @@ describe("TripEntryScreen (first use)", () => {
   );
 
   test("states the honest value proposition", () => {
-    expect(html).toContain("Your 07:00 meeting in Tokyo is 23:00 body time.");
+    expect(html).toContain("Your turn.");
     expect(html).toContain("Arrive with a plan");
     expect(html).toContain("Light, sleep and caffeine, timed to your route");
   });

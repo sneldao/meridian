@@ -25,6 +25,13 @@ export interface RouteGapRead {
   direction: "east" | "west";
   /** The shift the trip owes, in minutes (always ≥ 0). */
   gapMin: number;
+  /** Signed shift (east negative) — the landing stage needs the sign for
+   *  the body's sub-solar point, not just the magnitude. */
+  signedShiftMin: number;
+  /** Destination coordinates — the stage's body sun must rise over *their*
+   *  route, not the demo's. */
+  destLat: number;
+  destLon: number;
   /** The assumed destination-local moment. */
   localMin: number;
   /** What that moment reads as on the traveller's body clock. */
@@ -50,6 +57,9 @@ export function routeGapRead(route: {
       destName: trip.destination.name,
       direction: trip.direction,
       gapMin: Math.abs(trip.requiredShiftMin),
+      signedShiftMin: trip.requiredShiftMin,
+      destLat: trip.destination.lat,
+      destLon: trip.destination.lon,
       localMin: ASSUMED_MORNING_MIN,
       bodyMin,
     };

@@ -500,3 +500,69 @@ describe("motion language · round 29 — the lookbook of states", () => {
     expect(comp).toContain("hovered === win.id || pinned === win.id");
   });
 });
+
+describe("motion language · round 30 — the landing is the flight", () => {
+  const comp = fs.readFileSync(
+    path.join(import.meta.dir, "..", "src", "components", "LandingStage.tsx"),
+    "utf8",
+  );
+
+  it("the stage scrubs, it does not autoplay — one scroll progress drives all", () => {
+    expect(comp).toContain("useScroll");
+    expect(comp).toContain('offset: ["start start", "end end"]');
+    // Sticky stage inside a tall track — the deck pattern. (The selector
+    // text also opens the shared sky rule earlier in the file, so assert
+    // the rules' contents rather than a block() lookup.)
+    expect(css).toContain('.ls-track[data-staged="yes"] { height: 440vh');
+    expect(css).toContain("position: sticky");
+    expect(css).toContain("height: 100dvh");
+  });
+
+  it("the performance arms only when motion is allowed — stacked read otherwise", () => {
+    expect(comp).toContain("useReducedMotion");
+    expect(comp).toContain("data-staged");
+    // Unstaged CSS turns the beats back into plain sections.
+    expect(css).toContain('.ls-track[data-staged="no"] .ls-beat');
+    expect(css).toContain('.ls-track[data-staged="no"] .landing-stage .stage-sun');
+  });
+
+  it("the morning takeover reuses the lookbook's jagged edge — clip-path only", () => {
+    expect(comp).toContain("EDGE_DOWN");
+    expect(comp).toContain("EDGE_JAG");
+    expect(comp).toContain("EDGE_FULL");
+    expect(comp).toContain("clipPath: mornClip");
+    // No layout-property choreography anywhere in the stage.
+    expect(comp).not.toMatch(/(?:width|height|margin|padding|top|left)\s*:/);
+  });
+
+  it("hidden beats leave the tab order — visibility follows the window", () => {
+    expect(comp).toContain('"visible" : "hidden"');
+    expect(comp.match(/visibility: \w+Vis/g)?.length ?? 0).toBeGreaterThanOrEqual(4);
+  });
+
+  it("every stage figure is the model's — one frame function, vars imperative", () => {
+    expect(comp).toContain("landingFrame(j, p, visitorFrame");
+    expect(comp).toContain("STAGE_SKY_VARS");
+    expect(comp).toContain("STAGE_SUN_VARS");
+    expect(comp).toContain("--ls-gap");
+    const domain = fs.readFileSync(
+      path.join(import.meta.dir, "..", "src", "domain", "landing-stage.ts"),
+      "utf8",
+    );
+    // The face is recomputed through sunSelfRead, never lerped by hand.
+    expect(domain).toContain("sunSelfRead(");
+    expect(domain).not.toContain("lerp");
+  });
+
+  it("the smear rides scroll velocity — the showreel's tempo law", () => {
+    expect(comp).toContain("--stage-sun-smear");
+    const halo = block(".stage-sun-halo");
+    expect(halo).toContain("--stage-sun-smear");
+  });
+
+  it("the dawn separation is a real number — the owed ratio, labelled", () => {
+    expect(css).toContain("--ls-gap");
+    expect(comp).toContain("your body&apos;s dawn");
+    expect(comp).toContain("destination.name");
+  });
+});
