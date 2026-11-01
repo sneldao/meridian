@@ -1587,7 +1587,7 @@ body {
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .hero, .clock-stage, .arr, .example-stage, .demo-root {
+  .hero, .clock-stage, .arr, .demo-root {
     transition: --stage-horizon-h 320ms var(--ease-settle), --stage-horizon 320ms var(--ease-settle),
       --stage-horizon-floor 320ms var(--ease-settle), --stage-origin 320ms var(--ease-settle),
       --stage-ink-2 320ms var(--ease-settle);
@@ -1598,8 +1598,7 @@ body {
    horizon band rising from the floor, the origin-blue ghost residue, and the
    blue-black ink — the var()s resolve per-element from the tokens above or
    the inline values stageSkyFor sets. */
-.hero, .clock-stage, .arr, .today-stage, .example-stage, .demo-root, .hero .hl .bg.term,
-.ls-track[data-staged="yes"] .landing-stage {
+.hero, .clock-stage, .arr, .today-stage, .demo-root, .hero .hl .bg.term {
   background:
     /* the horizon line — soft, elliptical, fades out at the ends */
     radial-gradient(ellipse 62% 2px at var(--stage-sun-x) calc(100% - var(--stage-horizon-h)),
@@ -2732,6 +2731,13 @@ html[data-theme="night"] .evline-cite,
   --cat-cal: #4a6cb4;
   --cat-run: #4c7a5c;
   --cat-flight: #6e6459;
+  /* The crew's own hues (crew.ts colours, as tokens — the avatar glyphs
+     paint from these, never literals). */
+  --agent-analyst: #5eead4;
+  --agent-researcher: #c792ea;
+  --agent-planner: #f472b6;
+  --agent-evaluator: #7adfff;
+  --agent-negotiator: #818cf8;
 }
 html[data-theme="night"] {
   --m-bg: #0b0e16;
@@ -5834,8 +5840,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 @media (prefers-reduced-motion: no-preference) {
   @supports (animation-timeline: view()) {
     .scenario-days,
-    .scenario-route,
-    .day-scene {
+    .scenario-route {
       animation: scenario-rise var(--dur-settle) var(--ease-settle) both;
       animation-timeline: view();
       animation-range: entry 0% entry 40%;
@@ -5893,157 +5898,12 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 }
 @media(prefers-reduced-motion:reduce) {.sample-row button svg{transition:none;}.sample-row button:hover svg{transform:none;}}
 
-.day-scene {
-  margin: 24px 0;
-  border: 1px solid var(--color-line);
-  border-radius: 26px;
-  background: var(--color-ink-2);
-  color: var(--color-paper);
-  overflow: hidden;
-  min-width: 0;
-}
-.day-scene .perf-brief {
-  margin: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  padding: 26px 26px 18px;
-}
 .perf-event-summary {
   font-family: var(--font-mono2);
   font-size: 13px;
   line-height: 1.7;
   margin: 16px 0 0;
   color: var(--color-paper);
-}
-.day-scene-inspector {
-  padding: 0 26px 26px;
-}
-.day-scene-inspector > .entry-eyebrow {
-  color: var(--color-sun-dest);
-  margin: 20px 0 12px;
-}
-.day-scene-clocks {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px;
-  margin: 16px 0;
-}
-.day-scene-clocks strong {
-  font-family: var(--font-mono2);
-  font-size: clamp(1.8rem, 6vw, 3rem);
-  font-weight: 500;
-  letter-spacing: -0.04em;
-  display: block;
-}
-.day-scene-clocks span {
-  font-size: 12px;
-  color: #b8c0d0;
-  display: block;
-  margin-top: 6px;
-}
-.day-scene-clocks > div:last-child strong {
-  color: var(--color-ghost);
-}
-.day-scene-sky {
-  border-radius: 18px;
-  overflow: hidden;
-  position: relative;
-  isolation: isolate;
-}
-.day-scene-sky svg {
-  width: 100%;
-  height: auto;
-  display: block;
-  background: linear-gradient(transparent, rgba(7, 9, 15, 0.38));
-}
-.day-scene-sky text {
-  font-family: var(--font-mono2);
-  font-size: 12px;
-  fill: #fff;
-  paint-order: stroke;
-  stroke: rgba(7, 9, 15, 0.7);
-  stroke-width: 3px;
-}
-.day-scene-caption,
-.day-scene-foot {
-  font-size: 12px;
-  line-height: 1.7;
-  color: #b8c0d0;
-  margin: 12px 0;
-}
-.day-scene label {
-  font-size: 13px;
-  display: block;
-  margin-top: 18px;
-}
-.day-scene input[type="range"] {
-  width: 100%;
-  height: 44px;
-  accent-color: var(--color-sun-dest);
-  cursor: ew-resize;
-}
-.day-scene-controls,
-.day-scene-jumps {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 12px 0;
-}
-.day-scene button,
-.day-scene summary {
-  min-height: 44px;
-  font: inherit;
-  font-size: 12px;
-  color: var(--color-paper);
-  border: 1px solid #465064;
-  border-radius: 10px;
-  background: transparent;
-  padding: 10px 12px;
-  cursor: pointer;
-}
-.day-scene button:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-.day-scene button:hover:not(:disabled) {
-  background: var(--color-ink-3);
-}
-.day-scene :is(button, input, summary):focus-visible {
-  outline: 2px solid var(--color-sun-dest);
-  outline-offset: 3px;
-}
-.day-scene-lane {
-  display: grid;
-  grid-template-columns: 80px minmax(0, 1fr);
-  gap: 10px;
-  align-items: center;
-  font-size: 12px;
-  margin: 14px 0;
-}
-.day-scene-track {
-  height: 10px;
-  background: var(--color-line);
-  border-radius: 3px;
-  position: relative;
-}
-.day-scene-window {
-  position: absolute;
-  height: 100%;
-  border-radius: 3px;
-}
-.day-scene-window[data-kind="seek"] {
-  background: var(--color-sun-dest);
-}
-.day-scene-window[data-kind="reduce"] {
-  background: var(--color-sun-home);
-}
-.day-scene-window[data-kind="sleep"] {
-  background: var(--color-sleep);
-}
-.day-scene-jumps button[data-active="true"] {
-  background: #2f2835;
-  border-color: var(--color-ghost);
 }
 .day-scene-details {
   margin-top: 20px;
@@ -6054,26 +5914,6 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 }
 .day-scene-details .light-panel {
   margin: 12px 0 0;
-}
-@media (max-width: 480px) {
-  .day-scene .perf-brief {
-    padding: 20px 18px 14px;
-  }
-  .day-scene-inspector {
-    padding: 0 18px 20px;
-  }
-  .day-scene-lane {
-    grid-template-columns: 68px minmax(0, 1fr);
-  }
-  .day-scene-clocks {
-    gap: 12px;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .day-scene * {
-    animation: none !important;
-    transition: none !important;
-  }
 }
 
 .taste-tokens {
@@ -6212,12 +6052,6 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .day-card-dialog :is(button, input, summary):focus-visible {
   outline: 2px solid var(--color-focus);
   outline-offset: 3px;
-}
-.day-scene .day-card-dialog input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--color-terracotta);
-  flex-shrink: 0;
 }
 @media (max-width: 680px) {
   .day-card-layout {
@@ -6397,9 +6231,96 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   color: var(--m-text);
 }
 .demo-root .stage-sun { z-index: 0; }
+/* On small screens the moment-positioned sun can cross the crew and plan
+   rows. On every beat after the stakes it docks in the head region at a
+   reduced scale instead — the words keep the stage (round-31: characters
+   never cover words). */
+@media (max-width: 840px) {
+  /* The docked sun sits in the head row — room is reserved for it, so it
+     can never cover the wordmark, the subtitle or the skip link. The
+     eyebrow drops to its own line so the skip link never wraps. */
+  .demo-root .demo-head { flex-wrap: wrap; row-gap: 2px; }
+  .demo-root .demo-sub { order: 3; flex-basis: 100%; }
+  .demo-root .demo-skip { white-space: nowrap; }
+  .demo-root .demo:not([data-beat="stakes"]) .demo-head { padding-right: 64px; }
+  .demo-root .demo:not([data-beat="stakes"]) .stage-sun {
+    left: auto;
+    right: 8px;
+    top: 8px;
+    width: 9%;
+    min-width: 40px;
+    translate: 0 0;
+  }
+}
 .demo-root .demo-stage, .demo-root .demo-head, .demo-root .demo-foot, .demo-root .demo-footnote {
   position: relative;
   z-index: 1;
+}
+
+/* The night stage's depth — generated star planes and terrain silhouettes
+   in front of the painted sky, behind the words (fixed, so the backdrop
+   spans the viewport the shared sky already paints). Stars drift on
+   transform only, each plane at its own rate; the dawn wash and the ridge
+   rim ride the beat (later beats, more light); everything is aria-hidden
+   chrome — the written beats stay the read. */
+.demo-depth {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.demo-depth > * { position: absolute; }
+.demo-stars {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transition: opacity 900ms var(--ease-drift);
+}
+.demo-stars circle { fill: var(--color-paper); }
+.demo-stars-far { opacity: 0.5; }
+.demo-stars-mid { opacity: 0.7; }
+.demo-stars-near { opacity: 0.95; }
+.demo-depth[data-drift="no"] .demo-stars { animation-play-state: paused; }
+
+.demo-dawn {
+  inset: 0;
+  opacity: 0.14;
+  background: radial-gradient(ellipse 130% 55% at var(--stage-sun-x, 50%) 100%, var(--stage-horizon) 0%, transparent 68%);
+  transition: opacity 900ms var(--ease-drift);
+}
+
+.demo-ridge {
+  left: -3%;
+  width: 106%;
+  bottom: -1px;
+  transition: opacity 900ms var(--ease-drift), filter 900ms var(--ease-drift);
+}
+.demo-ridge-far { height: 26%; opacity: 0.8; }
+.demo-ridge-far path { fill: var(--color-ink-3); }
+.demo-ridge-near { height: 15%; opacity: 0.95; }
+.demo-ridge-near path { fill: var(--color-ink); }
+
+/* The beats shift the composition: dawn climbs and the stars thin as the
+   morning gets closer — the story arriving in the light, not the words. */
+.demo[data-beat="crew"] .demo-dawn { opacity: 0.2; }
+.demo[data-beat="plan"] .demo-dawn { opacity: 0.3; }
+.demo[data-beat="payoff"] .demo-dawn { opacity: 0.52; }
+.demo[data-beat="plan"] .demo-stars { opacity: 0.55; }
+.demo[data-beat="payoff"] .demo-stars { opacity: 0.3; }
+.demo[data-beat="plan"] .demo-ridge-far { filter: drop-shadow(0 -1px 3px rgba(255, 214, 150, 0.18)); }
+.demo[data-beat="payoff"] .demo-ridge-far { filter: drop-shadow(0 -2px 8px rgba(255, 214, 150, 0.4)); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .demo-stars-far { animation: demo-drift-far 190s ease-in-out infinite alternate; }
+  .demo-stars-mid { animation: demo-drift-mid 140s ease-in-out infinite alternate; }
+  .demo-stars-near { animation: demo-drift-near 105s ease-in-out infinite alternate; }
+}
+@keyframes demo-drift-far { from { transform: translateX(-1.2%); } to { transform: translateX(1.2%); } }
+@keyframes demo-drift-mid { from { transform: translateX(1.8%); } to { transform: translateX(-1.8%); } }
+@keyframes demo-drift-near { from { transform: translateX(-2.6%); } to { transform: translateX(2.6%); } }
+@media (prefers-reduced-motion: reduce) {
+  .demo-stars, .demo-dawn, .demo-ridge { transition: none; }
 }
 .demo {
   position: relative;
@@ -6948,93 +6869,6 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
  * shared ink-stage background rule (stageSky's luminance-clamped horizon),
  * and the sun's position rides --stage-sun-x/y/d — both written
  * imperatively, so the server paint is the ink default. */
-.example-stage {
-  position: relative;
-  isolation: isolate;
-  margin: 18px calc(-1 * (32px + var(--hero-out))) 0;
-  min-height: 380px;
-  border-radius: 0;
-  padding: 26px 20px 20px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  gap: 14px;
-  /* stage tokens follow .today-stage so chips and readouts stay legible */
-  --m-bg: #0b0e16;
-  --m-card: rgba(255, 255, 255, 0.05);
-  --m-text: #c9d2e4;
-  --m-muted: #8b93a7;
-  --m-faint: #6b7590;
-  --m-border: rgba(255, 255, 255, 0.12);
-  --m-accent: #e99a6f;
-  /* backdrop: the shared ink-stage background rule above (stageSky's
-     luminance-clamped horizon keeps the paper readout legible) */
-}
-@media (max-width: 480px) {
-  .example-stage { min-height: 320px; padding: 20px 14px 16px; }
-}
-.example-stage-read { position: relative; z-index: 2; text-align: center; }
-.example-stage-clocks {
-  margin: 0;
-  font-size: var(--text-lg);
-  color: var(--m-muted);
-}
-.example-stage-clocks b { color: var(--m-text); }
-.example-stage-sep { margin: 0 8px; color: var(--m-faint); }
-.example-stage-sun-line {
-  margin: 4px 0 0;
-  font-size: var(--text-sm);
-  color: var(--m-text);
-}
-.example-stage-window {
-  margin: 4px 0 0;
-  font-size: var(--text-sm);
-  color: var(--m-muted);
-}
-.example-stage-scrub { position: relative; z-index: 2; display: grid; gap: 8px; }
-.example-stage-scrub-label {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--m-accent);
-  text-align: center;
-}
-.example-stage-scrub input[type="range"] {
-  width: 100%;
-  accent-color: var(--color-sun-dest);
-  min-height: 44px;
-}
-.example-stage-stepper {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: center;
-}
-.example-stage-stepper button {
-  font: inherit;
-  font-size: 12px;
-  padding: 6px 10px;
-  min-height: 32px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--m-border);
-  background: var(--m-card);
-  color: var(--m-muted);
-  cursor: pointer;
-  transition: color var(--dur-glide) var(--ease-glide), border-color var(--dur-glide) var(--ease-glide);
-}
-.example-stage-stepper button[data-active="true"] {
-  color: var(--m-text);
-  border-color: var(--m-accent);
-}
-.example-stage-honesty {
-  position: relative;
-  z-index: 2;
-  margin: 0;
-  text-align: center;
-  font-size: 12px;
-  color: var(--m-faint);
-}
 
 /* The hero sun — disc, halo, smear. Position from the CSS vars; paint from
    the tokens. The smear decays with a transform-only transition, so a fast
@@ -7109,7 +6943,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .crew-perf-lines { display: grid; gap: 6px; }
 .crew-perf-line {
   margin: 0;
-  font-size: var(--text-sm);
+  font-size: 1rem;
   line-height: 1.5;
   color: var(--m-muted);
   opacity: 0;
@@ -7120,7 +6954,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .crew-perf-agent {
   display: inline-block;
   min-width: 44px;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -7129,10 +6963,10 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 }
 .crew-perf-role {
   display: inline-block;
-  font-size: 10px;
+  font-size: 13px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--m-faint);
+  color: var(--m-muted);
   margin-right: 8px;
 }
 .crew-perf-days { display: grid; gap: 6px; }
@@ -7153,7 +6987,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .crew-perf-day[data-phase="locked"] { opacity: 1; transform: none; }
 .crew-perf-day[data-phase="locked"] { border-color: var(--m-accent); }
 .crew-perf-day-label {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--m-text);
   font-family: var(--font-mono2);
@@ -7174,7 +7008,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .crew-perf-day[data-phase="draft"] .crew-perf-cue,
 .crew-perf-day[data-phase="locked"] .crew-perf-cue { opacity: 1; transform: none; }
 .crew-perf-stamp {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.06em;
   font-family: var(--font-mono2);
@@ -7186,12 +7020,12 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .crew-perf-stamp[data-pass="no"] { color: var(--color-fail); }
 .crew-perf-read {
   margin: 4px 0 0;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--m-muted);
 }
 .crew-perf-controls button {
   font: inherit;
-  font-size: 12px;
+  font-size: 13px;
   background: none;
   border: none;
   padding: 4px 0;
@@ -7202,11 +7036,19 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 }
 .crew-perf-controls { min-height: 28px; }
 /* The landing strip: tighter, quieter, no role tags. */
+.crew-perf-avatar { display: inline-block; vertical-align: -8px; margin-right: 8px; }
+.crew-perf-sr {
+  position: absolute;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
 .crew-perf-compact { gap: 8px; margin: 14px 0 0; }
-.crew-perf-compact .crew-perf-line { font-size: 12px; }
+.crew-perf-compact .crew-perf-line { font-size: 14px; }
 .crew-perf-compact .crew-perf-role { display: none; }
 .crew-perf-compact .crew-perf-day { padding: 5px 8px; }
-.crew-perf-compact .crew-perf-stamp { min-width: 54px; font-size: 10px; }
+.crew-perf-compact .crew-perf-stamp { min-width: 54px; font-size: 13px; }
 @media (prefers-reduced-motion: reduce) {
   .crew-perf-line, .crew-perf-day, .crew-perf-cue { opacity: 1; transform: none; }
 }
@@ -7218,86 +7060,6 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
  * written read (hour + caption) is the fact; the reveal is the enhancement.
  * The pane hides by default so no frame flashes before the choreography
  * arms. */
-.lookbook-wrap { margin: 24px 0 0; text-align: left; }
-.lookbook-eyebrow {
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--m-accent);
-  margin: 0 0 4px;
-}
-.lookbook-lede {
-  font-size: var(--text-sm);
-  color: var(--m-muted);
-  margin: 0 0 2px;
-}
-.lookbook {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 10px;
-  margin: 12px 0 0;
-}
-@media (max-width: 720px) {
-  .lookbook { grid-template-columns: repeat(2, 1fr); }
-  .lookbook .lookbook-window:last-child { grid-column: span 2; }
-}
-.lookbook-window {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-  min-height: 132px;
-  border: 1px solid var(--m-border);
-  border-radius: var(--radius-lg);
-  background: var(--m-card);
-  padding: 12px;
-  font: inherit;
-  text-align: left;
-  color: var(--m-text);
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.lookbook-window:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
-}
-.lookbook-when {
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--m-accent);
-}
-.lookbook-caption {
-  font-size: 12px;
-  line-height: 1.45;
-  color: var(--m-muted);
-}
-.lookbook-over {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  border-radius: inherit;
-  background: linear-gradient(180deg, var(--color-ink-2) 0%, var(--color-ink-3) 100%);
-  /* Hidden by default: the takeover is the only way in. The polygon matches
-     EDGE_DOWN's structure so GSAP interpolates point for point. */
-  clip-path: polygon(0% 102%, 14% 102%, 28% 102%, 42% 102%, 57% 102%, 71% 102%, 85% 102%, 100% 102%, 100% 102%, 0% 102%);
-}
-.lookbook-state {
-  margin: 0;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-sun-dest);
-}
 
 /* ---- round 30 · the landing is the flight -------------------------------
  * One pinned ink stage scrubbed by scroll: the gap (two dawns held apart by
@@ -7311,105 +7073,21 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
  * degrades to its written read (Rule 2), never to a blank. Stage vars are
  * written imperatively per scroll frame, so this stage stays OUT of the
  * shared --stage-* transition block (a transition would lag the scrub). */
-.ls-track { position: relative; }
-.ls-track[data-staged="yes"] { height: 440vh; }
-@media (max-width: 720px) {
-  .ls-track[data-staged="yes"] { height: 380vh; }
-}
-.landing-stage { position: relative; }
-.ls-track[data-staged="yes"] .landing-stage {
-  position: sticky;
-  top: 0;
-  height: 100dvh;
-  overflow: hidden;
-  /* Ink-stage tokens, same override the demo root carries — stages are ink
-     in both themes, so the story never jumps palette. */
-  --m-bg: #0b0e16;
-  --m-card: rgba(255, 255, 255, 0.05);
-  --m-text: #c9d2e4;
-  --m-muted: #8b93a7;
-  --m-faint: #6b7590;
-  --m-border: rgba(255, 255, 255, 0.12);
-  --m-line: rgba(255, 255, 255, 0.12);
-  --m-accent: #e99a6f;
-  color: var(--m-text);
-  text-align: center;
-}
 
 /* The two dawns: the destination's line fixed, the body's ghost drawn in
    origin blue at a separation that IS the owed ratio (--ls-gap). As hours
    bank the ghost converges — the gap closing is the thing you watch. */
-.ls-dawns { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
-.ls-dawn {
-  position: absolute;
-  top: 10%;
-  bottom: 12%;
-  width: 2px;
-  border-radius: 2px;
-}
-.ls-dawn-dest {
-  left: 64%;
-  background: linear-gradient(180deg, transparent 0%, var(--stage-horizon) 50%, transparent 100%);
-}
-.ls-dawn-ghost {
-  left: calc(64% - var(--ls-gap, 1) * 34%);
-  background: linear-gradient(180deg, transparent 0%, var(--stage-origin) 50%, transparent 100%);
-}
-.ls-dawn-tag {
-  position: absolute;
-  bottom: 7%;
-  transform: translateX(-50%);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--m-faint);
-  white-space: nowrap;
-}
-.ls-dawn-tag-dest { left: 64%; }
-.ls-dawn-tag-ghost { left: calc(64% - var(--ls-gap, 1) * 34%); }
 /* Westbound travel drags the body clock the other way — the ghost sits on
    the far side of the destination line. */
-.ls-dawns.west .ls-dawn-ghost { left: calc(64% + var(--ls-gap, 1) * 34%); }
-.ls-dawns.west .ls-dawn-tag-ghost { left: calc(64% + var(--ls-gap, 1) * 34%); }
-.ls-track[data-staged="no"] .ls-dawns { display: none; }
 
 /* The dawn-drag (beat 0): explore the plan's honest range — full debt down
    to what the plan carries. Bounds come from the frame, not the copy. */
-.ls-drag {
-  margin: 6px 0 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-}
-.ls-drag input[type="range"] { width: 220px; accent-color: var(--m-accent); }
-.ls-drag-note {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--m-faint);
-}
 
 /* The beats: absolute layers when staged (scroll owns their opacity and
    visibility — hidden beats leave the tab order entirely), plain stacked
    sections when not. */
-.ls-track[data-staged="yes"] .ls-beat {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 24px;
-}
-.ls-track[data-staged="no"] .ls-beat { padding: 30px 0; }
-.ls-hero .landing-tease-title { color: var(--m-text); }
 .ls-pain { font-size: 17px; font-weight: 700; color: var(--m-text); margin: 0; }
-.ls-mech { font-size: 14px; color: var(--m-muted); margin: 0; max-width: 46ch; }
+.ls-mech { font-size: 1rem; color: var(--m-muted); margin: 0; max-width: 46ch; }
 .ls-cta-row {
   display: flex;
   gap: 10px;
@@ -7427,61 +7105,781 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   font-weight: 700;
   text-decoration: none;
 }
-.ls-moment {
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--m-accent);
-  margin: 0;
-}
-.ls-caption { font-size: 12px; color: var(--m-faint); margin: 0; }
-.ls-crew .crew-perf { max-width: 560px; width: 100%; margin: 0 auto; text-align: left; }
-
 /* The crossing HUD — the written read of the crossing beat: both clocks
    and the honest tally, pinned low so the sun owns the sky. */
-.ls-hud {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 18px;
-}
-.ls-track[data-staged="yes"] .ls-hud {
-  position: absolute;
-  inset: auto 0 0 0;
-  z-index: 2;
-  padding: 18px 20px 22px;
-}
-.ls-track[data-staged="no"] .ls-hud { padding: 8px 0 26px; }
-.ls-hud-dial svg { width: 72px; height: 72px; display: block; }
-.ls-hud-nums { margin: 0; font-size: 14px; color: var(--m-text); text-align: left; }
-.ls-hud-nums .ls-moment { display: block; margin: 0 0 3px; }
-.ls-hud-nums b { font-weight: 800; }
-.ls-hud-owed { display: block; font-size: 12px; color: var(--m-muted); margin-top: 3px; }
 
 /* The morning takeover: clips in along the lookbook's jagged edge (the
    polygon grammar at stage scale). A faint warm wash over the ink says the
    light changed; the cards are the same honest artifacts, reseated. */
-.ls-track[data-staged="yes"] .ls-morning {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  background:
-    linear-gradient(180deg, var(--stage-horizon) 0%, transparent 34%),
-    linear-gradient(180deg, rgba(12, 18, 32, 0.2) 0%, rgba(12, 18, 32, 0.55) 100%);
-}
-.ls-morning-inner { display: flex; flex-direction: column; align-items: center; gap: 14px; }
-.ls-morning-cards { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
-.ls-morning .ld-card { max-width: 260px; }
-
 /* The traveller rides above every beat — the object the hero promised is
    the object the morning lands. Hidden in the stacked written read: the
    faces return in the lookbook epilogue that follows the stage. */
-.landing-stage .stage-sun { z-index: 3; }
-.ls-track[data-staged="no"] .landing-stage .stage-sun { display: none; }
 
 
+
+/* ---- round 31 · the crew as celestial bodies ---------------------------
+ * Five bounded glyphs — crescent, lensed star, crowned sun, eclipse eye,
+ * comet — each with six static poses CSS transitions between. Colours ride
+ * the --agent-* tokens; timing tokens give each member its own tempo.
+ * transform/opacity only; reduced motion keeps the poses and drops the
+ * travel between them. */
+.crew-avatar {
+  --crew-dur: var(--dur-settle);
+  --crew-ease: var(--ease-settle);
+  display: inline-block;
+  flex: none;
+  overflow: visible;
+}
+.crew-avatar-analyst { --crew-dur: 600ms; --crew-ease: var(--ease-drift); }
+.crew-avatar-researcher { --crew-dur: 300ms; --crew-ease: var(--ease-glide); }
+.crew-avatar-planner { --crew-dur: 240ms; --crew-ease: cubic-bezier(0.34, 1.56, 0.64, 1); }
+.crew-avatar-evaluator { --crew-dur: 450ms; --crew-ease: var(--ease-settle); }
+.crew-avatar-negotiator { --crew-dur: 180ms; --crew-ease: var(--ease-glide); }
+
+.crew-avatar .ca-body,
+.crew-avatar .ca-eye,
+.crew-avatar .ca-eye-arc,
+.crew-avatar .ca-rays,
+.crew-avatar .ca-lens,
+.crew-avatar .ca-corona,
+.crew-avatar .ca-scan,
+.crew-avatar .ca-tail,
+.crew-avatar .ca-glint,
+.crew-avatar .ca-fill,
+.crew-avatar .ca-spark,
+.crew-avatar .ca-gaze {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform var(--crew-dur) var(--crew-ease), opacity var(--crew-dur) var(--crew-ease);
+}
+.crew-avatar-analyst .ca-shape { fill: var(--agent-analyst); }
+.crew-avatar-researcher .ca-shape { fill: var(--agent-researcher); }
+.crew-avatar-planner .ca-shape { fill: var(--agent-planner); }
+.crew-avatar-negotiator .ca-shape { fill: var(--agent-negotiator); }
+.crew-avatar-negotiator .ca-tail { fill: var(--agent-negotiator); opacity: 0.55; }
+.crew-avatar-negotiator .ca-tail-2 { opacity: 0.4; }
+.crew-avatar-negotiator .ca-tail-3 { opacity: 0.3; }
+.crew-avatar-evaluator .ca-shape { fill: var(--color-ink); }
+.crew-avatar-evaluator .ca-corona {
+  fill: none;
+  stroke: var(--agent-evaluator);
+  stroke-width: 2.5;
+  opacity: 0.55;
+}
+.crew-avatar-evaluator .ca-iris-ring {
+  fill: none;
+  stroke: var(--agent-evaluator);
+  stroke-width: 1.6;
+  opacity: 0.9;
+}
+.crew-avatar .ca-ray {
+  stroke: var(--agent-planner);
+  stroke-width: 3;
+  stroke-linecap: square;
+}
+.crew-avatar .ca-eye { fill: var(--color-ink); }
+.crew-avatar-evaluator .ca-pupil { fill: var(--agent-evaluator); }
+.crew-avatar .ca-eye-arc {
+  fill: none;
+  stroke: var(--color-ink);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  opacity: 0;
+}
+.crew-avatar-evaluator .ca-eye-arc { stroke: var(--agent-evaluator); }
+.crew-avatar .ca-lens {
+  fill: none;
+  stroke: var(--color-ink);
+  stroke-width: 2.2;
+  opacity: 0.85;
+}
+.crew-avatar .ca-glint { fill: var(--color-paper); opacity: 0; }
+.crew-avatar .ca-scan {
+  stroke: var(--agent-evaluator);
+  stroke-width: 1.2;
+  opacity: 0;
+}
+
+/* The poses — each state a distinct static figure. */
+.crew-avatar[data-state="attentive"] .ca-body { transform: rotate(5deg) translateX(1px); }
+.crew-avatar[data-state="attentive"] .ca-eye { transform: scaleY(1.3); }
+.crew-avatar-planner[data-state="attentive"] .ca-rays { transform: scale(1.18); }
+.crew-avatar[data-state="explaining"] .ca-glint { opacity: 1; }
+.crew-avatar[data-state="explaining"] .ca-body { transform: translateY(-1px); }
+.crew-avatar[data-state="concerned"] .ca-eye { transform: scaleY(0.45); }
+.crew-avatar[data-state="concerned"] .ca-body { transform: translate(-1px, -1.5px); }
+.crew-avatar[data-state="complete"] .ca-eye { opacity: 0; }
+.crew-avatar[data-state="complete"] .ca-eye-arc { opacity: 1; }
+.crew-avatar-evaluator[data-state="complete"] .ca-corona { opacity: 1; stroke-width: 3; }
+
+/* Mara — the crescent is a body, not a badge: it drowses in its hammock at
+   rest, sits up alert, tips horns-up to explain, dims and turns away when
+   the numbers worry her, and tips into a near-full moon when the day lands.
+   Every pose is silhouette-first so the six states read in monochrome at
+   24px. These rules follow the generic poses on purpose — same specificity,
+   later wins. */
+.crew-avatar-analyst .ca-fill { fill: var(--agent-analyst); opacity: 0; }
+.crew-avatar-analyst[data-state="resting"] .ca-body { transform: rotate(24deg) translateY(1px); }
+.crew-avatar-analyst[data-state="resting"] .ca-eye { opacity: 0; }
+.crew-avatar-analyst[data-state="resting"] .ca-eye-arc { opacity: 1; }
+.crew-avatar-analyst[data-state="attentive"] .ca-body { transform: rotate(-7deg) translateX(1px); }
+.crew-avatar-analyst[data-state="explaining"] .ca-body { transform: translateY(-1.5px) rotate(-11deg); }
+.crew-avatar-analyst[data-state="concerned"] .ca-body { transform: rotate(-13deg) translate(-1px, -1px); opacity: 0.6; }
+.crew-avatar-analyst[data-state="complete"] .ca-body { transform: rotate(-9deg); }
+.crew-avatar-analyst[data-state="complete"] .ca-fill { opacity: 1; }
+
+/* Jun — the star's lens is a magnifier: it zooms on what interests him,
+   slips down when the evidence is thin, and the star itself shows a spark
+   when he has found something or has it to say. */
+.crew-avatar-researcher .ca-spark { fill: var(--color-paper); opacity: 0; }
+.crew-avatar-researcher[data-state="resting"] .ca-body { transform: rotate(-9deg); opacity: 0.82; }
+.crew-avatar-researcher[data-state="resting"] .ca-lens { transform: translate(1.5px, 1.5px) scale(0.85); }
+.crew-avatar-researcher[data-state="resting"] .ca-eye { opacity: 0; }
+.crew-avatar-researcher[data-state="resting"] .ca-eye-arc { opacity: 1; }
+.crew-avatar-researcher[data-state="attentive"] .ca-body { transform: rotate(6deg) translateX(1px); }
+.crew-avatar-researcher[data-state="attentive"] .ca-lens { transform: scale(1.28); }
+.crew-avatar-researcher[data-state="attentive"] .ca-eye { transform: scale(1.4); }
+.crew-avatar-researcher[data-state="explaining"] .ca-body { transform: translateY(-1.5px) rotate(-5deg); }
+.crew-avatar-researcher[data-state="explaining"] .ca-spark { opacity: 0.95; }
+.crew-avatar-researcher[data-state="concerned"] .ca-body { transform: rotate(-10deg) translateY(-1px); opacity: 0.68; }
+.crew-avatar-researcher[data-state="concerned"] .ca-lens { transform: translateY(2px) scale(0.88); }
+.crew-avatar-researcher[data-state="complete"] .ca-body { transform: rotate(11deg); }
+.crew-avatar-researcher[data-state="complete"] .ca-spark { opacity: 1; transform: scale(1.2); }
+.crew-avatar-researcher[data-state="complete"] .ca-glint { opacity: 1; }
+
+/* Working is the only state allowed a loop — and only while it lasts. */
+.crew-avatar-planner[data-state="working"] .ca-rays { animation: ca-otto-turn 2.4s steps(8) infinite; }
+.crew-avatar-researcher[data-state="working"] .ca-lens { animation: ca-jun-focus 1.8s var(--ease-glide) infinite; }
+.crew-avatar-evaluator[data-state="working"] .ca-scan { animation: ca-iris-scan 1.6s var(--ease-glide) infinite; opacity: 1; }
+.crew-avatar-negotiator[data-state="working"] .ca-tail { animation: ca-rex-streak 0.9s var(--ease-glide) infinite; }
+.crew-avatar-analyst[data-state="working"] .ca-body { animation: ca-mara-drift 3s var(--ease-drift) infinite; }
+@keyframes ca-otto-turn { to { transform: rotate(45deg); } }
+@keyframes ca-jun-focus { 0%, 100% { transform: scale(1); opacity: 0.85; } 50% { transform: scale(1.18); opacity: 0.45; } }
+@keyframes ca-iris-scan { 0%, 100% { transform: translateY(-8px); } 50% { transform: translateY(8px); } }
+@keyframes ca-rex-streak { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-2.5px); } }
+@keyframes ca-mara-drift { 0%, 100% { transform: rotate(21deg) translateY(1px); } 50% { transform: rotate(27deg) translateY(1px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .crew-avatar * { transition: none !important; animation: none !important; }
+}
+
+/* ---- round 31 · the interactive day (exploration only) -----------------
+ * Bounded sky band, crew row, timeline — nothing overlaps, every number is
+ * readInteractiveDay copy. The sun and cursor track input directly and
+ * glide on release via registered custom properties (transition on the
+ * property itself, never a layout property). */
+@property --iday-sun-x { syntax: "<percentage>"; inherits: true; initial-value: 50%; }
+@property --iday-sun-y { syntax: "<percentage>"; inherits: true; initial-value: 70%; }
+@property --iday-cursor-x { syntax: "<percentage>"; inherits: true; initial-value: 0%; }
+@property --iday-moment-x { syntax: "<percentage>"; inherits: true; initial-value: 50%; }
+
+.iday {
+  display: grid;
+  gap: 14px;
+  color: var(--m-text);
+}
+.iday-head { display: grid; gap: 4px; }
+.iday-headline {
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: 800;
+  line-height: 1.15;
+}
+.iday-lead { margin: 0; font-size: 1rem; color: var(--m-muted); }
+
+.iday-sky {
+  position: relative;
+  height: 180px;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--m-border);
+  background:
+    radial-gradient(ellipse 130% 46% at var(--iday-sun-x) 104%, var(--stage-horizon, rgba(233, 154, 111, 0.25)) 0%, transparent 72%),
+    var(--stage-ink-2, #0c1220);
+  transition: --iday-sun-x var(--dur-glide) var(--ease-glide), --iday-sun-y var(--dur-glide) var(--ease-glide);
+}
+.iday[data-dragging="yes"] .iday-sky { transition: none; }
+.iday-sky .stage-sun {
+  left: var(--iday-sun-x);
+  top: var(--iday-sun-y);
+  width: 15%;
+  min-width: 44px;
+}
+/* Momentum (round 32 trial) — smear, ambient, lean. All transform/opacity,
+   all driven by CSS vars the springs write. Nothing painted at rest. */
+.iday-smear {
+  position: absolute;
+  left: var(--iday-sun-x, 50%);
+  top: var(--iday-sun-y, 50%);
+  width: 15%;
+  min-width: 44px;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.iday-smear i {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--m-accent, #d96b43);
+}
+.iday-smear i:nth-child(1) {
+  opacity: var(--smear-g1, 0);
+  transform: translateX(calc(var(--smear-l, 0px) * -0.4 * var(--smear-v, 1)));
+}
+.iday-smear i:nth-child(2) {
+  opacity: var(--smear-g2, 0);
+  transform: translateX(calc(var(--smear-l, 0px) * -0.7 * var(--smear-v, 1)));
+}
+.iday-smear i:nth-child(3) {
+  opacity: var(--smear-g3, 0);
+  transform: translateX(calc(var(--smear-l, 0px) * -1 * var(--smear-v, 1)));
+}
+.iday[data-motion="momentum"] .iday-sky .stage-sun {
+  transform: scale(var(--smear-sa, 1), var(--smear-sc, 1));
+}
+.iday-amb {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 90% 40% at 50% 100%, rgba(233, 154, 111, 0.14), transparent 70%);
+  animation: iday-amb-drift 11s ease-in-out infinite alternate;
+}
+.iday-amb[data-on="no"] { animation-play-state: paused; }
+@keyframes iday-amb-drift {
+  from { opacity: 0.4; transform: translateX(-4%); }
+  to { opacity: 0.9; transform: translateX(4%); }
+}
+.iday[data-motion="momentum"] .iday-axis { touch-action: pan-y; cursor: ew-resize; }
+.iday[data-motion="momentum"] .iday-window-proposed {
+  transform: translateY(-50%) skewX(var(--prop-lean, 0deg)) scaleX(var(--prop-sa, 1)) scaleY(var(--prop-sc, 1));
+}
+.iday[data-motion="momentum"] .iday-window-proposed::before {
+  content: "";
+  position: absolute;
+  top: 15%;
+  bottom: 15%;
+  width: var(--prop-smear, 0px);
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 22%, transparent);
+  right: calc(100% + 2px);
+}
+.iday { --av-v: 0; --av-gaze: 0; }
+/* Secondary motion rides the independent transform properties so it adds
+   on top of the gaze/rays attribute transforms instead of replacing them. */
+.crew-avatar.ca-var .ca-rays { transform-box: fill-box; transform-origin: center; rotate: calc(var(--av-v) * 18deg); }
+.crew-avatar.ca-var .ca-tail { transform-box: fill-box; transform-origin: right center; scale: calc(1 + var(--av-v) * var(--av-v) * 0.6) 1; }
+.crew-avatar.ca-var .ca-gaze { translate: calc(var(--av-gaze) * 3px) 0; transition: translate .3s ease-out; }
+.crew-avatar.ca-var.crew-avatar-evaluator .ca-gaze { transition: translate .12s ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .iday-amb, .iday-smear { display: none; }
+}
+
+/* The traveller answers the edit's outcome (round-31 engagement → response
+   with character): a one-shot squash-and-flare when a proposal lands, a
+   small recoil when the gate refuses. The animations only exist while
+   data-sun-fx names them and the sun only remounts when the outcome count
+   changes, so each response plays exactly once and can never linger. */
+@media (prefers-reduced-motion: no-preference) {
+  .iday-sky[data-sun-fx="cheer"] .stage-sun-disc {
+    transform-box: fill-box;
+    transform-origin: 50% 100%;
+    animation: iday-sun-cheer 640ms var(--ease-settle);
+  }
+  .iday-sky[data-sun-fx="cheer"] .stage-sun-smear { animation: iday-sun-flare 640ms var(--ease-settle); }
+  .iday-sky[data-sun-fx="shy"] .stage-sun { animation: iday-sun-shy 560ms var(--ease-settle); }
+  .iday-sky[data-sun-fx="shy"] .stage-sun-disc { animation: iday-sun-dim 560ms var(--ease-settle); }
+}
+@keyframes iday-sun-cheer {
+  0% { transform: scale(1, 1); }
+  32% { transform: scale(1.22, 0.78); }
+  62% { transform: scale(0.93, 1.08); }
+  100% { transform: scale(1, 1); }
+}
+@keyframes iday-sun-flare {
+  0% { opacity: 0; transform: scale(0.7); }
+  35% { opacity: 0.8; }
+  100% { opacity: 0; transform: scale(1.6); }
+}
+@keyframes iday-sun-shy {
+  0%, 100% { translate: -50% -50%; }
+  45% { translate: -50% -44%; }
+}
+@keyframes iday-sun-dim {
+  0%, 100% { opacity: 1; }
+  45% { opacity: 0.55; }
+}
+
+.iday-crew { display: grid; gap: 8px; }
+.iday-crew-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--m-border);
+  border-radius: var(--radius-md);
+  background: var(--m-card);
+}
+.iday-crew-line[data-quiet="yes"] { opacity: 0.75; }
+.iday-crew-line[data-quiet="yes"] .iday-crew-text { color: var(--m-muted); font-style: italic; }
+.iday-crew-text { margin: 0; font-size: 1rem; line-height: 1.45; }
+.iday-crew-text b { margin-right: 8px; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; }
+
+.iday-timeline { display: grid; gap: 6px; }
+.iday-axis {
+  position: relative;
+  height: 46px;
+  font-size: 13px;
+  font-family: var(--font-mono2);
+  color: var(--m-muted);
+}
+.iday-tick { position: absolute; transform: translateX(-50%); }
+.iday-tick[data-pos="0"] { left: 0; transform: none; }
+.iday-tick[data-pos="1"] { left: 25%; }
+.iday-tick[data-pos="2"] { left: 50%; }
+.iday-tick[data-pos="3"] { left: 75%; }
+.iday-tick[data-pos="4"] { right: 0; transform: none; }
+.iday-cursor {
+  position: absolute;
+  left: var(--iday-cursor-x);
+  top: 18px;
+  width: 2px;
+  height: 8px;
+  background: var(--m-text);
+  transform: translateX(-50%);
+  transition: --iday-cursor-x var(--dur-glide) var(--ease-glide);
+}
+.iday[data-dragging="yes"] .iday-cursor { transition: none; }
+.iday-moment {
+  position: absolute;
+  left: var(--iday-moment-x);
+  top: 28px;
+  transform: translateX(-50%);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--m-accent);
+  white-space: nowrap;
+}
+.iday-lane { display: grid; grid-template-columns: 92px 1fr; align-items: center; gap: 8px; }
+.iday-lane-name {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--m-muted);
+}
+.iday-track { position: relative; height: calc(var(--rows, 1) * 48px); }
+.iday-window {
+  position: absolute;
+  left: var(--w-l);
+  width: var(--w-w);
+  top: var(--w-t, 0);
+  height: 44px;
+  min-width: 44px;
+  padding: 0 8px;
+  border: 1px solid var(--m-border);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--m-card);
+  color: var(--m-text);
+  font: inherit;
+  font-size: 13px;
+  font-family: var(--font-mono2);
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: pointer;
+}
+.iday-window[data-kind="seek"] { border-color: var(--cat-light); }
+.iday-window[data-kind="reduce"] { border-color: var(--cat-cal); }
+.iday-window[data-kind="sleep"] { border-color: var(--cat-sleep); }
+.iday-window[aria-pressed="true"] {
+  background: var(--m-text);
+  color: var(--m-bg);
+  font-weight: 700;
+}
+.iday-scrub {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+.iday-scrub input[type="range"] { width: 100%; accent-color: var(--m-accent); }
+.iday-scrub button {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--m-border);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--m-card);
+  color: var(--m-text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.iday-read {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--m-border);
+  border-radius: var(--radius-md);
+  background: var(--m-card);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+.iday-honest,
+.iday-foot { margin: 0; font-size: 13px; color: var(--m-muted); }
+.iday-live {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+@media (prefers-reduced-motion: reduce) {
+  .iday-sky, .iday-cursor { transition: none; }
+}
+
+/* ---- milestone 4 · proposing a new time --------------------------------
+ * The original block stays as a dashed ghost; the proposal is a solid block
+ * on the same lane, draggable/keyboard-movable, direct tracking while held
+ * and a glide on release. Blocked gets a one-shot transform nudge. */
+.iday-window-ghost {
+  background: transparent;
+  border-style: dashed;
+  color: var(--m-muted);
+  pointer-events: none;
+  opacity: 0.7;
+}
+.iday-window-proposed {
+  border-style: solid;
+  border-width: 2px;
+  font-weight: 700;
+  z-index: 2;
+  touch-action: none;
+  cursor: grab;
+  transition: --w-l var(--dur-glide) var(--ease-glide);
+}
+.iday-window-proposed[data-dragging="yes"] { transition: none; cursor: grabbing; }
+.iday-window-proposed[data-blocked="yes"] {
+  border-color: var(--color-fail);
+  animation: iday-nudge 240ms var(--ease-glide) 1;
+}
+@keyframes iday-nudge {
+  0%, 100% { transform: translateX(0); }
+  30% { transform: translateX(-6px); }
+  65% { transform: translateX(4px); }
+}
+.iday-window-proposed:focus-visible {
+  outline: 2px solid var(--m-accent);
+  outline-offset: 2px;
+}
+.iday-window-reason {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: var(--w-t);
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--m-text);
+  border-left: 3px solid var(--color-fail);
+  padding: 4px 10px;
+  background: var(--m-card);
+}
+.iday-window-caret {
+  position: absolute;
+  left: var(--w-l);
+  top: -5px;
+  width: 10px;
+  height: 10px;
+  background: var(--m-card);
+  border-left: 2px solid var(--color-fail);
+  border-top: 2px solid var(--color-fail);
+  transform: rotate(45deg);
+}
+.iday-edit {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--m-border);
+  border-radius: var(--radius-md);
+  background: var(--m-card);
+}
+.iday-edit-line { margin: 0; font-size: 1rem; }
+.iday-edit-est { margin: 0; font-size: 13px; color: var(--m-muted); }
+.iday-edit-outcome { margin: 0; font-size: 1rem; }
+.iday-edit-outcome button {
+  font: inherit;
+  color: var(--m-accent);
+  background: none;
+  border: none;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.iday-edit-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+.iday-edit-controls button {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--m-border);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--m-bg);
+  color: var(--m-text);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.iday-edit-apply {
+  background: var(--m-text);
+  color: var(--m-bg);
+  font-weight: 700;
+}
+.iday-edit-apply:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.iday-read-wrap { display: grid; gap: 8px; }
+.iday-edit-cta { margin: 0; font-size: 14px; }
+.iday-edit-cta button {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--m-border);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--m-card);
+  color: var(--m-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.iday-edit-no { color: var(--m-muted); font-size: 14px; }
+@media (prefers-reduced-motion: reduce) {
+  .iday-window-proposed[data-blocked="yes"] { animation: none; }
+}
+
+/* ---- round 31 · landing hero + explorable example ----------------------
+ * The pinned stage is gone from the landing: a stable hero, the explorable
+ * example day, then trip entry. Same tokens, same floors. The hero's
+ * bottom padding is the airspace the day frame peeks into — the negative
+   margin below pulls the frame's top edge up so the first viewport ends on
+   an invitation, not dead air. */
+.landing-hero { padding: 28px 0 46px; }
+.landing-hero .landing-tease-title { font-size: var(--text-display-s); margin: 0 0 10px; }
+
+/* The traveller sun on the poster: it peeks in once when the hero first
+   enters view — a rise, one blink — then, when the visitor scrolls, it
+   makes the descent LandingHero measures: the orbit wrapper carries the
+   transform so the glyph's own peek animation is never fought, and the
+   hero copy is positioned a layer up so the traveller passes *behind*
+   words, never over them. Reduced motion and repeat views meet it seated
+   on the poster. */
+.lh-sun-orbit {
+  position: relative;
+  width: fit-content;
+  margin: 0 auto 12px;
+}
+.lh-sun { display: block; }
+.landing-hero > :not(.lh-sun-orbit) { position: relative; }
+@media (prefers-reduced-motion: no-preference) {
+  .landing-hero[data-peek="yes"] .lh-sun {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: lh-sun-peek 900ms var(--ease-settle) both;
+  }
+  .landing-hero[data-peek="yes"] .lh-sun .sunself-eye {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: lh-sun-blink 380ms 540ms var(--ease-glide) both;
+  }
+}
+@keyframes lh-sun-peek {
+  0% { transform: translateY(16px) rotate(-6deg) scale(0.9); opacity: 0; }
+  55% { transform: translateY(-3px) rotate(2deg) scale(1.03); opacity: 1; }
+  100% { transform: none; opacity: 1; }
+}
+@keyframes lh-sun-blink {
+  0%, 100% { transform: scaleY(1); }
+  45% { transform: scaleY(0.08); }
+}
+
+/* The example day in its instrument frame: a hairline border, a labelled
+   head bar, and the honesty tag stamped in the chrome — a mounted dial,
+   not a floating card. The negative margin peeks the frame's top edge
+   into the hero's bottom padding — a few px of card above the fold's end
+   to invite the scroll. */
+.landing-iday { margin: -18px 0 0; text-align: left; }
+.landing-iday-frame {
+  border: 1px solid var(--m-border);
+  border-radius: var(--radius-xl);
+  padding: 14px 16px 18px;
+  /* A stable backing that still lets the ambient sky breathe through —
+     text keeps its floor while the depth reads behind it. */
+  background: color-mix(in srgb, var(--m-bg) 78%, transparent);
+}
+.landing-iday-bar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 10px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--m-border);
+}
+.landing-iday-title { margin: 0; font-size: var(--text-xl); font-weight: 800; }
+.landing-iday-sub {
+  margin: 0;
+  flex: none;
+  font-family: var(--font-mono2);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--m-muted);
+  border: 1px solid var(--m-border);
+  border-radius: 999px;
+  padding: 3px 9px;
+}
+@media (max-width: 560px) {
+  .landing-iday-bar { flex-direction: column; align-items: flex-start; gap: 6px; }
+}
+
+.iday-jump {
+  justify-self: start;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--m-border);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--m-card);
+  color: var(--m-text);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* ---- the landing's ambient depth ---------------------------------------
+ * The demo stage's depth system carried onto the cream surface: one warm
+ * sky band hangs at the top of the page — two mote planes at different
+ * rates, a haze on the horizon, two ridges holding it down — plus a fine
+ * grain over the whole field (the paper-shaders lesson, carried by an SVG
+ * turbulence filter rather than a shader). `--lp` is the page's descent,
+ * written per scroll frame by LandingDepth: each plane recedes and
+ * compresses at its own rate, so the backdrop evolves continuously as the
+ * visitor scrolls — never swapping per section, the shader-sees reference's
+ * seamless transitions done in 2D. Transform + opacity only; with the var
+ * at rest the layered sky simply sits — SSR and reduced motion meet it
+ * seated, and every colour is a token mix so the wash adapts to the theme
+ * and never eats the text floors. Fixed at z -1 inside .in's stacking
+ * context: behind every word, above the painted ground. */
+.landing-depth {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.landing-depth > * { position: absolute; }
+
+.ld-sky {
+  inset: 0 0 auto;
+  height: 88vh;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-sun-dest) 22%, transparent) 0%,
+    color-mix(in srgb, var(--color-terracotta) 9%, transparent) 42%,
+    transparent 84%
+  );
+  transform: translateY(calc(var(--lp, 0) * -30vh));
+}
+.ld-glow {
+  top: -14vh;
+  left: 8%;
+  width: 84%;
+  height: 46vh;
+  background: radial-gradient(
+    ellipse 62% 58% at 68% 30%,
+    color-mix(in srgb, var(--color-sun-dest) 26%, transparent),
+    transparent 70%
+  );
+  opacity: calc(0.9 - var(--lp, 0) * 0.35);
+  transform: translateY(calc(var(--lp, 0) * -16vh));
+}
+.ld-motes {
+  top: 0;
+  left: -4%;
+  width: 108%;
+  height: 62vh;
+}
+.ld-motes circle { fill: var(--color-terracotta); }
+.ld-motes-far {
+  opacity: 0.3;
+  transform: translateY(calc(var(--lp, 0) * -10vh));
+}
+.ld-motes-mid {
+  opacity: 0.5;
+  transform: translateY(calc(var(--lp, 0) * -19vh));
+}
+.ld-haze {
+  top: 34vh;
+  left: -6%;
+  width: 112%;
+  height: 18vh;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    color-mix(in srgb, var(--color-terracotta) 10%, transparent) 50%,
+    transparent
+  );
+  opacity: calc(0.8 - var(--lp, 0) * 0.3);
+  transform: translateY(calc(var(--lp, 0) * -12vh));
+}
+.ld-ridge {
+  left: -3%;
+  width: 106%;
+}
+.ld-ridge-far {
+  top: 40vh;
+  height: 16vh;
+  transform: translateY(calc(var(--lp, 0) * -14vh)) scaleY(calc(1 - var(--lp, 0) * 0.22));
+  transform-origin: bottom;
+}
+.ld-ridge-far path { fill: color-mix(in srgb, var(--color-terracotta) 16%, transparent); }
+.ld-ridge-near {
+  top: 48vh;
+  height: 11vh;
+  transform: translateY(calc(var(--lp, 0) * -24vh)) scaleY(calc(1 - var(--lp, 0) * 0.34));
+  transform-origin: bottom;
+}
+.ld-ridge-near path { fill: color-mix(in srgb, var(--color-terracotta) 24%, transparent); }
+.ld-grain { inset: 0; width: 100%; height: 100%; opacity: 0.55; }
+
+/* The motes drift on the `translate` property so the scroll-written
+   `transform` is never fought — the same rule the feed cadence keeps. */
+@media (prefers-reduced-motion: no-preference) {
+  .ld-motes-far { animation: ld-motes-far 210s ease-in-out infinite alternate; }
+  .ld-motes-mid { animation: ld-motes-mid 150s ease-in-out infinite alternate; }
+}
+@keyframes ld-motes-far { from { translate: -0.8% 0; } to { translate: 0.8% 0; } }
+@keyframes ld-motes-mid { from { translate: 1.2% 0; } to { translate: -1.2% 0; } }
+
+/* The landing alternates its lean instead of marching one centred column:
+   the poster stays centred, the day frame pulls toward the left rail, the
+   rhythm card hangs right. Mobile keeps the single centred column. */
+@media (min-width: 720px) {
+  .landing-iday { margin-right: clamp(0px, 7vw, 84px); }
+  .everyday-rhythm { margin-left: clamp(0px, 10vw, 140px); }
+}
+
+/* Sections arrive as they enter — the design language's reveal pattern,
+   gated on the capability and the preference like every other scroll
+   reveal in the file. Without either, content simply stands. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .landing-iday,
+    .entry-intro,
+    .entry-planner,
+    .sample-journeys,
+    .everyday-rhythm {
+      animation: rise-view linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 38%;
+    }
+  }
+}

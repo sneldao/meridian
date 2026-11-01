@@ -10,48 +10,27 @@ terminator line becomes the visual grammar. Product rules from
 `docs/vision.md` and `docs/reference/design-primitives.md` still bind:
 nothing is decorative, every visual read exists as words, motion is caused by
 the traveller or is the reason the screen exists, one accent, numbers in mono.
-The motion budget (round 27) widens the third rule: ink *stages* may perform
-ambient, choreographed life because performance is the reason they exist;
-working surfaces still only respond.
 
-Parts of this file are executable: `tests/design-contract.test.ts` parses
-`globals.css` and the chrome surfaces and fails the suite when a rule is
-broken — hues per palette, the unkinded-step fallback, the sanctioned `.wide`
-surfaces, the motion vocabulary, and the ratchets that let the token and
-inline-style counts only shrink. Amend the doc and the gate together; a rule
-written here and enforced nowhere is a rule that quietly lapses.
+The file reads in three parts. **Part 1 — Laws** is the small,
+enforced, stable set — read it first. **Part 2 — Direction** is the
+principles that steer but are not machine-enforced. The **round log** at
+the bottom is the dated history of how the system got here: history, not
+law.
 
-## Genre
+## Part 1 — Laws
 
-atmospheric (the night-side / cinematic school), crossed with the app's
-existing dawn identity. Deep ink stages carry the drama; working surfaces
-stay legible.
+These bind everywhere, on stages too. Parts of this file are
+executable: `tests/design-contract.test.ts` parses `globals.css` and the
+chrome surfaces and fails the suite when a rule is broken — hues per
+palette, the unkinded-step fallback, the sanctioned `.wide` surfaces, the
+motion vocabulary, and the ratchets that let the token and inline-style
+counts only shrink. Amend the doc and the gate together; a rule written
+here and enforced nowhere is a rule that quietly lapses.
 
-## Macrostructure family
+### Palette and token discipline
 
-- **Landing (`/`)** · Marquee Hero — full-bleed globe stage with editorial
-  display type overlaid; the day rail scrolls beneath as an instrument.
-  Today is the stable, actionable checklist — plan progress updates its cards
-  in place rather than swapping the screen. The body-clock projection is
-  read-only explanation below Today (`<details>` · `?view=clock`), not a
-  competing view. First use is an explicit trip-entry form ("Arrive better
-  adjusted."); the example trip loads only on request and never saves
-  traveller trip, plan, or action data.
-- **Clock explanation (`/` → "How my body clock is adjusting")** · the dial
-  as read-only explanation below Today: the same locked plans and the same
-  action ledger, no setup or action controls. The gold-on-ink `.clock-stage`
-  styling remains with the retained legacy screen, not Home; dev and shift
-  surfaces continue to use the shared dial widgets.
-- **App pages** (`/review`, `/history`, `/outcome`, `/shift`, `/team`, `/crew`)
-  · Workbench — instrument cards on the centred reading column
-  (`.reading`, 720px), media allowed to break wider.
-- **Content / payoff pages** (`/arrival`, plan share) · Statement — a poster
-  moment: oversized display line, staggered fact cells, one closing action.
-
-Pages within a family share the family's shape; they vary only in component
-archetypes.
-
-## Theme — "Dawn Ember" (tuned from the existing brand)
+Named tokens only — pages and chrome reach for tokens, never
+literals; raw values live only inside one-off geometry.
 
 Not a swap: a tuned extension. The cream day surface survives as the day
 mode; the ink night side becomes the cinematic default for stages.
@@ -81,7 +60,7 @@ Device rules (OS scheme, 21:00–06:00) apply only until there is a destination;
 the menu names which is governing ("Auto · day in Tokyo"). A manual Light or
 Dark always wins.
 
-## Typography
+### Typography
 
 - **Display:** Fraunces Variable (opsz + wght, `font-style: normal` — italic
   display banned), the crew's voice. Replaces the Palatino `--font-voice`
@@ -98,66 +77,40 @@ Dark always wins.
   fluid renders below ~11px. (It used to read "UI labels step 10px → 11–12px
   where the layout allows"; the 10px labels that line hedged are gone.)
 
-## Spacing
+- Readability floors: essential text ≥16px (1rem); supporting labels 13–14px;
+  nothing informative or interactive below 13px; 4.5:1 contrast against the
+  actual backdrop (on ink, the faint tone #6b7590 is not a text colour below
+  18px — use the muted tone).
+
+### Spacing
 
 4pt named scale (`--space-3xs … --space-3xl`) in `globals.css`. Pages use
 named tokens; raw values only inside one-off geometry.
 
-## Motion
+### Motion
 
 The app's named vocabulary survives and is the law: **glide** (180ms —
 traveller-caused state change), **settle** (320ms — a panel arriving),
-
-### The motion budget (round 27, 2026-11-01)
-
-Rule 3 of `docs/vision.md` ("respond to input; don't perform") is amended,
-not retired. It always had an escape clause — motion may be *the reason the
-screen exists* — and rounds 16–26 spent entirely on traveller-caused
-transitions and left the surfaces still. The result, measured in testing,
-was churn before the differentiator (the crew) was ever seen. The budget:
-
-- **Stages perform.** Ink stages (`.hero`, `.demo`, the example stage,
-  `/arrival`, crew surfaces) exist to *show* — they may carry ambient,
-  choreographed life: the sun breathing on the horizon, the crew solving
-  visibly, states morphing in their windows. Performance on a stage is the
-  product, not decoration; the "nothing is decorative" rule binds as ever —
-  every performed figure still traces to the model, and a stage says what
-  is live and what is choreographed.
-- **Working surfaces respond.** Today's checklist, sheets, forms and cards
-  keep the standing law: motion is caused by the traveller or is the
-  screen's reason to exist. No idle animation behind body text.
-- **The gate is unchanged.** Only `transform`, `opacity` and paint animate,
-  everywhere, on stages too. Reduced motion still stands everything down —
-  a performed stage degrades to its written read, which must be complete.
-  `tests/design-contract.test.ts` keeps enforcing *how* things move; this
-  budget governs *who may move, and when*.
-
-Inspiration corpus (studied 2026-11-01; the pattern to copy is each one's
-discipline, not its effects):
-
-- **Codrops Lookbook Hover Effects** (github.com/codrops/LookbookHoverEffects,
-  MIT) — a card taking over a photograph along jagged/curved/folded edges,
-  GSAP + WebGL, tap-to-reveal on touch. The grammar for the traveller
-  lookbook: each window holds a state (drained, half-lit, radiant, asleep)
-  and the takeover reveals the face that hour produces.
-- **Museum of Motion** (github.com/johnpolacek/museum-of-motion, MIT) — 57
-  GSAP exhibits, but the transferable structure is its `MOTION.md` brief:
-  personality, curves, timing and rules, read by every agent session before
-  touching animation. This file is Meridian's MOTION.md; a rule written here
-  and enforced nowhere lapses, so motion work amends here first.
-- **Smear Frames × Motion Blur Showreel**
-  (github.com/niccolofanton/smear-blur-showreel, MIT) — beat-cut, nothing
-  stops and nothing snaps: speed peaks sell the accents; a scrubbed sun may
-  leave a short smear trail. The tempo reference for stage choreography.
-- **GSAP joins the stack** for choreography-heavy surfaces (demo beats,
-  lookbook takeovers, crew stamp). It is a dependency with its own standard
-  license — keep it to the stages it earns; the existing CSS/view-transition
-  vocabulary remains the working-surface default, and GSAP code obeys the
-  same transform/opacity gate and reduced-motion guard.
-
 **drift** (700ms — arriving on its own). Easings: `--ease-glide`
 cubic-bezier(0.22, 1, 0.36, 1) · `--ease-settle` cubic-bezier(0.16, 1, 0.3, 1)
 · `--ease-drift` cubic-bezier(0.4, 0, 0.2, 1).
+
+#### The motion gate
+
+Only compositing-safe properties may animate — `transform`, the
+independent transform properties (`translate`, `rotate`, `scale`),
+`opacity`, and paint (e.g. `clip-path`, custom properties). On SVG
+elements the independent properties are required, because a CSS
+`transform` would replace the SVG `transform` attribute. Paint
+crossfades (`color`, `background`, `box-shadow`, `filter` for the
+smear) cost nothing to composite and stay; `clip-path` is
+compositor-friendly and carries the dawn reveal and the light-sweep masks
+without moving any box. Anything animating a box (`width`, `height`,
+`margin`, `padding`, `inset`) reflows and does not. Remaining box
+animations are frozen debt, counted by exact declaration text in
+`tests/design-contract.test.ts`.
+
+#### The vocabulary applied
 
 - Reveal pattern: scroll-driven fade + 16px rise, staggered, gated behind
   `@supports (animation-timeline: view())` / `prefers-reduced-motion: no-preference`;
@@ -219,21 +172,38 @@ cubic-bezier(0.22, 1, 0.36, 1) · `--ease-settle` cubic-bezier(0.16, 1, 0.3, 1)
   paint and unit changes snap, so a number never reads a unit it doesn't have;
   the true value is what is announced.
 - Layout morph: a reorder or resize of cards glides by framer-motion `layout`
-  (transform-based, so it stays inside the transform/opacity rule). The crew
+  (transform-based, so it stays inside the compositing-safe rule). The crew
   day strip (`DayStrip`) uses it. The layout-switch spike (`/spike/layout-switch`)
   morphs a stacked column into a row over a pinned scroll range, eased with
   ease-in-out cubic; reduced motion shows the row with no scroll link.
-- Reduced-motion fallback: global flatten rule already in `globals.css`
-  stands; spatial motion collapses to ≤ 150ms opacity.
-- Only `transform` and `opacity` animate. Paint crossfades (`color`,
-  `background`, `box-shadow`) cost nothing to composite and stay; `clip-path`
-  joins them — it is compositor-friendly and carries the dawn reveal and the
-  light-sweep masks without moving any box. Anything
-  animating a box (`width`, `height`, `margin`, `padding`, `inset`) reflows
-  and does not. Remaining box animations are frozen debt, counted by exact
-  declaration text in `tests/design-contract.test.ts`.
 
-## Microinteractions stance
+### Reduced motion, and the written read
+
+- Every visual read exists as words — the picture never speaks
+  alone. A performed stage degrades to its written read, which must be
+  complete.
+- Reduced-motion fallback: the global flatten rule already in
+  `globals.css` stands; spatial motion collapses to ≤ 150ms opacity, and
+  reduced motion keeps every state legible as a static pose plus words.
+
+### Honesty
+
+- **Every figure comes from the model.** Any number, time or
+  verdict a character states comes from the model; every performed figure
+  still traces to the model, and a stage says what is live and what is
+  choreographed.
+- **Example provenance is declared.** The example trip loads only on
+  request and never saves traveller trip, plan, or action data.
+- **Exploring is not doing.** Inspecting or previewing never changes the
+  saved plan, the action ledger, or the adaptation estimate.
+
+### Characters never cover words
+
+Sky and character areas are bounded; text, controls and timeline
+rows sit on stable backings. The traveller passes *behind* words, never
+over them.
+
+### Microinteractions stance
 
 - Press response (`scale(0.98)`) on primary actions only.
 - Silent success over celebratory bursts; the one celebration allowed is the
@@ -241,14 +211,14 @@ cubic-bezier(0.22, 1, 0.36, 1) · `--ease-settle` cubic-bezier(0.16, 1, 0.3, 1)
 - Hover tooltips 800ms · focus tooltips 0ms.
 - Count-ups only on numbers that changed because the traveller acted.
 
-## CTA voice
+### CTA voice
 
 - Primary: solid terracotta (or ember gold on ink stages), pill/14px radius,
   verb-first short copy ("Make my plan", "Fit to me").
 - Secondary: hairline outline, ink or paper text.
 - Buttons never wrap to two lines at any width (mobile floor).
 
-## Copy voice
+### Copy voice
 
 - One marker per state, not five sentences: a pill, a dim, or one line names
   a condition; the next surface does not repeat it. Honesty stays — hedging
@@ -256,7 +226,7 @@ cubic-bezier(0.22, 1, 0.36, 1) · `--ease-settle` cubic-bezier(0.16, 1, 0.3, 1)
 - Detail lives behind disclosure (`<details>`, drawers), not beside it.
 - Labels are noun phrases ("Example traveller"), not explanations.
 
-## Per-page allowances
+### Per-page allowances
 
 - Landing MAY use the globe stage as full-bleed enrichment (it is real/modelled
   data — the product rule "nothing is decorative" holds).
@@ -270,7 +240,7 @@ cubic-bezier(0.22, 1, 0.36, 1) · `--ease-settle` cubic-bezier(0.16, 1, 0.3, 1)
 - Statement pages (`/arrival`) may use one atmospheric ink gradient — the
   sunrise already earned there.
 
-## What pages MUST share
+### What pages MUST share
 
 - The wordmark (MERIDIAN, tracked caps) and the terminator-line motif.
 - The accent placement discipline (terracotta = action; gold = the sun/data).
@@ -292,18 +262,18 @@ cubic-bezier(0.22, 1, 0.36, 1) · `--ease-settle` cubic-bezier(0.16, 1, 0.3, 1)
   verdict, revisions, memory, citation — as a single middot-joined line,
   not a row of chip boxes.
 
-## What pages MAY differ on
+### What pages MAY differ on
 
 - Macrostructure within the family.
 - Hero archetype on statement pages.
 - Stage ink vs cream base, per the mode rules above.
 
-## Exports
+### Exports
 
 The live token layer is `src/app/globals.css` (`@theme` + `:root`); it is the
 source of truth, mirrored here for portability.
 
-### tokens.css
+#### tokens.css
 
 ```css
 :root {
@@ -343,17 +313,52 @@ source of truth, mirrored here for portability.
 }
 ```
 
-### Tailwind v4 `@theme`
+#### Tailwind v4 `@theme`
 
 Mirrored by the existing `@theme` block in `src/app/globals.css` (extended in
 the Dawn pass with `--font-body`, `--font-display`, `--text-display*`).
 
-### DTCG `tokens.json` / shadcn CSS variables
+#### DTCG `tokens.json` / shadcn CSS variables
 
 Mechanical maps of the block above — omitted here until an export is actually
 requested; this project consumes `globals.css` directly.
 
-## Playable-day direction
+## Part 2 — Direction
+
+The principles that steer the laws — they steer, they are not
+machine-enforced. The dated narrative behind them lives in the round log.
+
+### Genre
+
+atmospheric (the night-side / cinematic school), crossed with the app's
+existing dawn identity. Deep ink stages carry the drama; working surfaces
+stay legible.
+
+### Macrostructure family
+
+- **Landing (`/`)** · Marquee Hero — full-bleed globe stage with editorial
+  display type overlaid; the day rail scrolls beneath as an instrument.
+  Today is the stable, actionable checklist — plan progress updates its cards
+  in place rather than swapping the screen. The body-clock projection is
+  read-only explanation below Today (`<details>` · `?view=clock`), not a
+  competing view. First use is an explicit trip-entry form ("Arrive better
+  adjusted."); the example trip loads only on request and never saves
+  traveller trip, plan, or action data.
+- **Clock explanation (`/` → "How my body clock is adjusting")** · the dial
+  as read-only explanation below Today: the same locked plans and the same
+  action ledger, no setup or action controls. The gold-on-ink `.clock-stage`
+  styling remains with the retained legacy screen, not Home; dev and shift
+  surfaces continue to use the shared dial widgets.
+- **App pages** (`/review`, `/history`, `/outcome`, `/shift`, `/team`, `/crew`)
+  · Workbench — instrument cards on the centred reading column
+  (`.reading`, 720px), media allowed to break wider.
+- **Content / payoff pages** (`/arrival`, plan share) · Statement — a poster
+  moment: oversized display line, staggered fact cells, one closing action.
+
+Pages within a family share the family's shape; they vary only in component
+archetypes.
+
+### Playable-day direction
 
 The interaction model now follows the direction documented in
 [docs/reference/interaction-research.md](docs/reference/interaction-research.md):
@@ -366,7 +371,7 @@ equivalents for every interactive surface. This direction supersedes the earlier
 stacked-card emphasis for the main feed; it does not change clinical policies,
 the solver, the scorer, or the guided view.
 
-## Stage-sky direction
+### Stage-sky direction
 
 `.hero`, `.clock-stage`, and `.arr` render a blue-black ink stage whose horizon
 band and origin-blue residue come from the same solar model as the Window
@@ -375,7 +380,158 @@ from the planned residual, then luminance-clamps the horizon colour so paper
 text stays readable. A null/hydrating date leaves the token defaults; the
 model describes an estimated body clock, not weather or measured adaptation.
 
-## Round 19 — Show, don't tell; unfold, don't dump (2026-11-01)
+### Stages perform — the round-27 budget, superseded in spirit
+
+What survives of the round-27 motion budget is what stages exist
+to *do*. *Who may move, and when* is governed by the interaction principle
+below — it superseded this budget in spirit. The dated amendment and its
+gate bullet live in the round log.
+
+- **Stages perform.** Ink stages (`.hero`, `.demo`, the example stage,
+  `/arrival`, crew surfaces) exist to *show* — they may carry ambient,
+  choreographed life: the sun breathing on the horizon, the crew solving
+  visibly, states morphing in their windows. Performance on a stage is the
+  product, not decoration; the "nothing is decorative" rule binds as ever —
+  every performed figure still traces to the model, and a stage says what
+  is live and what is choreographed.
+- **Working surfaces respond.** Today's checklist, sheets, forms and cards
+  keep the standing law: motion is caused by the traveller or is the
+  screen's reason to exist. No idle animation behind body text.
+
+### The interaction principle (round 31)
+
+The interface is quiet until you engage it; then it responds with character
+and a legible consequence.
+
+- **Engagement first.** A visitor reaches something they can operate — trip
+  entry or the interactive day — without completing a presentation.
+  Choreographed sequences are optional and opened on request.
+- **Characters respond to state.** Crew avatars change state when the
+  traveller acts or the plan genuinely changes; no perpetual idle loops
+  behind text. One character acts at a time unless two have something to say
+  about the same change.
+- **Measurements are truthful; personality is expressive.** A glance, tilt
+  or settle need not encode data; any number, time or verdict a character
+  states comes from the model.
+
+Its hard edges are Laws (Part 1): every stated figure comes from
+the model, characters never cover words, exploring never edits, and the
+motion gate binds it.
+
+### Momentum — the round-32 trial
+
+Moving things carry their velocity: trail, smear in proportion to speed,
+coast, then settle — nothing snaps. The smear vanishes at rest and nothing
+moves behind words. It sits behind a `motionMode` prop, A/B-able on
+/dev/interactive-day, pending review; `prefers-reduced-motion` stands it
+down into the settle behaviour entirely.
+
+### The cast
+
+The cast (canonical names from src/agents/crew.ts): Mara · analyst ·
+crescent moon; Jun · researcher · lensed star; Otto · planner · compact
+crowned sun; Iris · evaluator · eclipse eye; Rex · negotiator · comet. The
+traveller stays the only face with lids and a mouth (SunSelf).
+
+### Landing depth — round 33
+
+Tester's read on the round-31 landing: repetitive, and the same flat
+backdrop the demo had before its depth pass. The fix keeps the round-31
+rule (engagement first, nothing pinned) and borrows two transferable
+ideas — seamless scroll-driven transitions, and a paper grain carrying
+depth in 2D — no WebGPU, no new dependencies.
+
+- **The ambient depth is the demo stage's system, re-dressed for
+  daylight.** `LandingDepth` reuses `demo-depth.ts`'s deterministic
+  generators: two mote planes (`starPlane`), a horizon haze, two ridges
+  (`ridgePath`), a warm sky band, and a fine grain from an SVG
+  `feTurbulence` filter — the paper-shaders lesson on a cream surface,
+  token-mixed so it adapts to the theme and never eats the text floors.
+- **`--lp` is the page's descent.** One scroll-written variable drives
+  every plane at its own rate — the sky recedes, the ridges compress —
+  so the backdrop evolves continuously across the whole landing rather
+  than swapping per section (the shader-sees reference's seamless
+  transitions in 2D). Written imperatively per scroll frame — the scrub
+  law: a transition would lag it. SSR and reduced motion meet the
+  layered sky simply seated.
+- **The traveller descends to the day.** The hero sun, after its
+  one-shot peek, leaves the poster on scroll and settles on the example
+  day's top edge — a measured perch (rects read with the transform
+  cleared so the measure never feeds back), one transform on the orbit
+  wrapper so the glyph's peek is never fought. The hero copy is
+  positioned a layer up, so the traveller passes *behind* words, never
+  over them (round 31: characters never cover words). Reduced motion
+  never arms the trip.
+- **One of everything.** The chrome owns the tagline, the hero line is
+  the promise ("Land on their clock."), the hero anchor owns "Start
+  with your trip" (the form's own header carries its block), the
+  interactive day's lead adds what the headline lacks instead of
+  restating its "next", and the macrostructure alternates its lean —
+  centred poster, left-leaning day frame, two-column entry, numbered
+  journeys, right-hanging rhythm — inside the family rules.
+- **The day frame peeks.** A few px of instrument frame rise into the
+  hero's bottom padding, so the first viewport ends on an invitation.
+
+Verification: SSR surface locks (orbit, depth layers, honesty tag),
+lead-vs-headline distinctness locks, one-CTA lock, design contract
+(CHROME + floors) — typecheck, lint, full suite.
+
+## Appendix — Round log · history, not law
+
+The dated narrative of how the system got here —
+round history, supersession notes, dated amendments, prior-budget
+descriptions, and the studies that informed the Dawn pass. Nothing here is
+binding; where a log entry and Part 1 disagree, Part 1 wins.
+
+### The motion-budget amendment (round 27, 2026-11-01)
+
+The motion budget (round 27) widened the third rule: ink *stages*
+may perform ambient, choreographed life because performance is the reason
+they exist; working surfaces still only respond.
+
+Superseded by the round-31 interaction principle (Part 2) for *who
+may move, and when*; its gate bullet is now stated in Part 1.
+
+Rule 3 of `docs/vision.md` ("respond to input; don't perform") is amended,
+not retired. It always had an escape clause — motion may be *the reason the
+screen exists* — and rounds 16–26 spent entirely on traveller-caused
+transitions and left the surfaces still. The result, measured in testing,
+was churn before the differentiator (the crew) was ever seen. The budget:
+
+Its two venue bullets — *stages perform* and *working surfaces
+respond* — survive as direction and live in Part 2.
+
+- **The gate stands as stated in Part 1,** everywhere, on stages
+  too. Reduced motion still stands everything down — a performed stage
+  degrades to its written read, which must be complete.
+  `tests/design-contract.test.ts` keeps enforcing *how* things move; this
+  budget governed *who may move, and when* — the part round 31 superseded.
+
+### The inspiration corpus (studied 2026-11-01)
+
+The pattern to copy is each one's discipline, not its effects:
+
+- **Codrops Lookbook Hover Effects** (github.com/codrops/LookbookHoverEffects,
+  MIT) — a card taking over a photograph along jagged/curved/folded edges,
+  GSAP + WebGL, tap-to-reveal on touch. The grammar for the traveller
+  lookbook: each window holds a state (drained, half-lit, radiant, asleep)
+  and the takeover reveals the face that hour produces.
+- **Museum of Motion** (github.com/johnpolacek/museum-of-motion, MIT) — 57
+  GSAP exhibits, but the transferable structure is its `MOTION.md` brief:
+  personality, curves, timing and rules, read by every agent session before
+  touching animation. This file is Meridian's MOTION.md; a rule written here
+  and enforced nowhere lapses, so motion work amends here first.
+- **Smear Frames × Motion Blur Showreel**
+  (github.com/niccolofanton/smear-blur-showreel, MIT) — beat-cut, nothing
+  stops and nothing snaps: speed peaks sell the accents; a scrubbed sun may
+  leave a short smear trail. The tempo reference for stage choreography.
+- **GSAP joins the stack** for choreography-heavy surfaces (demo beats,
+  lookbook takeovers, crew stamp). It is a dependency with its own standard
+  license — keep it to the stages it earns; the existing CSS/view-transition
+  vocabulary remains the working-surface default, and GSAP code obeys the
+  same compositing-safe gate and reduced-motion guard.
+
+### Round 19 — Show, don't tell; unfold, don't dump (2026-11-01)
 
 Two failures diagnosed by the "what's broken, why" sweep, both borrowed
 against from a speed-run demo studied in last-human-standing:
@@ -398,7 +554,7 @@ against from a speed-run demo studied in last-human-standing:
   because that is what the example honestly carries; a demo that overclaims
   is worse than none.
 
-## Round 20 — Today opens as a stage (2026-11-01)
+### Round 20 — Today opens as a stage (2026-11-01)
 
 The critique carried over from round 19: Today dumped every section at
 equal weight the moment a trip existed. Round 20 gives it a composition:
@@ -423,7 +579,7 @@ equal weight the moment a trip existed. Round 20 gives it a composition:
 Degradation is part of the effect: without `animation-timeline` support,
 or under reduced motion, the stage is simply a section that scrolls away.
 
-## Round 21 — The demo becomes a gift (2026-11-01)
+### Round 21 — The demo becomes a gift (2026-11-01)
 
 The send-a-link funnel only works if the link is worth clicking and worth
 passing on:
@@ -448,7 +604,7 @@ passing on:
   and the hand-off mid-recede. Laptop artifacts (`*-darwin.png`,
   `*-actual.png`) are gitignored — baselines remain runner-owned.
 
-## Round 22 — Watch what we built (2026-11-01)
+### Round 22 — Watch what we built (2026-11-01)
 
 Three closures on the round-21 open list:
 
@@ -473,7 +629,7 @@ Three closures on the round-21 open list:
   trailing-week pulse. Queries and semantics live in
   docs/reference/funnel.md.
 
-## Round 23 — The sun-self: the body clock given a face (2026-11-01)
+### Round 23 — The sun-self: the body clock given a face (2026-11-01)
 
 Research (Tavily sweep: Finch, the Tamagotchi effect, mascot placement
 systems, procedural SVG, Wrapped-style sharing) settled the shape of it:
@@ -508,7 +664,7 @@ Phase C/D follow: the stage sky's sun becomes the traveller (glyph at
 pulse it, and the passport carries it — every passport becomes a portrait
 of that trip.
 
-## Round 24 — One face family, every place it belongs (2026-11-01)
+### Round 24 — One face family, every place it belongs (2026-11-01)
 
 Phase C + D of the sun-self, plus a discovery that reshaped the plan:
 **Meridian already had a face** — SolLuna, the half-sun/half-moon mascot
@@ -544,7 +700,7 @@ Verification: 892 tests (13 new), 9/9 round-24 browser checks, full
 regression stack (13/13 · 20/20 · 22/22 · 10/10), OG regenerated.
 Baselines refresh for entry, home, stage and the demo payoff.
 
-## Round 25 — The face wakes; the portrait travels (2026-11-01)
+### Round 25 — The face wakes; the portrait travels (2026-11-01)
 
 Two steps of the embodiment roadmap, both extending the round-24 law:
 the face is computed, never authored.
@@ -573,7 +729,7 @@ Verification: 900 tests (7 new), 9/9 round-25 browser checks (including a
 real PNG download), regression stack green (9/9 · 13/13 · 20/20 · 22/22 ·
 10/10). The demo-payoff baseline refreshes for the new button.
 
-## Round 26 — The done step answers (2026-11-01)
+### Round 26 — The done step answers (2026-11-01)
 
 The feed's done copy said "about N min closer" from editorial weights;
 round 26 makes the answer a **receipt** with two layers, each doing what
@@ -607,7 +763,7 @@ Verification: 907 tests (8 new receipt locks), 7/7 round-26 browser
 checks including mark survival across reload, regression green
 (9/9 · 9/9 · 20/20), lint/typecheck clean.
 
-## Round 27 — The example becomes one stage (2026-11-01)
+### Round 27 — The example becomes one stage (2026-11-01)
 
 The funnel leak, confirmed in testing: the example surfaces went flat
 against the landing's stage grammar, grew instead of transforming, and hid
@@ -638,7 +794,7 @@ StageSun/ExampleStage/DemoBeats join the chrome scan), typecheck + lint
 clean, 8/8 browser checks at 390×844 including client-navigation and
 night-theme backdrops.
 
-## Round 28 — The crew performs in the first viewport (2026-11-01)
+### Round 28 — The crew performs in the first viewport (2026-11-01)
 
 The differentiator stopped hiding behind the More menu:
 
@@ -665,7 +821,7 @@ under the guard), typecheck + lint clean, browser checks at 390×844 —
 all four agents speak, 5 days lock with real stamps on both surfaces,
 skip/replay work, reduced motion shows the result immediately.
 
-## Round 29 — The lookbook of states (2026-11-01)
+### Round 29 — The lookbook of states (2026-11-01)
 
 The avatars idea, brought to life — but stylised, never photographic
 (round 23's right-of-publicity lesson binds). GSAP joins the stack here,
@@ -703,7 +859,7 @@ fine-pointer hover guard), typecheck + lint + production build clean,
 browser checks — phone tap pin/unpin, desktop hover/pin/leave/keyboard,
 reduced-motion instant reveal, zero page errors.
 
-## Round 30 — The landing is the flight (2026-11-01)
+### Round 30 — The landing is the flight (2026-11-01)
 
 The tester feedback that ended the exhibit era: the landing read as a list
 of proof, not a journey — pain stated once then abandoned, the mechanism
@@ -774,7 +930,7 @@ completeness; 7 motion-language locks), typecheck + lint + production
 build clean, browser check — staged arms, all four beats perform with
 model values, zero console errors.
 
-## Round 27–29 direction — the example becomes a performance (2026-11-01)
+### Round 27–29 direction — the example becomes a performance (2026-11-01)
 
 Testing found the funnel's real leak: the shared link lands people on the
 example surfaces, which go flat and dark against the landing's stage
@@ -813,4 +969,3 @@ end-to-end with nothing in it to apologise for:
 Success for the sequence: the example plays end-to-end as one performance
 on an ink stage, the crew is seen before any menu is opened, and every
 performed figure traces to the model. Visual baselines refresh per round.
-

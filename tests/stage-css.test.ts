@@ -26,7 +26,7 @@ const declAfter = (needle: string): string => {
 
 describe("stage backdrop", () => {
   test("the shared rule paints the modeled sky on every stage", () => {
-    const block = blockAfter(".hero, .clock-stage, .arr, .today-stage, .example-stage, .demo-root, .hero .hl .bg.term");
+    const block = blockAfter(".hero, .clock-stage, .arr, .today-stage, .demo-root, .hero .hl .bg.term");
     expect(block).not.toBe("");
     for (const v of [
       "--stage-horizon-h",

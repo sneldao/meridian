@@ -54,12 +54,14 @@ const THEMES = [":root", 'html[data-theme="night"]', ".hero, .clock-stage"];
 const CHROME = [
   "src/app/page.tsx",
   ...[
-    "NudgeFeedScreen", "RoutePicker", "HeroDawnPanel", "DayScene", "DeepDiveVisuals",
+    "NudgeFeedScreen", "RoutePicker", "HeroDawnPanel", "DeepDiveVisuals",
     "TripSetupScreen", "CalendarApprovalCard", "CrewQuestionCard", "UndoToast", "VoiceControls", "ArrivalDayView",
     "DaySkyStrip", "DayStrip", "CrewFeed", "DailyJourney", "DawnScrubber", "DayCardShare",
     "ScenarioExperience", "TasteItineraryCard", "LightWindowPanel", "PerformanceBrief",
-    "TimezoneClocks", "PlanReview", "ArrivalPassportCard", "StageSun", "ExampleStage", "DemoBeats",
-    "CrewPerformance", "LandingCrewStrip", "LookbookOfStates", "LandingStage",
+    "TimezoneClocks", "PlanReview", "ArrivalPassportCard", "StageSun", "DemoBeats",
+    "CrewPerformance", "LandingCrewStrip",
+    "CrewAvatar", "InteractiveDay", "InteractiveDayEditor", "LandingHero",
+    "LandingDepth",
   ].map((n) => `src/components/${n}.tsx`),
   "src/components/ui/AgentCard.tsx",
   "src/components/ui/AgentChip.tsx",
@@ -78,7 +80,6 @@ const HEX_CEILING: Record<string, number> = {
   "src/components/RoutePicker.tsx": 10,
   "src/components/DeepDiveVisuals.tsx": 8,
   "src/components/HeroDawnPanel.tsx": 7,
-  "src/components/DayScene.tsx": 5,
   "src/components/TripSetupScreen.tsx": 3,
   "src/components/VoiceControls.tsx": 2,
   "src/components/CalendarApprovalCard.tsx": 1,
@@ -97,7 +98,6 @@ const STYLE_CEILING: Record<string, number> = {
   "src/components/dial/ShiftScreen.tsx": 3,
   "src/components/CrewFeed.tsx": 3,
   "src/components/dial/DisclosureSheet.tsx": 2,
-  "src/components/DayScene.tsx": 2,
   "src/components/HeroDawnPanel.tsx": 1,
   "src/components/TodayStage.tsx": 1,
   "src/components/DeepDiveVisuals.tsx": 1,
@@ -110,14 +110,21 @@ const STYLE_CEILING: Record<string, number> = {
   "src/components/dial/MeridianOnboarding.tsx": 1,
 };
 
-const LAYOUT_ANIMATOR = /\b(width|height|max-height|min-height|margin|padding|inset|top|left|right|bottom)\b/;
+// design.md "Part 1 — Laws · The motion gate" — only compositing-safe
+// properties may animate: `transform`, the independent transform properties
+// (`translate`, `rotate`, `scale`), `opacity`, and paint (colour, shadow,
+// `clip-path`, `filter`, registered custom properties). Anything else —
+// `width`, `height`, `top`, `left`, `grid-template-rows`, … — reflows or
+// repaints the box. Frozen debt, counted by exact declaration text, in css
+// then tsx. (`grid-template-rows` is the .tl-expander fold — surfaced when
+// the gate widened from a property blacklist to the real rule.)
+const COMPOSITING_SAFE =
+  /^(?:transform|translate|rotate|scale|opacity|color|background(?:-color)?|border-color|outline-color|caret-color|text-decoration-color|box-shadow|text-shadow|clip-path|filter|fill|stroke|--[\w-]+)$/;
 
-// design.md:117 — "Only transform and opacity animate." Paint-only crossfades
-// (color, background, shadow) stay; these animate boxes and reflow. Frozen
-// debt, counted by exact declaration text, in css then tsx.
 const MOTION_DEBT: Record<string, number> = {
   "transition: width var(--dur-settle) var(--ease-settle);": 3,
   "transition: max-height var(--dur-settle) var(--ease-settle), opacity var(--dur-glide) var(--ease-glide), padding var(--dur-settle) var(--ease-settle);": 1,
+  "transition: grid-template-rows var(--dur-settle) var(--ease-settle);": 1,
   "width 0.3s ease-out": 1,
 };
 
@@ -187,16 +194,26 @@ describe("design contract", () => {
     expect(decl(bodyOf(".wide"), "margin-left")).toContain("--hero-out");
   });
 
-  test("only transform, opacity and paint animate", () => {
+  test("only compositing-safe properties animate", () => {
+    // The first token of each comma-separated transition item is the
+    // property. `transition: none` arms nothing; cubic-bezier() commas are
+    // stripped first so they are not mistaken for item separators.
+    const animatesUnsafe = (value: string) =>
+      value
+        .replace(/\([^()]*\)/g, "")
+        .split(",")
+        .map((part) => part.trim().split(/\s+/)[0])
+        .some((prop) => prop !== "none" && !COMPOSITING_SAFE.test(prop));
+
     const offenders: string[] = [];
     for (const r of ALL) {
       for (const m of r.body.matchAll(/transition(?:-property)?:\s*([^;]+);/g)) {
-        if (LAYOUT_ANIMATOR.test(m[1])) offenders.push(`transition: ${m[1].trim()};`);
+        if (animatesUnsafe(m[1])) offenders.push(`transition: ${m[1].trim()};`);
       }
     }
     for (const line of read("src/components/NudgeFeedScreen.tsx").split("\n")) {
       const m = line.match(/transition: "([^"]+)"/);
-      if (m && LAYOUT_ANIMATOR.test(m[1])) offenders.push(m[1]);
+      if (m && animatesUnsafe(m[1])) offenders.push(m[1]);
     }
 
     for (const [text, count] of Object.entries(MOTION_DEBT)) {
@@ -204,7 +221,7 @@ describe("design contract", () => {
       expect(seen, `more "${text}" than the ${count} on file`).toBeLessThanOrEqual(count);
     }
     for (const o of new Set(offenders)) {
-      expect(Object.keys(MOTION_DEBT), `new layout animation: ${o}`).toContain(o);
+      expect(Object.keys(MOTION_DEBT), `new unsafe-property animation: ${o}`).toContain(o);
     }
   });
 
@@ -222,6 +239,36 @@ describe("design contract", () => {
     }
   });
 
+  test("interactive-day and avatar type never drops below the readability floor", () => {
+    // design.md "Typography" (readability floors): nothing informative or
+    // interactive below 13px.
+    // Any CSS rule whose selector touches the new surfaces must use a
+    // font-size that is a px ≥ 13, or a rem/token ≥ 0.8125rem that is not
+    // one of the two smallest tokens.
+    const SCOPED = [".iday", ".crew-avatar", ".crew-perf"];
+    const offenders: string[] = [];
+    for (const r of ALL) {
+      if (!SCOPED.some((s) => r.selector.includes(s))) continue;
+      for (const m of r.body.matchAll(/font-size:\s*([^;]+);/g)) {
+        const v = m[1].trim();
+        const px = v.match(/^([0-9.]+)px$/);
+        if (px) {
+          if (parseFloat(px[1]) < 13) offenders.push(`${r.selector} { font-size: ${v} }`);
+          continue;
+        }
+        if (v === "var(--text-2xs)" || v === "var(--text-xs)") {
+          offenders.push(`${r.selector} { font-size: ${v} }`);
+          continue;
+        }
+        const rem = v.match(/^([0-9.]+)rem$/);
+        if (rem && parseFloat(rem[1]) < 0.8125) {
+          offenders.push(`${r.selector} { font-size: ${v} }`);
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
   test("a state is hedged once, not once per sentence", () => {
     // design.md "Copy voice". Scanner scope: quoted copy in DOM chrome, so a
     // second hedge phrase on a surface that already names its state is a new
@@ -231,7 +278,6 @@ describe("design contract", () => {
       "DemoBeats.tsx | Meridian — the ninety-second example",
       "DemoBeats.tsx | Try the example",
       "HeroDawnPanel.tsx | banked on preview",
-      "LandingStage.tsx | Example stamped arrival passport",
       "LightWindowPanel.tsx | Example plan.",
       "LightWindowPanel.tsx | Plan preview.",
       "NudgeFeedScreen.tsx | Example traveller — not your measurements.",
