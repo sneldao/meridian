@@ -7272,6 +7272,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 @property --iday-sun-y { syntax: "<percentage>"; inherits: true; initial-value: 70%; }
 @property --iday-cursor-x { syntax: "<percentage>"; inherits: true; initial-value: 0%; }
 @property --iday-moment-x { syntax: "<percentage>"; inherits: true; initial-value: 50%; }
+@property --iday-star-o { syntax: "<number>"; inherits: true; initial-value: 0; }
 
 .iday {
   display: grid;
@@ -7296,7 +7297,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   background:
     radial-gradient(ellipse 130% 46% at var(--iday-sun-x) 104%, var(--stage-horizon, rgba(233, 154, 111, 0.25)) 0%, transparent 72%),
     var(--stage-ink-2, #0c1220);
-  transition: --iday-sun-x var(--dur-glide) var(--ease-glide), --iday-sun-y var(--dur-glide) var(--ease-glide);
+  transition: --iday-sun-x var(--dur-glide) var(--ease-glide), --iday-sun-y var(--dur-glide) var(--ease-glide), --iday-star-o var(--dur-glide) var(--ease-glide);
 }
 .iday[data-dragging="yes"] .iday-sky { transition: none; }
 .iday-sky .stage-sun {
@@ -7304,6 +7305,70 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   top: var(--iday-sun-y);
   width: 15%;
   min-width: 44px;
+}
+
+/* The band's own depth — the landing backdrop's family inside the bounded
+   sky. Two seeded star planes fade with the same solar altitude the
+   gradient reads (--iday-star-o: full below −10°, gone by +6°), a haze
+   rides the horizon band's own floor colour, and two ridges hold the
+   bottom down — the very paths LandingDepth plants, so the frame's horizon
+   is the backdrop's terrain seen closer. Ridges are the beam's colour
+   mixed back into the ink family, so their warmth tracks the model and
+   stays under the luminance cap; the planes lean on the page's scroll var
+   (--lp, written on the root by LandingDepth) at the same relative rates
+   the backdrop uses, so the handoff's parallax shares one clock — and off
+   the landing the unset var simply rests. All layers are aria-hidden
+   chrome and move on transform/opacity only; reduced motion meets the
+   whole depth seated. */
+.iday-depth { position: absolute; inset: 0; pointer-events: none; }
+.iday-depth > * { position: absolute; }
+.iday-stars {
+  top: -3%;
+  left: -4%;
+  width: 108%;
+  height: 76%;
+}
+.iday-stars circle { fill: var(--color-paper); }
+.iday-stars-far {
+  opacity: calc(var(--iday-star-o, 0) * 0.5);
+  transform: translateY(calc(var(--lp, 0) * -5%));
+}
+.iday-stars-mid {
+  opacity: calc(var(--iday-star-o, 0) * 0.85);
+  transform: translateY(calc(var(--lp, 0) * -9%));
+}
+.iday-haze {
+  left: -6%;
+  width: 112%;
+  top: 54%;
+  height: 34%;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    var(--stage-horizon-floor, rgba(199, 131, 42, 0.10)) 52%,
+    transparent
+  );
+  transform: translateY(calc(var(--lp, 0) * -8px));
+}
+.iday-ridge {
+  left: -3%;
+  width: 106%;
+  bottom: -1px;
+  transform-origin: bottom;
+}
+.iday-ridge-far {
+  height: 36%;
+  transform: translateY(calc(var(--lp, 0) * -10px)) scaleY(calc(1 - var(--lp, 0) * 0.1));
+}
+.iday-ridge-far path {
+  fill: color-mix(in srgb, var(--stage-horizon, rgba(255, 196, 107, 0.26)) 30%, var(--color-ink-3));
+}
+.iday-ridge-near {
+  height: 22%;
+  transform: translateY(calc(var(--lp, 0) * -18px)) scaleY(calc(1 - var(--lp, 0) * 0.16));
+}
+.iday-ridge-near path {
+  fill: color-mix(in srgb, var(--stage-horizon, rgba(255, 196, 107, 0.26)) 14%, var(--color-ink));
 }
 /* Momentum (round 32 trial) — smear, ambient, lean. All transform/opacity,
    all driven by CSS vars the springs write. Nothing painted at rest. */
@@ -7705,7 +7770,12 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
    head bar, and the honesty tag stamped in the chrome — a mounted dial,
    not a floating card. The negative margin peeks the frame's top edge
    into the hero's bottom padding — a few px of card above the fold's end
-   to invite the scroll. */
+   to invite the scroll. The reveal is choreographed on the frame's own
+   entry (the --iday-wake timeline, declared in the guarded block below):
+   the sky band unclips first — the scene arrives before the chrome — the
+   hairline draws itself, the head bar slides in a breath behind, and the
+   lower sections wake as the frame traverses. An instrument opening, not
+   a card scrolling past. */
 .landing-iday { margin: -18px 0 0; text-align: left; }
 .landing-iday-frame {
   border: 1px solid var(--m-border);
@@ -7739,6 +7809,23 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 }
 @media (max-width: 560px) {
   .landing-iday-bar { flex-direction: column; align-items: flex-start; gap: 6px; }
+}
+
+/* The frame's wake choreography — keyframes alone are inert; the timelines
+   that run them live in the @supports + no-preference block at the file's
+   end. Paint-safe only: clip-path, opacity, translate, border-color. */
+@keyframes iday-frame-line {
+  from { border-color: transparent; }
+}
+@keyframes iday-band-in {
+  from { opacity: 0.25; clip-path: inset(0 0 84% 0 round var(--radius-md)); }
+  to { opacity: 1; clip-path: inset(0 0 0 0 round var(--radius-md)); }
+}
+@keyframes iday-bar-in {
+  from { opacity: 0; translate: 0 10px; }
+}
+@keyframes iday-wake-in {
+  from { opacity: 0; translate: 0 12px; }
 }
 
 .iday-jump {
@@ -7880,6 +7967,42 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
       animation: rise-view linear both;
       animation-timeline: view();
       animation-range: entry 0% entry 38%;
+    }
+
+    /* The frame wakes on its own entry timeline so every section is
+       choreographed against the same rise — not each element's private
+       crossing. Order: the sky band unclips first, the hairline draws
+       itself, the head bar slides in a breath behind, then the day's
+       sections wake as the frame traverses. Without scroll-driven
+       animations none of this exists — the surface simply stands. */
+    .landing-iday-frame {
+      view-timeline: --iday-wake block;
+      animation: iday-frame-line linear both;
+      animation-timeline: --iday-wake;
+      animation-range: entry 0% entry 24%;
+    }
+    .landing-iday-frame .iday-sky {
+      animation: iday-band-in linear both;
+      animation-timeline: --iday-wake;
+      animation-range: entry 0% entry 30%;
+    }
+    .landing-iday-frame .iday-head {
+      animation: iday-wake-in linear both;
+      animation-timeline: --iday-wake;
+      animation-range: entry 10% entry 40%;
+    }
+    .landing-iday-frame .landing-iday-bar {
+      animation: iday-bar-in linear both;
+      animation-timeline: --iday-wake;
+      animation-range: entry 14% entry 46%;
+    }
+    .landing-iday-frame .iday > :where(
+      .iday-crew, .iday-timeline, .iday-read-wrap, .iday-edit,
+      .day-scene-details, .iday-foot, .iday-jump
+    ) {
+      animation: iday-wake-in linear both;
+      animation-timeline: --iday-wake;
+      animation-range: entry 24% entry 62%;
     }
   }
 }

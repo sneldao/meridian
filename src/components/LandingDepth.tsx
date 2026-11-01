@@ -14,10 +14,13 @@ import { ridgePath, starPlane } from "@/domain/demo-depth";
  * `--lp` is the page's descent, written imperatively per scroll frame (the
  * stage's scrub law — a transition would lag it): planes recede and
  * compress at different rates so the backdrop evolves continuously as the
- * visitor scrolls, never swapping per section. Deterministic seeds keep
- * SSR, hydration and every load on the same sky; the whole field is
- * aria-hidden chrome — the written sections carry the read. Reduced motion
- * never writes the variable: the layered sky simply sits. */
+ * visitor scrolls, never swapping per section. It is written on the root
+ * element rather than this node so the day frame's own sky depth can lean
+ * on the same scroll progress — the handoff's parallax shares one clock
+ * and never shears. Deterministic seeds keep SSR, hydration and every
+ * load on the same sky; the whole field is aria-hidden chrome — the
+ * written sections carry the read. Reduced motion never writes the
+ * variable: the layered sky simply sits. */
 
 const MOTES_FAR = starPlane(11, 20, 62);
 const MOTES_MID = starPlane(37, 14, 76);
@@ -34,7 +37,7 @@ export function LandingDepth() {
     const write = () => {
       const doc = document.documentElement;
       const max = Math.max(1, doc.scrollHeight - window.innerHeight);
-      el.style.setProperty(
+      doc.style.setProperty(
         "--lp",
         Math.min(1, Math.max(0, window.scrollY / max)).toFixed(4),
       );
@@ -45,7 +48,7 @@ export function LandingDepth() {
     return () => {
       window.removeEventListener("scroll", write);
       window.removeEventListener("resize", write);
-      el.style.removeProperty("--lp");
+      document.documentElement.style.removeProperty("--lp");
     };
   }, []);
 

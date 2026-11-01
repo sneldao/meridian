@@ -30,6 +30,18 @@ function lcg(seed: number): () => number {
   };
 }
 
+/** A stable seed from a label (FNV-1a) — lets a sky be keyed by its scene
+ *  (city + date) instead of a hand-picked constant, and still lands the
+ *  same geometry on server, client and every reload. */
+export function seedFromText(text: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < text.length; i++) {
+    h ^= text.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
 /** One depth plane of stars. `yMax` keeps each plane's stars above the
  *  terrain line it hangs over; nearer planes get slightly larger, brighter
  *  stars and reach lower. */

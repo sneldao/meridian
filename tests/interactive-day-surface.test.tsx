@@ -5,6 +5,7 @@ import { InteractiveDay } from "../src/components/InteractiveDay";
 import { buildDayScene } from "../src/domain/day-scene";
 import { buildDemoScenario } from "../src/domain/demo-scenarios";
 import { editableIntervention, planVersion, checkMove } from "../src/domain/plan-edit";
+import { ridgePath } from "../src/domain/demo-depth";
 import { ADHERENCE_PROFILE } from "../src/domain/fixtures";
 import type { PlanEditApi } from "../src/lib/use-plan-edit";
 
@@ -87,6 +88,30 @@ describe("InteractiveDay edit surface (SSR)", () => {
     }
     expect(editableWindow).toBeTruthy();
     expect(fixedWindow).toBeTruthy();
+  });
+});
+
+describe("sky depth (SSR)", () => {
+  const h = renderToStaticMarkup(
+    createElement(InteractiveDay, { scene, requiredMin: Math.abs(demo.trip.requiredShiftMin) }),
+  );
+
+  test("the band carries the landing's depth family, aria-hidden", () => {
+    expect(h).toContain('class="iday-depth" aria-hidden="true"');
+    expect(h).toContain("iday-stars-far");
+    expect(h).toContain("iday-stars-mid");
+    expect(h).toContain("iday-haze");
+    expect(h).toContain("iday-ridge-far");
+    expect(h).toContain("iday-ridge-near");
+    expect(h).toContain("<circle");
+  });
+
+  test("the ridges are the landing's own paths — one terrain, seen closer", () => {
+    // The frame's horizon must be the backdrop's bottom ridges verbatim
+    // (LandingDepth plants seeds 61/23), so the handoff reads as the same
+    // world rather than a second painting.
+    expect(h).toContain(`d="${ridgePath(61, 9, 0.8)}"`);
+    expect(h).toContain(`d="${ridgePath(23, 5, 0.4)}"`);
   });
 });
 

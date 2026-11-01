@@ -21,11 +21,13 @@ import { sunSelfRead } from "@/domain/sun-self";
  *  - the ambient depth behind the page is LandingDepth's layered sky,
  *    evolving on the page's own scroll var (--lp);
  *  - the sun then makes the descent it promised: as the visitor scrolls it
- *    leaves the poster and settles on the example day's top edge — a
- *    measured perch, written as one transform on the orbit wrapper so the
- *    inner glyph's peek animation is never fought. The copy is positioned
- *    above the orbit's layer, so the traveller passes *behind* words and
- *    never over them; reduced motion never arms the trip;
+ *    leaves the poster and joins the example day's own sky — the perch is
+ *    measured at the band's sun anchor (the --iday-sun-x/y the scene
+ *    computes), so the traveller lands on its twin inside the band and
+ *    dissolves into it, one transform plus the fade on the orbit wrapper
+ *    so the inner glyph's peek animation is never fought. The copy is
+ *    positioned above the orbit's layer, so the traveller passes *behind*
+ *    words and never over them; reduced motion never arms the trip;
  *  - the example day sits in an instrument frame — a hairline border, a
  *    labelled head bar, the honesty tag stamped in the chrome rather than
  *    floating under it — and its top edge peeks up into the hero's bottom
@@ -74,13 +76,15 @@ export function LandingHero({
     return () => io.disconnect();
   }, [peeked]);
 
-  // The descent: the sun leaves the poster and settles on the example day's
-  // top edge — the trip coming to it. The perch is measured live (the
-  // rect read happens with the transform cleared, so a mid-flight measure
-  // never feeds back), progress is the scroll up to the moment the frame's
-  // edge reaches reading height, and the whole trip is one transform on
-  // the orbit — translate, a gentle settle-scale, nothing else. Reduced
-  // motion never arms it; the sun stays on its poster.
+  // The descent: the sun leaves the poster and joins the example day's own
+  // sky — the perch is the band's sun anchor (the --iday-sun-x/y vars the
+  // scene writes; the frame's top edge is the fallback if the band isn't
+  // there), so the traveller lands on the sun the day already shows and
+  // the last stretch dissolves it into its twin. The rect read happens
+  // with the transform cleared, so a mid-flight measure never feeds back;
+  // progress is the scroll up to the moment the frame's edge reaches
+  // reading height. Reduced motion never arms it; the sun stays on its
+  // poster.
   useEffect(() => {
     const orbit = orbitRef.current;
     const frame = frameRef.current;
@@ -90,14 +94,28 @@ export function LandingHero({
       orbit.style.transform = "";
       const s = orbit.getBoundingClientRect();
       const f = frame.getBoundingClientRect();
-      const dx = f.left + f.width / 2 - (s.left + s.width / 2);
-      const dy = f.top - (s.top + s.height / 2);
+      const sky = frame.querySelector(".iday-sky");
+      let px = f.left + f.width / 2;
+      let py = f.top;
+      if (sky) {
+        const b = sky.getBoundingClientRect();
+        const cs = getComputedStyle(sky);
+        const sx = parseFloat(cs.getPropertyValue("--iday-sun-x"));
+        const sy = parseFloat(cs.getPropertyValue("--iday-sun-y"));
+        px = b.left + b.width * (Number.isFinite(sx) ? sx / 100 : 0.5);
+        py = b.top + b.height * (Number.isFinite(sy) ? sy / 100 : 0.62);
+      }
+      const dx = px - (s.left + s.width / 2);
+      const dy = py - (s.top + s.height / 2);
       const end = Math.max(240, f.top + window.scrollY - window.innerHeight * 0.5);
       const q = Math.min(1, Math.max(0, window.scrollY / end));
       const e = q * q * (3 - 2 * q);
       orbit.style.transform =
         `translate3d(${(dx * e).toFixed(1)}px, ${(dy * e).toFixed(1)}px, 0) ` +
         `scale(${(1 - 0.34 * e).toFixed(3)})`;
+      // The last fifth of the trip dissolves the traveller into the day's
+      // own sun — the join, not a landing beside it.
+      orbit.style.opacity = sky ? (1 - Math.min(1, Math.max(0, (e - 0.8) / 0.18))).toFixed(3) : "";
     };
     apply();
     window.addEventListener("scroll", apply, { passive: true });
@@ -106,6 +124,7 @@ export function LandingHero({
       window.removeEventListener("scroll", apply);
       window.removeEventListener("resize", apply);
       orbit.style.transform = "";
+      orbit.style.opacity = "";
     };
   }, []);
 

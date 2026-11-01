@@ -97,6 +97,14 @@ export function stageSky(bodyAltDeg: number, owedMin: number, requiredShiftMin: 
   };
 }
 
+/** How much of a stage's star plane survives at a solar altitude: full
+ *  below −10° (deep night), gone once the beam wins by +6°. The same
+ *  altitude that drives the gradient drives the stars — a stage's stars
+ *  are the model's darkness, not a painted night. */
+export function starFade(altitudeDeg: number): number {
+  return clamp01((6 - altitudeDeg) / 16);
+}
+
 export function stageSkyVars(sky: StageSky): CSSProperties {
   return {
     [STAGE_SKY_VARS[0]]: sky.horizon,

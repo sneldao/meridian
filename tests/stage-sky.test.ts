@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { STAGE_SKY_VARS, stageSky, stageSkyFor, stageSkyVars } from "@/domain/stage-sky";
+import { STAGE_SKY_VARS, stageSky, stageSkyFor, stageSkyVars, starFade } from "@/domain/stage-sky";
 import { buildTrip } from "../src/domain/fixtures";
 import { solarZenithDeg, subsolarPoint } from "@/domain/sun";
 
@@ -71,6 +71,28 @@ describe("stageSky", () => {
     expect(alphaOf(stageSky(0, -540, -540))).toBeCloseTo(0.22, 3);
     // Owed beyond the required shift clamps rather than oversaturating.
     expect(alphaOf(stageSky(0, -720, -540))).toBeLessThanOrEqual(0.22);
+  });
+});
+
+describe("starFade", () => {
+  test("full in deep night, gone once the beam wins", () => {
+    expect(starFade(-30)).toBe(1);
+    expect(starFade(-10)).toBe(1);
+    expect(starFade(6)).toBe(0);
+    expect(starFade(40)).toBe(0);
+  });
+
+  test("fades monotonically through dusk and dawn", () => {
+    const os = [-12, -6, -2, 0, 3, 6].map(starFade);
+    for (let i = 1; i < os.length; i++) {
+      expect(os[i]).toBeLessThanOrEqual(os[i - 1]);
+    }
+    // The knees themselves: 0.5 sits at −2°, deep night and day clamp.
+    expect(starFade(-2)).toBeCloseTo(0.5, 3);
+    for (const o of os) {
+      expect(o).toBeGreaterThanOrEqual(0);
+      expect(o).toBeLessThanOrEqual(1);
+    }
   });
 });
 

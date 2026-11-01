@@ -7,7 +7,8 @@ import { fmtMin } from "@/domain/circadian";
 import { sceneSolar, type DaySceneModel, type SceneWindow } from "@/domain/day-scene";
 import { laneRows, readInteractiveDay, type DaySelection } from "@/domain/interactive-day";
 import type { BlockReason, Editable, MoveVerdict, UndoToken } from "@/domain/plan-edit";
-import { stageSky, stageSkyVars, STAGE_SKY_VARS } from "@/domain/stage-sky";
+import { ridgePath, seedFromText, starPlane } from "@/domain/demo-depth";
+import { stageSky, stageSkyVars, starFade, STAGE_SKY_VARS } from "@/domain/stage-sky";
 import { stageSunFor } from "@/domain/stage-sun";
 import { sunSelfRead } from "@/domain/sun-self";
 import { CrewAvatar, type CrewAvatarState } from "@/components/CrewAvatar";
@@ -25,7 +26,15 @@ import type { PlanEditApi } from "@/lib/use-plan-edit";
  *
  *  Three distinct reads: the lead says what matters now, the crew say why,
  *  the panel states the facts. All positions ride registered custom
- *  properties — direct tracking while dragging, glide on release. */
+ *  properties — direct tracking while dragging, glide on release.
+ *
+ *  The sky band carries the same depth family as the landing's ambient
+ *  backdrop: a haze on the horizon, two silhouette ridges holding it down
+ *  (the very paths LandingDepth plants — the frame's horizon is literally
+ *  the landing's terrain seen closer), and a star plane that fades with
+ *  solar altitude — full in deep night, gone once the beam wins. The plane
+ *  is seeded from the scene's own date, so SSR and hydration hang the same
+ *  sky; under reduced motion every layer simply sits. */
 
 export interface InteractiveDayProps {
   scene: DaySceneModel;
@@ -67,6 +76,12 @@ const MIN_WINDOW_PX = 60;
 const WINDOW_ROW_PX = 48;
 
 const snap5 = (m: number) => Math.round(m / 5) * 5;
+
+/* The band's terrain is the landing's terrain — the same seeds
+ * LandingDepth plants, so as the frame scrolls into view its horizon is
+ * the backdrop's ridges seen closer, not a second painting. */
+const SKY_RIDGE_FAR = ridgePath(61, 9, 0.8);
+const SKY_RIDGE_NEAR = ridgePath(23, 5, 0.4);
 
 type EditOutcome =
   | { kind: "stale" }
@@ -123,6 +138,14 @@ export function InteractiveDay({ scene, requiredMin, direction, edit, initialMin
   const sun = stageSunFor(solar?.altitude ?? null, read.minute / 1440, solar?.label ?? null);
   const gaze = (read.minute / 1439) * 2 - 1;
 
+  // The band's night sky is the scene's own: seeded from its city and date
+  // so server, hydration and every reload hang the same stars — a far plane
+  // and a nearer one, fading with the same altitude the gradient reads.
+  const starPlanes = useMemo(() => {
+    const seed = seedFromText(`${scene.city.name}/${scene.date}`);
+    return [starPlane(seed, 18, 58), starPlane(seed ^ 0x9e3779b9, 11, 72)];
+  }, [scene]);
+
   // The traveller's face — computed from the same numbers the read carries:
   // still-owed is |bodyOffsetMin|, banked is the rest of the required shift.
   const owed = Math.abs(Math.round(scene.bodyOffsetMin));
@@ -174,8 +197,9 @@ export function InteractiveDay({ scene, requiredMin, direction, edit, initialMin
     for (const name of STAGE_SKY_VARS) el.style.setProperty(name, vars[name]);
     el.style.setProperty("--iday-sun-x", `${(sun.x * 100).toFixed(2)}%`);
     el.style.setProperty("--iday-sun-y", `${(sun.y * 100).toFixed(2)}%`);
+    el.style.setProperty("--iday-star-o", starFade(solar?.altitude ?? -12).toFixed(3));
     return () => {
-      for (const name of [...STAGE_SKY_VARS, "--iday-sun-x", "--iday-sun-y"]) el.style.removeProperty(name);
+      for (const name of [...STAGE_SKY_VARS, "--iday-sun-x", "--iday-sun-y", "--iday-star-o"]) el.style.removeProperty(name);
     };
   }, [solar?.altitude, sun.x, sun.y]);
 
@@ -199,6 +223,7 @@ export function InteractiveDay({ scene, requiredMin, direction, edit, initialMin
       const sm = stageSunFor(sol?.altitude ?? null, frac, sol?.label ?? null);
       el.style.setProperty("--iday-sun-x", `${(sm.x * 100).toFixed(2)}%`);
       el.style.setProperty("--iday-sun-y", `${(sm.y * 100).toFixed(2)}%`);
+      el.style.setProperty("--iday-star-o", starFade(sol?.altitude ?? -12).toFixed(3));
     });
     // Selection commits come from the hand (minuteMV), not the trailing
     // spring — and only while a scrub or its coast is live, so a window
@@ -544,6 +569,29 @@ export function InteractiveDay({ scene, requiredMin, direction, edit, initialMin
       </header>
 
       <div className="iday-sky" ref={skyRef} role="img" aria-label={`Modeled sky over ${scene.city.name} at ${fmtMin(read.minute)}: ${sun.bandLabel ?? "sun position unavailable"}`} data-sun-fx={sunFx?.kind}>
+        {/* The band's own depth — the landing's depth family inside the
+            bounded sky: two star planes fading with the modeled altitude,
+            a haze on the horizon, and the same two ridges the backdrop
+            plants. Pure chrome: aria-hidden, transform/opacity only. */}
+        <div className="iday-depth" aria-hidden="true">
+          <svg className="iday-stars iday-stars-far" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
+            {starPlanes[0].map((s, i) => (
+              <circle key={i} cx={s.x} cy={s.y} r={s.r} opacity={s.o} />
+            ))}
+          </svg>
+          <svg className="iday-stars iday-stars-mid" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
+            {starPlanes[1].map((s, i) => (
+              <circle key={i} cx={s.x} cy={s.y} r={s.r} opacity={s.o} />
+            ))}
+          </svg>
+          <div className="iday-haze" />
+          <svg className="iday-ridge iday-ridge-far" viewBox="0 0 100 40" preserveAspectRatio="none">
+            <path d={SKY_RIDGE_FAR} />
+          </svg>
+          <svg className="iday-ridge iday-ridge-near" viewBox="0 0 100 40" preserveAspectRatio="none">
+            <path d={SKY_RIDGE_NEAR} />
+          </svg>
+        </div>
         {motionMode === "momentum" && (
           <>
             <div className="iday-amb" aria-hidden="true" data-on={ambOn ? "yes" : "no"} />

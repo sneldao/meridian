@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { ridgePath, starPlane } from "../src/domain/demo-depth";
+import { ridgePath, seedFromText, starPlane } from "../src/domain/demo-depth";
 
 /* The demo stage's depth layers are generated, never random — the same sky
  * for SSR, hydration and every sent link. These pin the contract: bounds,
@@ -43,5 +43,17 @@ describe("demo depth layers", () => {
     expect(ys.size).toBeGreaterThan(3);
     expect(ridgePath(97, 8, 0.85)).toBe(d);
     expect(ridgePath(41, 5, 0.4)).not.toBe(d);
+  });
+
+  test("seedFromText keys a sky by its scene label, deterministically", () => {
+    const a = seedFromText("Tokyo/2026-11-05");
+    expect(seedFromText("Tokyo/2026-11-05")).toBe(a);
+    expect(seedFromText("Tokyo/2026-11-06")).not.toBe(a);
+    expect(a).toBeGreaterThanOrEqual(0);
+    expect(a).toBeLessThanOrEqual(0xffffffff);
+    // A seeded sky from a label still meets the plane contract.
+    const plane = starPlane(a, 18, 58);
+    expect(plane.length).toBe(18);
+    expect(plane).toEqual(starPlane(a, 18, 58));
   });
 });
