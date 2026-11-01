@@ -674,7 +674,8 @@ for exactly the surface the motion budget admitted it for:
 - **Five windows, five computed states.** `lookbookWindows()` builds the
   gallery from the demo journey: asleep (the empty-entry face), drained
   (the stakes beat's read), lifting (the crew beat's), half-lit (the
-  payoff's), adjusted (the same-timezone read — no shift to carry). Every
+  payoff's), adjusted (the fully-banked read — the whole shift delivered,
+  no plan days locked so the glow carries the face alone). Every
   face is `sunSelfForBeat` / `sunSelfSleeping` output; the window's state
   word is the read's own mood word. Nothing authored, nothing invented.
 - **The takeover crosses on a jagged edge** — the Codrops lookbook

@@ -15,9 +15,10 @@ import { sunSelfRead, sunSelfSleeping, sunSelfMoodWord, type SunSelfRead } from 
  *  The four journey states ride the demo journey's beats (stakes = drained,
  *  crew = lifting, payoff = half-lit). Asleep and adjusted are the two ends
  *  of the family that no trip in between produces: asleep is the empty entry
- *  (no route yet, nothing owed), adjusted is the same-timezone read (no shift
- *  to carry). Both are computed by their own domain functions, so the
- *  lookbook can only ever show faces the model says exist. */
+ *  (no route yet, nothing owed), adjusted is the fully-banked read (the
+ *  whole shift delivered, nothing left to carry). Both are computed by
+ *  their own domain functions, so the lookbook can only ever show faces the
+ *  model says exist. */
 
 export interface LookbookWindow {
   id: string;
@@ -35,7 +36,11 @@ function sleepingWindow(): LookbookWindow {
   return { id: "asleep", when: "No trip yet", state: sunSelfMoodWord(read.mood), read };
 }
 
-/** Adjusted: a route with no shift to carry — the body clock at home. */
+/** Adjusted: the fully-banked read — the journey's whole shift delivered,
+ *  nothing owed. `daysLocked: 0` keeps the rays honest: this state locks no
+ *  plan days, so the full glow carries the face alone — the one window
+ *  where glow and lit rays diverge. (`|| 60` only sizes the shift when a
+ *  scenario carries none, so the mood still lands on "adjusted".) */
 function adjustedWindow(journey: DemoJourney): LookbookWindow {
   const required = Math.abs(journey.trip.requiredShiftMin) || 60;
   const read = sunSelfRead({
