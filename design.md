@@ -607,6 +607,64 @@ Verification: 907 tests (8 new receipt locks), 7/7 round-26 browser
 checks including mark survival across reload, regression green
 (9/9 · 9/9 · 20/20), lint/typecheck clean.
 
+## Round 27 — The example becomes one stage (2026-11-01)
+
+The funnel leak, confirmed in testing: the example surfaces went flat
+against the landing's stage grammar, grew instead of transforming, and hid
+the crew. Three fixes, one law — nothing grows; everything transforms:
+
+- **One stage, not three steps.** The pick→scrub→plan flow and the "Scrub
+  this day" button are retired. Day chips, the modeled sky, the scrubber
+  and the plan share one screen (`ExampleStage`); dragging the hour
+  transforms the stage in place — the sun crosses the sky, the horizon
+  band follows via `stageSky`'s luminance clamp, clocks and windows
+  re-read. `?day=` still restores; a stale `?step=` is inert.
+- **The sun is the hero render.** `StageSun` draws one large disc
+  positioned by the solar model (`stageSunFor` — the position is data,
+  the below-horizon hold rides the band) with the sun-self face inside it
+  (round 23's queued phase C, delivered). A fast scrub leaves a short
+  transform-only smear; the halo breathes on stages only (the motion
+  budget's first ambient). The written read names the altitude — the
+  picture never speaks alone.
+- **No theme jump.** `.demo-root` paints the shared ink-stage backdrop;
+  the night-theme repaint skips stage roots (stages stay ink in both
+  modes — a cascade bug the round found: `.root` specificity was
+  out-painting the stage after client navigation). `/demo`'s beats sit on
+  the same grammar, and the small per-beat glyphs that duplicated the
+  hero sun are gone (one marker per state).
+
+Verification: 907 tests (url-restore, SSR and stage-css contracts updated;
+StageSun/ExampleStage/DemoBeats join the chrome scan), typecheck + lint
+clean, 8/8 browser checks at 390×844 including client-navigation and
+night-theme backdrops.
+
+## Round 28 — The crew performs in the first viewport (2026-11-01)
+
+The differentiator stopped hiding behind the More menu:
+
+- **The gate stamp is performed, not prose.** `crewPerformance()`
+  (domain) is the gate's transcript as data — each day's verdict is
+  `evaluatePlan` re-run incrementally over the solver's plans, the cues
+  are the plan's own interventions, the banked minutes the locked shifts.
+  `CrewPerformance` plays it: agents speak one line each, cues land as
+  category-hued diamonds on 24h lanes, days lock with the real verdict
+  stamped (`PASS 0.95` — or `FAIL` with the violation codes, honestly, if
+  the gate ever bounces). The pacing is authored; every figure is
+  computed. `crewScript`/`crewStateAt` make the choreography pure and
+  monotone — once locked, a day never un-locks.
+- **Two venues, one performance.** The demo's crew beat plays it full
+  (skip + replay controls); the landing's first viewport carries the
+  compact strip (plays once on scroll into view, brisker pace so it
+  finishes before the visitor scrolls).
+- **Reduced motion renders the result outright** — the finished state is
+  derived, never set, and it is the written read (Rule 2).
+
+Verification: 918 tests (domain locks for verdict/cue/bank honesty, SSR
+surface, motion-language contract: opacity+transform only, flattened
+under the guard), typecheck + lint clean, browser checks at 390×844 —
+all four agents speak, 5 days lock with real stamps on both surfaces,
+skip/replay work, reduced motion shows the result immediately.
+
 ## Round 27–29 direction — the example becomes a performance (2026-11-01)
 
 Testing found the funnel's real leak: the shared link lands people on the

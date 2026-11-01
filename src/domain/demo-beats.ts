@@ -4,7 +4,7 @@ import type { ArrivalRead } from "./arrival";
 import { buildDemoScenario, DEMO_SCENARIOS, type DemoScenarioId } from "./demo-scenarios";
 import type { HeroMeeting } from "./hero";
 import type { InterventionKind } from "./types";
-import type { DayPlan, Trip, WearableBaseline } from "./types";
+import type { CalendarEvent, DayPlan, Trip, WearableBaseline } from "./types";
 import { INTERVENTION_LABELS } from "@/lib/intervention-icons";
 import { sunSelfRead, type SunSelfRead } from "./sun-self";
 
@@ -23,6 +23,9 @@ export interface DemoJourney {
   trip: Trip;
   plans: DayPlan[];
   baseline: WearableBaseline;
+  /** The calendar the solver worked against — carried so the gate can be
+   *  re-run on the plans (round 28's crew performance). */
+  calendar: CalendarEvent[];
   /** The fictional moment that matters, with both clock readings. */
   moment: HeroMeeting;
   /** The arrival morning's honest read, computed against the solved plan. */
@@ -47,7 +50,7 @@ export const DEMO_BEAT_TITLES: Record<DemoBeatId, string> = {
 export const DEMO_DEPARTURE_DATE = "2026-11-03";
 
 export function demoJourney(scenarioId: DemoScenarioId = "miles"): DemoJourney {
-  const { scenario, trip, baseline, plans, moment } = buildDemoScenario(
+  const { scenario, trip, baseline, plans, moment, calendar } = buildDemoScenario(
     scenarioId,
     DEMO_DEPARTURE_DATE,
   );
@@ -76,6 +79,7 @@ export function demoJourney(scenarioId: DemoScenarioId = "miles"): DemoJourney {
     trip,
     plans,
     baseline,
+    calendar,
     moment,
     read,
     passport: arrivalPassport(read, trip),

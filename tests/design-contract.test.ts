@@ -59,6 +59,7 @@ const CHROME = [
     "DaySkyStrip", "DayStrip", "CrewFeed", "DailyJourney", "DawnScrubber", "DayCardShare",
     "ScenarioExperience", "TasteItineraryCard", "LightWindowPanel", "PerformanceBrief",
     "TimezoneClocks", "PlanReview", "ArrivalPassportCard", "StageSun", "ExampleStage", "DemoBeats",
+    "CrewPerformance", "LandingCrewStrip",
   ].map((n) => `src/components/${n}.tsx`),
   "src/components/ui/AgentCard.tsx",
   "src/components/ui/AgentChip.tsx",

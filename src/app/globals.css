@@ -6340,6 +6340,17 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .offline-hint { display: block; font-size: 11px; margin-top: 4px; }
 
 .landing-tease { padding: 24px 0; text-align: center; }
+/* Round 28: the crew performs in the first viewport — the strip reads as a
+   transcript, left-aligned inside the centred tease. */
+.landing-crew { margin: 18px 0 8px; text-align: left; }
+.landing-crew-eyebrow {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--m-accent);
+  margin: 0 0 4px;
+}
 .landing-tease-title { font-size: 28px; font-weight: 700; margin: 0 0 8px; }
 .landing-tease-sub { font-size: 14px; color: var(--m-muted); margin: 0 0 16px; }
 .landing-tease-artifacts { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 0 0 16px; }
@@ -7086,4 +7097,117 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   text-align: center;
 }
 .scenario-moment b { color: var(--m-text); }
+
+/* ---- round 28 · the crew performs in view ------------------------------
+ * Agents speak, solver cues appear on a 24h lane, days lock with the gate's
+ * real verdict stamped beside them. Every figure is crewPerformance() data;
+ * the choreography is transform/opacity only and stands down under reduced
+ * motion (the finished state is the written read). Cue hues ride the shared
+ * data-colour law: data-cat sets --cat, the cue paints var(--cat). */
+.crew-perf { display: grid; gap: 12px; margin: 16px 0 0; }
+.crew-perf-lines { display: grid; gap: 6px; }
+.crew-perf-line {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--m-muted);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity var(--dur-settle) var(--ease-settle), transform var(--dur-settle) var(--ease-settle);
+}
+.crew-perf-line[data-spoken="yes"] { opacity: 1; transform: none; color: var(--m-text); }
+.crew-perf-agent {
+  display: inline-block;
+  min-width: 44px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--m-accent);
+  margin-right: 6px;
+}
+.crew-perf-role {
+  display: inline-block;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--m-faint);
+  margin-right: 8px;
+}
+.crew-perf-days { display: grid; gap: 6px; }
+.crew-perf-day {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border: 1px solid var(--m-border);
+  border-radius: var(--radius-md);
+  background: var(--m-card);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity var(--dur-settle) var(--ease-settle), transform var(--dur-settle) var(--ease-settle);
+}
+.crew-perf-day[data-phase="draft"],
+.crew-perf-day[data-phase="locked"] { opacity: 1; transform: none; }
+.crew-perf-day[data-phase="locked"] { border-color: var(--m-accent); }
+.crew-perf-day-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--m-text);
+  font-family: var(--font-mono2);
+}
+.crew-perf-lane {
+  width: 100%;
+  height: 10px;
+  display: block;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 5px;
+}
+.crew-perf-cue {
+  fill: var(--cat);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity var(--dur-glide) var(--ease-glide), transform var(--dur-glide) var(--ease-glide);
+}
+.crew-perf-day[data-phase="draft"] .crew-perf-cue,
+.crew-perf-day[data-phase="locked"] .crew-perf-cue { opacity: 1; transform: none; }
+.crew-perf-stamp {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  font-family: var(--font-mono2);
+  color: var(--m-faint);
+  min-width: 64px;
+  text-align: right;
+}
+.crew-perf-stamp[data-pass="yes"] { color: var(--color-pass); }
+.crew-perf-stamp[data-pass="no"] { color: var(--color-fail); }
+.crew-perf-read {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--m-muted);
+}
+.crew-perf-controls button {
+  font: inherit;
+  font-size: 12px;
+  background: none;
+  border: none;
+  padding: 4px 0;
+  color: var(--m-accent);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.crew-perf-controls { min-height: 28px; }
+/* The landing strip: tighter, quieter, no role tags. */
+.crew-perf-compact { gap: 8px; margin: 14px 0 0; }
+.crew-perf-compact .crew-perf-line { font-size: 12px; }
+.crew-perf-compact .crew-perf-role { display: none; }
+.crew-perf-compact .crew-perf-day { padding: 5px 8px; }
+.crew-perf-compact .crew-perf-stamp { min-width: 54px; font-size: 10px; }
+@media (prefers-reduced-motion: reduce) {
+  .crew-perf-line, .crew-perf-day, .crew-perf-cue { opacity: 1; transform: none; }
+}
+
 

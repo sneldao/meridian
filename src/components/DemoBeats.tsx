@@ -19,6 +19,8 @@ import { downloadSunPortrait } from "@/lib/download-sun-portrait";
 import { useLightSweep } from "@/components/LightSweep";
 import { isDemoScenarioId } from "@/domain/demo-scenarios";
 import { sceneSolar } from "@/domain/day-scene";
+import { crewPerformance } from "@/domain/crew-performance";
+import { CrewPerformance } from "@/components/CrewPerformance";
 import { stageSky, stageSkyVars, STAGE_SKY_VARS } from "@/domain/stage-sky";
 import { STAGE_SUN_VARS, stageSunFor, stageSunVars } from "@/domain/stage-sun";
 
@@ -31,13 +33,6 @@ import { STAGE_SUN_VARS, stageSunFor, stageSunVars } from "@/domain/stage-sun";
  *  solver's own scenario builder, so the story can never outrun the product.
  *  Pattern borrowed deliberately from a speed-run demo: scripted beats,
  *  skip controls, and a send-a-link URL (/demo). */
-
-const CREW_LINES = [
-  { agent: "Iris", text: "Nine hours east, and the meeting is the wall. I plan back from it." },
-  { agent: "Sol", text: "Light before the flight buys the first hours — I place the windows." },
-  { agent: "Mara", text: "The calendar fights back on D-1. I move what may be moved." },
-  { agent: "Iris", text: "Signed: four days, every ask timed to the minute." },
-] as const;
 
 function DemoBeatsInner() {
   const params = useSearchParams();
@@ -65,6 +60,7 @@ function DemoBeatsInner() {
   }, [idx]);
 
   const rows = useMemo(() => planRows(journey), [journey]);
+  const crewPerf = useMemo(() => crewPerformance(journey), [journey]);
   const gap = stakesGapHours(journey.moment);
   const p = journey.read.projection;
   const arrivalSpec = journey.trip.days.find(
@@ -203,27 +199,17 @@ function DemoBeatsInner() {
         {beat === "crew" && (
           <section className="demo-beat" aria-label={DEMO_BEAT_TITLES.crew}>
             <p className="demo-kicker" data-rise="1">The crew at work</p>
-            <h2 className="demo-title" data-rise="2">Four days, planned back from the meeting</h2>
-            <div className="demo-crew">
-              {CREW_LINES.map((l, i) => (
-                <p key={l.agent + i} className="demo-line" data-rise={i + 3}>
-                  <span className="demo-agent">{l.agent}</span> {l.text}
-                </p>
-              ))}
+            <h2 className="demo-title" data-rise="2">
+              {journey.plans.length} days, planned back from the meeting
+            </h2>
+            <div data-rise="3">
+              {/* Round 28: the differentiator performs. Agents speak, cues
+                  land on the lanes, days lock with the gate's real verdict. */}
+              <CrewPerformance perf={crewPerf} beatMs={[900, 620]} />
             </div>
-            <div className="demo-days" data-rise="8">
-              {journey.plans.map((d) => (
-                <span key={d.dayIndex} className="demo-day">
-                  {d.label}{" "}
-                  <b>
-                    {d.shiftMin === 0 ? "·" : `${d.shiftMin > 0 ? "+" : "−"}${Math.abs(d.shiftMin)}m`}
-                  </b>
-                </span>
-              ))}
-            </div>
-            <p className="demo-honest" data-rise="9">
-              Solved live in your browser — the same solver the crew&apos;s plans are judged
-              against. No canned numbers.
+            <p className="demo-honest" data-rise="4">
+              Solved in your browser by the same solver and gate the live crew
+              run uses. The pacing is authored; every figure is computed.
             </p>
           </section>
         )}

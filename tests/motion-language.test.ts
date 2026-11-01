@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { crewScript, crewStateAt } from "../src/domain/crew-performance";
 
 /* Motion language · round 16 (design.md).
  *
@@ -396,5 +397,65 @@ describe("motion language · round 23 — the sun-self", () => {
     expect(glyph).toContain("SunSelfRead");
     expect(glyph).toContain("read.raysLit");
     expect(glyph).toContain("read.lid");
+  });
+});
+
+describe("motion language · round 28 — the crew performs in view", () => {
+  it("the choreography is opacity + transform, flattened under reduced motion", () => {
+    for (const sel of [".crew-perf-line", ".crew-perf-day", ".crew-perf-cue"]) {
+      const body = block(sel + " {");
+      // The law is about what *animates*: transition/animation properties
+      // may only name opacity and transform. Static layout values are
+      // fine — they never move.
+      const animated = [...body.matchAll(/(?:transition(?:-property)?|animation):\s*([^;]+);/g)]
+        .map((m) => m[1]);
+      expect(animated.length, `${sel} must animate`).toBeGreaterThan(0);
+      for (const a of animated) {
+        expect(a, `${sel} animates only opacity/transform: ${a}`)
+          .not.toMatch(/\b(width|height|max-height|min-height|margin|padding|inset|top|left|right|bottom)\b/);
+      }
+    }
+    const flat = ".crew-perf-line, .crew-perf-day, .crew-perf-cue { opacity: 1; transform: none; }";
+    const flatIdx = css.indexOf(flat);
+    expect(flatIdx).toBeGreaterThan(0);
+    // The flatten rule sits directly inside the reduced-motion guard: the
+    // guard is the last reduce query before it, with nothing between.
+    const guardIdx = css.lastIndexOf("@media (prefers-reduced-motion: reduce)", flatIdx);
+    expect(guardIdx).toBeGreaterThan(0);
+    const afterGuard = guardIdx + "@media (prefers-reduced-motion: reduce)".length;
+    expect(css.slice(afterGuard, flatIdx)).not.toContain("@media");
+  });
+
+  it("the script is lines first, then draft → locked per day, and never un-locks", () => {
+    const steps = crewScript(4, 3);
+    expect(steps.length).toBe(4 + 6);
+    // Lines all speak before the first draft.
+    expect(steps.slice(0, 4).every((s) => s.phase === "line")).toBe(true);
+    expect(steps[4]).toEqual({ index: 0, phase: "draft" });
+    // Monotone: once a day locks it stays locked at every later position.
+    const lockedBefore = new Set<number>();
+    for (let pos = 0; pos < steps.length; pos++) {
+      const st = crewStateAt(steps, pos);
+      for (const d of lockedBefore) expect(st.days[d]).toBe("locked");
+      st.days.forEach((phase, i) => {
+        if (phase === "locked") lockedBefore.add(i);
+      });
+    }
+    const final = crewStateAt(steps, steps.length - 1);
+    expect(final.days.every((d) => d === "locked")).toBe(true);
+    expect(final.linesSpoken).toBe(4);
+  });
+
+  it("the component never invents a figure — stamps render the verdict data", () => {
+    const comp = fs.readFileSync(
+      path.join(import.meta.dir, "..", "src", "components", "CrewPerformance.tsx"),
+      "utf8",
+    );
+    expect(comp.match(/style=\{/g)?.length ?? 0).toBe(0);
+    expect(comp).toContain("d.verdict.pass");
+    expect(comp).toContain("d.verdict.score.toFixed(2)");
+    expect(comp).toContain("d.verdict.violations");
+    // The landing strip plays once seen, not on load.
+    expect(comp).toContain("IntersectionObserver");
   });
 });

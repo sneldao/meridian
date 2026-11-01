@@ -46,6 +46,7 @@ const TripEntryScreen = dynamic(
 );
 import { HandoffBanner } from "@/components/HandoffBanner";
 import { LandingArtifacts } from "@/components/LandingArtifacts";
+import { LandingCrewStrip } from "@/components/LandingCrewStrip";
 const AgentDrawer = dynamic(
   () => import("@/components/AgentDrawer").then((m) => m.AgentDrawer),
 );
@@ -1644,6 +1645,13 @@ export default function Home() {
               <p className="landing-tease-sub">
                 Your 07:00 Tokyo meeting is 23:00 body time. Meridian moves it — or moves you.
               </p>
+              {/* Round 28: the differentiator performs in the first viewport
+                  — agents speak, cues land, days lock with the gate's real
+                  verdict. Artifacts and the story link follow below. */}
+              <div className="landing-crew" aria-label="The crew at work">
+                <p className="landing-crew-eyebrow">The crew at work</p>
+                <LandingCrewStrip />
+              </div>
               {/* Round 19: the landing shows the artifacts instead of naming
                   them — dial, scorecard and passport render live from the
                   same demo journey the beats tell. */}
