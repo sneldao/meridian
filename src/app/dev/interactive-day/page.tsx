@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { InteractiveDayEditor } from "@/components/InteractiveDayEditor";
 import { buildDemoScenario } from "@/domain/demo-scenarios";
 import { ADHERENCE_PROFILE } from "@/domain/fixtures";
@@ -25,10 +26,43 @@ const makeStore = () => memoryPlanStore(demo.plans, {
 const store = makeStore();
 const momentumStore = makeStore();
 
+function SegButton({
+  selected, onClick, children, thumbId, reduce,
+}: {
+  selected: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+  thumbId: string;
+  reduce: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      onClick={onClick}
+      className="relative rounded-full px-4 py-2 text-sm font-semibold transition-transform duration-150 ease-out hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--m-text)]"
+    >
+      {selected && (
+        <motion.span
+          layoutId={thumbId}
+          className="absolute inset-0 rounded-full bg-[var(--m-text)]"
+          transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 380, damping: 24 }}
+        />
+      )}
+      <span className={`relative z-10 transition-colors duration-150 ${selected ? "text-[var(--m-bg)]" : "text-[var(--m-text)]"}`}>
+        {children}
+      </span>
+    </button>
+  );
+}
+
 export default function DevInteractiveDay() {
   const [dayIndex, setDayIndex] = useState(demo.event.dayIndex);
   const [version, setVersion] = useState(store.read().version);
   const [mode, setMode] = useState<"settle" | "momentum" | "both">("settle");
+  const dayThumb = useId();
+  const modeThumb = useId();
+  const reduce = useReducedMotion() ?? false;
 
   const ctx = {
     trip: demo.trip,
@@ -40,54 +74,56 @@ export default function DevInteractiveDay() {
 
   return (
     <main className="flex min-h-screen flex-col items-center gap-4 p-4">
-      <p className="font-mono2 text-xs text-clay-2">
-        interactive day — example scenario (miles), inspection + proposal only
+      <p className="max-w-xl text-center text-sm text-clay-2">
+        Dev workbench — example trip (Miles, LHR → HND).
+        Dragging and proposing are free; Apply writes to an in-memory plan only.
       </p>
-      <div className="flex flex-wrap items-center gap-2">
-        {planDays.map((d) => (
-          <button
-            key={d.dayIndex}
-            type="button"
-            aria-pressed={dayIndex === d.dayIndex}
-            className="rounded-lg border border-line px-3 py-2 text-xs font-semibold text-clay data-[pressed]:font-bold"
-            onClick={() => setDayIndex(d.dayIndex)}
-          >
-            {d.label}
-          </button>
-        ))}
-        <span className="font-mono2 text-xs text-clay-2" aria-live="polite">
-          store {version}
-        </span>
-        <label className="flex items-center gap-1 text-xs text-clay-2">
-          <input type="checkbox" onChange={(e) => { failNextSave = e.target.checked; }} />
-          Fail next save
-        </label>
-        <button
-          type="button"
-          className="rounded-lg border border-line px-3 py-2 text-xs text-clay-2"
-          onClick={() => { store.simulateExternalEdit(); setVersion(store.read().version); }}
-        >
-          Simulate an edit elsewhere
-        </button>
-        <button
-          type="button"
-          className="rounded-lg border border-line px-3 py-2 text-xs text-clay-2"
-          onClick={() => setVersion(store.read().version)}
-        >
-          Read store version
-        </button>
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        <span className="text-sm text-clay-2">Day</span>
+        <div className="flex gap-0.5 rounded-full border border-[var(--m-border-2)] bg-[var(--m-card)] p-1 shadow-sm">
+          {planDays.map((d) => (
+            <SegButton
+              key={d.dayIndex}
+              selected={dayIndex === d.dayIndex}
+              thumbId={dayThumb}
+              reduce={reduce}
+              onClick={() => setDayIndex(d.dayIndex)}
+            >
+              {d.label}
+            </SegButton>
+          ))}
+        </div>
       </div>
-      <div role="group" aria-label="Motion mode" className="flex gap-1 rounded-full border border-line p-1">
-        {([["settle", "Current"], ["momentum", "Momentum"], ["both", "Side by side"]] as const).map(([v, label]) => (
+      <details className="w-full max-w-[680px] rounded-lg border border-dashed border-[var(--m-border-2)] px-3 py-2 text-xs text-[var(--m-muted)]">
+        <summary className="cursor-pointer font-mono2 uppercase tracking-wide">
+          Dev controls · store {version}
+        </summary>
+        <div className="mt-2 flex flex-wrap items-center gap-3">
+          <label className="flex items-center gap-1">
+            <input type="checkbox" onChange={(e) => { failNextSave = e.target.checked; }} />
+            Fail next save
+          </label>
           <button
-            key={v}
             type="button"
-            aria-pressed={mode === v}
-            className="rounded-full px-3 py-1 text-xs text-clay-2 aria-pressed:bg-line aria-pressed:text-clay"
+            className="rounded-full border border-[var(--m-border-2)] px-3.5 py-1.5 font-semibold transition-transform duration-150 hover:-translate-y-0.5"
+            title="Perturbs the stored plan as if another tab edited it — the next Apply should refuse as stale"
+            onClick={() => { store.simulateExternalEdit(); setVersion(store.read().version); }}
+          >
+            Simulate an external edit
+          </button>
+        </div>
+      </details>
+      <div role="group" aria-label="Motion mode" className="flex gap-0.5 rounded-full border border-[var(--m-border-2)] bg-[var(--m-card)] p-1 shadow-sm">
+        {([["settle", "Current"], ["momentum", "Momentum"], ["both", "Side by side"]] as const).map(([v, label]) => (
+          <SegButton
+            key={v}
+            selected={mode === v}
+            thumbId={modeThumb}
+            reduce={reduce}
             onClick={() => setMode(v)}
           >
             {label}
-          </button>
+          </SegButton>
         ))}
       </div>
       {mode !== "both" && (
@@ -100,6 +136,7 @@ export default function DevInteractiveDay() {
             requiredMin={Math.abs(demo.trip.requiredShiftMin)}
             direction={demo.trip.direction}
             store={store}
+            onPlansChanged={() => setVersion(store.read().version)}
             example
             motionMode={mode === "momentum" ? "momentum" : "settle"}
           />
@@ -118,6 +155,7 @@ export default function DevInteractiveDay() {
                 requiredMin={Math.abs(demo.trip.requiredShiftMin)}
                 direction={demo.trip.direction}
                 store={st}
+                onPlansChanged={() => setVersion(store.read().version)}
                 example
                 motionMode={m}
               />
