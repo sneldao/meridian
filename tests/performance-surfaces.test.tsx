@@ -165,7 +165,7 @@ describe("feed ordering (SSR)", () => {
     const html = renderToStaticMarkup(createElement(NudgeFeedScreen, props));
     const pb = html.indexOf('class="iday"');
     const hero = html.indexOf('class="hero ');
-    const lp = html.indexOf('class="light-panel"');
+    const lp = html.indexOf('class="iday-plansum"');
     const td = html.indexOf("Find your kind of");
     expect(pb).toBeGreaterThanOrEqual(0);
     expect(pb).toBeLessThan(hero);

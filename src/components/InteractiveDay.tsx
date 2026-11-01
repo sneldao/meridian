@@ -12,7 +12,6 @@ import { stageSky, stageSkyVars, starFade, STAGE_SKY_VARS } from "@/domain/stage
 import { stageSunFor } from "@/domain/stage-sun";
 import { sunSelfRead } from "@/domain/sun-self";
 import { CrewAvatar, type CrewAvatarState } from "@/components/CrewAvatar";
-import { LightWindowPanel } from "@/components/LightWindowPanel";
 import { StageSun } from "@/components/StageSun";
 import { useUndoToast } from "@/components/UndoToast";
 import type { PlanEditApi } from "@/lib/use-plan-edit";
@@ -54,8 +53,8 @@ export interface InteractiveDayProps {
   /** The scene's moment lives on another day — jump there (DayScene's
    *  "Jump to event day" affordance). */
   onJumpToMomentDay?: () => void;
-  /** DayScene's honesty flags — the details panel stamps preview/example
-   *  plans accordingly. */
+  /** Kept for caller compatibility — unused since the details drawer
+   *  folded into the day itself (notes on selection, facts strip, markers). */
   preview?: boolean;
   example?: boolean;
   /** "settle" (default) is today's behaviour; "momentum" carries velocity —
@@ -262,7 +261,8 @@ export function InteractiveDay({ scene, requiredMin, direction, edit, initialMin
     el.style.setProperty("--iday-cursor-x", `${((read.minute / 1439) * 100).toFixed(2)}%`);
     const m = scene.momentDayIndex === scene.dayIndex ? scene.moment : null;
     if (m) el.style.setProperty("--iday-moment-x", `${((m.localMin / 1439) * 100).toFixed(2)}%`);
-  }, [read.minute, scene]);
+    if (read.caffeineMin != null) el.style.setProperty("--iday-caff-x", `${((read.caffeineMin / 1439) * 100).toFixed(2)}%`);
+  }, [read.minute, read.caffeineMin, scene]);
 
   // Measure the lane track so the min-width footprint converts to minutes.
   useEffect(() => {
@@ -634,6 +634,11 @@ export function InteractiveDay({ scene, requiredMin, direction, edit, initialMin
               ▲ {momentHere.title} {fmtMin(momentHere.localMin)}
             </span>
           )}
+          {read.caffeineMin != null && (
+            <span className="iday-caffeine" title={`Caffeine cutoff ${fmtMin(read.caffeineMin)}`}>
+              ◐ caffeine {fmtMin(read.caffeineMin)}
+            </span>
+          )}
           <span className="iday-cursor" />
         </div>
         {LANES.map((lane) => {
@@ -760,6 +765,7 @@ export function InteractiveDay({ scene, requiredMin, direction, edit, initialMin
       ) : (
         <div className="iday-read-wrap">
           <p className="iday-read">{read.explanation}</p>
+          {read.selectedNote && <p className="iday-note">{read.selectedNote}</p>}
           {outcome?.kind === "stale" && (
             <p className="iday-edit-outcome">
               The plan changed since you started — your proposal wasn&rsquo;t applied.{" "}
@@ -798,10 +804,11 @@ export function InteractiveDay({ scene, requiredMin, direction, edit, initialMin
         </div>
       )}
 
-      <details className="day-scene-details">
-        <summary>See light, sleep and caffeine details</summary>
-        <LightWindowPanel plan={scene.plan} date={scene.date} city={scene.city.name} preview={preview} example={example} />
-      </details>
+      {(read.planSummary || preview || example) && (
+        <p className="iday-plansum">
+          {read.planSummary}{preview ? " · Plan preview" : example ? " · Example plan" : ""}
+        </p>
+      )}
       <p className="iday-foot">
         Body-clock estimates, not measured alertness — modeled sky, not a weather forecast.
         Exploring and proposing don&rsquo;t record completed steps.

@@ -5916,6 +5916,9 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   margin: 12px 0 0;
 }
 
+/* drawer removed — kept selector block harmless: LightWindowPanel still
+ *  renders inside other surfaces that may reuse .day-scene-details. */
+
 .taste-tokens {
   display: flex;
   flex-wrap: wrap;
@@ -7272,6 +7275,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 @property --iday-sun-y { syntax: "<percentage>"; inherits: true; initial-value: 70%; }
 @property --iday-cursor-x { syntax: "<percentage>"; inherits: true; initial-value: 0%; }
 @property --iday-moment-x { syntax: "<percentage>"; inherits: true; initial-value: 50%; }
+@property --iday-caff-x { syntax: "<percentage>"; inherits: true; initial-value: 50%; }
 @property --iday-star-o { syntax: "<number>"; inherits: true; initial-value: 0; }
 
 .iday {
@@ -7524,6 +7528,31 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   font-weight: 700;
   color: var(--m-accent);
   white-space: nowrap;
+}
+.iday-caffeine {
+  position: absolute;
+  left: var(--iday-caff-x);
+  top: 44px;
+  transform: translateX(-50%);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--m-muted);
+  white-space: nowrap;
+}
+.iday-plansum {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--m-muted);
+  text-align: center;
+  margin: 2px 0 0;
+}
+.iday-note {
+  font-size: 14px;
+  color: var(--m-text);
+  border-left: 2px solid var(--m-accent);
+  padding-left: 10px;
+  margin: 8px 0 0;
 }
 .iday-lane { display: grid; grid-template-columns: 92px 1fr; align-items: center; gap: 8px; }
 .iday-lane-name {

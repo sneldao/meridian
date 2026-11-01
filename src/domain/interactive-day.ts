@@ -38,6 +38,13 @@ export interface InteractiveDayRead {
   /** Persistent read of the selected time/window — the facts: local time,
    *  estimated body time, active windows, solar label. */
   explanation: string;
+  /** The plan's own note for the selected window, when the plan carries one
+   *  (e.g. "Shade and indoors until 12:15 — this light would push you back"). */
+  selectedNote: string | null;
+  /** Always-on day facts in one line — sleep range + caffeine cutoff. */
+  planSummary: string | null;
+  /** Local minute of the caffeine cutoff, for the axis marker. */
+  caffeineMin: number | null;
   /** Always [otto, iris]. */
   crew: CrewReaction[];
 }
@@ -82,6 +89,28 @@ export function readInteractiveDay(
   const momentHere =
     scene.moment && scene.momentDayIndex === scene.dayIndex ? scene.moment : null;
 
+  // The drawer's content, integrated (round 34): the note lives on the plan's
+  // intervention — a window id is `${dayIndex}:${index}` — and sleep/caffeine
+  // become a persistent facts line plus an axis marker.
+  const selectedNote = (() => {
+    if (!selectedWindow || !scene.plan) return null;
+    const [d, i] = selectedWindow.id.split(":").map(Number);
+    if (d !== scene.plan.dayIndex) return null;
+    return scene.plan.interventions[i]?.note || null;
+  })();
+  const sleepIv = scene.plan?.interventions.find((i) => i.kind === "sleep_window");
+  const caffeineIv = scene.plan?.interventions.find((i) => i.kind === "caffeine_cutoff");
+  const planSummary =
+    scene.plan
+      ? [
+          sleepIv ? `Sleep ${fmtMin(sleepIv.startMin)}${sleepIv.endMin != null ? `–${fmtMin(sleepIv.endMin)}` : ""}` : null,
+          caffeineIv ? `Caffeine cutoff ${fmtMin(caffeineIv.startMin)}` : null,
+        ]
+          .filter(Boolean)
+          .join(" · ") || null
+      : null;
+  const caffeineMin = caffeineIv?.startMin ?? null;
+
   const headline = `${scene.city.name} · ${fmtMin(read.localMin)}${nextWindow ? ` — next: ${nextWindow.label} at ${fmtMin(nextWindow.startMin)}` : ""}`;
 
   // Otto — the planner. A window gets the full read; a bare time gets what
@@ -92,7 +121,7 @@ export function readInteractiveDay(
     otto = {
       agent: "planner",
       state: "explaining",
-      line: `${rangeLabel(w)} — ${PURPOSE[w.kind]}${carryover(w)}.`,
+      line: `${rangeLabel(w)} — ${selectedNote ?? PURPOSE[w.kind]}${carryover(w)}.`,
     };
   } else if (active.length) {
     otto = {
@@ -167,6 +196,9 @@ export function readInteractiveDay(
     headline,
     lead,
     explanation,
+    selectedNote,
+    planSummary,
+    caffeineMin,
     crew: [otto, iris],
   };
 }

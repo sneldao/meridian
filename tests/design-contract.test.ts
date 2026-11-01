@@ -278,6 +278,8 @@ describe("design contract", () => {
       "DemoBeats.tsx | Meridian — the ninety-second example",
       "DemoBeats.tsx | Try the example",
       "HeroDawnPanel.tsx | banked on preview",
+      "InteractiveDay.tsx | · Plan preview",
+      "InteractiveDay.tsx | · Example plan",
       "LightWindowPanel.tsx | Example plan.",
       "LightWindowPanel.tsx | Plan preview.",
       "NudgeFeedScreen.tsx | Example traveller — not your measurements.",
