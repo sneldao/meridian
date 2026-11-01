@@ -47,6 +47,7 @@ const TripEntryScreen = dynamic(
 import { HandoffBanner } from "@/components/HandoffBanner";
 import { LandingArtifacts } from "@/components/LandingArtifacts";
 import { LandingCrewStrip } from "@/components/LandingCrewStrip";
+import { LookbookOfStates } from "@/components/LookbookOfStates";
 const AgentDrawer = dynamic(
   () => import("@/components/AgentDrawer").then((m) => m.AgentDrawer),
 );
@@ -1656,6 +1657,9 @@ export default function Home() {
                   them — dial, scorecard and passport render live from the
                   same demo journey the beats tell. */}
               <LandingArtifacts />
+              {/* Round 29: the lookbook — the traveller's meridian as a
+                  portrait gallery, five computed states, one face per hour. */}
+              <LookbookOfStates />
               <Link href="/demo" className="landing-tease-cta" transitionTypes={["nav-forward"]}>
                 Watch the ninety-second example
               </Link>

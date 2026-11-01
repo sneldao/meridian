@@ -459,3 +459,44 @@ describe("motion language · round 28 — the crew performs in view", () => {
     expect(comp).toContain("IntersectionObserver");
   });
 });
+
+describe("motion language · round 29 — the lookbook of states", () => {
+  it("the takeover is clip-path only — GSAP animates no box, no layout prop", () => {
+    const comp = fs.readFileSync(
+      path.join(import.meta.dir, "..", "src", "components", "LookbookOfStates.tsx"),
+      "utf8",
+    );
+    expect(comp.match(/style=\{/g)?.length ?? 0).toBe(0);
+    // The only GSAP-animated property is clipPath (paint-only allowance).
+    const animated = [...comp.matchAll(/\.fromTo\(|\.to\(|\.set\(/g)];
+    expect(animated.length).toBeGreaterThan(0);
+    expect(comp).not.toMatch(/gsap\.[a-z]+\([^)]*(?:width|height|margin|padding|top|left)\b/);
+    expect(comp).toContain("clipPath: EDGE_DOWN");
+    expect(comp).toContain("clipPath: EDGE_JAG");
+    expect(comp).toContain("clipPath: EDGE_FULL");
+  });
+
+  it("the pane is hidden by default — the reveal is the only way in", () => {
+    const body = block(".lookbook-over {");
+    expect(body).toContain("clip-path");
+    // The default polygon sits below the window (102%), matching the
+    // choreography's start frame point-for-point so GSAP can interpolate.
+    expect(body).toContain("102%");
+  });
+
+  it("hover binds only on fine pointers; the keyboard path is the click itself", () => {
+    const comp = fs.readFileSync(
+      path.join(import.meta.dir, "..", "src", "components", "LookbookOfStates.tsx"),
+      "utf8",
+    );
+    expect(comp).toContain('(hover: hover) and (pointer: fine)');
+    expect(comp).toContain("win.read.line");
+    expect(comp).toContain("aria-label=");
+    // Windows are native buttons: Enter/Space fire onClick (the pin path), so
+    // the keyboard reveal never fights the tap toggle — no focus-reveal.
+    expect(comp).toContain("<button");
+    expect(comp).not.toContain("onFocus");
+    // revealed = hovered OR pinned; pin survives the pointer leaving.
+    expect(comp).toContain("hovered === win.id || pinned === win.id");
+  });
+});

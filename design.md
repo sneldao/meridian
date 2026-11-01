@@ -665,6 +665,43 @@ under the guard), typecheck + lint clean, browser checks at 390×844 —
 all four agents speak, 5 days lock with real stamps on both surfaces,
 skip/replay work, reduced motion shows the result immediately.
 
+## Round 29 — The lookbook of states (2026-11-01)
+
+The avatars idea, brought to life — but stylised, never photographic
+(round 23's right-of-publicity lesson binds). GSAP joins the stack here,
+for exactly the surface the motion budget admitted it for:
+
+- **Five windows, five computed states.** `lookbookWindows()` builds the
+  gallery from the demo journey: asleep (the empty-entry face), drained
+  (the stakes beat's read), lifting (the crew beat's), half-lit (the
+  payoff's), adjusted (the same-timezone read — no shift to carry). Every
+  face is `sunSelfForBeat` / `sunSelfSleeping` output; the window's state
+  word is the read's own mood word. Nothing authored, nothing invented.
+- **The takeover crosses on a jagged edge** — the Codrops lookbook
+  grammar: a clip-path polygon whose points land staggered (`EDGE_DOWN →
+  EDGE_JAG → EDGE_FULL`), never a plain wipe. GSAP animates clip-path
+  only; the pane hides by default so no frame flashes before the
+  choreography arms. Clip-path stays in the paint-only allowance.
+- **The input model is hover OR pin.** Hover is transient (fine pointers
+  only, guarded by the media query); click pins or unpins and survives the
+  pointer leaving — the deliberate path that serves touch and keyboard
+  alike (windows are native buttons, Enter/Space fire the pin). A
+  focus-reveal was built and then retired: it fought the tap toggle.
+- **The written read comes first (Rule 2).** Each window names its hour
+  and carries the read's honest line; the revealed face is the
+  enhancement. Reduced motion skips the choreography and shows the face
+  outright.
+
+Mounted below the landing artifacts — the crew performs, the artifacts
+prove, the lookbook humanises. GSAP is pinned to stages it earns; CSS and
+view transitions remain the working-surface default.
+
+Verification: 929 tests (lookbook domain locks, SSR surface, 3
+motion-language locks: clip-path-only choreography, hidden default pane,
+fine-pointer hover guard), typecheck + lint + production build clean,
+browser checks — phone tap pin/unpin, desktop hover/pin/leave/keyboard,
+reduced-motion instant reveal, zero page errors.
+
 ## Round 27–29 direction — the example becomes a performance (2026-11-01)
 
 Testing found the funnel's real leak: the shared link lands people on the
