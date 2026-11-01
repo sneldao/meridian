@@ -517,6 +517,19 @@ rules, all verified by `tests/motion-language.test.ts`:
     and the passport portrait (`arrivalPassportSvg(pp, sun?)` — no computed
     read, no portrait; the export never invents a face). The exported twin
     (`src/lib/sun-self-svg.ts`) is geometry-locked to the component.
+12. **The face wakes; the step answers (rounds 25–26).** The entry's
+    sun-self resolves with the route draft — drained by the gap before any
+    number appears, one wake pulse — and the body-clock portrait
+    (`src/lib/sun-portrait.ts`, square, the face IS the card) ships from
+    the arrival card and the demo payoff over a shared export rail
+    (`src/lib/download-svg-image.ts`). The feed's done step answers with a
+    receipt (`src/domain/receipts.ts`): the PRC model gates (inert and
+    opposing steps are logged warmly, credited nothing), the share numbers
+    ("≈ N min of the day's M min — banked"), on the closed row, committed
+    plans only. Round 26 also fixed a live-mode bug where marks could
+    vanish — persist ran inside a React state updater and the updater's
+    re-run toggled the mark back out; mutations now compute from a ref and
+    set plain values.
 
 ## Observability & the closed loop (round 17)
 

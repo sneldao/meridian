@@ -181,6 +181,16 @@ radiant. One geometry everywhere — the stage horizon, the empty entry
 portrait. Zero-guilt by law: a done step lights the face; a skip changes
 nothing — tired, never ashamed, warm tones only.
 
+### 14. The done step answers
+
+A receipt, not a congratulation.
+
+**Ours:** adopted in round 26 — doing a step answers the step, on the
+closed row where the action happened: the PRC model gates (dead-zone and
+opposing steps are logged warmly, credited nothing, never scolded), and
+the share numbers it ("≈ N min of the day's M min — banked"). Committed
+plans only — preview keeps the standing copy.
+
 ## What actually makes it feel easy
 
 Not any one of these. The **ratio**: one accent, one column, one idea per
