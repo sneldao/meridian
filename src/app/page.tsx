@@ -45,8 +45,7 @@ const TripEntryScreen = dynamic(
   () => import("@/components/TripEntryScreen").then((m) => m.TripEntryScreen),
 );
 import { HandoffBanner } from "@/components/HandoffBanner";
-import { LandingStage } from "@/components/LandingStage";
-import { LookbookOfStates } from "@/components/LookbookOfStates";
+import { LandingHero } from "@/components/LandingHero";
 import type { RouteGapRead } from "@/domain/route-gap";
 const AgentDrawer = dynamic(
   () => import("@/components/AgentDrawer").then((m) => m.AgentDrawer),
@@ -195,7 +194,7 @@ export default function Home() {
   const [flightChoice, setFlightChoice] = useState<string | null>(null);
   const [checkInsParam, setCheckInsParam] = useState("");
   const [startDayParam, setStartDayParam] = useState(0);
-  const { run, dispatch, reset } = useRunState();
+  const { run, dispatch, reset, send } = useRunState();
   const [data, setData] = useState<TripData | null>(null);
   /** Self-reported natural wake — the one personalisation question. */
   const [wakeBand, setWakeBand] = useState<WakeBand | null>(null);
@@ -335,6 +334,10 @@ export default function Home() {
       resolveBaseline(wakeBand, data?.baseline ?? restoredBaseline ?? undefined));
   const esRef = useRef<EventSource | null>(null);
   const runIdRef = useRef<string | null>(null);
+  // The calendar the lock-time save needs (originals plus committed moves),
+  // tracked from the run's own events so the briefing write needs no `run`
+  // dep — identity churn there re-fires the on-mount resume.
+  const saveCalendarRef = useRef<CalendarEvent[]>([]);
   const [checkInWarning, setCheckInWarning] = useState<string | null>(null);
   // Voice lives on /crew now; the first viewport no longer carries a voice
   // toggle (item 16 — Calm is "words + one number + one CTA"). We still
@@ -516,6 +519,7 @@ export default function Home() {
           setEntries([{ kind: "system", text: "shift started — crew assembling" }]);
           setBriefingDismissed(false);
           runTripRef.current = e.trip;
+          saveCalendarRef.current = (e.calendar as CalendarEvent[] | undefined) ?? [];
           try {
             localStorage.setItem("meridian:onboarded", "1");
             localStorage.setItem("meridian:lastTrip", JSON.stringify(e.trip));
@@ -565,6 +569,9 @@ export default function Home() {
             kind: "move",
             text: `proposed ${e.move.title}: ${fmtMin(e.move.from.startMin)} → ${fmtMin(e.move.to.startMin)} — ${e.move.reason}`,
           });
+          saveCalendarRef.current = saveCalendarRef.current.map((ev) =>
+            ev.id === e.move.eventId ? { ...ev, movedTo: e.move.to } : ev,
+          );
           break;
         case "approval_request":
           push({ kind: "system", text: e.approval.summary });
@@ -585,6 +592,11 @@ export default function Home() {
           break;
         case "calendar_restore":
           push({ kind: "system", text: "calendar restored to its original times" });
+          saveCalendarRef.current = saveCalendarRef.current.map((ev) => {
+            const rest = { ...ev };
+            delete rest.movedTo;
+            return rest;
+          });
           break;
         case "briefing":
           // Voice is opt-in only — the banner's Listen button speaks on tap.
@@ -615,6 +627,9 @@ export default function Home() {
                 // available after landing is the traveller's own recollection.
                 coverage: e.coverage,
                 tasteItinerary: e.tasteItinerary,
+                // The calendar the ics was built from (moves applied) — an
+                // edit needs it to rebuild the same feed the server wrote.
+                calendar: saveCalendarRef.current,
                 // The baseline the plan was built on, kept with it so the
                 // landing can be scored against the same model the clock was
                 // showing. Without it the arrival page falls back to the
@@ -800,8 +815,11 @@ export default function Home() {
     };
   }, [dispatch, handleSideEffects, reset, run.phase]);
 
+  const resumedOnce = useRef(false);
   useEffect(() => {
+    if (resumedOnce.current) return;
     const t = setTimeout(() => {
+      resumedOnce.current = true;
       const runId = safeStorageGet(() => localStorage.getItem("meridian:activeRunId"));
       if (runId) resumeRun(runId);
     }, 0);
@@ -1116,6 +1134,9 @@ export default function Home() {
       ? run.calendar
       : (data?.calendar ?? []);
   const currentEvents = run.calendar.length > 0 ? calendarWithMoves(run) : rawCalendar;
+  // The calendar the lock-time save needs, without putting `run` into the
+  // side-effects callback's deps (identity churn would re-fire the on-mount
+  // resume). Written post-render, read at briefing time.
   const currentReadiness = trip
     ? meetingReadiness(trip, currentEvents, [...effectiveLocked.values()], baseline)
     : [];
@@ -1645,19 +1666,10 @@ export default function Home() {
         ) : entry.mode === "setup" ? (
           <div ref={setupRef}>
             <div className="landing-tease" role="region" aria-label="What you get">
-              {/* Round 30: the landing is the flight — one pinned stage
-                  scrubbed by scroll (the gap, the night before, the crossing,
-                  the first morning), every figure recomputed from the demo
-                  journey at that frame. Without motion it degrades to the
-                  written read: the same beats, stacked. */}
-              <LandingStage visitor={visitorInfo} />
-              {/* Round 29: the lookbook — the epilogue. The stage just flew
-                  through these five states; here is the face each one
-                  earned, free to explore. */}
-              <LookbookOfStates />
-              <Link href="/demo" className="landing-tease-cta" transitionTypes={["nav-forward"]}>
-                Watch the ninety-second example
-              </Link>
+              {/* Round 31: engagement first — a stable hero, then the example
+                  day you can touch. No pinned stage; the choreographed story
+                  stays one click away on /demo. */}
+              <LandingHero visitor={visitorInfo} />
             </div>
             {via && (
               /* The shared card that brought them here, acknowledged with its
@@ -1942,6 +1954,30 @@ export default function Home() {
                 placeChoices={tasteScope ? placeChoices : undefined}
                 calendarSource={data?.calendarSource ?? "fixture"}
                 sampleMode={entry.mode === "example"}
+                planEdit={trip ? {
+                  onPlansChanged: (plans) => {
+                    setRestoredLocked(new Map(plans.map((d) => [d.label, d])));
+                    if (run.locked.size) send({ kind: "plans_edited", days: plans });
+                  },
+                  disabledReason:
+                    effectivePhase !== "idle" && effectivePhase !== "done"
+                      ? "The crew is still planning — try again when it's done."
+                      : null,
+                  isLocked: (dayIndex, ivIndex) => {
+                    const spec = trip.days.find((d) => d.dayIndex === dayIndex);
+                    const plan = [...effectiveLocked.values()].find((d) => d.dayIndex === dayIndex);
+                    const iv = plan?.interventions[ivIndex];
+                    if (!spec || iv?.kind !== "light_exposure") return false;
+                    const mark = tripActions.marks.find((m) => m.id === `${spec.label}-sunlight`);
+                    return mark?.status === "done" || mark?.status === "skipped";
+                  },
+                  firstEditableDay: (() => {
+                    const ti = todayDayIndex(trip, new Date());
+                    if (ti !== null) return ti;
+                    const last = trip.days[trip.days.length - 1]?.dayIndex ?? 0;
+                    return new Date() < new Date(`${trip.days[0].date}T00:00:00Z`) ? 0 : last + 1;
+                  })(),
+                } : undefined}
               />
               {effectiveLocked.size > 0 && baseline && (
                 <BodyClockDetails

@@ -28,7 +28,9 @@ describe("TripEntryScreen (first use)", () => {
   test("states the honest value proposition", () => {
     expect(html).toContain("Your turn.");
     expect(html).toContain("Arrive with a plan");
-    expect(html).toContain("Light, sleep and caffeine, timed to your route");
+    // The mechanism lives in the hero; the entry's line says who does the
+    // work — the division of labour, not a second pitch.
+    expect(html).toContain("Your crew reads the route, drafts the days");
   });
 
   test("offers one primary action and the example", () => {

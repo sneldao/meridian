@@ -18,7 +18,9 @@ import { ArrivalDayView } from "@/components/ArrivalDayView";
 import { PerformanceBrief } from "@/components/PerformanceBrief";
 import { LightWindowPanel } from "@/components/LightWindowPanel";
 import { performanceMoment } from "@/domain/trip-performance";
-import { DayScene } from "@/components/DayScene";
+import { InteractiveDay } from "@/components/InteractiveDay";
+import { InteractiveDayEditor } from "@/components/InteractiveDayEditor";
+import { localPlanStore } from "@/lib/plan-store";
 import { buildDayScene } from "@/domain/day-scene";
 import { DayCardShare } from "@/components/DayCardShare";
 import { RightNowCard } from "@/components/RightNowCard";
@@ -59,6 +61,7 @@ import { calendarSummary } from "@/domain/hero";
 import { secondTripCopy, secondTripProof } from "@/domain/second-trip";
 import { meetingReadiness } from "@/domain/readiness";
 import { friendlyDayLabel } from "@/lib/day-label";
+import type { DaySpec } from "@/domain/types";
 import { isTripFinished } from "@/lib/trip-status";
 import type { TripActions } from "@/lib/use-trip-actions";
 import { Bell, BellRing } from "lucide-react";
@@ -80,11 +83,148 @@ import type {
   WearableBaseline,
 } from "@/domain/types";
 
+function DayStepper({
+  days,
+  activeDaySpec,
+  activeDayIndex,
+  onSelectDay,
+  todayIdx,
+  currentDayName,
+  currentLabel,
+  totalSteps,
+  completedCount,
+  progressPct,
+  previewMode,
+  departureDayIndex,
+}: {
+  days: DaySpec[];
+  activeDaySpec: DaySpec | undefined;
+  activeDayIndex: number;
+  onSelectDay: (label: string) => void;
+  todayIdx: number | null;
+  currentDayName: string;
+  currentLabel: string;
+  totalSteps: number;
+  completedCount: number;
+  progressPct: number;
+  previewMode: boolean;
+  departureDayIndex?: number;
+}) {
+  const [dayListOpen, setDayListOpen] = useState(false);
+  // The day list dismisses like every other overlay: Escape closes it.
+  useEffect(() => {
+    if (!dayListOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setDayListOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [dayListOpen]);
+  if (!(days.length > 0 && activeDaySpec)) return null;
+  return (
+    <div className="rise" style={{ position: "relative" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+              <button
+                type="button"
+                aria-label="Previous day"
+                disabled={activeDayIndex <= 0}
+                onClick={() => days[activeDayIndex - 1] && onSelectDay(days[activeDayIndex - 1].label)}
+                className="day-step"
+              >
+                ‹
+              </button>
+              <button
+                type="button"
+                onClick={() => setDayListOpen((v) => !v)}
+                aria-expanded={dayListOpen}
+                aria-current={todayIdx === activeDaySpec.dayIndex ? "date" : undefined}
+                className="day"
+                style={{ flex: 1 }}
+              >
+                <span style={{ display: "block" }}>
+                  {currentDayName}
+                  {todayIdx === activeDaySpec.dayIndex ? " · Today" : ""} ▾
+                </span>
+                {totalSteps > 0 && (
+                  <span style={{ display: "block", marginTop: 4 }}>
+                    <span style={{ display: "block", height: 3, borderRadius: 999, background: "var(--m-border-2)", overflow: "hidden" }}>
+                      <span style={{ display: "block", height: "100%", width: `${progressPct}%`, background: "#D96B43", transition: "width 0.3s ease-out" }} />
+                    </span>
+                    <span style={{ fontSize: 10, fontWeight: 600, color: todayIdx === activeDaySpec.dayIndex ? "var(--m-on-accent)" : "var(--m-muted)" }}>
+                      {previewMode ? `Example plan · ${completedCount} of ${totalSteps} done` : `${completedCount} of ${totalSteps} done`}
+                    </span>
+                  </span>
+                )}
+              </button>
+              <button
+                type="button"
+                aria-label="Next day"
+                disabled={activeDayIndex >= days.length - 1}
+                onClick={() => days[activeDayIndex + 1] && onSelectDay(days[activeDayIndex + 1].label)}
+                className="day-step"
+              >
+                ›
+              </button>
+            </div>
+            {dayListOpen && (
+              <>
+              {/* Dismiss backdrop — taps outside the list close it, like
+                  every other overlay in the app. */}
+              <div
+                aria-hidden="true"
+                onClick={() => setDayListOpen(false)}
+                style={{ position: "fixed", inset: 0, zIndex: 29 }}
+              />
+              <div className="card" style={{ position: "absolute", zIndex: 30, top: "calc(100% + 4px)", left: 0, right: 0, padding: 6, display: "flex", flexDirection: "column", gap: 2 }}>
+                {days.map((d) => (
+                  <button
+                    key={d.dayIndex}
+                    type="button"
+                    onClick={() => { onSelectDay(d.label); setDayListOpen(false); }}
+                    aria-current={todayIdx === d.dayIndex ? "date" : undefined}
+                    className={`day ${d.label === currentLabel ? "on" : ""}`}
+                    style={{ width: "100%", textAlign: "left" }}
+                  >
+                    {friendlyDayLabel(d, departureDayIndex)}
+                    {todayIdx === d.dayIndex ? " · Today" : ""}
+                  </button>
+                ))}
+              </div>
+              </>
+            )}
+    </div>
+  );
+}
+
+/** Which face the day panel wears (milestone 5): an edit session when the
+ *  page can accept proposals (a saved locked plan, real trip — not the
+ *  sample/preview), otherwise exploration-only. */
+export function dayPanelMode({
+  planEdit,
+  sampleMode,
+  lockedSize,
+}: {
+  planEdit: boolean;
+  sampleMode: boolean;
+  lockedSize: number;
+}): "edit" | "explore" {
+  return planEdit && !sampleMode && lockedSize > 0 ? "edit" : "explore";
+}
+
 export interface NudgeFeedScreenProps {
   trip: Trip | null;
   phase: "idle" | "running" | "done";
   selectedDayLabel: string;
   onSelectDay: (label: string) => void;
+  /** Milestone 5: traveller-proposed edits. Present only when the page can
+   *  accept them (a saved plan for this route); disabledReason freezes the
+   *  affordance while a crew run is in flight. */
+  planEdit?: {
+    onPlansChanged: (plans: DayPlan[]) => void;
+    disabledReason: string | null;
+    isLocked: (dayIndex: number, ivIndex: number) => boolean;
+    firstEditableDay: number | null;
+  };
   locked: Map<string, DayPlan>;
   drafts: Map<string, { plan: DayPlan; attempt?: number; solverDraft?: DayPlan }>;
   /** Per-day scorer verdicts — the "why" expander's evidence row. */
@@ -166,6 +306,7 @@ export function NudgeFeedScreen({
   phase,
   selectedDayLabel,
   onSelectDay,
+  planEdit,
   locked,
   drafts,
   verdicts,
@@ -209,16 +350,6 @@ export function NudgeFeedScreen({
   const [globeOpen, setGlobeOpen] = useState(false);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
-  const [dayListOpen, setDayListOpen] = useState(false);
-  // The day list dismisses like every other overlay: Escape closes it.
-  useEffect(() => {
-    if (!dayListOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setDayListOpen(false);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [dayListOpen]);
   const [celebrated, setCelebrated] = useState(false);
   // The wake ack is a this-session thank-you, not a permanent banner.
   const [wakeJustAnswered, setWakeJustAnswered] = useState(false);
@@ -628,6 +759,7 @@ export function NudgeFeedScreen({
         : null,
     [trip, activeDaySpec, scenePlans, calendarEvents, baseline],
   );
+
   const simple = !expandAllWhy;
   // HeroDawnPanel mounts under the same condition used in the hero below;
   // while mounted it is the single source of the hero's sky vars.
@@ -731,6 +863,52 @@ export function NudgeFeedScreen({
       : undefined;
   }, [arrivalView, activeDaySpec, tasteItinerary, placeChoices?.state]);
 
+    const shareCard = scene && (
+    <DayCardShare
+      scene={scene}
+      fictionalTrip={sampleMode === true}
+      eventSource={calendarSource ?? "fixture"}
+      exampleBaseline={baselineKind === "demo-default" && !wakeBand}
+      preview={!locked.has(currentLabel)}
+      idea={activeSceneIdea}
+      favorites={tasteItinerary?.favorites}
+      recordedTaste={false}
+      staleTaste={
+        !!(tasteProfile?.ready && tasteItinerary &&
+          tasteSelectionKey(tasteProfile.favorites) !== tasteSelectionKey(tasteItinerary.favorites))
+      }
+    />
+  );
+  const canEditPlan =
+    dayPanelMode({ planEdit: !!planEdit, sampleMode: sampleMode === true, lockedSize: locked.size }) === "edit";
+  const editStore = useMemo(
+    () =>
+      canEditPlan && trip
+        ? localPlanStore({
+            route: {
+              origin: trip.origin.code,
+              dest: trip.destination.code,
+              date: trip.days.find((d) => d.dayIndex === trip.departureDayIndex)?.date ?? "",
+            },
+          })
+        : null,
+    [canEditPlan, trip],
+  );
+  const stepperProps = {
+    days,
+    activeDaySpec,
+    activeDayIndex,
+    onSelectDay,
+    todayIdx,
+    currentDayName,
+    currentLabel,
+    totalSteps,
+    completedCount,
+    progressPct,
+    previewMode,
+    departureDayIndex: trip?.departureDayIndex,
+  };
+
   return (
     <>
       <RightNowCard
@@ -758,31 +936,65 @@ export function NudgeFeedScreen({
           hasPlan={hasPlan || [...(preview?.values() ?? [])].some(Boolean)}
         />
       ) : (
-        <DayScene
-          key={`${scene.city.code}:${scene.date}:${scene.moment?.eventId ?? ""}:${scene.moment?.localMin ?? ""}`}
-          scene={scene}
-          example={sampleMode === true}
-          exampleBaseline={baselineKind === "demo-default" && !wakeBand}
-          preview={!locked.has(currentLabel)}
-          eventSource={calendarSource ?? "fixture"}
-          idea={activeSceneIdea}
-          onSelectDay={onSelectDay}
-        >
-          <DayCardShare
-            scene={scene}
-            fictionalTrip={sampleMode === true}
-            eventSource={calendarSource ?? "fixture"}
+        <div key={`${scene.city.code}:${scene.date}:${scene.moment?.eventId ?? ""}:${scene.moment?.localMin ?? ""}`}>
+          <PerformanceBrief
+            compact
+            moment={scene.moment}
+            destination={scene.destination}
+            date={scene.momentDate ?? undefined}
+            example={sampleMode === true}
             exampleBaseline={baselineKind === "demo-default" && !wakeBand}
+            eventSource={calendarSource ?? "fixture"}
             preview={!locked.has(currentLabel)}
-            idea={activeSceneIdea}
-            favorites={tasteItinerary?.favorites}
-            recordedTaste={false}
-            staleTaste={
-              !!(tasteProfile?.ready && tasteItinerary &&
-                tasteSelectionKey(tasteProfile.favorites) !== tasteSelectionKey(tasteItinerary.favorites))
-            }
+            hasPlan={hasPlan || [...(preview?.values() ?? [])].some(Boolean)}
           />
-        </DayScene>
+          {canEditPlan && editStore && trip ? (
+            <InteractiveDayEditor
+              ctxBase={{
+                trip,
+                calendar: calendarEvents,
+                adherence: adherence ?? ADHERENCE_PROFILE,
+                baseline: baseline
+                  ? { avgBedtimeMin: baseline.avgBedtimeMin, avgWakeMin: baseline.avgWakeMin }
+                  : undefined,
+                citations,
+                isLocked: planEdit!.isLocked,
+                firstEditableDay: planEdit!.disabledReason ? -1 : planEdit!.firstEditableDay,
+              }}
+              baseline={baseline}
+              dayIndex={activeDaySpec!.dayIndex}
+              requiredMin={Math.abs(trip.requiredShiftMin)}
+              direction={trip.direction}
+              store={editStore}
+              preview={!locked.has(currentLabel)}
+              example={sampleMode === true}
+              onPlansChanged={planEdit!.onPlansChanged}
+              onJumpToMomentDay={
+                scene.moment && scene.momentDayIndex !== scene.dayIndex
+                  ? () => onSelectDay(scene.moment!.dayLabel)
+                  : undefined
+              }
+            >
+              {shareCard}
+            </InteractiveDayEditor>
+          ) : (
+            <InteractiveDay
+              scene={scene}
+              requiredMin={Math.abs(trip!.requiredShiftMin)}
+              direction={trip!.direction}
+              editBlockReason={planEdit?.disabledReason ?? undefined}
+              preview={!locked.has(currentLabel)}
+              example={sampleMode === true}
+              onJumpToMomentDay={
+                scene.moment && scene.momentDayIndex !== scene.dayIndex
+                  ? () => onSelectDay(scene.moment!.dayLabel)
+                  : undefined
+              }
+            >
+              {shareCard}
+            </InteractiveDay>
+          )}
+        </div>
       )}
       {/* Split-Horizon Hero Card — the left panel is the trip's real dawn line:
           body clock against destination, with the next light window on it. */}
@@ -1308,6 +1520,7 @@ export function NudgeFeedScreen({
           example={baselineKind === "demo-default" && !wakeBand}
         />
       )}
+      {arrivalView && <DayStepper {...stepperProps} />}
       {(() => {
         const spec = arrivalView ? activeDaySpec : null;
         const suggestion =
@@ -1717,81 +1930,10 @@ export function NudgeFeedScreen({
         }}
       >
         {/* Day stepper — ‹ › through the days; the centre label opens the
-            full list for a direct jump. Real trip days only. It heads the
-            rail it selects, inside the rail's own surface. */}
-        {days.length > 0 && activeDaySpec && (
-          <div className="rise" style={{ position: "relative" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-              <button
-                type="button"
-                aria-label="Previous day"
-                disabled={activeDayIndex <= 0}
-                onClick={() => days[activeDayIndex - 1] && onSelectDay(days[activeDayIndex - 1].label)}
-                className="day-step"
-              >
-                ‹
-              </button>
-              <button
-                type="button"
-                onClick={() => setDayListOpen((v) => !v)}
-                aria-expanded={dayListOpen}
-                aria-current={todayIdx === activeDaySpec.dayIndex ? "date" : undefined}
-                className="day"
-                style={{ flex: 1 }}
-              >
-                <span style={{ display: "block" }}>
-                  {currentDayName}
-                  {todayIdx === activeDaySpec.dayIndex ? " · Today" : ""} ▾
-                </span>
-                {totalSteps > 0 && (
-                  <span style={{ display: "block", marginTop: 4 }}>
-                    <span style={{ display: "block", height: 3, borderRadius: 999, background: "var(--m-border-2)", overflow: "hidden" }}>
-                      <span style={{ display: "block", height: "100%", width: `${progressPct}%`, background: "#D96B43", transition: "width 0.3s ease-out" }} />
-                    </span>
-                    <span style={{ fontSize: 10, fontWeight: 600, color: todayIdx === activeDaySpec.dayIndex ? "var(--m-on-accent)" : "var(--m-muted)" }}>
-                      {previewMode ? `Example plan · ${completedCount} of ${totalSteps} done` : `${completedCount} of ${totalSteps} done`}
-                    </span>
-                  </span>
-                )}
-              </button>
-              <button
-                type="button"
-                aria-label="Next day"
-                disabled={activeDayIndex >= days.length - 1}
-                onClick={() => days[activeDayIndex + 1] && onSelectDay(days[activeDayIndex + 1].label)}
-                className="day-step"
-              >
-                ›
-              </button>
-            </div>
-            {dayListOpen && (
-              <>
-              {/* Dismiss backdrop — taps outside the list close it, like
-                  every other overlay in the app. */}
-              <div
-                aria-hidden="true"
-                onClick={() => setDayListOpen(false)}
-                style={{ position: "fixed", inset: 0, zIndex: 29 }}
-              />
-              <div className="card" style={{ position: "absolute", zIndex: 30, top: "calc(100% + 4px)", left: 0, right: 0, padding: 6, display: "flex", flexDirection: "column", gap: 2 }}>
-                {days.map((d) => (
-                  <button
-                    key={d.dayIndex}
-                    type="button"
-                    onClick={() => { onSelectDay(d.label); setDayListOpen(false); }}
-                    aria-current={todayIdx === d.dayIndex ? "date" : undefined}
-                    className={`day ${d.label === currentLabel ? "on" : ""}`}
-                    style={{ width: "100%", textAlign: "left" }}
-                  >
-                    {friendlyDayLabel(d, trip?.departureDayIndex)}
-                    {todayIdx === d.dayIndex ? " · Today" : ""}
-                  </button>
-                ))}
-              </div>
-              </>
-            )}
-          </div>
-        )}
+            full list for a direct jump. Present on every day: it heads the
+            rail inside the rail, and rides above the arrival view when the
+            rail is hidden. */}
+        <DayStepper {...stepperProps} />
         <DaySkyStrip steps={steps} resolvedIds={resolvedIds} nowMin={nowMin} label={currentDayName} />
         <div className="tl-rows">
         {steps.map((step, stepIdx) => {

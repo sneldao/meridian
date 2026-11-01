@@ -7,17 +7,13 @@ import { buildTasteItinerary } from "@/domain/taste-itinerary";
 import { resolvePlaceChoice } from "@/lib/place-choices";
 import { usePlaceChoices } from "@/lib/use-place-choices";
 import { sampleTasteProfile, SAMPLE_TASTE_LABEL } from "@/lib/sample-taste";
-import { initialSceneMinute } from "@/components/DayScene";
-import { ExampleStage } from "@/components/ExampleStage";
-import { buildDayScene, inspectDayScene } from "@/domain/day-scene";
+import { InteractiveDay } from "@/components/InteractiveDay";
+import { buildDayScene } from "@/domain/day-scene";
 import { fmtMin } from "@/domain/circadian";
 import { ArrivalDayView } from "@/components/ArrivalDayView";
 import { buildDailyNudgesForDay } from "@/domain/nudges";
 import { ADHERENCE_PROFILE } from "@/domain/fixtures";
 import { dayPlace } from "@/domain/today";
-import { remainingLagMin } from "@/domain/readiness";
-import { stageSunFor } from "@/domain/stage-sun";
-import { sunSelfRead } from "@/domain/sun-self";
 
 import { tasteSelectionKey, type DestinationPlace } from "@/domain/taste";
 import type { PlaceChoice } from "@/lib/place-choices";
@@ -61,7 +57,6 @@ export function ScenarioExperience({ id, departureDate, onChooseScenario, onMake
   const reduced = useReducedMotion();
   const [profileKey, setProfileKey] = useState<string | null>(null);
   const [selectedDay, setSelectedDay] = useState<number | null>(() => readUrlDay(id, departureDate));
-  const [minute, setMinute] = useState<number | null>(null);
   const demo = useMemo(() => buildDemoScenario(id, departureDate, meetingTime), [id, departureDate, meetingTime]);
 
   const refitTimer = useRef<number | undefined>(undefined);
@@ -85,14 +80,13 @@ export function ScenarioExperience({ id, departureDate, onChooseScenario, onMake
   useEffect(() => {
     const onPop = () => {
       setSelectedDay(readUrlDay(id, departureDate));
-      setMinute(null);
+
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, [id, departureDate]);
   const chooseDay = (dayIndex: number) => {
     setSelectedDay(dayIndex);
-    setMinute(null);
     syncDay(dayIndex);
   };
 
@@ -135,27 +129,7 @@ export function ScenarioExperience({ id, departureDate, onChooseScenario, onMake
     choices.setChoice(spec.date, { status, place, tasteKey: tasteSelectionKey(itinerary.favorites) });
   };
 
-  const scrubMinute = scene ? minute ?? initialSceneMinute(scene) : 720;
-  const read = scene ? inspectDayScene(scene, scrubMinute) : null;
-  const sun = read
-    ? stageSunFor(read.solar?.altitude ?? null, read.localMin / 1440, read.solar?.label ?? null)
-    : null;
 
-  // The face inside the sun is the traveller's meridian on this day: the debt
-  // the locked days before it have not yet paid, banked against the trip's
-  // requirement — the same read the stage sky and the passport trust.
-  const face = useMemo(() => {
-    const required = Math.abs(demo.trip.requiredShiftMin);
-    const prior = demo.plans.filter((p) => p.dayIndex < day);
-    const lag = remainingLagMin(demo.trip, prior);
-    return sunSelfRead({
-      owedMin: lag,
-      deliveredMin: Math.max(0, required - lag),
-      requiredMin: required,
-      direction: demo.trip.direction,
-      daysLocked: demo.plans.length,
-    });
-  }, [demo, day]);
 
   return (
     <div className="scenario scenario-one-stage reading">
@@ -206,20 +180,24 @@ export function ScenarioExperience({ id, departureDate, onChooseScenario, onMake
         ))}
       </div>
 
-      {scene && sun && (
-        <ExampleStage
+      {scene && (
+        <InteractiveDay
+          key={day}
           scene={scene}
-          minute={scrubMinute}
-          onMinuteChange={setMinute}
-          sun={sun}
-          face={face}
-          pulseKey={day}
+          requiredMin={Math.abs(demo.trip.requiredShiftMin)}
+          direction={demo.trip.direction}
+          example
+          onJumpToMomentDay={
+            scene.moment && scene.momentDayIndex !== null && scene.momentDayIndex !== scene.dayIndex
+              ? () => chooseDay(scene.momentDayIndex!)
+              : undefined
+          }
         />
       )}
       {scene?.moment && scene.momentDayIndex === day && (
         <p className="scenario-moment" role="note">
           The moment that matters: <b>{scene.moment.title}</b> · {fmtMin(scene.moment.localMin)} {scene.city.name}
-          {read ? ` — ${fmtMin(read.bodyMin)} body time here` : ""}
+          {scene.moment.bodyMin !== undefined ? ` — ${fmtMin(scene.moment.bodyMin)} body time here` : ""}
         </p>
       )}
 

@@ -88,11 +88,14 @@ export function TripEntryScreen({ initialDate, onContinue, onExploreExample, onE
         <h1 id="entry-heading" className="entry-title">
           {gap ? routeGapHeadline(gap) : "Your turn."}
         </h1>
-        <p className="entry-sub">Light, sleep and caffeine, timed to your route and shown to the minute.</p>
+        {/* The hero above already said what the plan does; this line says
+            who does the work — the division of labour is the new fact. */}
+        <p className="entry-sub">Your crew reads the route, drafts the days, and hands back a plan you keep.</p>
         <p className="entry-source">Sleep timing from your trip. Place discovery powered by Qloo when available.</p>
       </div>
       <div className="entry-planner">
-        <p className="entry-eyebrow">Start with your trip</p>
+        {/* One "start" per page: the hero's CTA already said it — the
+            form's own header carries this block. */}
         <h2>Where are you headed?</h2>
         <p className="entry-planner-note">Choose your airports and departure date. We’ll take it one day at a time.</p>
         <form

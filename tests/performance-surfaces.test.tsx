@@ -81,11 +81,11 @@ describe("ScenarioExperience + prefill (SSR)", () => {
         const h = renderToStaticMarkup(createElement(ScenarioExperience, { id, departureDate: "2026-11-04", onChooseScenario: () => {}, onMakeTrip: () => {}, onBack: () => {} }));
         expect(h).toContain("Imagined demo scenarios");
         expect(h).toContain("not their actual data or endorsements");
-        // Round 27: the three steps are gone — one stage with the scrubber,
-        // the sun's written read, and the CTA all present on first paint.
+        // Milestone 5: the three steps are gone — the explorable interactive
+        // day stands where the stage did, honestly tagged.
         expect(h).not.toContain("Step 1 of 3");
-        expect(h).toContain("Drag the day");
-        expect(h).toContain("example-stage");
+        expect(h).toContain('class="iday"');
+        expect(h).toContain("inspect only");
         expect(h).toContain("Make this my trip");
         expect(h).toContain("Recorded Qloo sample");
         expect(h).not.toContain(">Done<");
@@ -163,7 +163,7 @@ describe("feed ordering (SSR)", () => {
       actions: { completedIds: new Set<string>(), skippedIds: new Set<string>(), pendingMarks: new Map(), marks: [], ready: true, mark: () => {}, acknowledge: () => {} },
     };
     const html = renderToStaticMarkup(createElement(NudgeFeedScreen, props));
-    const pb = html.indexOf('class="day-scene"');
+    const pb = html.indexOf('class="iday"');
     const hero = html.indexOf('class="hero ');
     const lp = html.indexOf('class="light-panel"');
     const td = html.indexOf("Find your kind of");
