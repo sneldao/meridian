@@ -7,14 +7,17 @@ import { buildTasteItinerary } from "@/domain/taste-itinerary";
 import { resolvePlaceChoice } from "@/lib/place-choices";
 import { usePlaceChoices } from "@/lib/use-place-choices";
 import { sampleTasteProfile, SAMPLE_TASTE_LABEL } from "@/lib/sample-taste";
-import { DayScene, initialSceneMinute } from "@/components/DayScene";
+import { initialSceneMinute } from "@/components/DayScene";
+import { ExampleStage } from "@/components/ExampleStage";
 import { buildDayScene, inspectDayScene } from "@/domain/day-scene";
 import { fmtMin } from "@/domain/circadian";
-import { DayCardShare } from "@/components/DayCardShare";
 import { ArrivalDayView } from "@/components/ArrivalDayView";
 import { buildDailyNudgesForDay } from "@/domain/nudges";
 import { ADHERENCE_PROFILE } from "@/domain/fixtures";
 import { dayPlace } from "@/domain/today";
+import { remainingLagMin } from "@/domain/readiness";
+import { stageSunFor } from "@/domain/stage-sun";
+import { sunSelfRead } from "@/domain/sun-self";
 
 import { tasteSelectionKey, type DestinationPlace } from "@/domain/taste";
 import type { PlaceChoice } from "@/lib/place-choices";
@@ -29,13 +32,21 @@ export interface ScenarioExperienceProps {
   onBack: () => void;
 }
 
-const STEP_LABELS = ["Pick a day", "Scrub the day", "See the plan"] as const;
-
-export function readUrlStep(): 0 | 1 | 2 | null {
-  if (typeof window === "undefined") return null;
-  const s = Number(new URLSearchParams(window.location.search).get("step"));
-  return s === 0 || s === 1 || s === 2 ? s : null;
-}
+/* Round 27: the example is one stage, not three steps.
+ *
+ * The old flow (pick a day → scrub the day → see the plan) extended the page
+ * at every click and churned visitors before the product ever moved. Now the
+ * day chips, the modeled sky with the hero sun, the scrubber and the plan
+ * live on a single screen: picking a day or dragging the hour *transforms the
+ * stage in place* — the sun crosses the sky, the band follows, the clocks and
+ * windows re-read, the plan below re-answers. Nothing grows; everything is
+ * the same motion law the app runs on (the thing you touched becomes the
+ * surface). "Scrub this day" is retired with the steps — the scrubber is a
+ * slider with a sun on it; it needs no button.
+ *
+ * The URL keeps only what still means something: `?day=` reopens the day the
+ * visitor left. `?step=` is gone with the steps; a stale step param reads as
+ * no preference. */
 
 export function readUrlDay(id: DemoScenarioId, departureDate: string): number | null {
   if (typeof window === "undefined") return null;
@@ -44,8 +55,7 @@ export function readUrlDay(id: DemoScenarioId, departureDate: string): number | 
   return demo.trip.days.some((x) => x.dayIndex === d) ? d : null;
 }
 
-export function ScenarioExperience({ id, departureDate, onChooseScenario, onMakeTrip, onBack, initialStep = 0 }: ScenarioExperienceProps & { initialStep?: 0 | 1 | 2 }) {
-  const [step, setStep] = useState<0 | 1 | 2>(() => readUrlStep() ?? initialStep);
+export function ScenarioExperience({ id, departureDate, onChooseScenario, onMakeTrip, onBack }: ScenarioExperienceProps) {
   const [meetingTime, setMeetingTime] = useState<"morning" | "afternoon">("afternoon");
   const [refitting, setRefitting] = useState(false);
   const reduced = useReducedMotion();
@@ -64,33 +74,28 @@ export function ScenarioExperience({ id, departureDate, onChooseScenario, onMake
     refitTimer.current = window.setTimeout(() => setRefitting(false), 600);
   };
 
-  const syncUrl = (nextStep: number, nextDay: number | null) => {
+  const syncDay = (nextDay: number | null) => {
     const url = new URL(window.location.href);
-    if (nextStep === 0) url.searchParams.delete("step"); else url.searchParams.set("step", String(nextStep));
     if (nextDay === null) url.searchParams.delete("day"); else url.searchParams.set("day", String(nextDay));
-    // pushState, not replace: Back should walk the steps it just walked.
+    // pushState, not replace: Back should walk the days it just walked.
     window.history.pushState(null, "", url.toString());
   };
 
-  // ...and a pop lands here: re-read the step/day the URL now names.
+  // A pop lands here: re-read the day the URL now names.
   useEffect(() => {
     const onPop = () => {
-      setStep(readUrlStep() ?? initialStep);
       setSelectedDay(readUrlDay(id, departureDate));
       setMinute(null);
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
-  }, [id, departureDate, initialStep]);
-  const goToStep = (next: 0 | 1 | 2) => {
-    setStep(next);
-    syncUrl(next, selectedDay);
-  };
+  }, [id, departureDate]);
   const chooseDay = (dayIndex: number) => {
     setSelectedDay(dayIndex);
     setMinute(null);
-    syncUrl(step, dayIndex);
+    syncDay(dayIndex);
   };
+
   const profile = useMemo(
     () => sampleTasteProfile(profileKey ?? demo.scenario.profile),
     [profileKey, demo.scenario.profile],
@@ -129,8 +134,31 @@ export function ScenarioExperience({ id, departureDate, onChooseScenario, onMake
     if (!spec || !itinerary || !choices.ready) return;
     choices.setChoice(spec.date, { status, place, tasteKey: tasteSelectionKey(itinerary.favorites) });
   };
+
+  const scrubMinute = scene ? minute ?? initialSceneMinute(scene) : 720;
+  const read = scene ? inspectDayScene(scene, scrubMinute) : null;
+  const sun = read
+    ? stageSunFor(read.solar?.altitude ?? null, read.localMin / 1440, read.solar?.label ?? null)
+    : null;
+
+  // The face inside the sun is the traveller's meridian on this day: the debt
+  // the locked days before it have not yet paid, banked against the trip's
+  // requirement — the same read the stage sky and the passport trust.
+  const face = useMemo(() => {
+    const required = Math.abs(demo.trip.requiredShiftMin);
+    const prior = demo.plans.filter((p) => p.dayIndex < day);
+    const lag = remainingLagMin(demo.trip, prior);
+    return sunSelfRead({
+      owedMin: lag,
+      deliveredMin: Math.max(0, required - lag),
+      requiredMin: required,
+      direction: demo.trip.direction,
+      daysLocked: demo.plans.length,
+    });
+  }, [demo, day]);
+
   return (
-    <div className="scenario reading">
+    <div className="scenario scenario-one-stage reading">
       <button type="button" className="taste-button taste-button--ghost" onClick={onBack}>← Back to my trip setup</button>
       <header className="scenario-heading">
         <p className="entry-eyebrow">Try a high-stakes day</p>
@@ -138,6 +166,7 @@ export function ScenarioExperience({ id, departureDate, onChooseScenario, onMake
         <h1 className="scenario-title">{demo.scenario.title}</h1>
         <p className="scenario-joke">{demo.scenario.joke}</p>
       </header>
+
       <p className="scenario-disclosure" role="note">
         Imagined demo scenarios — fictional sample data, not their actual data or endorsements. Nothing is saved.
       </p>
@@ -168,46 +197,33 @@ export function ScenarioExperience({ id, departureDate, onChooseScenario, onMake
                     <button type="button" className="taste-button taste-button--ghost" onClick={() => chooseMeetingTime("afternoon")}>Try 16:00</button>
         </p>
       )}
-      <p className="scenario-steps" aria-live="polite">Step {step + 1} of 3 · {STEP_LABELS[step]}</p>
-      {step === 0 && (
+
+      {/* The day chips select the stage's subject; the stage transforms in
+          place around the choice — no page extension, no second step. */}
       <div className="scenario-days" role="group" aria-label="Days">
         {demo.trip.days.map((d) => (
           <button key={d.dayIndex} type="button" aria-pressed={d.dayIndex === day} onClick={() => chooseDay(d.dayIndex)} className="taste-button taste-button--ghost">{d.label} · {d.date.slice(5)}</button>
         ))}
       </div>
-      )}
-      {step === 1 && scene && (
-        <DayScene
-          key={`${scene.city.code}:${scene.date}:${scene.moment?.eventId ?? ""}:${scene.moment?.localMin ?? ""}`}
-          scene={scene}
-          example
-          eventSource="fixture"
-          idea={resolved}
-          minute={minute ?? undefined}
-          onMinuteChange={setMinute}
-          onSelectDay={(label) => {
-            const m = demo.trip.days.find((d) => d.label === label);
-            if (m) chooseDay(m.dayIndex);
-          }}
-        >
-          <DayCardShare
-            scene={scene}
-            fictionalTrip
-            eventSource="fixture"
-            exampleBaseline
-            idea={resolved}
-            favorites={itinerary?.favorites}
-            recordedTaste
-          />
-        </DayScene>
-      )}
 
-      {step === 2 && scene && (
-        <p role="status" className="scenario-source">
-          Plan for {fmtMin(inspectDayScene(scene, minute ?? initialSceneMinute(scene)).localMin)} local time. Scrub the day to see the plan at another moment.
+      {scene && sun && (
+        <ExampleStage
+          scene={scene}
+          minute={scrubMinute}
+          onMinuteChange={setMinute}
+          sun={sun}
+          face={face}
+          pulseKey={day}
+        />
+      )}
+      {scene?.moment && scene.momentDayIndex === day && (
+        <p className="scenario-moment" role="note">
+          The moment that matters: <b>{scene.moment.title}</b> · {fmtMin(scene.moment.localMin)} {scene.city.name}
+          {read ? ` — ${fmtMin(read.bodyMin)} body time here` : ""}
         </p>
       )}
-      {step === 2 && spec && (
+
+      {spec && (
         <ArrivalDayView
           destination={dayPlace(demo.trip, spec.dayIndex).city}
           date={spec.date}
@@ -235,12 +251,7 @@ export function ScenarioExperience({ id, departureDate, onChooseScenario, onMake
           tasteStatus={itinerary?.status}
         />
       )}
-      <nav className="scenario-nav" aria-label="Step controls">
-        {step > 0 && <button type="button" className="taste-button taste-button--ghost" onClick={() => goToStep((step - 1) as 0 | 1 | 2)}>← Back</button>}
-        {step < 2 && <button type="button" className="entry-cta" onClick={() => goToStep((step + 1) as 0 | 1 | 2)}>{step === 0 ? "Scrub this day" : "See the plan"}</button>}
-      </nav>
-      {step === 2 && (
-      <>
+
       <div className="scenario-taste">
         <fieldset className="scenario-toggle">
           <legend>Taste preference</legend>
@@ -255,8 +266,6 @@ export function ScenarioExperience({ id, departureDate, onChooseScenario, onMake
         <button type="button" className="entry-cta" onClick={() => onMakeTrip({ origin: "LHR", dest: "HND", date: departureDate })}>Make this my trip</button>
         <p className="scenario-sub">Start with this route. Add your own details before saving.</p>
       </div>
-      </>
-      )}
     </div>
   );
 }

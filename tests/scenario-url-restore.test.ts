@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { readUrlDay, readUrlStep } from "../src/components/ScenarioExperience";
+import { readUrlDay } from "../src/components/ScenarioExperience";
 
 const g = globalThis as unknown as { window?: { location: { search: string } } };
 
@@ -13,18 +13,14 @@ describe("scenario URL restore", () => {
     delete g.window;
   });
 
-  test("step accepts only 0, 1 or 2", () => {
-    setSearch("?step=1");
-    expect(readUrlStep()).toBe(1);
+  // Round 27 retired the steps — the example is one stage. A stale ?step=
+  // param from an old link is simply ignored (no step reader exists); the
+  // day param beside it still restores.
+  test("stale step params are inert", () => {
     setSearch("?step=2");
-    expect(readUrlStep()).toBe(2);
-    setSearch("?step=3");
-    expect(readUrlStep()).toBeNull();
-    setSearch("?step=abc");
-    expect(readUrlStep()).toBeNull();
-    // A missing param reads as 0, which is also the default first step.
-    setSearch("");
-    expect(readUrlStep()).toBe(0);
+    expect(readUrlDay("miles", "2026-11-02")).toBe(0);
+    setSearch("?step=2&day=1");
+    expect(readUrlDay("miles", "2026-11-02")).toBe(1);
   });
 
   test("day restores only a day that exists in the scenario", () => {
@@ -36,9 +32,8 @@ describe("scenario URL restore", () => {
     expect(readUrlDay("miles", "2026-11-02")).toBeNull();
   });
 
-  test("with no window (server render) both return null", () => {
+  test("with no window (server render) it returns null", () => {
     delete g.window;
-    expect(readUrlStep()).toBeNull();
     expect(readUrlDay("miles", "2026-11-02")).toBeNull();
   });
 });

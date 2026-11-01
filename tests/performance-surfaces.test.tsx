@@ -75,7 +75,7 @@ describe("entry + selector (SSR)", () => {
 });
 
 describe("ScenarioExperience + prefill (SSR)", () => {
-  test("each scenario renders disclosure, names, recorded source — no actions or fetch", () => {
+  test("one stage: scrubber, sun read, CTA — no steps, no actions, no fetch", () => {
     const saved = globalThis.fetch;
     globalThis.fetch = (async () => { throw new Error("must not fetch"); }) as unknown as typeof fetch;
     try {
@@ -83,13 +83,15 @@ describe("ScenarioExperience + prefill (SSR)", () => {
         const h = renderToStaticMarkup(createElement(ScenarioExperience, { id, departureDate: "2026-11-04", onChooseScenario: () => {}, onMakeTrip: () => {}, onBack: () => {} }));
         expect(h).toContain("Imagined demo scenarios");
         expect(h).toContain("not their actual data or endorsements");
-        expect(h).toContain("Step 1 of 3");
-        expect(h).not.toContain("Make this my trip");
-        const plan = renderToStaticMarkup(createElement(ScenarioExperience, { id, departureDate: "2026-11-04", onChooseScenario: () => {}, onMakeTrip: () => {}, onBack: () => {}, initialStep: 2 }));
-        expect(plan).toContain("Recorded Qloo sample");
-        expect(plan).toContain("Make this my trip");
-        expect(plan).not.toContain(">Done<");
-        expect(plan).not.toContain(">Skip<");
+        // Round 27: the three steps are gone — one stage with the scrubber,
+        // the sun's written read, and the CTA all present on first paint.
+        expect(h).not.toContain("Step 1 of 3");
+        expect(h).toContain("Drag the day");
+        expect(h).toContain("example-stage");
+        expect(h).toContain("Make this my trip");
+        expect(h).toContain("Recorded Qloo sample");
+        expect(h).not.toContain(">Done<");
+        expect(h).not.toContain(">Skip<");
       }
     } finally {
       globalThis.fetch = saved;

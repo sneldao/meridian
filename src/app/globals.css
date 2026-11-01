@@ -1587,7 +1587,7 @@ body {
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .hero, .clock-stage, .arr {
+  .hero, .clock-stage, .arr, .example-stage, .demo-root {
     transition: --stage-horizon-h 320ms var(--ease-settle), --stage-horizon 320ms var(--ease-settle),
       --stage-horizon-floor 320ms var(--ease-settle), --stage-origin 320ms var(--ease-settle),
       --stage-ink-2 320ms var(--ease-settle);
@@ -1598,7 +1598,7 @@ body {
    horizon band rising from the floor, the origin-blue ghost residue, and the
    blue-black ink — the var()s resolve per-element from the tokens above or
    the inline values stageSkyFor sets. */
-.hero, .clock-stage, .arr, .today-stage, .hero .hl .bg.term {
+.hero, .clock-stage, .arr, .today-stage, .example-stage, .demo-root, .hero .hl .bg.term {
   background:
     /* the horizon line — soft, elliptical, fades out at the ends */
     radial-gradient(ellipse 62% 2px at var(--stage-sun-x) calc(100% - var(--stage-horizon-h)),
@@ -2755,7 +2755,7 @@ html[data-theme="night"] {
   --cat-flight: #8b93a7;
 }
 html[data-theme="night"] body,
-html[data-theme="night"] .root {
+html[data-theme="night"] .root:not(.demo-root) {
   background: var(--m-bg);
   color: var(--m-ink);
 }
@@ -6365,10 +6365,32 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
    told in order instead of dumped at once. Tokens only; the beat content
    rises with the shared choreography and the light sweep carries the
    hand-offs (useLightSweep). */
+/* Round 27: the demo is a stage, not a working surface. Stages are ink in
+   both themes, so the landing's stage grammar carries straight through —
+   no theme jump between the hero the visitor left and the story they get.
+   Tokens follow .today-stage; the modeled sky rides --stage-sky, written
+   imperatively by DemoBeats (ink default for the server paint). */
 .demo-root {
   min-height: 100dvh;
 }
+.demo-root .demo {
+  --m-bg: #0b0e16;
+  --m-card: rgba(255, 255, 255, 0.05);
+  --m-text: #c9d2e4;
+  --m-muted: #8b93a7;
+  --m-faint: #6b7590;
+  --m-border: rgba(255, 255, 255, 0.12);
+  --m-line: rgba(255, 255, 255, 0.12);
+  --m-accent: #e99a6f;
+  color: var(--m-text);
+}
+.demo-root .stage-sun { z-index: 0; }
+.demo-root .demo-stage, .demo-root .demo-head, .demo-root .demo-foot, .demo-root .demo-footnote {
+  position: relative;
+  z-index: 1;
+}
 .demo {
+  position: relative;
   display: flex;
   flex-direction: column;
   min-height: 100dvh;
@@ -6906,3 +6928,162 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 }
 /* the done step's receipt (round 26): the answer sits where the action was */
 .tl-receipt { margin: 4px 0 0; font-size: 12px; color: var(--m-muted); }
+
+/* ---- round 27 · the example is one stage ------------------------------
+ * The scrubbed sky is the backdrop, the hero sun rides the modeled arc with
+ * the traveller's face inside it, and everything re-answers in place. The
+ * stage is ink in both themes (stages don't flip); the backdrop rides the
+ * shared ink-stage background rule (stageSky's luminance-clamped horizon),
+ * and the sun's position rides --stage-sun-x/y/d — both written
+ * imperatively, so the server paint is the ink default. */
+.example-stage {
+  position: relative;
+  isolation: isolate;
+  margin: 18px calc(-1 * (32px + var(--hero-out))) 0;
+  min-height: 380px;
+  border-radius: 0;
+  padding: 26px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 14px;
+  /* stage tokens follow .today-stage so chips and readouts stay legible */
+  --m-bg: #0b0e16;
+  --m-card: rgba(255, 255, 255, 0.05);
+  --m-text: #c9d2e4;
+  --m-muted: #8b93a7;
+  --m-faint: #6b7590;
+  --m-border: rgba(255, 255, 255, 0.12);
+  --m-accent: #e99a6f;
+  /* backdrop: the shared ink-stage background rule above (stageSky's
+     luminance-clamped horizon keeps the paper readout legible) */
+}
+@media (max-width: 480px) {
+  .example-stage { min-height: 320px; padding: 20px 14px 16px; }
+}
+.example-stage-read { position: relative; z-index: 2; text-align: center; }
+.example-stage-clocks {
+  margin: 0;
+  font-size: var(--text-lg);
+  color: var(--m-muted);
+}
+.example-stage-clocks b { color: var(--m-text); }
+.example-stage-sep { margin: 0 8px; color: var(--m-faint); }
+.example-stage-sun-line {
+  margin: 4px 0 0;
+  font-size: var(--text-sm);
+  color: var(--m-text);
+}
+.example-stage-window {
+  margin: 4px 0 0;
+  font-size: var(--text-sm);
+  color: var(--m-muted);
+}
+.example-stage-scrub { position: relative; z-index: 2; display: grid; gap: 8px; }
+.example-stage-scrub-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--m-accent);
+  text-align: center;
+}
+.example-stage-scrub input[type="range"] {
+  width: 100%;
+  accent-color: var(--color-sun-dest);
+  min-height: 44px;
+}
+.example-stage-stepper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+.example-stage-stepper button {
+  font: inherit;
+  font-size: 12px;
+  padding: 6px 10px;
+  min-height: 32px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--m-border);
+  background: var(--m-card);
+  color: var(--m-muted);
+  cursor: pointer;
+  transition: color var(--dur-glide) var(--ease-glide), border-color var(--dur-glide) var(--ease-glide);
+}
+.example-stage-stepper button[data-active="true"] {
+  color: var(--m-text);
+  border-color: var(--m-accent);
+}
+.example-stage-honesty {
+  position: relative;
+  z-index: 2;
+  margin: 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--m-faint);
+}
+
+/* The hero sun — disc, halo, smear. Position from the CSS vars; paint from
+   the tokens. The smear decays with a transform-only transition, so a fast
+   scrub stretches the halo and it relaxes behind the disc (transform/opacity
+   only, stood down by the global reduced-motion flatten). */
+.stage-sun {
+  position: absolute;
+  left: var(--stage-sun-x, 50%);
+  top: var(--stage-sun-y, 75%);
+  width: var(--stage-sun-d, 16%);
+  min-width: 96px;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  z-index: 1;
+  pointer-events: none;
+}
+.stage-sun-disc {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 42% 38%, var(--color-sun-dest) 0%, var(--color-accent) 92%);
+  box-shadow: var(--glow-ember);
+}
+.stage-sun-disc .stage-sun-face { width: 100%; height: 100%; }
+.stage-sun-halo {
+  position: absolute;
+  inset: -42%;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--stage-horizon) 0%, transparent 68%);
+  transition: transform 420ms var(--ease-settle), opacity var(--dur-settle) var(--ease-settle);
+  transform: scaleX(calc(1 + var(--stage-sun-smear, 0) * 1.6));
+  opacity: calc(0.55 + var(--stage-sun-smear, 0) * 0.45);
+}
+.stage-sun-smear {
+  position: absolute;
+  inset: 8% -60% 8% 30%;
+  border-radius: 50%;
+  background: linear-gradient(90deg, transparent 0%, var(--stage-horizon) 55%, transparent 100%);
+  opacity: calc(var(--stage-sun-smear, 0) * 0.8);
+  transition: opacity var(--dur-settle) var(--ease-settle);
+}
+.stage-sun.below .stage-sun-disc { opacity: 0.72; }
+.stage-sun.below .stage-sun-halo { opacity: 0.4; }
+
+@media (prefers-reduced-motion: no-preference) {
+  /* The stage breathes: one ambient pulse on the halo, the only idle motion
+     in the app — stages perform, working surfaces respond (motion budget). */
+  .stage-sun-halo { animation: stage-sun-breathe 6s var(--ease-drift) infinite; }
+}
+@keyframes stage-sun-breathe {
+  0%, 100% { scale: 1; }
+  50% { scale: 1.06; }
+}
+
+/* One stage: the CTA row stops stacking steps and simply sits below. */
+.scenario-one-stage .scenario-days { margin: 14px 0 0; }
+.scenario-moment {
+  margin: 10px 0 0;
+  font-size: var(--text-sm);
+  color: var(--m-muted);
+  text-align: center;
+}
+.scenario-moment b { color: var(--m-text); }
+

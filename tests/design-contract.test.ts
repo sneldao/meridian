@@ -58,7 +58,7 @@ const CHROME = [
     "TripSetupScreen", "CalendarApprovalCard", "CrewQuestionCard", "UndoToast", "VoiceControls", "ArrivalDayView",
     "DaySkyStrip", "DayStrip", "CrewFeed", "DailyJourney", "DawnScrubber", "DayCardShare",
     "ScenarioExperience", "TasteItineraryCard", "LightWindowPanel", "PerformanceBrief",
-    "TimezoneClocks", "PlanReview", "ArrivalPassportCard",
+    "TimezoneClocks", "PlanReview", "ArrivalPassportCard", "StageSun", "ExampleStage", "DemoBeats",
   ].map((n) => `src/components/${n}.tsx`),
   "src/components/ui/AgentCard.tsx",
   "src/components/ui/AgentChip.tsx",
@@ -227,6 +227,8 @@ describe("design contract", () => {
     // decision, and every phrase retired must be retired from the allowlist.
     const HEDGES = new Set([
       "ArrivalDayView.tsx | · Example schedule",
+      "DemoBeats.tsx | Meridian — the ninety-second example",
+      "DemoBeats.tsx | Try the example",
       "HeroDawnPanel.tsx | banked on preview",
       "LightWindowPanel.tsx | Example plan.",
       "LightWindowPanel.tsx | Plan preview.",
