@@ -77,6 +77,16 @@ body text. `/crew` earns continuous motion because it is a dedicated surface
 with a stage to run. Same system, different budget — the rule is that motion
 must be either caused by the traveller or be the thing the screen exists for.
 
+*Amended round 27 (2026-11-01):* the budget is now explicit in
+`design.md` — ink **stages** (hero, demo, the example stage, arrival, crew)
+exist to *show*, so choreographed, ambient performance on them is "the thing
+the screen exists for," not a violation. **Working surfaces** keep the
+original law: respond only. The gate is unchanged everywhere — only
+transform/opacity/paint animate, reduced motion still stands it all down,
+and a performed stage's written read must be complete on its own. The
+amendment exists because testing showed visitors churning before they ever
+saw the crew; a differentiator nobody sees is a decoration after all.
+
 This also keeps the hero honest: no rAF loop, no re-render of a planet every
 frame for a line that moves once a minute.
 

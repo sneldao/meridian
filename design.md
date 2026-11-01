@@ -10,6 +10,9 @@ terminator line becomes the visual grammar. Product rules from
 `docs/vision.md` and `docs/reference/design-primitives.md` still bind:
 nothing is decorative, every visual read exists as words, motion is caused by
 the traveller or is the reason the screen exists, one accent, numbers in mono.
+The motion budget (round 27) widens the third rule: ink *stages* may perform
+ambient, choreographed life because performance is the reason they exist;
+working surfaces still only respond.
 
 Parts of this file are executable: `tests/design-contract.test.ts` parses
 `globals.css` and the chrome surfaces and fails the suite when a rule is
@@ -104,6 +107,54 @@ named tokens; raw values only inside one-off geometry.
 
 The app's named vocabulary survives and is the law: **glide** (180ms —
 traveller-caused state change), **settle** (320ms — a panel arriving),
+
+### The motion budget (round 27, 2026-11-01)
+
+Rule 3 of `docs/vision.md` ("respond to input; don't perform") is amended,
+not retired. It always had an escape clause — motion may be *the reason the
+screen exists* — and rounds 16–26 spent entirely on traveller-caused
+transitions and left the surfaces still. The result, measured in testing,
+was churn before the differentiator (the crew) was ever seen. The budget:
+
+- **Stages perform.** Ink stages (`.hero`, `.demo`, the example stage,
+  `/arrival`, crew surfaces) exist to *show* — they may carry ambient,
+  choreographed life: the sun breathing on the horizon, the crew solving
+  visibly, states morphing in their windows. Performance on a stage is the
+  product, not decoration; the "nothing is decorative" rule binds as ever —
+  every performed figure still traces to the model, and a stage says what
+  is live and what is choreographed.
+- **Working surfaces respond.** Today's checklist, sheets, forms and cards
+  keep the standing law: motion is caused by the traveller or is the
+  screen's reason to exist. No idle animation behind body text.
+- **The gate is unchanged.** Only `transform`, `opacity` and paint animate,
+  everywhere, on stages too. Reduced motion still stands everything down —
+  a performed stage degrades to its written read, which must be complete.
+  `tests/design-contract.test.ts` keeps enforcing *how* things move; this
+  budget governs *who may move, and when*.
+
+Inspiration corpus (studied 2026-11-01; the pattern to copy is each one's
+discipline, not its effects):
+
+- **Codrops Lookbook Hover Effects** (github.com/codrops/LookbookHoverEffects,
+  MIT) — a card taking over a photograph along jagged/curved/folded edges,
+  GSAP + WebGL, tap-to-reveal on touch. The grammar for the traveller
+  lookbook: each window holds a state (drained, half-lit, radiant, asleep)
+  and the takeover reveals the face that hour produces.
+- **Museum of Motion** (github.com/johnpolacek/museum-of-motion, MIT) — 57
+  GSAP exhibits, but the transferable structure is its `MOTION.md` brief:
+  personality, curves, timing and rules, read by every agent session before
+  touching animation. This file is Meridian's MOTION.md; a rule written here
+  and enforced nowhere lapses, so motion work amends here first.
+- **Smear Frames × Motion Blur Showreel**
+  (github.com/niccolofanton/smear-blur-showreel, MIT) — beat-cut, nothing
+  stops and nothing snaps: speed peaks sell the accents; a scrubbed sun may
+  leave a short smear trail. The tempo reference for stage choreography.
+- **GSAP joins the stack** for choreography-heavy surfaces (demo beats,
+  lookbook takeovers, crew stamp). It is a dependency with its own standard
+  license — keep it to the stages it earns; the existing CSS/view-transition
+  vocabulary remains the working-surface default, and GSAP code obeys the
+  same transform/opacity gate and reduced-motion guard.
+
 **drift** (700ms — arriving on its own). Easings: `--ease-glide`
 cubic-bezier(0.22, 1, 0.36, 1) · `--ease-settle` cubic-bezier(0.16, 1, 0.3, 1)
 · `--ease-drift` cubic-bezier(0.4, 0, 0.2, 1).
@@ -555,3 +606,44 @@ it is best at:
 Verification: 907 tests (8 new receipt locks), 7/7 round-26 browser
 checks including mark survival across reload, regression green
 (9/9 · 9/9 · 20/20), lint/typecheck clean.
+
+## Round 27–29 direction — the example becomes a performance (2026-11-01)
+
+Testing found the funnel's real leak: the shared link lands people on the
+example surfaces, which go flat and dark against the landing's stage
+grammar, grow instead of transforming ("Scrub this day" extends the page
+with a verbose step), keep the sun as a small glyph when it is the page's
+only visual argument, and hide the crew — the differentiator — behind the
+More menu. Three rounds, in order, to make the example play cinematically
+end-to-end with nothing in it to apologise for:
+
+1. **Round 27 — the example is one stage.** Kill the three-step
+   pick→scrub→plan flow for a single stage: day chips, sky, scrubber and
+   plan on one screen, where picking a day or dragging time *transforms the
+   scene in place* (the motion law: the thing you touched grows into the
+   surface, never page extension). The scrubber drives `stageSkyFor` — the
+   modeled sun crosses the stage as time moves, the horizon band follows,
+   and the plan re-reads at the scrubbed minute. The sun becomes the hero
+   render: one large disc positioned by the solar model with the sun-self
+   face living inside it (round 23's queued phase C), and a short smear
+   trail on fast drags. This also closes the theme jump: the example is
+   ink-stage everywhere, same grammar as the landing.
+2. **Round 28 — the crew performs in the first viewport.** The gate stamp
+   is the agentic proof and it is currently prose. The crew beat (and a
+   compact strip on the landing) performs it: solver draft cues slide into
+   place, the scorer stamps PASS, day chips lock and rays light —
+   choreographed, computed live, labelled honestly (which parts are live
+   and which are scripted, per the contested-day honesty rule). Four static
+   lines become four agents visibly doing work.
+3. **Round 29 — the lookbook of states.** A grid of windows, each holding
+   a traveller state (drained, half-lit, radiant, asleep), revealed with
+   Lookbook-style edge-morph takeovers on hover/tap: the window's hour
+   ("06:00 body time") morphs into the face that hour produces. States map
+   1:1 to `sunSelfForBeat` — computed, never authored. Stylised/procedural
+   travellers, not photoreal or real people: round 23's right-of-publicity
+   lesson still binds.
+
+Success for the sequence: the example plays end-to-end as one performance
+on an ink stage, the crew is seen before any menu is opened, and every
+performed figure traces to the model. Visual baselines refresh per round.
+
