@@ -6904,3 +6904,5 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   width: fit-content;
   pointer-events: none;
 }
+/* the done step's receipt (round 26): the answer sits where the action was */
+.tl-receipt { margin: 4px 0 0; font-size: 12px; color: var(--m-muted); }

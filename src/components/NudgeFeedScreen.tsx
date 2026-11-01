@@ -11,6 +11,7 @@ import {
   type NudgeCategory,
   type TravelerNudge,
 } from "@/domain/nudges";
+import { stepReceipt } from "@/domain/receipts";
 import { TasteDiscovery } from "@/components/TasteDiscovery";
 import { TasteItineraryCard } from "@/components/TasteItineraryCard";
 import { ArrivalDayView } from "@/components/ArrivalDayView";
@@ -571,6 +572,15 @@ export function NudgeFeedScreen({
       ? `your body clock moves about ${n} min closer to ${dest} time`
       : `skipping costs about ${n} min`;
   };
+  // The done step's receipt (round 26): the PRC model gates whether this
+  // step at this time actually supported the day's shift, and the share
+  // numbers it. Only locked days earn a receipt — previews and draft days
+  // fall back to the standing copy rather than invent attribution.
+  const receiptFor = (step: TravelerNudge): string | null => {
+    const plan = locked.get(step.dayLabel);
+    if (!plan) return null;
+    return stepReceipt({ plan, category: step.category, kind: step.kind, startMin: step.startMin }).text;
+  };
   const doneWhere = isToday ? " today" : "";
   const countdown = (() => {
     if (!heroNudge || nowMin === null) return null;
@@ -1103,6 +1113,11 @@ export function NudgeFeedScreen({
                 <p style={{ margin: 0, fontSize: "12px", color: "var(--color-mist)" }}>
                   {previewMode ? (
                     <>Done — {impactCopy(heroNudge.category, "done")}.</>
+                  ) : receiptFor(heroNudge) ? (
+                    <>
+                      Done — {receiptFor(heroNudge)}
+                      {pendingMarks.has(heroNudge.id) ? " · saved for your next check-in" : ""}.
+                    </>
                   ) : (
                     <>
                       Done — {impactCopy(heroNudge.category, "done")}
@@ -1782,6 +1797,7 @@ export function NudgeFeedScreen({
         {steps.map((step, stepIdx) => {
           const isDone = completedIds.has(step.id);
           const isSkip = isSkipped(step.id);
+          const receipt = isDone && !previewMode ? receiptFor(step) : null;
           const isOpen = !!expandAllWhy || expandedWhyId === step.id;
           const city = cityFor(step.dayIndex);
           const StepIcon = CAT_ICON[step.category];
@@ -1884,6 +1900,13 @@ export function NudgeFeedScreen({
                     {isOpen ? "▴" : "▾"}
                   </span>
                 </h3>
+                {isDone && !isOpen && (
+                  /* The receipt on the closed row (round 26): immediate
+                     visible response — doing the step answers the step. */
+                  <p className="tl-receipt">
+                    Done — {receipt ?? impactCopy(step.category, "done")}.
+                  </p>
+                )}
                 {isOpen && (
                   <div className="drawer tl-drawer rise">
                     <p>{step.actionSummary}</p>
@@ -1897,9 +1920,14 @@ export function NudgeFeedScreen({
                       {isSkip ? "Skipped ✓" : "Skip"}
                     </button>
                     {isDone && (
-                      <p style={{ margin: "6px 0 0", fontSize: "12px", color: "var(--m-muted)" }}>
+                      <p className="tl-receipt">
                         {previewMode ? (
                           <>Done — {impactCopy(step.category, "done")}.</>
+                        ) : receipt ? (
+                          <>
+                            Done — {receipt}
+                            {pendingMarks.has(step.id) ? " · saved for your next check-in" : ""}.
+                          </>
                         ) : (
                           <>
                             Done — {impactCopy(step.category, "done")}

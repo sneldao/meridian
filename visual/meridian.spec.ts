@@ -67,6 +67,22 @@ test("demo — the payoff beat stamps the passport", async ({ page }) => {
   await expect(page).toHaveScreenshot("demo-payoff.png");
 });
 
+// The payoff's gift row (share + portrait) sits below the 844px fold, so the
+// capture above never saw it — a second, scrolled shot guards the buttons.
+test("demo — the payoff's gift buttons", async ({ page }) => {
+  await page.addInitScript(() => localStorage.clear());
+  await page.goto("/demo");
+  await page.waitForSelector('[data-beat="stakes"]', { timeout: 30000 });
+  for (let i = 0; i < 3; i++) {
+    await page.locator(".demo-foot .demo-nav", { hasText: "Next" }).click();
+    await page.waitForTimeout(250);
+  }
+  await page.waitForSelector(".demo-ctas", { timeout: 10000 });
+  await page.locator(".demo-ctas").scrollIntoViewIfNeeded();
+  await page.waitForTimeout(300);
+  await expect(page).toHaveScreenshot("demo-payoff-ctas.png");
+});
+
 test("stage — today opens on the full-bleed stage", async ({ page }) => {
   await page.addInitScript((trip) => {
     localStorage.clear();

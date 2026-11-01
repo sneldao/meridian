@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   EMPTY_TRIP_ACTIONS,
   acknowledgeTripActions,
@@ -121,6 +121,15 @@ export function useTripActions(tripKey: string | null, preview: boolean): TripAc
   const state = hydrated?.scope === scope ? hydrated.state : EMPTY_TRIP_ACTIONS;
   const ready = scope !== null && hydrated?.scope === scope;
 
+  // Mutations compute from a ref and set a plain value — never an updater
+  // with side effects. React may re-run updater functions (eager evaluation,
+  // StrictMode), and a persist inside one fires twice: the toggle adds a mark
+  // and the re-run toggles it right back out, wiping the write (round 26).
+  const hydratedRef = useRef(hydrated);
+  useEffect(() => {
+    hydratedRef.current = hydrated;
+  }, [hydrated]);
+
   const persist = useCallback(
     (next: TripActionState) => {
       if (preview || tripKey === null) return;
@@ -136,26 +145,22 @@ export function useTripActions(tripKey: string | null, preview: boolean): TripAc
 
   const mark = useCallback(
     (action: Omit<ActionMark, "status">, status: "done" | "skipped") => {
-      if (scope === null) return;
-      setHydrated((prev) => {
-        if (prev?.scope !== scope) return prev;
-        const next = toggleTripAction(prev.state, action, status);
-        persist(next);
-        return { scope, state: next };
-      });
+      const prev = hydratedRef.current;
+      if (scope === null || !prev || prev.scope !== scope) return;
+      const next = toggleTripAction(prev.state, action, status);
+      persist(next);
+      setHydrated({ scope, state: next });
     },
     [scope, persist],
   );
 
   const acknowledge = useCallback(
     (ids: string[]) => {
-      if (scope === null) return;
-      setHydrated((prev) => {
-        if (prev?.scope !== scope) return prev;
-        const next = acknowledgeTripActions(prev.state, ids);
-        persist(next);
-        return { scope, state: next };
-      });
+      const prev = hydratedRef.current;
+      if (scope === null || !prev || prev.scope !== scope) return;
+      const next = acknowledgeTripActions(prev.state, ids);
+      persist(next);
+      setHydrated({ scope, state: next });
     },
     [scope, persist],
   );

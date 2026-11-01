@@ -521,3 +521,37 @@ queued as the next round.
 Verification: 900 tests (7 new), 9/9 round-25 browser checks (including a
 real PNG download), regression stack green (9/9 · 13/13 · 20/20 · 22/22 ·
 10/10). The demo-payoff baseline refreshes for the new button.
+
+## Round 26 — The done step answers (2026-11-01)
+
+The feed's done copy said "about N min closer" from editorial weights;
+round 26 makes the answer a **receipt** with two layers, each doing what
+it is best at:
+
+- **The PRC model is the gate.** `interventionSupports` was extracted
+  from `modelShiftMin` (behaviour-preserving, tests unchanged) so a
+  receipt can ask: did *this* step, at *this* time, actually support
+  today's shift? Dead-zone light is logged warmly ("still anchors the
+  routine"), an opposing step is logged and credited nothing — never
+  scolded, never flattered.
+- **The share is the number.** The validated day shift apportioned to
+  the step's kind (`stepImpactMin`), worn as "≈ N min of the day's M
+  min — banked" — day-neutral, because the timeline spans many days.
+- **Receipts only on committed plans.** Preview mode (the sample
+  persona's numbers) keeps the standing copy; attribution appears the
+  moment the traveller's own baseline ends preview. The receipt line
+  renders on the *closed* row — immediate visible response where the
+  action happened, per Finch's law.
+- **A real bug fell out of the smoke test.** Marks toggled in live mode
+  could vanish: `useTripActions.mark` persisted inside a React state
+  updater, and React's re-run of updaters toggled the mark right back
+  out (preview mode masked it — persist skips there). Fix: compute from
+  a ref, persist outside, set a plain value. Reload-persistence is now
+  browser-locked.
+- **The gift buttons get a visual guard.** The demo payoff's CTA row
+  sits below the 844px fold; a second scrolled snapshot
+  (`demo-payoff-ctas.png`) covers it.
+
+Verification: 907 tests (8 new receipt locks), 7/7 round-26 browser
+checks including mark survival across reload, regression green
+(9/9 · 9/9 · 20/20), lint/typecheck clean.

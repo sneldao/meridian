@@ -1304,3 +1304,25 @@ download, full regression. **Next:** the per-step receipt — the model must
 attribute banked minutes to individual steps before the feed may say
 "banked 40m of light" (honesty before delight); SolLuna state vocabulary
 convergence; the funnel week (set FUNNEL_SUMMARY_KEY, watch drop-offs).
+
+## Round 26 — The done step answers (2026-11-01)
+
+1. **Model-gated receipts** — `src/domain/receipts.ts`: the PRC model
+   gates (inert/opposing steps credited nothing, logged warmly), the
+   share numbers ("≈ N min of the day's M min — banked"). Receipts
+   render on the closed feed row; preview mode keeps standing copy.
+2. **`interventionSupports` extraction** — per-intervention phase
+   support lives next to the scorer; `modelShiftMin` rides it (no
+   behaviour change).
+3. **Double-toggle bug fix** — `useTripActions` persisted inside a
+   state updater; React's updater re-run toggled marks back out. Now
+   ref-computed, side-effect-free updaters, reload-persistent.
+4. **Visual guard for the gift row** — `demo-payoff-ctas.png` covers
+   the below-fold share + portrait buttons.
+
+**Verification:** 907/907 tests, 7/7 browser checks (incl. reload
+persistence), regression stack green. **Next candidates:** SolLuna
+state-vocabulary convergence onto the sun-self moods; the funnel week
+(set FUNNEL_SUMMARY_KEY and read real drop-offs); receipts for skipped
+steps' *recovery* (the recovery tip already exists — a receipt could
+close that loop too).

@@ -109,6 +109,51 @@ export function coverageOf(trip: Trip, days: DayPlan[]): ShiftCoverage {
   };
 }
 
+/** Per-intervention phase support for a day's timing, signed the same way as
+ * `modelShiftMin` (positive = delay, negative = advance). Extracted so
+ * attribution — the feed's step receipts (round 26) — weights each step by
+ * the same PRC model the scorer gates with. `cbt` is the body's current
+ * CBTmin; omit it to evaluate against the day's own targets (the receipt's
+ * self-contained mode — no chained phase to lean on). */
+export function interventionSupports(
+  day: DayPlan,
+  cbt?: number,
+): { kind: InterventionKind; startMin: number; support: number }[] {
+  const c = cbt ?? wrapMin(day.targetWakeMin - CBT_BEFORE_WAKE_MIN);
+  const out: { kind: InterventionKind; startMin: number; support: number }[] = [];
+  for (const iv of day.interventions) {
+    let end = iv.endMin ?? iv.startMin + 30;
+    if (end <= iv.startMin) end += 1440;
+    const dur = end - iv.startMin;
+    const rel = signedDiff(iv.startMin + dur / 2, c); // minutes after CBTmin
+    const inAdvanceZone = rel > 0 && rel <= LIGHT_ADVANCE_HORIZON_MIN;
+    const inDelayZone = rel >= -LIGHT_DELAY_HORIZON_MIN && rel <= 0;
+    let support = 0;
+    if (iv.kind === "light_exposure") {
+      if (inAdvanceZone) support = -Math.min(LIGHT_BLOCK_SUPPORT_CAP_MIN, dur + 15);
+      else if (inDelayZone) support = Math.min(LIGHT_BLOCK_SUPPORT_CAP_MIN, dur + 15);
+      // Midday light sits in the PRC dead zone — present but inert.
+    } else if (iv.kind === "avoid_light") {
+      // Removing the stimulus counts in the opposite direction: darkness in
+      // the delay zone advances, darkness in the advance zone delays.
+      if (inDelayZone) support = -AVOID_LIGHT_SUPPORT_MIN;
+      else if (inAdvanceZone) support = AVOID_LIGHT_SUPPORT_MIN;
+    } else if (iv.kind === "melatonin") {
+      // The melatonin PRC is ~12h out of phase with light: exogenous melatonin
+      // in the hours before target bedtime advances; on waking it delays.
+      const beforeBed = wrapMin(day.targetBedtimeMin - iv.startMin);
+      const afterWake = wrapMin(iv.startMin - day.targetWakeMin);
+      if (beforeBed >= 60 && beforeBed <= 420) support = -MELATONIN_SUPPORT_MIN;
+      else if (afterWake <= 240) support = MELATONIN_SUPPORT_MIN;
+    } else if (iv.kind === "exercise") {
+      const afterWake = wrapMin(iv.startMin + dur / 2 - day.targetWakeMin);
+      if (afterWake <= 180) support = -EXERCISE_SUPPORT_MIN;
+    }
+    out.push({ kind: iv.kind, startMin: iv.startMin, support });
+  }
+  return out;
+}
+
 /** Minutes of phase shift this day's timing can plausibly deliver, signed the
  *  same way as DayPlan.shiftMin (negative = advance). `sleepRef` is the
  *  schedule the day is shifting *from* — the previous day's targets, or the
@@ -126,33 +171,9 @@ export function modelShiftMin(
   let advance = 0;
   let delay = 0;
 
-  for (const iv of day.interventions) {
-    let end = iv.endMin ?? iv.startMin + 30;
-    if (end <= iv.startMin) end += 1440;
-    const dur = end - iv.startMin;
-    const rel = signedDiff(iv.startMin + dur / 2, cbt); // minutes after CBTmin
-    const inAdvanceZone = rel > 0 && rel <= LIGHT_ADVANCE_HORIZON_MIN;
-    const inDelayZone = rel >= -LIGHT_DELAY_HORIZON_MIN && rel <= 0;
-    if (iv.kind === "light_exposure") {
-      if (inAdvanceZone) advance += Math.min(LIGHT_BLOCK_SUPPORT_CAP_MIN, dur + 15);
-      else if (inDelayZone) delay += Math.min(LIGHT_BLOCK_SUPPORT_CAP_MIN, dur + 15);
-      // Midday light sits in the PRC dead zone — present but inert.
-    } else if (iv.kind === "avoid_light") {
-      // Removing the stimulus counts in the opposite direction: darkness in
-      // the delay zone advances, darkness in the advance zone delays.
-      if (inDelayZone) advance += AVOID_LIGHT_SUPPORT_MIN;
-      else if (inAdvanceZone) delay += AVOID_LIGHT_SUPPORT_MIN;
-    } else if (iv.kind === "melatonin") {
-      // The melatonin PRC is ~12h out of phase with light: exogenous melatonin
-      // in the hours before target bedtime advances; on waking it delays.
-      const beforeBed = wrapMin(day.targetBedtimeMin - iv.startMin);
-      const afterWake = wrapMin(iv.startMin - day.targetWakeMin);
-      if (beforeBed >= 60 && beforeBed <= 420) advance += MELATONIN_SUPPORT_MIN;
-      else if (afterWake <= 240) delay += MELATONIN_SUPPORT_MIN;
-    } else if (iv.kind === "exercise") {
-      const afterWake = wrapMin(iv.startMin + dur / 2 - day.targetWakeMin);
-      if (afterWake <= 180) advance += EXERCISE_SUPPORT_MIN;
-    }
+  for (const s of interventionSupports(day, cbt)) {
+    if (s.support > 0) delay += s.support;
+    else advance += -s.support;
   }
 
   // The sleep/dark schedule is itself a zeitgeber — moving it earns shift even
