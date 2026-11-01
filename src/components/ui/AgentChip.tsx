@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { CREW } from "@/agents/crew";
-import { AGENT_ICONS } from "@/lib/agent-icons";
+import { CrewAvatar } from "@/components/CrewAvatar";
 import type { AgentId } from "@/domain/types";
 import { cn } from "@/lib/cn";
 import { AgentCard } from "./AgentCard";
@@ -15,7 +15,6 @@ export interface AgentChipProps {
 export function AgentChip({ id, className }: AgentChipProps) {
   const [open, setOpen] = useState(false);
   const agent = CREW[id];
-  const Icon = AGENT_ICONS[id];
 
   return (
     <>
@@ -29,7 +28,7 @@ export function AgentChip({ id, className }: AgentChipProps) {
           className,
         )}
       >
-        <Icon size={14} style={{ color: agent.color }} />
+        <CrewAvatar id={id} size={18} decorative />
         <span>{agent.name}</span>
       </button>
       {open && <AgentCard id={id} onClose={() => setOpen(false)} />}

@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { X } from "lucide-react";
 import { CREW } from "@/agents/crew";
-import { AGENT_ICONS } from "@/lib/agent-icons";
+import { CrewAvatar } from "@/components/CrewAvatar";
 import type { AgentId } from "@/domain/types";
 import { Card } from "./Card";
 import { Button } from "./Button";
@@ -16,7 +16,6 @@ export interface AgentCardProps {
 
 export function AgentCard({ id, onClose }: AgentCardProps) {
   const agent = CREW[id];
-  const Icon = AGENT_ICONS[id];
   const reduce = useReducedMotion();
 
   useEffect(() => {
@@ -56,11 +55,8 @@ export function AgentCard({ id, onClose }: AgentCardProps) {
           </Button>
 
           <div className="flex items-center gap-3">
-            <div
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-ink"
-              style={{ color: agent.color }}
-            >
-              <Icon size={20} />
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-ink">
+              <CrewAvatar id={id} size={40} decorative />
             </div>
             <div>
               <h3 className="text-lg font-bold text-paper">{agent.name}</h3>

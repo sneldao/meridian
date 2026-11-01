@@ -3,7 +3,7 @@
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { CREW } from "@/agents/crew";
-import { AGENT_ICONS } from "@/lib/agent-icons";
+import { CrewAvatar } from "@/components/CrewAvatar";
 import { spokenChars, subscribeVoice } from "@/lib/voice/engine";
 import type { AgentId, Citation, EvalResult } from "@/domain/types";
 import { AgentChip } from "@/components/ui/AgentChip";
@@ -93,10 +93,14 @@ export function CrewFeed({ entries, running }: { entries: LogEntry[]; running?: 
         const content = (() => {
           switch (e.kind) {
             case "agent": {
-              const Icon = AGENT_ICONS[e.agent];
+              // The last agent block is the one at work while the run is
+              // live; earlier blocks finished, entries after none rest.
+              const isActive = running && !entries.slice(i + 1).some((x) => x.kind === "agent");
+              const earlierAgents = entries.slice(0, i).some((x) => x.kind === "agent" && x.agent === e.agent);
+              const state = isActive ? "working" : earlierAgents || running ? "complete" : "resting";
               return (
                 <div className="mt-4 mb-1 flex items-center gap-2">
-                  <Icon size={12} style={{ color: agentColor(e.agent) }} />
+                  <CrewAvatar id={e.agent} size={24} state={state} decorative />
                   <span className="text-xs font-semibold" style={{ color: agentColor(e.agent) }}>
                     {e.title}
                   </span>

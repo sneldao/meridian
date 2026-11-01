@@ -19,7 +19,8 @@ describe("CrewPerformance (SSR)", () => {
     for (const l of perf.lines) expect(h).toContain(l.agent);
     expect(h).toContain("crew-perf-lane");
     // Stamps start unissued (pos 0 → no day locked yet).
-    expect(h).not.toContain("PASS 0.");
+    expect(h).not.toContain("Passes");
+    expect(h).not.toContain("Needs a fix");
     expect(h.match(/style=\{/g)?.length ?? 0).toBe(0);
     // The written read carries the honesty clause either way.
     expect(h).toContain("the gate&#x27;s own verdict");

@@ -8,6 +8,7 @@ import {
   crewStateAt,
   type CrewPerformance as CrewPerformanceModel,
 } from "@/domain/crew-performance";
+import { CrewAvatar, type CrewAvatarState } from "@/components/CrewAvatar";
 
 /* The crew performs in view (round 28).
  *
@@ -92,15 +93,21 @@ export function CrewPerformance({ perf, compact = false, beatMs = [1100, 850] }:
   const done = effectivePos >= steps.length - 1;
   const bankedH = Math.round(perf.bankedMin / 6) / 10;
 
+  // Avatar pose follows the script: the current speaker explains, the ones
+  // already heard rest, and when the performance is over all are complete.
+  const avatarState = (i: number): CrewAvatarState =>
+    done ? "complete" : i === state.linesSpoken - 1 ? "explaining" : "resting";
+
   return (
     <div className={`crew-perf${compact ? " crew-perf-compact" : ""}`} ref={wrapRef}>
       <div className="crew-perf-lines" aria-label="The crew introduces itself">
         {perf.lines.map((l, i) => (
           <p
-            key={l.agent}
+            key={l.id}
             className="crew-perf-line"
             data-spoken={i < state.linesSpoken ? "yes" : "no"}
           >
+            <CrewAvatar id={l.id} state={avatarState(i)} size={32} decorative className="crew-perf-avatar" />
             <span className="crew-perf-agent">{l.agent}</span>
             <span className="crew-perf-role">{l.role}</span>
             {l.text}
@@ -132,14 +139,21 @@ export function CrewPerformance({ perf, compact = false, beatMs = [1100, 850] }:
                   );
                 })}
               </svg>
-              <span className="crew-perf-stamp" data-pass={phase === "locked" ? (d.verdict.pass ? "yes" : "no") : "no"}>
+              <span
+                className="crew-perf-stamp"
+                data-pass={phase === "locked" ? (d.verdict.pass ? "yes" : "no") : "no"}
+                title={phase === "locked" ? `Gate score ${d.verdict.score.toFixed(2)}` : undefined}
+              >
                 {phase !== "locked"
                   ? phase === "draft"
                     ? "draft"
                     : ""
                   : d.verdict.pass
-                    ? `PASS ${d.verdict.score.toFixed(2)}`
-                    : `FAIL · ${d.verdict.violations.join(", ") || "below standard"}`}
+                    ? "Passes"
+                    : `Needs a fix · ${d.verdict.violations.join(", ") || "below standard"}`}
+                {phase === "locked" && (
+                  <span className="crew-perf-sr">{` Gate score ${d.verdict.score.toFixed(2)}`}</span>
+                )}
               </span>
             </div>
           );

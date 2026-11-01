@@ -2,7 +2,7 @@ import { evaluatePlan, passes } from "./circadian";
 import type { DemoJourney } from "./demo-beats";
 import { ADHERENCE_PROFILE } from "./fixtures";
 import { INTERVENTION_LABELS } from "@/lib/intervention-icons";
-import type { InterventionKind } from "./types";
+import type { AgentId, InterventionKind } from "./types";
 
 /* The crew's performance as data (round 28).
  *
@@ -41,6 +41,7 @@ export interface CrewDay {
 /** One agent line: who, in their role, said what — computed from the journey
  *  so the copy never outruns the numbers. */
 export interface CrewLine {
+  id: AgentId;
   agent: string;
   role: string;
   text: string;
@@ -133,21 +134,25 @@ export function crewPerformance(journey: DemoJourney): CrewPerformance {
 
   const lines: CrewLine[] = [
     {
+      id: "analyst",
       agent: "Mara",
       role: "ANALYST",
       text: `Baseline read — ${journey.baseline.wearer}. The body wants its sleep where the day says otherwise.`,
     },
     {
-      agent: "Sol",
+      id: "planner",
+      agent: "Otto",
       role: "PLANNER",
       text: `I place ${cueCount} light, sleep and caffeine cues across ${days.length} days, working back from the moment that matters.`,
     },
     {
+      id: "evaluator",
       agent: "Iris",
       role: "EVAL",
       text: `Gate read: ${passCount} of ${days.length} days pass${passCount === days.length ? "" : " — the rest stay honest"}; ${(Math.round(bankedMin / 6) / 10).toFixed(1)}h of shift banked.`,
     },
     {
+      id: "negotiator",
       agent: "Rex",
       role: "NEGOTIATOR",
       text: "Calendar holds where it can move; the moment itself never does.",

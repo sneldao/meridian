@@ -53,9 +53,10 @@ describe("crewPerformance — the stamp says what the gate said", () => {
   });
 
   test("the crew lines name four agents and carry real numbers", () => {
-    expect(perf.lines.map((l) => l.agent)).toEqual(["Mara", "Sol", "Iris", "Rex"]);
+    expect(perf.lines.map((l) => l.agent)).toEqual(["Mara", "Otto", "Iris", "Rex"]);
+    expect(perf.lines.map((l) => l.id)).toEqual(["analyst", "planner", "evaluator", "negotiator"]);
     const cueTotal = j.plans.reduce((s, p) => s + p.interventions.length, 0);
-    const sol = perf.lines.find((l) => l.agent === "Sol")!;
+    const sol = perf.lines.find((l) => l.id === "planner")!;
     expect(sol.text).toContain(String(cueTotal));
     expect(sol.text).toContain(String(j.plans.length));
     const iris = perf.lines.find((l) => l.agent === "Iris")!;

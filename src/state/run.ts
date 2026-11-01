@@ -197,6 +197,7 @@ export const initialRunState = (): RunState => ({
 export type RunAction =
   | { kind: "event"; event: CrewEvent; t?: number }
   | { kind: "batch"; items: StampedEvent[] }
+  | { kind: "plans_edited"; days: DayPlan[] }
   | { kind: "reset" };
 
 const withMap = <K, V>(m: Map<K, V>, k: K, v: V) => new Map(m).set(k, v);
@@ -446,6 +447,14 @@ export function reduceRun(s: RunState, a: RunAction): RunState {
       return applyEvent(s, a.event, a.t);
     case "batch":
       return a.items.reduce((acc, it) => applyEvent(acc, it.event, it.t), s);
+    case "plans_edited":
+      // A traveller edit landed through the store — replace the locked set
+      // so the in-memory run doesn't shadow it.
+      return {
+        ...s,
+        locked: new Map(a.days.map((d) => [d.label, d])),
+        sunProgress: s.trip ? sunProgress(s.trip, a.days) : s.sunProgress,
+      };
   }
 }
 

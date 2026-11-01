@@ -23,6 +23,7 @@ import { crewPerformance } from "@/domain/crew-performance";
 import { CrewPerformance } from "@/components/CrewPerformance";
 import { stageSky, stageSkyVars, STAGE_SKY_VARS } from "@/domain/stage-sky";
 import { STAGE_SUN_VARS, stageSunFor, stageSunVars } from "@/domain/stage-sun";
+import { ridgePath, starPlane } from "@/domain/demo-depth";
 
 /* The demo journey (round 19), told as beats instead of a dashboard.
  *
@@ -32,7 +33,20 @@ import { STAGE_SUN_VARS, stageSunFor, stageSunVars } from "@/domain/stage-sun";
  *  plan, the payoff. Every number is computed by demoJourney() from the
  *  solver's own scenario builder, so the story can never outrun the product.
  *  Pattern borrowed deliberately from a speed-run demo: scripted beats,
- *  skip controls, and a send-a-link URL (/demo). */
+ *  skip controls, and a send-a-link URL (/demo).
+ *
+ *  The backdrop's depth is generated once, here: three star planes drifting
+ *  at different rates behind everything, a dawn wash that rises with the
+ *  beats, and two terrain silhouettes holding the floor — a night stage the
+ *  morning slowly arrives into. Deterministic seeds, so SSR, hydration and
+ *  every sent link see the same sky; the layers are aria-hidden and pause
+ *  off-screen, the written beats carry the whole story. */
+
+const STARS_FAR = starPlane(7, 24, 58);
+const STARS_MID = starPlane(29, 18, 72);
+const STARS_NEAR = starPlane(53, 12, 88);
+const RIDGE_FAR = ridgePath(97, 8, 0.85);
+const RIDGE_NEAR = ridgePath(41, 5, 0.4);
 
 function DemoBeatsInner() {
   const params = useSearchParams();
@@ -151,9 +165,52 @@ function DemoBeatsInner() {
     }
   };
 
+  // Ambient drift stands down off-screen and on a hidden tab — the planes
+  // are cheap, but nothing performs to an empty house.
+  const [drift, setDrift] = useState(true);
+  useEffect(() => {
+    const el = demoRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([en]) => setDrift(en.isIntersecting && !document.hidden));
+    io.observe(el);
+    const vis = () => setDrift(!document.hidden);
+    document.addEventListener("visibilitychange", vis);
+    return () => {
+      io.disconnect();
+      document.removeEventListener("visibilitychange", vis);
+    };
+  }, []);
+
   return (
-    <div className="demo" ref={demoRef}>
+    <div className="demo" ref={demoRef} data-beat={beat}>
       {sweepNode}
+      {/* The stage floor and the deep sky — depth behind the same painted
+          sky. Stars drift on transform only, the dawn wash follows the
+          beat, and the ridges hold the horizon down. */}
+      <div className="demo-depth" aria-hidden="true" data-drift={drift ? "yes" : "no"}>
+        <svg className="demo-stars demo-stars-far" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
+          {STARS_FAR.map((s, i) => (
+            <circle key={i} cx={s.x} cy={s.y} r={s.r} opacity={s.o} />
+          ))}
+        </svg>
+        <svg className="demo-stars demo-stars-mid" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
+          {STARS_MID.map((s, i) => (
+            <circle key={i} cx={s.x} cy={s.y} r={s.r} opacity={s.o} />
+          ))}
+        </svg>
+        <svg className="demo-stars demo-stars-near" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
+          {STARS_NEAR.map((s, i) => (
+            <circle key={i} cx={s.x} cy={s.y} r={s.r} opacity={s.o} />
+          ))}
+        </svg>
+        <div className="demo-dawn" />
+        <svg className="demo-ridge demo-ridge-far" viewBox="0 0 100 40" preserveAspectRatio="none">
+          <path d={RIDGE_FAR} />
+        </svg>
+        <svg className="demo-ridge demo-ridge-near" viewBox="0 0 100 40" preserveAspectRatio="none">
+          <path d={RIDGE_NEAR} />
+        </svg>
+      </div>
       <StageSun
         sun={heroSun}
         read={heroFace}
