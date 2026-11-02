@@ -42,7 +42,8 @@ export function TasteItineraryCard({
         {itinerary.favorites
           .map((f) => `${f.name} (${TASTE_TYPES[f.type].toLowerCase()})`)
           .join(", ")}
-        {itinerary.status !== "unavailable" && ` → ${itinerary.destination}`}
+        {itinerary.status !== "unavailable" &&
+          ` → ${itinerary.destination}${itinerary.memory ? " · remembered picks" : ""}`}
       </p>
       <p className="taste-note">
         {itinerary.status === "unavailable"

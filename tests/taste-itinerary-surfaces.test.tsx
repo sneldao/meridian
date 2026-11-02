@@ -50,6 +50,17 @@ describe("TasteItineraryCard (SSR)", () => {
     }
   });
 
+  test("remembered picks are named when memory shaped the read", () => {
+    const h = renderToStaticMarkup(
+      createElement(TasteItineraryCard, {
+        itinerary: { ...base, memory: { kept: 2, suppressed: 1 } },
+      }),
+    );
+    expect(h).toContain("remembered picks");
+    const plain = renderToStaticMarkup(createElement(TasteItineraryCard, { itinerary: base }));
+    expect(plain).not.toContain("remembered picks");
+  });
+
   test("replay mode labels itself an example", () => {
     const h = renderToStaticMarkup(
       createElement(TasteItineraryCard, { itinerary: { ...base, planningMode: "replay" } }),

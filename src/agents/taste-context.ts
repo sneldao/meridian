@@ -19,10 +19,17 @@ export async function loadTasteContext(trip: Trip, favorites: TasteEntity[], ten
       trip.destination.lat,
       interests,
     );
-    const qualified = withoutDismissed(out.places, history.dismissed).filter(
-      (p) => p.daytimeCandidate === true,
-    );
-    return { favorites: snapshot, status: qualified.length ? "ready" : "no-matches", places: qualified };
+    const kept = withoutDismissed(out.places, history.dismissed);
+    const qualified = kept.filter((p) => p.daytimeCandidate === true);
+    const suppressed = out.places.length - kept.length;
+    return {
+      favorites: snapshot,
+      status: qualified.length ? "ready" : "no-matches",
+      places: qualified,
+      ...(history.keptIds.length || suppressed
+        ? { memory: { kept: history.keptIds.length, suppressed } }
+        : {}),
+    };
   } catch {
     return { favorites: snapshot, status: "unavailable", places: [] };
   }

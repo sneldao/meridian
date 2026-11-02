@@ -17,6 +17,7 @@ export function buildTasteItinerary(
     planningMode,
     suggestions: [] as TasteItinerary["suggestions"],
     alternatives: [] as DestinationPlace[],
+    ...(context.memory ? { memory: context.memory } : {}),
   };
   if (context.status !== "ready") return { ...base, status: context.status };
   const suggestions: TasteItinerary["suggestions"] = [];

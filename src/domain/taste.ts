@@ -52,6 +52,8 @@ export interface TasteContext {
   favorites: TasteEntity[];
   status: "ready" | "unavailable" | "no-matches";
   places: DestinationPlace[];
+  /** Present when remembered taste (kept/dismissed history) shaped the read. */
+  memory?: { kept: number; suppressed: number };
 }
 export interface TasteItinerary {
   destinationCode: string;
@@ -69,6 +71,8 @@ export interface TasteItinerary {
     place: DestinationPlace;
   }[];
   alternatives?: DestinationPlace[];
+  /** Present when remembered taste shaped these picks — the card says so. */
+  memory?: { kept: number; suppressed: number };
 }
 export function parseTasteFavorites(raw: string | null): TasteEntity[] | null {
   if (raw === null) return [];
