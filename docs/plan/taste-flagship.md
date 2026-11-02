@@ -42,7 +42,8 @@ body clock.*
   traveller node; `tasteHistory` folds them into the next read (kept ids
   join `signal.interests.entities`, dismissed places are suppressed).
   Works on `/api/taste` and inside `loadTasteContext`; no-op when the
-  graph is off. (Shipped round 37.)
+  graph is off. (Shipped rounds 37–39 — remembered-picks marker and the
+  first-night idea included.)
 - **No new memory vendor.** FalkorDB + Supabase cover structured memory,
   and Qloo itself is the semantic layer — map artefacts to entities via
   `/search` and let the taste graph correlate. A memory engine (cognee

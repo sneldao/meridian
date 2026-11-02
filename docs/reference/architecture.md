@@ -294,6 +294,8 @@ in [providers.md](providers.md#supabase-persistence-optional).
 | `GET /api/memory` · `GET /api/graph/health` | Learned cross-run memory; FalkorDB status (503 when unreachable); `?tenant=` selects the `meridian:{tenant}` graph |
 | `POST /api/graph/seed` | Seeds/wipes a tenant graph (`{"tenant":"demo"|"other","reset":true?}`) — needed because the Render pserv is internal-only; disabled unless `SEED_ADMIN_TOKEN` is set, then requires `x-seed-token` |
 | `GET /api/voice` · `POST /api/voice` | Voice-layer availability; TTS audio — see [providers.md](providers.md) |
+| `GET /api/taste` · `GET /api/taste/search` | Qloo destination/favorite reads; `tasteHistory` merges kept ids into the affinity signal and suppresses dismissed places (`src/app/api/taste/`). |
+| `POST /api/taste/feedback` | Keep/swap/dismiss verdicts → `recordTasteSignal` KEPT/DISMISSED edges; best-effort 204 whether the graph lands it or not. |
 | `POST /api/mcp` | Self-hosted MCP server (Streamable HTTP, protocol 2025-11-25; stateless JSON-RPC over POST). Tools wrap the crew surface: `preview_trip`, `plan_shift`, `evaluate_plan`, `record_check_in`, `search_literature`, `crew_memory`, `recall_findings`, `latest_plan`, `search_web` (Tavily), `destination_taste` (Qloo) — implemented in `src/mcp/server.ts`. GET 405s (no server push); DELETE is a no-op. |
 | `POST /api/feed` | Create or update a plan feed `{ics, trip, days}` → `{id, key, tokens}`. `key` authorizes updates (hash stored, constant-time compare); `tokens` are per-surface read tokens (`calendar`, `assistant`). Rate-limited, ICS capped at 300KB |
 | `GET /api/feed/[id]/calendar.ics` | The webcal URL — serves the current ICS, gated on `?t=` when a calendar token exists. Legacy feeds without tokens still serve on the bare id |

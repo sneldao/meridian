@@ -95,7 +95,7 @@ plan, different places.
 | `/team` | Travel-manager view: 12 travellers, 12 crews in parallel (stretch) |
 | `/dev` | Lens workbench + recorded-event fixture playback + the dial workbench + the contested-day prototype + the crew-question card specimen (dev only) |
 | `/plan/{id}` | The shared card — a plan's passport line or the post-landing arrival receipt, with a generated OG image (terminator + ghost dawn drawn from the payload's real owed minutes). "Make your own plan" lands recipients on `/?via={id}`, which acknowledges the share and prefills the sender's route |
-| `/api/*` | Server surface — run SSE, check-in, trip, wearable upload, team, persistence, memory, graph health, Qloo destination/favorite search, voice ([reference](docs/reference/architecture.md#api-surface)) |
+| `/api/*` | Server surface — run SSE, check-in, trip, wearable upload, team, persistence, memory, graph health, Qloo destination/favorite search + taste feedback, voice ([reference](docs/reference/architecture.md#api-surface)) |
 
 ## Docs
 
