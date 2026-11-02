@@ -8,7 +8,6 @@ import {
   isTasteEntitiesResponse,
   isTasteResponse,
   placeSearchUrl,
-  tasteSelectionKey,
   withoutDismissed,
   type TasteEntity,
   type TasteResponse,
