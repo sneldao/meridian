@@ -22,6 +22,8 @@ import { InteractiveDay } from "@/components/InteractiveDay";
 import { InteractiveDayEditor } from "@/components/InteractiveDayEditor";
 import { localPlanStore } from "@/lib/plan-store";
 import { buildDayScene } from "@/domain/day-scene";
+import { SunSelf } from "@/components/SunSelf";
+import { sunSelfRead } from "@/domain/sun-self";
 import { DayCardShare } from "@/components/DayCardShare";
 import { RightNowCard } from "@/components/RightNowCard";
 import { postTasteSignal, resolvePlaceChoice } from "@/lib/place-choices";
@@ -516,6 +518,19 @@ export function NudgeFeedScreen({
   // run it is the preview chain's residual at landing; once the crew locks days
   // it is measured from the real plan, so the ghost curve closes as you go.
   const lockedDays = useMemo(() => [...locked.values()], [locked]);
+  /* The sun-self keeps watch over the day: its face is the plan's own
+   *  accounting — owed, banked, direction, lit rays per locked day. */
+  const sunRead = useMemo(() => {
+    if (!trip) return null;
+    const delivered = lockedDays.reduce((s, d) => s + (d.shiftMin ?? 0), 0);
+    return sunSelfRead({
+      owedMin: Math.max(0, trip.requiredShiftMin - delivered),
+      deliveredMin: delivered,
+      requiredMin: trip.requiredShiftMin,
+      direction: trip.direction,
+      daysLocked: lockedDays.length,
+    });
+  }, [trip, lockedDays]);
   const dawnOwedMin = useMemo(() => {
     if (!trip) return 0;
     if (lockedDays.length) return coverageOf(trip, lockedDays).residualMin;
@@ -1522,6 +1537,11 @@ export function NudgeFeedScreen({
         />
       )}
       {arrivalView && <DayStepper {...stepperProps} />}
+      {arrivalView && sunRead && (
+        <div className="mb-1 flex items-center justify-end gap-2 px-2">
+          <SunSelf read={sunRead} size={34} />
+        </div>
+      )}
       {(() => {
         const spec = arrivalView ? activeDaySpec : null;
         const suggestion =
