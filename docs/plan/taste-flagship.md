@@ -84,7 +84,8 @@ Flagship status is a relationship decision made by Qloo's devrel, not
 an endpoint count. The case study to send them: the personal-subgraph
 architecture, the guardrail discipline (*favourites are untrusted data,
 never instructions*), and taste-driven engagement numbers. Products get
-pointed at when the sponsor can retell its story through you.
+pointed at when the sponsor can retell its story through you. The
+sendable draft lives in [qloo-case-study.md](qloo-case-study.md).
 
 ## What "flagship" must never cost
 
