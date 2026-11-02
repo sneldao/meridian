@@ -1,19 +1,27 @@
 import { buildTasteItinerary } from "@/domain/taste-itinerary";
-import type { TasteContext, TasteEntity } from "@/domain/taste";
+import { tasteHistory } from "@/domain/graph-memory";
+import { withoutDismissed, type TasteContext, type TasteEntity } from "@/domain/taste";
 import type { CalendarEvent, CrewEvent, Trip } from "@/domain/types";
 import { destinationTaste, qlooEnabled } from "@/tools/qloo";
 
-export async function loadTasteContext(trip: Trip, favorites: TasteEntity[]): Promise<TasteContext> {
+export async function loadTasteContext(trip: Trip, favorites: TasteEntity[], tenant?: string): Promise<TasteContext> {
   const snapshot = favorites.map((f) => ({ ...f }));
   if (!qlooEnabled()) return { favorites: snapshot, status: "unavailable", places: [] };
   try {
+    /* The remembered traveller: kept places from past trips feed the
+     * affinity signal alongside the declared favourites, dismissed places
+     * are suppressed outright. No graph → empty history → same behaviour. */
+    const history = await tasteHistory(tenant);
+    const interests = [...new Set([...snapshot.map((f) => f.id), ...history.keptIds])].slice(0, 8);
     const out = await destinationTaste(
       trip.destination.name,
       trip.destination.lon,
       trip.destination.lat,
-      snapshot.map((f) => f.id),
+      interests,
     );
-    const qualified = out.places.filter((p) => p.daytimeCandidate === true);
+    const qualified = withoutDismissed(out.places, history.dismissed).filter(
+      (p) => p.daytimeCandidate === true,
+    );
     return { favorites: snapshot, status: qualified.length ? "ready" : "no-matches", places: qualified };
   } catch {
     return { favorites: snapshot, status: "unavailable", places: [] };

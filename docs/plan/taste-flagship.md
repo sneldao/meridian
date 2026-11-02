@@ -36,8 +36,13 @@ body clock.*
   `signal.interests.entities` on the next trip — recommendations
   compound instead of resetting.
 - **Cross-trip favourites** — the `self` profile: favourites prefill
-  every new trip, per-trip overrides stay trip-scoped. (First slice
-  shipped in round 36.)
+  every new trip, per-trip overrides stay trip-scoped. (Shipped round 36.)
+- **The feedback loop is live** — kept/swapped/dismissed verdicts post to
+  `/api/taste/feedback` and land as `KEPT`/`DISMISSED` edges on the
+  traveller node; `tasteHistory` folds them into the next read (kept ids
+  join `signal.interests.entities`, dismissed places are suppressed).
+  Works on `/api/taste` and inside `loadTasteContext`; no-op when the
+  graph is off. (Shipped round 37.)
 - **No new memory vendor.** FalkorDB + Supabase cover structured memory,
   and Qloo itself is the semantic layer — map artefacts to entities via
   `/search` and let the taste graph correlate. A memory engine (cognee

@@ -274,6 +274,74 @@ export async function calendarConflicts(dayIndex: number, tenant?: string): Prom
   }
 }
 
+export type TasteSignalStatus = "kept" | "swapped" | "dismissed";
+
+/** Taste feedback: the traveller's verdict on a suggested place lands as a
+ *  KEPT/DISMISSED edge so future queries boost and suppress instead of
+ *  re-asking. Best-effort — the graph never breaks the interaction. */
+export async function recordTasteSignal(
+  status: TasteSignalStatus,
+  place: { id?: string; name: string },
+  tenant?: string,
+): Promise<void> {
+  const g = await graph(tenant);
+  if (!g) return;
+  const rel = status === "dismissed" ? "DISMISSED" : "KEPT";
+  try {
+    await g.query(
+      `MERGE (t:Traveler {id:$session})
+       MERGE (p:TastePlace {key:$key})
+       ON CREATE SET p.id = $id, p.name = $name
+       CREATE (t)-[:${rel} {at:$at, status:$status}]->(p)`,
+      {
+        params: {
+          session: graphSession(),
+          key: place.id ?? place.name.trim().toLowerCase(),
+          id: place.id ?? null,
+          name: place.name.slice(0, 300),
+          at: Date.now(),
+          status,
+        },
+      },
+    );
+  } catch {
+    // Best-effort: graph memory must never break the interaction.
+  }
+}
+
+/** What the traveller has kept and dismissed, latest signal per place wins.
+ *  Kept ids feed back into the taste signal; dismissed places are suppressed. */
+export async function tasteHistory(
+  tenant?: string,
+): Promise<{ keptIds: string[]; dismissed: { id?: string; name: string }[] }> {
+  const g = await graph(tenant);
+  if (!g) return { keptIds: [], dismissed: [] };
+  try {
+    const res = await g.roQuery(
+      `MATCH (t:Traveler {id:$session})-[r]->(p:TastePlace)
+       WHERE type(r) IN ['KEPT','DISMISSED']
+       RETURN type(r) AS rel, p.id AS id, p.name AS name, r.at AS at
+       ORDER BY r.at DESC LIMIT 50`,
+      { params: { session: graphSession() } },
+    );
+    const kept = new Set<string>();
+    const dismissed = new Map<string, { id?: string; name: string }>();
+    const seen = new Set<string>();
+    for (const row of res?.data ?? []) {
+      const id = typeof row.id === "string" && row.id ? row.id : undefined;
+      const name = typeof row.name === "string" ? row.name : "";
+      const key = id ?? name.trim().toLowerCase();
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      if (row.rel === "KEPT" && id) kept.add(id);
+      else if (row.rel === "DISMISSED" && name) dismissed.set(key, { id, name });
+    }
+    return { keptIds: [...kept], dismissed: [...dismissed.values()] };
+  } catch {
+    return { keptIds: [], dismissed: [] };
+  }
+}
+
 /** Write path: a real check-in lands in the graph, linked to the intervention
  *  and day it's about when the kind resolves. Mirrors recordCheckIn's JSON
  *  write — the graph stays best-effort and never breaks the route. */

@@ -63,6 +63,27 @@ export function parsePlaceChoices(raw: string | null): PlaceChoiceState {
   }
 }
 
+/** Mirror a verdict to the graph so future trips remember it —
+ *  fire-and-forget; the local choice is the durable copy. */
+export function postTasteSignal(
+  status: PlaceChoice["status"],
+  place: DestinationPlace,
+): void {
+  try {
+    void fetch("/api/taste/feedback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        status,
+        place: { ...(place.id ? { id: place.id } : {}), name: place.name },
+      }),
+      keepalive: true,
+    }).catch(() => {});
+  } catch {
+    /* no window / offline — the localStorage choice still stands */
+  }
+}
+
 const choicesKey = (scope: string) => `meridian:place-choices:${scope}`;
 
 export function readPlaceChoices(storage: Pick<Storage, "getItem">, scope: string): PlaceChoiceState {

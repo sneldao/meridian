@@ -1,6 +1,7 @@
 import { describe, expect, it, afterEach, beforeEach } from "bun:test";
 import { NextRequest } from "next/server";
 import { GET as crewGET } from "../src/app/api/crew/run/route";
+import { POST as feedbackPOST } from "../src/app/api/taste/feedback/route";
 import { readTasteProfile, readTripTaste, writeTasteProfile, writeTripTaste } from "../src/lib/use-trip-taste";
 import type { TasteEntity } from "../src/domain/taste";
 
@@ -104,6 +105,36 @@ describe("GET /api/crew/run taste validation", () => {
       expect(fetched).toBe(0);
     } finally {
       globalThis.fetch = realFetch2;
+    }
+  });
+});
+
+describe("POST /api/taste/feedback", () => {
+  const post = (body: unknown) =>
+    new NextRequest("https://x.test/api/taste/feedback", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-forwarded-for": "198.51.100.9" },
+      body: JSON.stringify(body),
+    });
+
+  it("accepts a verdict and stays quiet — the graph write is best-effort", async () => {
+    const res = await feedbackPOST(
+      post({ status: "dismissed", place: { id: "p1", name: "Tokyo Disneyland" } }),
+    );
+    expect(res.status).toBe(204);
+  });
+
+  it("rejects malformed signals before any write", async () => {
+    for (const bad of [
+      null,
+      { status: "loved", place: { name: "X" } },
+      { status: "kept" },
+      { status: "kept", place: { name: "" } },
+      { status: "kept", place: { name: "X".repeat(301) } },
+      { status: "kept", place: { id: "bad id!", name: "X" } },
+    ]) {
+      const res = await feedbackPOST(post(bad));
+      expect(res.status).toBe(400);
     }
   });
 });

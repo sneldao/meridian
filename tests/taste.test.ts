@@ -6,6 +6,7 @@ import {
   isTasteType,
   placeSearchUrl,
   tasteSelectionKey,
+  withoutDismissed,
   type TasteEntity,
 } from "../src/domain/taste";
 import { createTasteRequestScope } from "../src/lib/taste-request";
@@ -61,6 +62,23 @@ describe("domain/taste helpers", () => {
   it("tasteResultLabel uses only the provided seeds", () => {
     expect(tasteResultLabel([])).toBe("Destination picks · not personalized yet");
     expect(tasteResultLabel([b, a])).toBe("Taste signals: A (film), B (music)");
+  });
+
+  it("withoutDismissed suppresses by id first, name fallback, everything else untouched", () => {
+    const places = [
+      { id: "p1", name: "Mori Art Museum", categories: ["museum"] },
+      { name: "Fuglen Tokyo", categories: ["cafe"] },
+      { id: "p3", name: "Tokyo Tower", categories: [] },
+    ];
+    expect(withoutDismissed(places, [])).toEqual(places);
+    expect(
+      withoutDismissed(places, [{ id: "p1", name: "Mori Art Museum" }, { name: "fuglen tokyo" }]),
+    ).toEqual([{ id: "p3", name: "Tokyo Tower", categories: [] }]);
+    // a dismissed name suppresses even when ids differ — the traveller
+    // rejected the place, not one listing of it
+    expect(
+      withoutDismissed(places, [{ id: "other", name: "Mori Art Museum" }]),
+    ).toEqual(places.filter((p) => p.name !== "Mori Art Museum"));
   });
 });
 

@@ -98,7 +98,7 @@ export function runCrew(opts?: {
   void (async () => {
     const favorites = parseTasteFavorites(JSON.stringify(opts?.tasteFavorites ?? [])) ?? [];
     const tasteContext = favorites.length
-      ? loadTasteContext(opts?.trip ?? DEMO_TRIP, favorites)
+      ? loadTasteContext(opts?.trip ?? DEMO_TRIP, favorites, opts?.tenant)
       : undefined;
     try {
       if (providerKind() === "replay") {

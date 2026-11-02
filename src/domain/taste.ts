@@ -138,6 +138,21 @@ export function isTasteItinerary(value: unknown): value is TasteItinerary {
 
 export const placeKey = (p: DestinationPlace): string => p.id ?? p.name.trim().toLocaleLowerCase("en");
 
+/** Suppress places the traveller dismissed — by id when we have one, by
+ *  normalized name otherwise. Pure: the graph's job is to collect the
+ *  dismissals, this just applies them. */
+export function withoutDismissed(
+  places: DestinationPlace[],
+  dismissed: { id?: string; name: string }[],
+): DestinationPlace[] {
+  if (!dismissed.length) return places;
+  const ids = new Set(dismissed.map((d) => d.id).filter((x): x is string => Boolean(x)));
+  const names = new Set(dismissed.map((d) => d.name.trim().toLowerCase()));
+  return places.filter(
+    (p) => !(p.id && ids.has(p.id)) && !names.has(p.name.trim().toLowerCase()),
+  );
+}
+
 export type TasteTripContext = Pick<Trip, "days" | "departureDayIndex"> & {
   destination: Pick<Trip["destination"], "code">;
 };

@@ -4,7 +4,9 @@
 // null (the honest empty state, not a hole). Never feeds the scorer.
 import { NextResponse } from "next/server";
 import { destinationTaste, qlooEnabled } from "@/tools/qloo";
-import { TASTE_ID_RE } from "@/domain/taste";
+import { tasteHistory } from "@/domain/graph-memory";
+import { TASTE_ID_RE, withoutDismissed } from "@/domain/taste";
+import { tenantOf } from "@/lib/tenant";
 import { rateLimit } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
@@ -48,8 +50,16 @@ export async function GET(req: Request) {
     interestIds = [...new Set(raw)];
   }
   try {
-    const out = await destinationTaste(city, lon, lat, interestIds);
-    return NextResponse.json({ enabled: true, ...out }, { headers: NO_STORE });
+    /* Remembered taste rides alongside the request's favourites: kept ids
+     * join the affinity signal, dismissed places are suppressed. No graph
+     * → empty history → identical behaviour. */
+    const history = await tasteHistory(tenantOf(req));
+    const interests = [...new Set([...interestIds, ...history.keptIds])].slice(0, 8);
+    const out = await destinationTaste(city, lon, lat, interests);
+    return NextResponse.json(
+      { enabled: true, ...out, places: withoutDismissed(out.places, history.dismissed) },
+      { headers: NO_STORE },
+    );
   } catch {
     return NextResponse.json(
       { enabled: true, destination: city, places: [], error: "Places are unavailable right now. Try again." },
