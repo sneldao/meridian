@@ -2843,6 +2843,71 @@ html[data-theme="night"] .skel::after {
 @media (prefers-reduced-motion: reduce) {
   .skel::after { animation: none; }
 }
+
+/* Boot — the dawn before the entry: the crew assembles, the terminator
+   sweeps the horizon. Same metaphor as the plan cards, not a skeleton. */
+.boot {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.boot-stage {
+  width: 100%;
+  max-width: 520px;
+  text-align: center;
+}
+.boot-mark {
+  margin: 0;
+  font-size: 13px;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--color-mist);
+}
+.boot-crew {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin: 12px 0 0;
+}
+.boot-crew-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-paper);
+  opacity: 0;
+  animation: boot-fade 2.8s ease forwards;
+}
+.boot-crew-name + .boot-crew-name::before {
+  content: "·";
+  margin-right: 12px;
+  font-weight: 400;
+  color: var(--color-mist);
+}
+@keyframes boot-fade {
+  to { opacity: 1; }
+}
+.boot-horizon {
+  margin-top: 28px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--m-border);
+  overflow: hidden;
+  position: relative;
+}
+.boot-terminator {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, var(--color-sun-dest), transparent);
+  transform: translateX(-100%);
+  animation: boot-sweep 1.8s ease-in-out infinite;
+}
+@keyframes boot-sweep {
+  to { transform: translateX(100%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .boot-crew-name { animation: none; opacity: 1; }
+  .boot-terminator { animation: none; transform: none; opacity: 0.6; }
+}
 .sr-only {
   position: absolute;
   width: 1px; height: 1px;

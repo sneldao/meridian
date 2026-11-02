@@ -696,6 +696,25 @@ export default function Home() {
           }
           push({ kind: "system", text: "morning handoff ready" });
           break;
+        case "plan_seal":
+          // The seal lands after the briefing — attach it to the saved plan
+          // so the day-2 gate knows what to deposit against. Read-modify-write
+          // because lastPlan was already persisted upstream of this event.
+          try {
+            const raw = localStorage.getItem("meridian:lastPlan");
+            if (raw && runIdRef.current) {
+              const saved = JSON.parse(raw);
+              saved.seal = {
+                runId: runIdRef.current,
+                tripId: e.tripId,
+                planHash: e.planHash,
+              };
+              localStorage.setItem("meridian:lastPlan", JSON.stringify(saved));
+            }
+          } catch {
+            /* ignore */
+          }
+          break;
         case "error":
           push({ kind: "error", text: e.message });
           break;
@@ -1642,26 +1661,21 @@ export default function Home() {
 
 
         {entry === null ? (
-          <div ref={setupRef} aria-busy="true" aria-label="Loading your plan" style={{ padding: "24px 0" }}>
+          <div ref={setupRef} aria-busy="true" aria-label="Loading your plan" className="boot">
             <span className="sr-only">Loading your plan…</span>
-            <div className="skel" style={{ width: "60%", height: 44, borderRadius: 999 }} />
-            <div className="skel card" style={{ marginTop: 18, padding: 20 }}>
-              <div className="skel" style={{ width: "40%", height: 14, borderRadius: 6 }} />
-              <div className="skel" style={{ width: "80%", height: 20, borderRadius: 6, marginTop: 12 }} />
-              <div className="skel" style={{ width: "65%", height: 14, borderRadius: 6, marginTop: 8 }} />
-              <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-                <div className="skel" style={{ width: 120, height: 44, borderRadius: 999 }} />
-                <div className="skel" style={{ width: 90, height: 44, borderRadius: 999 }} />
+            <div className="boot-stage">
+              <p className="boot-mark">meridian</p>
+              <p className="boot-crew" aria-hidden="true">
+                {["Mara", "Jun", "Otto", "Iris", "Rex"].map((name, i) => (
+                  <span key={name} className="boot-crew-name" style={{ animationDelay: `${0.35 + i * 0.28}s` }}>
+                    {name}
+                  </span>
+                ))}
+              </p>
+              <div className="boot-horizon" aria-hidden="true">
+                <div className="boot-terminator" />
               </div>
             </div>
-            <div className="skel" style={{ width: "100%", height: 44, borderRadius: 999, marginTop: 22 }} />
-            {[0, 1, 2].map((i) => (
-              <div key={i} style={{ display: "flex", gap: 14, marginTop: 18, alignItems: "center" }}>
-                <div className="skel" style={{ width: 22, height: 22, borderRadius: 999 }} />
-                <div className="skel" style={{ width: 80, height: 14, borderRadius: 6 }} />
-                <div className="skel" style={{ flex: 1, height: 14, borderRadius: 6 }} />
-              </div>
-            ))}
           </div>
         ) : entry.mode === "setup" ? (
           <div ref={setupRef}>
