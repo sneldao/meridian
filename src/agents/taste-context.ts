@@ -29,7 +29,7 @@ export async function loadTasteContext(trip: Trip, favorites: TasteEntity[], ten
       places: qualified,
       ...(evening.length ? { eveningPlaces: evening } : {}),
       ...(history.keptIds.length || suppressed
-        ? { memory: { kept: history.keptIds.length, suppressed } }
+        ? { memory: { kept: history.keptIds.length, suppressed, keptIds: history.keptIds } }
         : {}),
     };
   } catch {

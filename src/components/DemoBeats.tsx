@@ -98,6 +98,11 @@ function DemoBeatsInner() {
               favorites: tasteProfile.favorites,
               status: tasteProfile.places.length ? "ready" : "no-matches",
               places: tasteProfile.places,
+              // A remembered prior keep, seeded so the memory story is
+              // visible in the demo — "you kept this before" reads live.
+              ...(tasteProfile.places[0]?.id
+                ? { memory: { kept: 1, suppressed: 0, keptIds: [tasteProfile.places[0].id] } }
+                : {}),
             },
             "replay",
           )

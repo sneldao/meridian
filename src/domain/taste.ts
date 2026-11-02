@@ -55,7 +55,7 @@ export interface TasteContext {
   /** Evening-window ideas (dining/venues) — never fitted, just offered. */
   eveningPlaces?: DestinationPlace[];
   /** Present when remembered taste (kept/dismissed history) shaped the read. */
-  memory?: { kept: number; suppressed: number };
+  memory?: { kept: number; suppressed: number; keptIds?: string[] };
 }
 export interface TasteItinerary {
   destinationCode: string;
@@ -75,8 +75,11 @@ export interface TasteItinerary {
   alternatives?: DestinationPlace[];
   /** The first night's idea — offered, not scheduled. */
   firstNight?: DestinationPlace;
+  /** The crew speaking taste out loud — e.g. "Otto fitted X into your free
+   *  hours." or "You kept X before — it's back on the list." */
+  crewNote?: string;
   /** Present when remembered taste shaped these picks — the card says so. */
-  memory?: { kept: number; suppressed: number };
+  memory?: { kept: number; suppressed: number; keptIds?: string[] };
 }
 export function parseTasteFavorites(raw: string | null): TasteEntity[] | null {
   if (raw === null) return [];
@@ -140,6 +143,7 @@ export function isTasteItinerary(value: unknown): value is TasteItinerary {
     if (!o.alternatives.every(isDestinationPlace)) return false;
   }
   if (o.firstNight !== undefined && !isDestinationPlace(o.firstNight)) return false;
+  if (o.crewNote !== undefined && (typeof o.crewNote !== "string" || o.crewNote.length > 400)) return false;
   if (o.status === "ready" && o.suggestions.length === 0) return false;
   if (o.status !== "ready" && o.suggestions.length !== 0) return false;
   return true;

@@ -70,6 +70,17 @@ describe("TasteItineraryCard (SSR)", () => {
     expect(h).toContain("First night — if your plan says stay up: Chagohan Tokyo");
   });
 
+  test("the crew speaks: crewNote renders as a voice line", () => {
+    const h = renderToStaticMarkup(
+      createElement(TasteItineraryCard, {
+        itinerary: { ...base, crewNote: "You kept Mori Art Museum before — it's back on the list." },
+      }),
+    );
+    expect(h).toContain("You kept Mori Art Museum before — it");
+    const plain = renderToStaticMarkup(createElement(TasteItineraryCard, { itinerary: base }));
+    expect(plain).not.toContain("Otto fitted");
+  });
+
   test("replay mode labels itself an example", () => {
     const h = renderToStaticMarkup(
       createElement(TasteItineraryCard, { itinerary: { ...base, planningMode: "replay" } }),

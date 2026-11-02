@@ -128,6 +128,8 @@ export function TasteItineraryCard({
           })}
         </ol>
       )}
+      {itinerary.crewNote && <p className="taste-note">{itinerary.crewNote}</p>}
+
       {itinerary.status === "ready" && itinerary.firstNight && (
         <p className="taste-note">
           First night — if your plan says stay up: {itinerary.firstNight.name}

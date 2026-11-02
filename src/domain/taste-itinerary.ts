@@ -85,10 +85,20 @@ export function buildTasteItinerary(
       place: context.places[suggestions.length],
     });
   }
+  /* The crew speaks: a kept place coming back reads as memory, otherwise
+   *  the fitting itself gets the line — the card's voice, not a tooltip. */
+  const keptSet = new Set(context.memory?.keptIds ?? []);
+  const remembered = suggestions.find((s) => s.place.id && keptSet.has(s.place.id));
+  const crewNote = remembered
+    ? `You kept ${remembered.place.name} before — it's back on the list.`
+    : suggestions[0]
+      ? `Otto fitted ${suggestions[0].place.name} into your free hours.`
+      : undefined;
   return {
     ...base,
     status: suggestions.length ? "ready" : "no-window",
     suggestions,
     alternatives: context.places.slice(0, 10),
+    ...(crewNote ? { crewNote } : {}),
   };
 }
