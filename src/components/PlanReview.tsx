@@ -12,6 +12,8 @@ import { planSummaryLine } from "@/lib/plan-copy";
 import { useUndoToast } from "@/components/UndoToast";
 import { SubscribeCalendar } from "@/components/SubscribeCalendar";
 import { ShiftBoard, type ShiftDraft } from "@/components/lenses/ShiftBoard";
+import { UnlockCard } from "@/components/UnlockCard";
+import { paymentsConfigured } from "@/lib/escrow";
 
 export interface SavedPlan {
   summary: string;
@@ -20,6 +22,9 @@ export interface SavedPlan {
   days: DayPlan[];
   ics: string;
   coverage?: ShiftCoverage;
+  /** The server-minted seal (plan_seal event) — present only on live crew
+   *  runs; replay runs and old saves have nothing to attest and gate nothing. */
+  seal?: { runId: string; tripId: string; planHash: string };
 }
 
 export interface SavedTrip {
@@ -49,6 +54,7 @@ export function PlanReview({ inline = false }: { inline?: boolean }) {
   const [plan, setPlan] = useState<SavedPlan | null>(null);
   const [trip, setTrip] = useState<SavedTrip | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [unlocked, setUnlocked] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -178,6 +184,16 @@ export function PlanReview({ inline = false }: { inline?: boolean }) {
         ? "text-terracotta"
         : "text-clay-fail";
 
+  // The day-2 gate: day one is always free; the rest unlock against the
+  // escrow's attested verdict. Only a sealed plan on a configured payments
+  // deployment gates — everything else renders open. The gate shows even
+  // without a wallet; UnlockCard owns what it says in that case.
+  const gated =
+    paymentsConfigured() &&
+    Boolean(plan.seal?.runId && plan.seal.tripId) &&
+    plan.days.length > 1 &&
+    !unlocked;
+
   return (
     <div>
       {inline ? (
@@ -226,7 +242,7 @@ export function PlanReview({ inline = false }: { inline?: boolean }) {
           </Card>
 
           <div className="mt-6 space-y-4">
-            {plan.days.map((d) => (
+            {(gated ? plan.days.slice(0, 1) : plan.days).map((d) => (
               <Card key={d.dayIndex} className="p-4">
                 <div className="flex items-baseline justify-between">
                   <h3 className="text-sm font-bold text-paper">
@@ -267,6 +283,33 @@ export function PlanReview({ inline = false }: { inline?: boolean }) {
                 </ul>
               </Card>
             ))}
+            {gated &&
+              plan.days.slice(1).map((d) => {
+                const spec = trip?.days?.find((s) => s.label === d.label);
+                return (
+                  <Card key={d.dayIndex} className="p-4 opacity-70">
+                    <div className="flex items-baseline justify-between">
+                      <h3 className="text-sm font-bold text-mist">
+                        {spec ? friendlyDayLabel(spec, trip?.departureDayIndex) : d.label}
+                      </h3>
+                      <span className="font-mono2 text-xs text-mist">locked</span>
+                    </div>
+                    <div className="mt-1 font-mono2 text-xs text-mist">
+                      Bed <span className="text-paper">{fmtMin(d.targetBedtimeMin)}</span> · Wake{" "}
+                      <span className="text-paper">{fmtMin(d.targetWakeMin)}</span> ·{" "}
+                      {d.interventions.length} steps
+                    </div>
+                  </Card>
+                );
+              })}
+            {gated && (
+              <UnlockCard
+                runId={plan.seal!.runId}
+                tripId={plan.seal!.tripId}
+                lockedCount={plan.days.length - 1}
+                onUnlocked={() => setUnlocked(true)}
+              />
+            )}
           </div>
         </div>
 

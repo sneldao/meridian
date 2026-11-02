@@ -55,7 +55,7 @@ export const PROTECTED_KINDS = new Set<InterventionKind>([
   "exercise",
 ]);
 
-interface EvalInput {
+export interface EvalInput {
   trip: Trip;
   days: DayPlan[];
   calendar: CalendarEvent[];

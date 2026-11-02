@@ -36,3 +36,7 @@ video/
 # Visual baselines are runner-generated (-linux); laptop artifacts never commit.
 visual/**/*-darwin.png
 visual/**/*-actual.png
+
+# Foundry build output — contracts/src is the source, out/ and cache/ regenerate.
+contracts/out/
+contracts/cache/

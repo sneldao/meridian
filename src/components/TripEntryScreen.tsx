@@ -12,6 +12,7 @@ import { ADHERENCE_PROFILE, buildTrip, GARMIN_BASELINE } from "@/domain/fixtures
 import { previewPlan, type SolvedDay } from "@/domain/solver";
 import { routeGapHeadline, routeGapLine, routeGapRead, type RouteGapRead } from "@/domain/route-gap";
 import { coverageOf, fmtMin } from "@/domain/circadian";
+import { paymentsConfigured, readPrice } from "@/lib/escrow";
 import type { CityCode, Trip } from "@/domain/types";
 
 function planPreview(route: HomeRoute): { lightStart?: number; covPct: number } | null {
@@ -48,6 +49,19 @@ export function TripEntryScreen({ initialDate, onContinue, onExploreExample, onE
   const [draft, setDraft] = useState<HomeRoute>(
     initialRoute && isValidHomeRoute(initialRoute) ? initialRoute : { origin: "", dest: "", date: initialDate },
   );
+  // Price disclosed at intent, read live from the contract — a stale number
+  // in copy is worse than none, so the line only renders once the read lands.
+  const [priceUsdc, setPriceUsdc] = useState<string | null>(null);
+  useEffect(() => {
+    if (!paymentsConfigured()) return;
+    let on = true;
+    readPrice()
+      .then((p) => on && setPriceUsdc(`${(Number(p) / 1e6).toFixed(2)}`))
+      .catch(() => {});
+    return () => {
+      on = false;
+    };
+  }, []);
   const valid = isValidHomeRoute(draft);
   const sameAirports =
     !!draft.origin && !!draft.dest && draft.origin.toUpperCase() === draft.dest.toUpperCase();
@@ -155,6 +169,12 @@ export function TripEntryScreen({ initialDate, onContinue, onExploreExample, onE
           <button type="button" className="entry-example" onClick={onExploreExample}>Explore an example</button>
         </div>
         <p className="entry-privacy">No account needed to get started.</p>
+        {priceUsdc !== null && (
+          <p className="entry-privacy mt-1">
+            Day one is free. The full week is {priceUsdc} USDC, held on Arc and
+            released only if the plan passes our checks — refunded if it doesn&apos;t.
+          </p>
+        )}
       </div>
       {onExploreScenario && <SampleJourneys onChoose={onExploreScenario} />}
     </div>

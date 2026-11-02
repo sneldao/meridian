@@ -8,6 +8,18 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
+## Contracts (`contracts/`)
+
+- Foundry project for `TripEscrow.sol` (Arc USDC escrow — see
+  `docs/plan/arc-payments.md`). Real Foundry lives at `~/.foundry/bin/forge`;
+  the `forge` on PATH is an unrelated AI CLI — running `forge install`/`forge
+  test` against it fails confusingly.
+- Deps are git submodules under repo-root `lib/` (forge-std, OZ v5.5.0);
+  remappings in `contracts/foundry.toml` point there via `../lib`.
+- Deploy: `contracts/script/Deploy.s.sol` against `https://rpc.testnet.arc.io`
+  (chain 5042002, USDC gas). Address is stored in `.env.local` as both
+  `NEXT_PUBLIC_TRIP_ESCROW_ADDRESS` and `TRIP_ESCROW_ADDRESS`.
+
 ## Base44 Development Environment Notes
 
 - **Compose Stack (`docker-compose.base44.yml`)**:

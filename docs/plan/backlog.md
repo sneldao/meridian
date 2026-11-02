@@ -1326,3 +1326,16 @@ state-vocabulary convergence onto the sun-self moods; the funnel week
 (set FUNNEL_SUMMARY_KEY and read real drop-offs); receipts for skipped
 steps' *recovery* (the recovery tip already exists — a receipt could
 close that loop too).
+
+## Round 27 — Payments on Arc: per-trip escrow, attested release (proposed 2026-11-02)
+
+Full proposal: [arc-payments.md](./arc-payments.md). The read that
+decided it: on-chain payment earns its place only where removing the
+contract removes a product feature — so not a paywall boolean, but an
+escrow whose release is attested by `evaluatePlan` itself. "Money back
+if the plan fails the gate" is a settlement claim no card processor
+makes cheaply. Arc's USDC-as-gas and sub-second finality compress the
+flow; the deferred list (crew agentic payments, sponsor pools, embedded
+wallets) is in the doc. Open questions to resolve before Phase 1: does a
+`passed:false` plan ever reach the gate (crew retry semantics), and
+tripId derivation — persisted plan id vs. route hash.

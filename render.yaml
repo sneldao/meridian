@@ -42,6 +42,17 @@ services:
       - key: MERIDIAN_SESSION
         value: run-2
 
+      # --- TripEscrow payments on Arc (docs/plan/arc-payments.md) ------------
+      # NOT set on this replay-only demo: replay runs mint no plan_seal, so
+      # the gate can never render. Enabling payments needs a live-provider
+      # service plus, in the Render dashboard env:
+      #   NEXT_PUBLIC_PAYMENTS_ENABLED=1   (build-time — inlined by next build)
+      #   NEXT_PUBLIC_TRIP_ESCROW_ADDRESS  (build-time)
+      #   NEXT_PUBLIC_ARC_RPC              (build-time)
+      #   NEXT_PUBLIC_ARC_CHAIN_ID         (build-time)
+      #   ATTESTER_PRIVATE_KEY             (runtime secret — server signs with it)
+      #   TRIP_ESCROW_ADDRESS, ARC_RPC, ARC_CHAIN_ID  (runtime)
+
   # FalkorDB graph memory — private service, internal TCP only (not public).
   # The web app reaches it as falkor://<host>:<port> via the env vars above.
   # This is the demo backend: judges hit the public URL, the crew reads the
