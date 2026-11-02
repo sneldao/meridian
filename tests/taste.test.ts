@@ -204,7 +204,7 @@ describe("destinationTaste", () => {
     expect(calls[0]).toContain("filter.location.query=Lisbon");
     expect(calls[1]).toContain("filter.location=POINT%28");
     expect(calls[1]).toContain("signal.interests.entities=id%3Aa%2Cid%3Ab");
-    expect(out.places).toEqual([{ name: "Venue", categories: ["coffee"], daytimeCandidate: false }]);
+    expect(out.places).toEqual([{ name: "Venue", categories: ["coffee"], daytimeCandidate: false, eveningCandidate: false }]);
   });
 
   it("without interests it searches the destination and seeds with its entity id", async () => {
@@ -243,7 +243,7 @@ describe("destinationTaste", () => {
       );
     });
     const out = await destinationTaste("Rome", 12.5, 41.9);
-    expect(out.places).toEqual([{ name: "Real Place", categories: ["park"], daytimeCandidate: false }]);
+    expect(out.places).toEqual([{ name: "Real Place", categories: ["park"], daytimeCandidate: false, eveningCandidate: false }]);
   });
 
   it("a locality that returns only unusable rows still triggers the WKT fallback", async () => {
