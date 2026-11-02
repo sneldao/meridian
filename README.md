@@ -114,6 +114,8 @@ Reference (kept in sync with the code):
 - [Evals](docs/reference/evals.md) — the harness that tracks plan quality over time (`bun run eval`), not a hillclimb yet, the shape of one
 - [Design primitives](docs/reference/design-primitives.md) — what the reference build does, what it buys, and what we took
 - [Backlog](docs/plan/backlog.md) — what's left, ranked
+- [Flagship plan](docs/plan/taste-flagship.md) — the personal taste-graph
+  direction: the agent that knows your taste and your body clock
 - [Graph memory](docs/reference/graph-memory.md) — FalkorDB state + Graph Hacks sprint to the 2026-10-18 deadline
 
 Archive (frozen 2026-10-15 hackathon material — history, not current state):

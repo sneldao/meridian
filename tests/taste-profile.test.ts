@@ -1,7 +1,7 @@
 import { describe, expect, it, afterEach, beforeEach } from "bun:test";
 import { NextRequest } from "next/server";
 import { GET as crewGET } from "../src/app/api/crew/run/route";
-import { readTripTaste, writeTripTaste } from "../src/lib/use-trip-taste";
+import { readTasteProfile, readTripTaste, writeTasteProfile, writeTripTaste } from "../src/lib/use-trip-taste";
 import type { TasteEntity } from "../src/domain/taste";
 
 const fakeStorage = (initial: Record<string, string> = {}) => {
@@ -43,6 +43,16 @@ describe("trip taste persistence", () => {
     expect(readTripTaste(s, "LHR-HND-2026-05-10")).toEqual([]);
     const s2 = fakeStorage({ "meridian:taste:LHR-HND-2026-05-10": JSON.stringify([{ id: "bad id", name: "X", type: "artist" }]) });
     expect(readTripTaste(s2, "LHR-HND-2026-05-10")).toEqual([]);
+  });
+
+  it("the self profile is the traveller's remembered taste — scoped trips still read only their own", () => {
+    const s = fakeStorage();
+    writeTasteProfile(s, faves);
+    expect(readTasteProfile(s)).toEqual(faves);
+    expect(s.map.get("meridian:taste:self")).toContain("Björk");
+    // the hook owns the fallback to self; scoped reads stay pure
+    expect(readTripTaste(s, "SFO-JFK-2026-05-10")).toEqual([]);
+    expect(readTripTaste(s, "example:2026-05-10")).toEqual([]);
   });
 
   it("writeTripTaste validates and normalizes before touching storage", () => {

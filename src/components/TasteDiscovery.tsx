@@ -324,7 +324,7 @@ export function TasteDiscovery({
       {onFavoritesChange && (
         <p className="taste-helper">
           {storageAvailable
-            ? "Your favorites stay with this trip on this device."
+            ? "Your favorites travel with you — saved for this trip, remembered for the next."
             : "Your favorites are available for this visit only."}
         </p>
       )}

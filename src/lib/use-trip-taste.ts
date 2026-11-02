@@ -10,10 +10,26 @@ export interface TripTaste {
   storageAvailable: boolean;
 }
 
+const SELF_SCOPE = "self";
 const tasteKey = (scope: string) => `meridian:taste:${scope}`;
 
 export function readTripTaste(storage: Pick<Storage, "getItem">, scope: string): TasteEntity[] {
   return parseTasteFavorites(storage.getItem(tasteKey(scope))) ?? [];
+}
+
+/* The traveller's remembered taste — one profile under `self`, written
+ * only by real trips (never by the fictional journeys). New trips start
+ * here when they carry no favourites of their own: your taste travels
+ * with you. Scoped reads stay scoped — the hook owns this fallback. */
+export function readTasteProfile(storage: Pick<Storage, "getItem">): TasteEntity[] {
+  return parseTasteFavorites(storage.getItem(tasteKey(SELF_SCOPE))) ?? [];
+}
+
+export function writeTasteProfile(
+  storage: Pick<Storage, "setItem">,
+  favorites: TasteEntity[],
+): void {
+  writeTripTaste(storage, SELF_SCOPE, favorites);
 }
 
 export function writeTripTaste(
@@ -44,7 +60,12 @@ export function useTripTaste(scope: string | null, persist: boolean): TripTaste 
         return;
       }
       try {
-        setHydrated({ scope, favorites: readTripTaste(localStorage, scope), storageAvailable: true });
+        const scoped = readTripTaste(localStorage, scope);
+        setHydrated({
+          scope,
+          favorites: scoped.length ? scoped : readTasteProfile(localStorage),
+          storageAvailable: true,
+        });
       } catch {
         setHydrated({ scope, favorites: [], storageAvailable: false });
       }
@@ -68,6 +89,7 @@ export function useTripTaste(scope: string | null, persist: boolean): TripTaste 
       if (persist) {
         try {
           writeTripTaste(localStorage, scope, clean);
+          writeTasteProfile(localStorage, clean);
           available = true;
         } catch {
           available = false;

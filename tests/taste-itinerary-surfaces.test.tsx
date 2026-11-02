@@ -109,7 +109,7 @@ describe("TasteDiscovery controlled favorites (SSR)", () => {
     expect(html).toContain("2 of 3 favorites");
     expect(html).toContain("Fit these into my plan");
     expect(html).toContain("Remove Björk");
-    expect(html).toContain("Your favorites stay with this trip on this device.");
+    expect(html).toContain("Your favorites travel with you — saved for this trip, remembered for the next.");
   });
 
   test("no storage claims session-only, planless shows trip nudge", () => {
