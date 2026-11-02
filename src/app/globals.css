@@ -2923,6 +2923,14 @@ html[data-theme="night"] .skel::after {
   .boot-terminator { animation: none; transform: none; opacity: 0.6; }
   .boot-overlay { animation: none; opacity: 0; }
 }
+
+/* Crew faces — the mood channel morphs on transform + opacity only. */
+.crew-face { transition: transform 0.35s ease, opacity 0.35s ease; }
+.crew-eyes { transition: transform 0.3s ease; }
+.crew-eyes ellipse { transition: ry 0.3s ease, opacity 0.3s ease; }
+@media (prefers-reduced-motion: reduce) {
+  .crew-face, .crew-eyes, .crew-eyes ellipse { transition: none; }
+}
 .sr-only {
   position: absolute;
   width: 1px; height: 1px;

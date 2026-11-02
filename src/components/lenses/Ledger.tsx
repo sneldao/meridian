@@ -2,6 +2,7 @@
 
 import { CREW } from "@/agents/crew";
 import { AGENT_ICONS } from "@/lib/agent-icons";
+import { CrewFaces } from "@/components/CrewFaces";
 import { fmtMin } from "@/domain/circadian";
 import type { AgentId, CrewEvent } from "@/domain/types";
 
@@ -102,6 +103,7 @@ export function Ledger({ events }: LedgerProps) {
   return (
     <div className="flex h-full w-full flex-col gap-3 p-4 font-mono2 text-xs text-paper">
       <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
+        <CrewFaces events={events} />
         <span className="text-xs text-mist">ledger</span>
         <Stat label="events" value={events.length} />
         <Stat label="tool calls" value={toolCalls} />
