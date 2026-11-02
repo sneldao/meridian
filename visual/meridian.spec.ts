@@ -22,6 +22,7 @@ test("entry — the first screen asks for a route", async ({ page }) => {
   await page.addInitScript(() => localStorage.clear());
   await page.goto("/");
   await page.waitForSelector('input[aria-label="Departure date"]', { timeout: 30000 });
+  await page.waitForLoadState("networkidle");
   await expect(page).toHaveScreenshot("entry.png");
 });
 
@@ -45,6 +46,7 @@ test("more — the sheet grows out of its tab", async ({ page }) => {
   await page.waitForSelector(".hero", { timeout: 30000 });
   await page.locator(".bottom-nav button", { hasText: "More" }).click();
   await page.waitForSelector(".more-sheet", { timeout: 10000 });
+  await page.waitForLoadState("networkidle");
   await expect(page).toHaveScreenshot("more-sheet.png");
 });
 
