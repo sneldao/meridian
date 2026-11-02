@@ -312,6 +312,30 @@ export default function Home() {
   const tasteProfile = useTripTaste(tasteScope, entry?.mode === "trip");
   const placeChoices = usePlaceChoices(tasteScope, entry?.mode === "trip");
   const [restoredItinerary, setRestoredItinerary] = useState<TasteItinerary | null>(null);
+  /* The dawn overlay lifts over the freshly-arrived entry — a cross-fade,
+   * not a swap. The timeout is the fallback for reduced-motion, where the
+   * exit animation never runs and animationend never fires. */
+  const [bootDone, setBootDone] = useState(false);
+  useEffect(() => {
+    if (entry === null) return;
+    const t = setTimeout(() => setBootDone(true), 750);
+    return () => clearTimeout(t);
+  }, [entry]);
+  const bootScene = (
+    <div className="boot-stage">
+      <p className="boot-mark">meridian</p>
+      <p className="boot-crew" aria-hidden="true">
+        {["Mara", "Jun", "Otto", "Iris", "Rex"].map((name, i) => (
+          <span key={name} className="boot-crew-name" style={{ animationDelay: `${0.35 + i * 0.28}s` }}>
+            {name}
+          </span>
+        ))}
+      </p>
+      <div className="boot-horizon" aria-hidden="true">
+        <div className="boot-terminator" />
+      </div>
+    </div>
+  );
 
   // The departure window the crew should plan around. Deriving the default from
   // the trip rather than hardcoding an id is what makes the picker correct on
@@ -1660,22 +1684,21 @@ export default function Home() {
         )}
 
 
+        {entry !== null && !bootDone && (
+          <div
+            className="boot boot-overlay"
+            aria-hidden="true"
+            onAnimationEnd={(e) => {
+              if (e.target === e.currentTarget) setBootDone(true);
+            }}
+          >
+            {bootScene}
+          </div>
+        )}
         {entry === null ? (
           <div ref={setupRef} aria-busy="true" aria-label="Loading your plan" className="boot">
             <span className="sr-only">Loading your plan…</span>
-            <div className="boot-stage">
-              <p className="boot-mark">meridian</p>
-              <p className="boot-crew" aria-hidden="true">
-                {["Mara", "Jun", "Otto", "Iris", "Rex"].map((name, i) => (
-                  <span key={name} className="boot-crew-name" style={{ animationDelay: `${0.35 + i * 0.28}s` }}>
-                    {name}
-                  </span>
-                ))}
-              </p>
-              <div className="boot-horizon" aria-hidden="true">
-                <div className="boot-terminator" />
-              </div>
-            </div>
+            {bootScene}
           </div>
         ) : entry.mode === "setup" ? (
           <div ref={setupRef}>

@@ -2904,9 +2904,24 @@ html[data-theme="night"] .skel::after {
 @keyframes boot-sweep {
   to { transform: translateX(100%); }
 }
+/* The dawn lifts: a fixed overlay that fades out over the freshly-mounted
+ * entry — the plan was underneath all along. A short delay lets the crew
+ * names land before the lift starts. */
+.boot-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: var(--m-bg);
+  pointer-events: none;
+  animation: boot-out 0.5s ease 0.15s forwards;
+}
+@keyframes boot-out {
+  to { opacity: 0; }
+}
 @media (prefers-reduced-motion: reduce) {
   .boot-crew-name { animation: none; opacity: 1; }
   .boot-terminator { animation: none; transform: none; opacity: 0.6; }
+  .boot-overlay { animation: none; opacity: 0; }
 }
 .sr-only {
   position: absolute;
