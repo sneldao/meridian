@@ -72,6 +72,8 @@ function describe(e: CrewEvent): Row {
       return { who: "system", what: `replan · drops ${e.droppedDays.length} day(s)`, tone: "var(--color-sun-dest)", emph: true };
     case "briefing":
       return { who: "system", what: `briefing · score ${e.score.toFixed(2)}`, tone: "var(--color-pass)", emph: true };
+    case "plan_seal":
+      return { who: "system", what: `plan sealed · ${e.planHash.slice(0, 10)}…`, tone: "var(--color-mist)" };
     case "error":
       return { who: "system", what: e.message, tone: "var(--color-fail)", emph: true };
     case "crew_question":

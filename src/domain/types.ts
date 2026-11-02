@@ -313,6 +313,15 @@ export type CrewEvent =
       tasteItinerary?: TasteItinerary;
     }
   | { type: "error"; message: string; recoverable: boolean }
+  | {
+      /** Server-minted seal on the plan that just briefed: the tripId the
+       *  traveller deposits under, and the hash of the EvalInput the
+       *  attester re-runs. Absent on replay runs — the seal only exists when
+       *  the scorer actually gated a plan. */
+      type: "plan_seal";
+      tripId: string;
+      planHash: string;
+    }
   | { type: "check_in"; checkIn: CheckIn }
   | { type: "replan"; droppedDays: number[]; reason: string }
   | { type: "done" };
