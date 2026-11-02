@@ -1,5 +1,6 @@
 import { describe, expect, it, beforeEach, afterEach } from "bun:test";
 import { loadTasteContext, withTasteItinerary } from "../src/agents/taste-context";
+import { resetQlooCache } from "../src/tools/qloo";
 import { buildTasteItinerary } from "../src/domain/taste-itinerary";
 import type { DestinationPlace, TasteContext, TasteEntity } from "../src/domain/taste";
 import { itineraryMatchesTrip, isTasteItinerary, parseTasteFavorites } from "../src/domain/taste";
@@ -305,6 +306,7 @@ const ENV_KEYS = ["QLOO_API_KEY", "QLOO_BASE_URL", "AGENT_PROVIDER", "REPLAY_BEA
 
 beforeEach(() => {
   for (const k of ENV_KEYS) { savedEnv[k] = process.env[k]; delete process.env[k]; }
+  resetQlooCache();
 });
 afterEach(() => {
   for (const k of ENV_KEYS) { if (savedEnv[k] === undefined) delete process.env[k]; else process.env[k] = savedEnv[k]; }

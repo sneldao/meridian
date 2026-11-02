@@ -9,7 +9,7 @@ import {
   type TasteEntity,
 } from "../src/domain/taste";
 import { createTasteRequestScope } from "../src/lib/taste-request";
-import { destinationTaste, searchTasteEntities } from "../src/tools/qloo";
+import { destinationTaste, resetQlooCache, searchTasteEntities } from "../src/tools/qloo";
 import { tasteResultLabel } from "../src/components/TasteDiscovery";
 
 const KEYS = ["QLOO_API_KEY", "QLOO_BASE_URL"] as const;
@@ -21,6 +21,7 @@ const stub = (fn: (url: RequestInfo | URL, init?: RequestInit) => Promise<Respon
 
 beforeEach(() => {
   for (const k of KEYS) { saved[k] = process.env[k]; delete process.env[k]; }
+  resetQlooCache();
 });
 afterEach(() => {
   for (const k of KEYS) { if (saved[k] === undefined) delete process.env[k]; else process.env[k] = saved[k]; }
@@ -59,7 +60,7 @@ describe("domain/taste helpers", () => {
 
   it("tasteResultLabel uses only the provided seeds", () => {
     expect(tasteResultLabel([])).toBe("Destination picks · not personalized yet");
-    expect(tasteResultLabel([b, a])).toBe("Taste signals: A, B");
+    expect(tasteResultLabel([b, a])).toBe("Taste signals: A (film), B (music)");
   });
 });
 

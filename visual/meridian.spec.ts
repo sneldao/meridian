@@ -57,11 +57,23 @@ test("demo — the stakes beat", async ({ page }) => {
   await expect(page).toHaveScreenshot("demo-stakes.png");
 });
 
-test("demo — the payoff beat stamps the passport", async ({ page }) => {
+test("demo — the taste beat shows Qloo-ranked places", async ({ page }) => {
   await page.addInitScript(() => localStorage.clear());
   await page.goto("/demo");
   await page.waitForSelector('[data-beat="stakes"]', { timeout: 30000 });
   for (let i = 0; i < 3; i++) {
+    await page.locator(".demo-foot .demo-nav", { hasText: "Next" }).click();
+    await page.waitForTimeout(250);
+  }
+  await page.waitForSelector('[data-beat="taste"]', { timeout: 10000 });
+  await expect(page).toHaveScreenshot("demo-taste.png");
+});
+
+test("demo — the payoff beat stamps the passport", async ({ page }) => {
+  await page.addInitScript(() => localStorage.clear());
+  await page.goto("/demo");
+  await page.waitForSelector('[data-beat="stakes"]', { timeout: 30000 });
+  for (let i = 0; i < 4; i++) {
     await page.locator(".demo-foot .demo-nav", { hasText: "Next" }).click();
     await page.waitForTimeout(250);
   }
@@ -75,7 +87,7 @@ test("demo — the payoff's gift buttons", async ({ page }) => {
   await page.addInitScript(() => localStorage.clear());
   await page.goto("/demo");
   await page.waitForSelector('[data-beat="stakes"]', { timeout: 30000 });
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 4; i++) {
     await page.locator(".demo-foot .demo-nav", { hasText: "Next" }).click();
     await page.waitForTimeout(250);
   }

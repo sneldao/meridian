@@ -90,7 +90,7 @@ describe("clockLabel", () => {
 
 describe("the beats", () => {
   test("are the journey spine in story order", () => {
-    expect(DEMO_BEAT_IDS).toEqual(["stakes", "crew", "plan", "payoff"]);
+    expect(DEMO_BEAT_IDS).toEqual(["stakes", "crew", "plan", "taste", "payoff"]);
   });
 });
 

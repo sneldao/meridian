@@ -34,13 +34,14 @@ export interface DemoJourney {
   passport: ArrivalPassport | null;
 }
 
-export const DEMO_BEAT_IDS = ["stakes", "crew", "plan", "payoff"] as const;
+export const DEMO_BEAT_IDS = ["stakes", "crew", "plan", "taste", "payoff"] as const;
 export type DemoBeatId = (typeof DEMO_BEAT_IDS)[number];
 
 export const DEMO_BEAT_TITLES: Record<DemoBeatId, string> = {
   stakes: "The stakes",
   crew: "The crew at work",
   plan: "The plan",
+  taste: "The taste",
   payoff: "The payoff",
 };
 

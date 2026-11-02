@@ -46,6 +46,34 @@ Optional extras, all in `.env.local` — every one degrades gracefully when unse
 | Iris · EVAL | Fresh-context evaluator — explains the scorer's verdict |
 | Rex · NEGOTIATOR | Reschedules movable calendar events, commits the .ics |
 
+## Powered by Qloo
+
+The crew is culturally grounded, not just schedule-smart — via
+[Qloo](https://www.qloo.com)'s taste graph (built for the Qloo Agentic
+Hackathon). The integration, end to end:
+
+- **`/search`** resolves up to three traveller favourites — artists, films,
+  books, brands — to taste-graph entities (`/api/taste/search`,
+  `src/tools/qloo.ts`, surfaced by `TasteDiscovery`).
+- **`/v2/insights`** turns those entities into real places at the
+  destination: `filter.location.query` keeps results inside the locality,
+  and `signal.interests.entities` carries the favourites as the
+  cross-domain affinity signal — music you love → places you'll love
+  (`/api/taste`, `destinationTaste`).
+- **Taste decides _what_, never _when_.** Qloo-ranked ideas are fitted into
+  the free hours the verified plan leaves open
+  (`src/domain/taste-itinerary.ts`); the phase-response scorer still owns
+  every sleep, light and caffeine time. Favourites reach the planner as
+  untrusted data under strict guardrails (`src/agents/taste-context.ts`),
+  and Otto can call `destinationTaste` mid-run as a real tool.
+- Also exposed as the MCP tool **`destination_taste`**
+  (`src/mcp/server.ts`), so any MCP client gets the same taste grounding.
+
+The contrast is demoable in one click: the `/demo` taste beat and the
+`?example=` journeys toggle between two recorded taste profiles — Björk's
+Tokyo (galleries, quiet cafés) is not Luke Combs's Tokyo — same route, same
+plan, different places.
+
 ## Routes
 
 | Path | What |

@@ -35,7 +35,7 @@ describe("TasteItineraryCard (SSR)", () => {
 
   test("shows the payoff honestly", () => {
     expect(html).toContain("Your kind of Tokyo.");
-    expect(html).toContain("Qloo taste signals: Björk, Past Lives");
+    expect(html).toContain("Qloo taste signals: Björk (music), Past Lives (film) → Tokyo");
     expect(html).toContain("Qloo-ranked ideas, fitted around your plan");
     expect(html).toContain("Kissa Tanto");
     expect(html).toContain("May 11");
@@ -65,7 +65,7 @@ describe("TasteItineraryCard (SSR)", () => {
       }),
     );
     expect(h).toContain("Your favorites have changed. Update your plan to use them.");
-    expect(h).toContain("Qloo taste signals: Björk, Past Lives");
+    expect(h).toContain("Qloo taste signals: Björk (music), Past Lives (film)");
     expect(h).not.toContain("Qloo taste signals: Sade");
     expect(h).toContain("Kissa Tanto");
   });
@@ -82,7 +82,7 @@ describe("TasteItineraryCard (SSR)", () => {
       expect(h).toContain(text);
       expect(h).not.toContain("Kissa Tanto");
       if (status === "unavailable") {
-        expect(h).toContain("Requested favorites: Björk, Past Lives");
+        expect(h).toContain("Requested favorites: Björk (music), Past Lives (film)");
         expect(h).toContain("Place discovery unavailable");
         expect(h).not.toContain("Qloo-ranked ideas");
       }

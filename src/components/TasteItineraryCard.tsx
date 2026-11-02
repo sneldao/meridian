@@ -3,6 +3,7 @@ import { fmtMin } from "@/domain/circadian";
 import {
   placeSearchUrl,
   tasteSelectionKey,
+  TASTE_TYPES,
   type TasteEntity,
   type TasteItinerary,
 } from "@/domain/taste";
@@ -38,7 +39,10 @@ export function TasteItineraryCard({
       <h2 id="taste-itinerary-heading">Your kind of {itinerary.destination}.</h2>
       <p className="taste-provenance">
         {itinerary.status === "unavailable" ? "Requested favorites: " : "Qloo taste signals: "}
-        {itinerary.favorites.map((f) => f.name).join(", ")}
+        {itinerary.favorites
+          .map((f) => `${f.name} (${TASTE_TYPES[f.type].toLowerCase()})`)
+          .join(", ")}
+        {itinerary.status !== "unavailable" && ` → ${itinerary.destination}`}
       </p>
       <p className="taste-note">
         {itinerary.status === "unavailable"

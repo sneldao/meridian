@@ -29,9 +29,11 @@ interface TasteDiscoveryProps {
 type SearchStatus = "idle" | "loading" | "ready" | "error" | "disabled";
 type DiscoverStatus = "idle" | "loading" | "error";
 
-export function tasteResultLabel(seeds: TasteEntity[]): string {
+export function tasteResultLabel(seeds: TasteEntity[], destination?: string): string {
   return seeds.length
-    ? `Taste signals: ${seeds.map((e) => e.name).join(", ")}`
+    ? `Taste signals: ${seeds
+        .map((e) => `${e.name} (${TASTE_TYPES[e.type].toLowerCase()})`)
+        .join(", ")}${destination ? ` → ${destination}` : ""}`
     : "Destination picks · not personalized yet";
 }
 
@@ -353,7 +355,9 @@ export function TasteDiscovery({
       <div className="taste-results">
         {places.length > 0 && (
           <>
-            <p className="taste-provenance">{tasteResultLabel(result?.seeds ?? [])}</p>
+            <p className="taste-provenance">
+              {tasteResultLabel(result?.seeds ?? [], result?.data.destination ?? destination.name)}
+            </p>
             <h3 className="taste-places-heading">A few places to start</h3>
             <ol className="taste-places">
               {places.map((p, i) => (

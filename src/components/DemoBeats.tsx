@@ -16,6 +16,9 @@ import {
 import { StageSun } from "@/components/StageSun";
 import { arrivalPassportSvg } from "@/lib/arrival-passport-svg";
 import { downloadSunPortrait } from "@/lib/download-sun-portrait";
+import { buildTasteItinerary } from "@/domain/taste-itinerary";
+import { TASTE_TYPES } from "@/domain/taste";
+import { sampleTasteProfile, SAMPLE_TASTE_LABEL } from "@/lib/sample-taste";
 import { useLightSweep } from "@/components/LightSweep";
 import { isDemoScenarioId } from "@/domain/demo-scenarios";
 import { sceneSolar } from "@/domain/day-scene";
@@ -75,6 +78,32 @@ function DemoBeatsInner() {
 
   const rows = useMemo(() => planRows(journey), [journey]);
   const crewPerf = useMemo(() => crewPerformance(journey), [journey]);
+
+  // The taste beat: the same recorded Qloo reads the example journey uses,
+  // switchable between the two taste profiles so the cross-domain move —
+  // music you love → places you'll love — is visible in one frame.
+  const [profileKey, setProfileKey] = useState<string | null>(null);
+  const tasteProfile = useMemo(
+    () => sampleTasteProfile(profileKey ?? journey.scenario.profile),
+    [profileKey, journey],
+  );
+  const tasteItinerary = useMemo(
+    () =>
+      tasteProfile
+        ? buildTasteItinerary(
+            journey.trip,
+            journey.plans,
+            journey.calendar,
+            {
+              favorites: tasteProfile.favorites,
+              status: tasteProfile.places.length ? "ready" : "no-matches",
+              places: tasteProfile.places,
+            },
+            "replay",
+          )
+        : null,
+    [journey, tasteProfile],
+  );
   const gap = stakesGapHours(journey.moment);
   const p = journey.read.projection;
   const arrivalSpec = journey.trip.days.find(
@@ -290,6 +319,65 @@ function DemoBeatsInner() {
             </div>
             <p className="demo-honest" data-rise="8">
               Light, sleep and caffeine — timed to the route, shown to the minute.
+            </p>
+          </section>
+        )}
+
+        {beat === "taste" && (
+          <section className="demo-beat" aria-label={DEMO_BEAT_TITLES.taste}>
+            <p className="demo-kicker" data-rise="1">A little room for what you love</p>
+            <h2 className="demo-title" data-rise="2">
+              Your kind of {journey.trip.destination.name}
+            </h2>
+            <fieldset className="scenario-toggle demo-taste-toggle" data-rise="3">
+              <legend>Taste preference</legend>
+              {(["bjork", "luke"] as const).map((k) => {
+                const pr = sampleTasteProfile(k);
+                return (
+                  pr && (
+                    <button
+                      key={k}
+                      type="button"
+                      aria-pressed={tasteProfile?.key === k}
+                      onClick={() => setProfileKey(k)}
+                      className="taste-button taste-button--ghost"
+                    >
+                      {pr.favorites[0].name}
+                    </button>
+                  )
+                );
+              })}
+            </fieldset>
+            <div className="demo-rows">
+              {(tasteItinerary?.suggestions ?? []).map((s, i) => (
+                <div key={`${s.dayIndex}-${s.place.name}`} className="demo-row" data-rise={i + 4}>
+                  <span className="demo-row-time">{clockLabel(s.startMin)}</span>
+                  <span className="demo-row-body">
+                    <b>{s.place.name}</b>
+                    <small>
+                      {s.date.slice(5)} · optional idea · free time in the plan
+                      {s.place.categories.length > 0 &&
+                        ` · ${s.place.categories.filter(Boolean).slice(0, 2).join(" · ")}`}
+                    </small>
+                  </span>
+                </div>
+              ))}
+            </div>
+            {(tasteItinerary?.suggestions.length ?? 0) === 0 && (
+              <p className="demo-honest" data-rise="4">
+                No free hour to fit — the plan kept its rest instead.
+              </p>
+            )}
+            <p className="demo-provenance" data-rise="7">
+              {tasteProfile
+                ? `${tasteProfile.favorites
+                    .map((f) => `${f.name} (${TASTE_TYPES[f.type].toLowerCase()})`)
+                    .join(", ")} → ${tasteItinerary?.destination ?? journey.trip.destination.name} places — Qloo's taste graph, not a location search.`
+                : "Destination picks, powered by Qloo."}
+            </p>
+            <p className="demo-honest" data-rise="8">
+              Optional ideas fitted into the free hours the verified plan leaves — taste decides{" "}
+              <i>what</i>, never <i>when</i>. {SAMPLE_TASTE_LABEL}.
             </p>
           </section>
         )}

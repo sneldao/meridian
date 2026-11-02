@@ -32,16 +32,42 @@ const DAY_VISIT_CATEGORIES = new Set(["cafe", "coffee shop", "art gallery", "mus
 const NOT_DAY_VISIT = /(\bbar\b|night ?club|school|educational institution|hospital|medical|office|hotel|bank|pharmacy|go kart|car rental)/i;
 const TAXONOMY_TAG_TYPES = new Set(["urn:tag:category:place", "urn:tag:genre:place"]);
 
+/* Judging-window resilience: upstream reads are cached in-process and a
+ * hiccup serves the last good answer — the demo degrades to slightly stale
+ * places, never to the unavailable state. */
+const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+const CACHE_MAX = 200;
+const cache = new Map<string, { at: number; data: unknown }>();
+
+/** Test seam: stubbed-fetch tests need every call to reach their stub. */
+export function resetQlooCache(): void {
+  cache.clear();
+}
+
 async function qlooGet(pathname: string, params: Record<string, string>): Promise<unknown> {
   const key = process.env.QLOO_API_KEY;
   if (!key) return null;
-  const url = `${BASE}${pathname}?${new URLSearchParams(params)}`;
-  const res = await fetch(url, {
-    headers: { "X-Api-Key": key },
-    signal: AbortSignal.timeout(9000),
-  });
-  if (!res.ok) throw new Error("Taste service unavailable");
-  return res.json();
+  const query = new URLSearchParams(params).toString();
+  const cacheKey = `${pathname}?${query}`;
+  const hit = cache.get(cacheKey);
+  if (hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.data;
+  try {
+    const res = await fetch(`${BASE}${pathname}?${query}`, {
+      headers: { "X-Api-Key": key },
+      signal: AbortSignal.timeout(9000),
+    });
+    if (!res.ok) throw new Error("Taste service unavailable");
+    const data: unknown = await res.json();
+    if (cache.size >= CACHE_MAX) {
+      const oldest = cache.keys().next().value;
+      if (oldest !== undefined) cache.delete(oldest);
+    }
+    cache.set(cacheKey, { at: Date.now(), data });
+    return data;
+  } catch (err) {
+    if (hit) return hit.data;
+    throw err;
+  }
 }
 
 /** Both /search and /v2/insights wrap rows as {results:{entities:[...]}} —

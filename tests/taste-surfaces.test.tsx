@@ -91,6 +91,6 @@ describe("tasteResultLabel", () => {
         { id: "1", name: "Björk", type: "artist" },
         { id: "2", name: "Past Lives", type: "movie" },
       ]),
-    ).toBe("Taste signals: Björk, Past Lives");
+    ).toBe("Taste signals: Björk (music), Past Lives (film)");
   });
 });

@@ -39,6 +39,8 @@
     "node_modules",
     "tests",
     "scripts",
-    "video"
+    "video",
+    "lib",
+    "contracts"
   ]
 }

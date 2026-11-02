@@ -6308,8 +6308,10 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
    morning gets closer — the story arriving in the light, not the words. */
 .demo[data-beat="crew"] .demo-dawn { opacity: 0.2; }
 .demo[data-beat="plan"] .demo-dawn { opacity: 0.3; }
+.demo[data-beat="taste"] .demo-dawn { opacity: 0.42; }
 .demo[data-beat="payoff"] .demo-dawn { opacity: 0.52; }
 .demo[data-beat="plan"] .demo-stars { opacity: 0.55; }
+.demo[data-beat="taste"] .demo-stars { opacity: 0.42; }
 .demo[data-beat="payoff"] .demo-stars { opacity: 0.3; }
 .demo[data-beat="plan"] .demo-ridge-far { filter: drop-shadow(0 -1px 3px rgba(255, 214, 150, 0.18)); }
 .demo[data-beat="payoff"] .demo-ridge-far { filter: drop-shadow(0 -2px 8px rgba(255, 214, 150, 0.4)); }
@@ -6474,6 +6476,23 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .demo-row-body { display: grid; gap: 2px; }
 .demo-row-body b { font-size: var(--text-sm); color: var(--m-text); }
 .demo-row-body small { font-size: 12px; color: var(--m-muted); }
+
+/* The taste beat: the favourite-picker uses the scenario toggle's shape but
+   needs its own pressed state (the scenario rule is scoped to .scenario). */
+.demo-taste-toggle {
+  margin: 18px 0 0;
+}
+.demo-taste-toggle button[aria-pressed="true"] {
+  background: var(--m-text);
+  border-color: var(--m-text);
+  color: var(--m-bg);
+}
+.demo-provenance {
+  margin: 14px 0 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--m-muted);
+}
 
 .demo-score {
   margin: 18px 0 0;
