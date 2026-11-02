@@ -5,7 +5,7 @@ import { fetchCalendar } from "@/tools/calendar";
 import { runCrew } from "@/agents/runtime";
 import { rateLimit, tooMany, RL_RUNS } from "@/lib/rateLimit";
 import { tenantOf } from "@/lib/tenant";
-import { parseTasteFavorites } from "@/domain/taste";
+import { parseTasteFavorites, parseTasteMarks } from "@/domain/taste";
 import {
   appendCrewEvent,
   crewRun,
@@ -117,6 +117,10 @@ export async function GET(req: NextRequest) {
   if (tasteFavorites === null) {
     return new Response(JSON.stringify({ error: "invalid taste favorites" }), { status: 400 });
   }
+  const tasteMarks = parseTasteMarks(sp.get("marks"));
+  if (tasteMarks === null) {
+    return new Response(JSON.stringify({ error: "invalid taste marks" }), { status: 400 });
+  }
 
   const startDayRaw = sp.get("startDay");
   const startDayIndex = startDayRaw === null ? 0 : Number(startDayRaw);
@@ -171,6 +175,7 @@ export async function GET(req: NextRequest) {
         startDayIndex,
         tenant,
         tasteFavorites,
+        tasteMarks,
         runId,
         signal,
       })) {

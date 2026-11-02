@@ -44,7 +44,7 @@ export async function GET(req: Request) {
   let interestIds: string[] = [];
   if (interestsParam !== null) {
     const raw = interestsParam.split(",");
-    if (raw.length > 3 || raw.some((s) => !TASTE_ID_RE.test(s))) {
+    if (raw.length > 8 || raw.some((s) => !TASTE_ID_RE.test(s))) {
       return NextResponse.json({ error: "Invalid interests" }, { status: 400, headers: NO_STORE });
     }
     interestIds = [...new Set(raw)];

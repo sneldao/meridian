@@ -69,10 +69,11 @@ Hackathon). The integration, end to end:
 - Also exposed as the MCP tool **`destination_taste`**
   (`src/mcp/server.ts`), so any MCP client gets the same taste grounding.
 - **It remembers.** Favourites ride in a `self` profile across trips, and
-  every keep/swap/dismiss lands as a graph edge (`/api/taste/feedback` →
-  `recordTasteSignal`) that boosts and suppresses future picks
-  (`tasteHistory` in `loadTasteContext` + `/api/taste`). See
-  [the flagship plan](docs/plan/taste-flagship.md).
+  every keep/swap/dismiss lands in a device-local signals store (which
+  feeds the `marks` run param — the loop works before the graph does)
+  **and** as a graph edge (`/api/taste/feedback` → `recordTasteSignal`)
+  for cross-device memory (`tasteHistory` in `loadTasteContext` +
+  `/api/taste`). See [the flagship plan](docs/plan/taste-flagship.md).
 
 The contrast is demoable in one click: the `/demo` taste beat and the
 `?example=` journeys toggle between two recorded taste profiles — Björk's

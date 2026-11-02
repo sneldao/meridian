@@ -76,6 +76,7 @@ import { safeStorageGet } from "@/lib/local-data";
 import { useTripActions } from "@/lib/use-trip-actions";
 import { useTripTaste } from "@/lib/use-trip-taste";
 import { usePlaceChoices } from "@/lib/use-place-choices";
+import { readTasteSignals } from "@/lib/taste-signals";
 import { shareTripContext } from "@/lib/share-trip";
 import { shareLink } from "@/lib/share-client";
 import { ScenarioExperience } from "@/components/ScenarioExperience";
@@ -800,6 +801,10 @@ export default function Home() {
       if (selectedFlightId) params.set("flight", selectedFlightId);
       if (tasteProfile.ready && tasteProfile.favorites.length) {
         params.set("taste", JSON.stringify(tasteProfile.favorites));
+        const marks = readTasteSignals(localStorage);
+        if (marks.kept.length || marks.dismissed.length) {
+          params.set("marks", JSON.stringify(marks));
+        }
       }
       const runId = crypto.randomUUID();
       runIdRef.current = runId;

@@ -1,25 +1,37 @@
 import { buildTasteItinerary } from "@/domain/taste-itinerary";
 import { tasteHistory } from "@/domain/graph-memory";
-import { withoutDismissed, type TasteContext, type TasteEntity } from "@/domain/taste";
+import { withoutDismissed, type TasteContext, type TasteEntity, type TasteMarks } from "@/domain/taste";
 import type { CalendarEvent, CrewEvent, Trip } from "@/domain/types";
 import { destinationTaste, qlooEnabled } from "@/tools/qloo";
 
-export async function loadTasteContext(trip: Trip, favorites: TasteEntity[], tenant?: string): Promise<TasteContext> {
+export async function loadTasteContext(trip: Trip, favorites: TasteEntity[], tenant?: string, marks?: TasteMarks): Promise<TasteContext> {
   const snapshot = favorites.map((f) => ({ ...f }));
   if (!qlooEnabled()) return { favorites: snapshot, status: "unavailable", places: [] };
   try {
-    /* The remembered traveller: kept places from past trips feed the
-     * affinity signal alongside the declared favourites, dismissed places
-     * are suppressed outright. No graph → empty history → same behaviour. */
+    /* The remembered traveller: kept places feed the affinity signal
+     * alongside the declared favourites, dismissed places are suppressed
+     * outright. Memory is unioned from two sources — the device's own
+     * marks (local-first, needs nothing) and graph history (cross-device,
+     * empty when FalkorDB is off). Neither configured → same behaviour. */
     const history = await tasteHistory(tenant);
-    const interests = [...new Set([...snapshot.map((f) => f.id), ...history.keptIds])].slice(0, 8);
+    const keptIds = [...new Set([...history.keptIds, ...(marks?.kept ?? [])])];
+    const dismissed = [...history.dismissed];
+    const seenDismissed = new Set(dismissed.map((d) => d.id ?? d.name.trim().toLowerCase()));
+    for (const d of marks?.dismissed ?? []) {
+      const k = d.id ?? d.name.trim().toLowerCase();
+      if (!seenDismissed.has(k)) {
+        seenDismissed.add(k);
+        dismissed.push(d);
+      }
+    }
+    const interests = [...new Set([...snapshot.map((f) => f.id), ...keptIds])].slice(0, 8);
     const out = await destinationTaste(
       trip.destination.name,
       trip.destination.lon,
       trip.destination.lat,
       interests,
     );
-    const kept = withoutDismissed(out.places, history.dismissed);
+    const kept = withoutDismissed(out.places, dismissed);
     const qualified = kept.filter((p) => p.daytimeCandidate === true);
     const evening = kept.filter((p) => p.eveningCandidate === true).slice(0, 3);
     const suppressed = out.places.length - kept.length;
@@ -28,8 +40,8 @@ export async function loadTasteContext(trip: Trip, favorites: TasteEntity[], ten
       status: qualified.length ? "ready" : "no-matches",
       places: qualified,
       ...(evening.length ? { eveningPlaces: evening } : {}),
-      ...(history.keptIds.length || suppressed
-        ? { memory: { kept: history.keptIds.length, suppressed, keptIds: history.keptIds } }
+      ...(keptIds.length || suppressed
+        ? { memory: { kept: keptIds.length, suppressed, keptIds } }
         : {}),
     };
   } catch {

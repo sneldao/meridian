@@ -25,6 +25,7 @@ import { buildDayScene } from "@/domain/day-scene";
 import { DayCardShare } from "@/components/DayCardShare";
 import { RightNowCard } from "@/components/RightNowCard";
 import { postTasteSignal, resolvePlaceChoice } from "@/lib/place-choices";
+import { recordTasteSignal } from "@/lib/taste-signals";
 import { tasteSelectionKey } from "@/domain/taste";
 import type { DestinationPlace } from "@/domain/taste";
 import type { PlaceChoices } from "@/lib/use-place-choices";
@@ -1535,7 +1536,10 @@ export function NudgeFeedScreen({
         const writeChoice = (status: "kept" | "dismissed" | "swapped", place: DestinationPlace) => {
           if (!spec || !tasteItinerary || !resolved || !placeChoices) return;
           placeChoices.setChoice(spec.date, { status, place, tasteKey: tasteSelectionKey(tasteItinerary.favorites) });
-          if (placeChoices.storageAvailable) postTasteSignal(status, place);
+          if (placeChoices.storageAvailable) {
+            postTasteSignal(status, place);
+            recordTasteSignal(localStorage, status, place);
+          }
         };
         return arrivalView && spec && trip ? (
           <ArrivalDayView

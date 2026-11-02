@@ -44,6 +44,11 @@ body clock.*
   Works on `/api/taste` and inside `loadTasteContext`; no-op when the
   graph is off. (Shipped rounds 37–39 — remembered-picks marker and the
   first-night idea included.)
+- **Memory is local-first.** Verdicts also land in
+  `meridian:taste-signals` and ride every run as the `marks` param —
+  the compound loop works same-device with zero infrastructure; the
+  graph edges are the cross-device layer on top, not a dependency.
+  (Shipped round 43.)
 - **No new memory vendor.** FalkorDB + Supabase cover structured memory,
   and Qloo itself is the semantic layer — map artefacts to entities via
   `/search` and let the taste graph correlate. A memory engine (cognee

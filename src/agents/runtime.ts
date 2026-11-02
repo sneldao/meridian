@@ -37,13 +37,14 @@ import { runReplay } from "./replay";
 import { runMorningReplay } from "./morning-replay";
 import { buildIcs, fetchCalendar, proposeMove } from "@/tools/calendar";
 import { requestCalendarApproval } from "@/lib/calendar-approvals";
+import { sealPlan } from "@/lib/plan-seals";
 import { requestCrewQuestion } from "@/lib/crew-questions";
 import { searchScience } from "@/tools/science";
 import { searchTavily, tavilyEnabled } from "@/tools/tavily";
 import { destinationTaste, qlooEnabled } from "@/tools/qloo";
 import { loadTasteContext, withTasteItinerary } from "./taste-context";
 import { buildTasteItinerary } from "@/domain/taste-itinerary";
-import { parseTasteFavorites, type TasteContext, type TasteEntity } from "@/domain/taste";
+import { parseTasteFavorites, type TasteContext, type TasteEntity, type TasteMarks } from "@/domain/taste";
 import { getAdherenceProfile, getRecentNights } from "@/tools/wearable";
 
 const ARTIFACTS_DIR = path.join(process.cwd(), "artifacts");
@@ -78,6 +79,8 @@ export function runCrew(opts?: {
    *  carried through run_start so surfaces label numbers honestly. */
   baselineKind?: BaselineKind;
   tasteFavorites?: TasteEntity[];
+  /** Local-first marks from the device — merged with graph history. */
+  tasteMarks?: TasteMarks;
   runId?: string;
   signal?: AbortSignal;
   /** Interactive callers (the app's own streams) can be asked `crew_question`s.
@@ -98,7 +101,7 @@ export function runCrew(opts?: {
   void (async () => {
     const favorites = parseTasteFavorites(JSON.stringify(opts?.tasteFavorites ?? [])) ?? [];
     const tasteContext = favorites.length
-      ? loadTasteContext(opts?.trip ?? DEMO_TRIP, favorites, opts?.tenant)
+      ? loadTasteContext(opts?.trip ?? DEMO_TRIP, favorites, opts?.tenant, opts?.tasteMarks)
       : undefined;
     try {
       if (providerKind() === "replay") {
@@ -826,6 +829,20 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
     }),
   });
   logLine(`briefing issued — score ${meanScore}, coverage ${Math.round(coverage.ratio * 100)}%`);
+
+  // Seal the plan the scorer just gated — the EvalInput here includes the
+  // adherence floor as the analyst left it, which no event downstream can
+  // reconstruct. The attester re-runs evaluatePlan over this stored input;
+  // the event carries only the hash the traveller deposits under.
+  const seal = sealPlan(runId, {
+    trip,
+    days: state.lockedDays,
+    calendar: state.calendar,
+    adherence,
+    citations: state.citations,
+    baseline,
+  });
+  if (seal) emit({ type: "plan_seal", tripId: seal.tripId, planHash: seal.planHash });
 
   // Everything past the briefing is optional bookkeeping, and none of it may
   // hold the stream open. An unreachable FalkorDB used to block here forever:

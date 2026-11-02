@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 import { GET as crewGET } from "../src/app/api/crew/run/route";
 import { POST as feedbackPOST } from "../src/app/api/taste/feedback/route";
 import { readTasteProfile, readTripTaste, writeTasteProfile, writeTripTaste } from "../src/lib/use-trip-taste";
+import { readTasteSignals, recordTasteSignal } from "../src/lib/taste-signals";
 import type { TasteEntity } from "../src/domain/taste";
 
 const fakeStorage = (initial: Record<string, string> = {}) => {
@@ -106,6 +107,27 @@ describe("GET /api/crew/run taste validation", () => {
     } finally {
       globalThis.fetch = realFetch2;
     }
+  });
+});
+
+describe("local taste signals", () => {
+  it("kept and dismissed round-trip; latest verdict wins", () => {
+    const s = fakeStorage();
+    const place = { id: "p1", name: "Mori Art Museum", categories: [] };
+    recordTasteSignal(s, "kept", place);
+    recordTasteSignal(s, "dismissed", { name: "Tokyo Disneyland", categories: [] });
+    const m = readTasteSignals(s);
+    expect(m.kept).toEqual(["p1"]);
+    expect(m.dismissed).toEqual([{ name: "Tokyo Disneyland" }]);
+    // a later verdict flips the earlier one, it doesn't stack
+    recordTasteSignal(s, "dismissed", place);
+    expect(readTasteSignals(s).kept).toEqual([]);
+    expect(readTasteSignals(s).dismissed).toContainEqual({ id: "p1", name: "Mori Art Museum" });
+  });
+
+  it("corrupt storage reads as empty, never crashes", () => {
+    const s = fakeStorage({ "meridian:taste-signals": "{corrupt" });
+    expect(readTasteSignals(s)).toEqual({ kept: [], dismissed: [] });
   });
 });
 

@@ -81,6 +81,38 @@ export interface TasteItinerary {
   /** Present when remembered taste shaped these picks — the card says so. */
   memory?: { kept: number; suppressed: number; keptIds?: string[] };
 }
+/** Wire shape for the local-first marks param: kept ids to boost,
+ *  dismissed places to suppress. Same semantics as the graph's history. */
+export interface TasteMarks {
+  kept: string[];
+  dismissed: { id?: string; name: string }[];
+}
+
+export function parseTasteMarks(raw: string | null): TasteMarks | null {
+  if (raw === null) return { kept: [], dismissed: [] };
+  if (raw.length > 4096) return null;
+  try {
+    const value: unknown = JSON.parse(raw);
+    if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+    const o = value as { kept?: unknown; dismissed?: unknown };
+    const kept = Array.isArray(o.kept) ? o.kept : [];
+    if (kept.length > 10 || kept.some((k) => typeof k !== "string" || !TASTE_ID_RE.test(k))) return null;
+    const dismissed = Array.isArray(o.dismissed) ? o.dismissed : [];
+    if (dismissed.length > 20) return null;
+    const out: TasteMarks["dismissed"] = [];
+    for (const d of dismissed) {
+      if (!d || typeof d !== "object") return null;
+      const dd = d as { id?: unknown; name?: unknown };
+      if (typeof dd.name !== "string" || !dd.name.trim() || dd.name.length > 300) return null;
+      if (dd.id !== undefined && (typeof dd.id !== "string" || !TASTE_ID_RE.test(dd.id))) return null;
+      out.push({ name: dd.name, ...(typeof dd.id === "string" ? { id: dd.id } : {}) });
+    }
+    return { kept: kept as string[], dismissed: out };
+  } catch {
+    return null;
+  }
+}
+
 export function parseTasteFavorites(raw: string | null): TasteEntity[] | null {
   if (raw === null) return [];
   if (raw.length > 4096) return null;

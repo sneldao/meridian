@@ -9,11 +9,13 @@ import {
   isTasteResponse,
   placeSearchUrl,
   tasteSelectionKey,
+  withoutDismissed,
   type TasteEntity,
   type TasteResponse,
   type TasteType,
 } from "@/domain/taste";
 import { createTasteRequestScope } from "@/lib/taste-request";
+import { readTasteSignals } from "@/lib/taste-signals";
 
 interface TasteDiscoveryProps {
   destination: { name: string; lon: number; lat: number };
@@ -150,12 +152,15 @@ export function TasteDiscovery({
     setDiscoverStatus("loading");
     setDiscoverError("");
     try {
+      /* Local marks ride along: kept ids join the affinity signal, and the
+       * dismissed set suppresses client-side — no graph required. */
+      const signals = readTasteSignals(localStorage);
       const res = await fetch(
         `/api/taste?${new URLSearchParams({
           city: destination.name,
           lon: String(destination.lon),
           lat: String(destination.lat),
-          interests: tasteSelectionKey(seeds),
+          interests: [...new Set([...seeds.map((s) => s.id), ...signals.kept])].slice(0, 8).join(","),
         })}`,
         { signal: request.signal },
       );
@@ -171,7 +176,7 @@ export function TasteDiscovery({
         markDisabled();
         return;
       }
-      setPersonal({ data, seeds });
+      setPersonal({ data: { ...data, places: withoutDismissed(data.places, signals.dismissed) }, seeds });
       setDiscoverStatus("idle");
     } catch {
       if (!request.isCurrent()) return;

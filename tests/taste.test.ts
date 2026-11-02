@@ -358,7 +358,7 @@ describe("GET /api/taste", () => {
       "city=T&lon=139&lat=-91",
       "city=T&lon=139&lat=35&interests=",
       "city=T&lon=139&lat=35&interests=a,,b",
-      "city=T&lon=139&lat=35&interests=a,b,c,d",
+      "city=T&lon=139&lat=35&interests=a,b,c,d,e,f,g,h,i",
       "city=T&lon=139&lat=35&interests=bad%20id",
     ]) {
       const res = await GET(req(bad));
