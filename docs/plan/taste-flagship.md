@@ -49,6 +49,13 @@ body clock.*
   the compound loop works same-device with zero infrastructure; the
   graph edges are the cross-device layer on top, not a dependency.
   (Shipped round 43.)
+- **The crew performs its state, the sun keeps the books.** `agentMoods`
+  folds the run into per-agent moods driving the round-31 celestial
+  glyphs (with pointer-follow on the gaze channel); the sun-self sits
+  on the day view and the crew standby, its face computed by
+  `sunSelfRead` — owed, banked, direction, a ray lit per locked day.
+  Avatars stay honest: moods are folded from events, never invented.
+  (Shipped rounds 44–47.)
 - **No new memory vendor.** FalkorDB + Supabase cover structured memory,
   and Qloo itself is the semantic layer — map artefacts to entities via
   `/search` and let the taste graph correlate. A memory engine (cognee
