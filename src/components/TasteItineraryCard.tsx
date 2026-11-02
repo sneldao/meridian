@@ -128,6 +128,14 @@ export function TasteItineraryCard({
           })}
         </ol>
       )}
+      {itinerary.status === "ready" && itinerary.firstNight && (
+        <p className="taste-note">
+          First night — if your plan says stay up: {itinerary.firstNight.name}
+          {itinerary.firstNight.categories.length > 0 &&
+            ` · ${itinerary.firstNight.categories.filter(Boolean).slice(0, 2).join(" · ")}`}
+        </p>
+      )}
+
       {itinerary.status === "unavailable" && (
         <p className="taste-note">
           Your plan can still work without place ideas. Try updating your plan later.

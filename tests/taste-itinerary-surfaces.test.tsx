@@ -61,6 +61,15 @@ describe("TasteItineraryCard (SSR)", () => {
     expect(plain).not.toContain("remembered picks");
   });
 
+  test("a first-night idea is offered, not scheduled", () => {
+    const h = renderToStaticMarkup(
+      createElement(TasteItineraryCard, {
+        itinerary: { ...base, firstNight: { name: "Chagohan Tokyo", categories: ["soba"] } },
+      }),
+    );
+    expect(h).toContain("First night — if your plan says stay up: Chagohan Tokyo");
+  });
+
   test("replay mode labels itself an example", () => {
     const h = renderToStaticMarkup(
       createElement(TasteItineraryCard, { itinerary: { ...base, planningMode: "replay" } }),

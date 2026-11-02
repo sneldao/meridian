@@ -21,11 +21,13 @@ export async function loadTasteContext(trip: Trip, favorites: TasteEntity[], ten
     );
     const kept = withoutDismissed(out.places, history.dismissed);
     const qualified = kept.filter((p) => p.daytimeCandidate === true);
+    const evening = kept.filter((p) => p.eveningCandidate === true).slice(0, 3);
     const suppressed = out.places.length - kept.length;
     return {
       favorites: snapshot,
       status: qualified.length ? "ready" : "no-matches",
       places: qualified,
+      ...(evening.length ? { eveningPlaces: evening } : {}),
       ...(history.keptIds.length || suppressed
         ? { memory: { kept: history.keptIds.length, suppressed } }
         : {}),

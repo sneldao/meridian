@@ -29,6 +29,7 @@ interface QlooEntity {
 }
 
 const DAY_VISIT_CATEGORIES = new Set(["cafe", "coffee shop", "art gallery", "museum", "art museum", "modern art museum", "park", "garden", "botanical garden", "book store", "bookstore", "record store", "traditional teahouse", "cathedral", "church", "catholic cathedral"]);
+const EVENING_VISIT_CATEGORIES = new Set(["restaurant", "japanese restaurant", "authentic japanese restaurant", "ramen restaurant", "sushi restaurant", "izakaya", "wine bar", "cocktail bar", "listening bar", "jazz club", "live music venue", "speakeasy", "bistro", "trattoria", "tapas restaurant", "diner"]);
 const NOT_DAY_VISIT = /(\bbar\b|night ?club|school|educational institution|hospital|medical|office|hotel|bank|pharmacy|go kart|car rental)/i;
 const TAXONOMY_TAG_TYPES = new Set(["urn:tag:category:place", "urn:tag:genre:place"]);
 
@@ -163,6 +164,9 @@ function toPlace(e: QlooEntity): DestinationPlace {
       e.properties?.is_closed !== true &&
       taxonomy.some((n) => DAY_VISIT_CATEGORIES.has(n.toLowerCase())) &&
       !taxonomy.some((n) => NOT_DAY_VISIT.test(n)),
+    eveningCandidate:
+      e.properties?.is_closed !== true &&
+      taxonomy.some((n) => EVENING_VISIT_CATEGORIES.has(n.toLowerCase())),
   };
 }
 

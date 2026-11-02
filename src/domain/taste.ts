@@ -3,7 +3,7 @@ import type { Trip } from "@/domain/types";
 export const TASTE_TYPES = { artist: 'Music', movie: 'Film', book: 'Books', brand: 'Brands' } as const;
 export type TasteType = keyof typeof TASTE_TYPES;
 export interface TasteEntity { id: string; name: string; type: TasteType }
-export interface DestinationPlace { id?: string; name: string; categories: string[]; daytimeCandidate?: boolean }
+export interface DestinationPlace { id?: string; name: string; categories: string[]; daytimeCandidate?: boolean; eveningCandidate?: boolean }
 export interface TasteResponse { enabled: boolean; destination: string | null; places: DestinationPlace[]; note?: string }
 export function isTasteType(value: string): value is TasteType { return Object.hasOwn(TASTE_TYPES, value); }
 export function tasteSelectionKey(entities: TasteEntity[]): string { return entities.map(e => e.id).sort().join(','); }
@@ -52,6 +52,8 @@ export interface TasteContext {
   favorites: TasteEntity[];
   status: "ready" | "unavailable" | "no-matches";
   places: DestinationPlace[];
+  /** Evening-window ideas (dining/venues) — never fitted, just offered. */
+  eveningPlaces?: DestinationPlace[];
   /** Present when remembered taste (kept/dismissed history) shaped the read. */
   memory?: { kept: number; suppressed: number };
 }
@@ -71,6 +73,8 @@ export interface TasteItinerary {
     place: DestinationPlace;
   }[];
   alternatives?: DestinationPlace[];
+  /** The first night's idea — offered, not scheduled. */
+  firstNight?: DestinationPlace;
   /** Present when remembered taste shaped these picks — the card says so. */
   memory?: { kept: number; suppressed: number };
 }
@@ -135,6 +139,7 @@ export function isTasteItinerary(value: unknown): value is TasteItinerary {
     if (!Array.isArray(o.alternatives) || o.alternatives.length > 10) return false;
     if (!o.alternatives.every(isDestinationPlace)) return false;
   }
+  if (o.firstNight !== undefined && !isDestinationPlace(o.firstNight)) return false;
   if (o.status === "ready" && o.suggestions.length === 0) return false;
   if (o.status !== "ready" && o.suggestions.length !== 0) return false;
   return true;
