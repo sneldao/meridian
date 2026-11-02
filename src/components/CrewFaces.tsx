@@ -2,37 +2,34 @@
 
 import { useEffect, useRef, useState } from "react";
 import { CREW } from "@/agents/crew";
+import { CrewAvatar, type CrewAvatarState } from "@/components/CrewAvatar";
 import type { AgentId, CrewEvent } from "@/domain/types";
 
-/* The crew has a face — and a shape. open-bot-avatar's lesson: an avatar
- * is data, not a component — one path plus where the eyes sit. Each agent
- * gets its own silhouette (AVATAR_DEFS), its colour from CREW, its mood
- * folded from the event stream (agentMoods), and eyes that follow the
- * pointer — grokbot's ambient channel. What you see is what the run did. */
+/* The crew's live state channel — bloub's mood layer on top of round 31's
+ * celestial glyphs. agentMoods folds the event stream into a mood per
+ * agent and maps it onto CrewAvatar's state vocabulary; the eyes lean
+ * toward the pointer through the avatar's existing gaze channel. What
+ * the faces report is what the run did — never a performance beside it. */
 
 export type CrewMood =
-  | "idle"      // not started yet — eyes shut, body dim
-  | "working"   // streaming/drafting — eyes open, alert
-  | "searching" // a tool call in flight — eyes look sideways
-  | "asking"    // a crew_question is open — eyes wide
-  | "worried"   // last verdict failed — eyes drop, body shrinks
-  | "happy"     // a pass or a lock landed — body swells, eyes brighten
-  | "settled";  // work done — calm eyes
+  | "idle"      // not started yet
+  | "working"   // streaming/drafting
+  | "searching" // a tool call in flight
+  | "asking"    // a crew_question is open
+  | "worried"   // last verdict failed
+  | "happy"     // a pass or a lock landed
+  | "settled";  // work done
 
 export const AGENT_IDS: AgentId[] = ["analyst", "researcher", "planner", "evaluator", "negotiator"];
 
-/** The avatar contract: one path in a 0 0 19 17 box, and where the eyes sit. */
-export const AVATAR_DEFS: Record<AgentId, { path: string; eyes: { x1: number; x2: number; y: number } }> = {
-  // Mara — the round analyst
-  analyst: { path: "M9.5 1.2 C13.6 1.2 16.8 4.4 16.8 8.5 C16.8 12.6 13.6 15.8 9.5 15.8 C5.4 15.8 2.2 12.6 2.2 8.5 C2.2 4.4 5.4 1.2 9.5 1.2 Z", eyes: { x1: 6.7, x2: 12.3, y: 8 } },
-  // Jun — the squared-off researcher
-  researcher: { path: "M4 2.5 H15 C16.2 2.5 16.8 3.4 16.8 4.6 V12.4 C16.8 13.6 16.2 14.5 15 14.5 H4 C2.8 14.5 2.2 13.6 2.2 12.4 V4.6 C2.2 3.4 2.8 2.5 4 2.5 Z", eyes: { x1: 6.9, x2: 12.1, y: 8 } },
-  // Otto — the wide, grounded planner
-  planner: { path: "M2.8 9.5 C2.8 5.5 5.8 2.5 9.5 2.5 C13.2 2.5 16.2 5.5 16.2 9.5 C16.2 13 13.8 14.6 9.5 14.6 C5.2 14.6 2.8 13 2.8 9.5 Z", eyes: { x1: 6.7, x2: 12.3, y: 8.6 } },
-  // Iris — the shield-shaped evaluator
-  evaluator: { path: "M9.5 1.5 C11.5 3 14 3.6 16 3.2 C16.4 8 14.6 13 9.5 15.5 C4.4 13 2.6 8 3 3.2 C5 3.6 7.5 3 9.5 1.5 Z", eyes: { x1: 6.9, x2: 12.1, y: 7.4 } },
-  // Rex — the leaning negotiator
-  negotiator: { path: "M4.5 1.8 C10 1 15.5 4 16.2 9 C16.9 14 11.5 16.5 6.5 15.2 C1.5 13.9 2.5 8.5 4.5 1.8 Z", eyes: { x1: 6.9, x2: 12.3, y: 8.2 } },
+const MOOD_STATE: Record<CrewMood, CrewAvatarState> = {
+  idle: "resting",
+  working: "working",
+  searching: "attentive",
+  asking: "explaining",
+  worried: "concerned",
+  happy: "complete",
+  settled: "complete",
 };
 
 export function agentMoods(events: CrewEvent[]): Record<AgentId, CrewMood> {
@@ -78,23 +75,10 @@ export function agentMoods(events: CrewEvent[]): Record<AgentId, CrewMood> {
   return moods;
 }
 
-interface EyeStyle { dx: number; ry: number; opacity: number }
-interface MoodStyle { bodyScale: number; bodyOpacity: number; eyes: EyeStyle }
-
-const MOODS: Record<CrewMood, MoodStyle> = {
-  idle:     { bodyScale: 0.94, bodyOpacity: 0.35, eyes: { dx: 0, ry: 0.15, opacity: 0.6 } },
-  working:  { bodyScale: 1,    bodyOpacity: 0.9,  eyes: { dx: 0, ry: 1,    opacity: 1 } },
-  searching:{ bodyScale: 1,    bodyOpacity: 0.9,  eyes: { dx: 1.6, ry: 0.8, opacity: 1 } },
-  asking:   { bodyScale: 1.03, bodyOpacity: 0.95, eyes: { dx: 0, ry: 1.55, opacity: 1 } },
-  worried:  { bodyScale: 0.9,  bodyOpacity: 0.75, eyes: { dx: 0, ry: 0.45, opacity: 1 } },
-  happy:    { bodyScale: 1.08, bodyOpacity: 1,    eyes: { dx: 0, ry: 1.1,  opacity: 1 } },
-  settled:  { bodyScale: 1,    bodyOpacity: 0.65, eyes: { dx: 0, ry: 0.7,  opacity: 0.85 } },
-};
-
-/** Eyes lean toward the pointer — the grokbot channel. Full lean at ~120px;
- *  stands down under reduced-motion and on the server. */
-function useEyeFollow(ref: React.RefObject<HTMLSpanElement | null>): { x: number; y: number } {
-  const [off, setOff] = useState({ x: 0, y: 0 });
+/** Eyes lean toward the pointer via the avatar's gaze channel (-1..1).
+ *  Stands down under reduced-motion and on the server. */
+function useGaze(ref: React.RefObject<HTMLSpanElement | null>): number {
+  const [gaze, setGaze] = useState(0);
   useEffect(() => {
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
     const el = ref.current;
@@ -102,24 +86,17 @@ function useEyeFollow(ref: React.RefObject<HTMLSpanElement | null>): { x: number
     const onMove = (e: MouseEvent) => {
       const r = el.getBoundingClientRect();
       const dx = e.clientX - (r.left + r.width / 2);
-      const dy = e.clientY - (r.top + r.height / 2);
-      const d = Math.hypot(dx, dy) || 1;
-      const m = Math.min(1, d / 120);
-      setOff({ x: (dx / d) * m * 1.6, y: (dy / d) * m * 1.1 });
+      setGaze(Math.max(-1, Math.min(1, dx / 120)));
     };
     window.addEventListener("mousemove", onMove);
     return () => window.removeEventListener("mousemove", onMove);
   }, [ref]);
-  return off;
+  return gaze;
 }
 
 export function CrewFace({ agent, mood, follow = true }: { agent: AgentId; mood: CrewMood; follow?: boolean }) {
   const ref = useRef<HTMLSpanElement>(null);
-  const off = useEyeFollow(ref);
-  const m = MOODS[mood];
-  const def = AVATAR_DEFS[agent];
-  const eyeX = m.eyes.dx + (follow ? off.x : 0);
-  const eyeY = follow ? off.y : 0;
+  const gaze = useGaze(ref);
   return (
     <span
       ref={ref}
@@ -127,15 +104,9 @@ export function CrewFace({ agent, mood, follow = true }: { agent: AgentId; mood:
       role="img"
       aria-label={`${CREW[agent].name}: ${mood}`}
       title={`${CREW[agent].name} · ${mood}`}
-      style={{ display: "inline-flex", transform: `scale(${m.bodyScale})`, opacity: m.bodyOpacity }}
+      style={{ display: "inline-flex" }}
     >
-      <svg width="20" height="20" viewBox="0 0 19 17" aria-hidden="true">
-        <path d={def.path} fill={CREW[agent].color} />
-        <g className="crew-eyes" style={{ transform: `translate(${eyeX}px, ${eyeY}px)` }}>
-          <ellipse cx={def.eyes.x1} cy={def.eyes.y} rx="1.15" ry={1.15 * m.eyes.ry} fill="var(--m-bg)" opacity={m.eyes.opacity} />
-          <ellipse cx={def.eyes.x2} cy={def.eyes.y} rx="1.15" ry={1.15 * m.eyes.ry} fill="var(--m-bg)" opacity={m.eyes.opacity} />
-        </g>
-      </svg>
+      <CrewAvatar id={agent} state={MOOD_STATE[mood]} size={20} gaze={follow ? gaze : 0} decorative />
     </span>
   );
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { agentMoods, AVATAR_DEFS, AGENT_IDS } from "../src/components/CrewFaces";
+import { agentMoods } from "../src/components/CrewFaces";
 import type { CrewEvent } from "../src/domain/types";
 
 const ev = (partial: Partial<CrewEvent>): CrewEvent => partial as CrewEvent;
@@ -32,17 +32,6 @@ describe("agentMoods — the crew's state channel", () => {
     ]);
     expect(moods.evaluator).toBe("happy");
     expect(moods.negotiator).toBe("settled");
-  });
-
-  it("each agent has its own silhouette — the avatar contract holds", () => {
-    const paths = AGENT_IDS.map((id) => AVATAR_DEFS[id].path);
-    expect(new Set(paths).size).toBe(5);
-    for (const id of AGENT_IDS) {
-      const d = AVATAR_DEFS[id];
-      expect(d.path.startsWith("M")).toBe(true);
-      expect(d.eyes.x2).toBeGreaterThan(d.eyes.x1);
-      expect(d.eyes.y).toBeGreaterThan(0);
-    }
   });
 
   it("done settles whoever is still standing", () => {

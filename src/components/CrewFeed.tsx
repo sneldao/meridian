@@ -4,6 +4,8 @@ import { useEffect, useRef, useSyncExternalStore } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { CREW } from "@/agents/crew";
 import { CrewAvatar } from "@/components/CrewAvatar";
+import { SunSelf } from "@/components/SunSelf";
+import { sunSelfSleeping } from "@/domain/sun-self";
 import { spokenChars, subscribeVoice } from "@/lib/voice/engine";
 import type { AgentId, Citation, EvalResult } from "@/domain/types";
 import { AgentChip } from "@/components/ui/AgentChip";
@@ -76,6 +78,7 @@ export function CrewFeed({ entries, running }: { entries: LogEntry[]; running?: 
           transition={{ duration: 0.35, ease: easeSmoothOut }}
           className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center"
         >
+          <SunSelf read={sunSelfSleeping()} size={56} />
           <div className="text-sm font-bold text-paper">The crew is on standby.</div>
           <p className="max-w-xs text-xs leading-relaxed text-mist">
             Start the night shift and you&apos;ll see each agent&apos;s visible work here, in order.
