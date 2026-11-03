@@ -3299,8 +3299,21 @@ select:focus-visible {
   from { opacity: 0; transform: translateY(7px) scale(0.9); }
   to { opacity: 1; transform: none; }
 }
+/* Ambient blink — open eyes close for a beat every ~6s, so stillness
+   reads as resting rather than rendered. scaleY on each eye's own box
+   keeps the per-read ry intact; lids (paths) are untouched, so a
+   sleeping sun never blinks over a closed eye. */
+.sunself-eye {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: sunself-blink 5.8s ease-in-out infinite;
+}
+@keyframes sunself-blink {
+  0%, 88%, 96%, 100% { transform: scaleY(1); }
+  92% { transform: scaleY(0.12); }
+}
 @media (prefers-reduced-motion: reduce) {
-  .sunself.wake, .sunself-line { animation: none; }
+  .sunself.wake, .sunself-line, .sunself-eye { animation: none; }
   .sunself-face { transition: none; }
 }
 
