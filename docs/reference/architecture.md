@@ -554,6 +554,26 @@ rules, all verified by `tests/motion-language.test.ts`:
     vanish — persist ran inside a React state updater and the updater's
     re-run toggled the mark back out; mutations now compute from a ref and
     set plain values.
+13. **One cue vocabulary, and a pulse that can be seen (2026-11-03).** The
+    sun-self and the crew stopped keeping private motion tables:
+    `src/domain/motion-cues.ts` resolves every state on both surfaces to one
+    of four cues — arrive, work, done, fail — through `SUN_CUE` (sun moods),
+    `CREW_CUE` (crew moods) and `CREW_STATE_CUE` (avatar poses, so an agent
+    drawn outside the live crew row still gets the shared beat). `done` is
+    one keyframe on purpose: `.sunself.enter`, the check-in card's finished
+    button and `.crew-avatar[data-cue="done"]` all play `sunself-pulse`.
+    Arrive and work stay pose-carried — the working poses already hold the
+    one loop the crew is allowed — and fail is the only added beat, a
+    transform/opacity dip. The cue rides `data-cue` on the avatar root, so
+    CSS reads the table instead of a parallel set of selectors, and the
+    reduced-motion rule now stands down the root as well as its children.
+    The card's pulse also needed somewhere to happen: marking a step
+    resolves it, and the feed hands the hero slot to the next step in the
+    same commit, so the cue was written but never played. `RightNowCard`
+    holds the finished step for one pulse (~760ms) under a MARKED DONE
+    badge before handing over; a tap during the hold dismisses it rather
+    than acting on the step beneath (undo stays on the toast), and reduced
+    motion skips the hold so it never becomes dead delay.
 
 ## Observability & the closed loop (round 17)
 

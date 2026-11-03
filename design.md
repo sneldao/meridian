@@ -182,6 +182,27 @@ animations are frozen debt, counted by exact declaration text in
   its new value (`TweenNumber` — the owed gap, readiness, day gaps). First
   paint and unit changes snap, so a number never reads a unit it doesn't have;
   the true value is what is announced.
+- One cue vocabulary for progress. The sun-self and the crew do not each
+  own a private animation language: every state on both resolves to one of
+  four cues — **arrive**, **work**, **done**, **fail** — in
+  `src/domain/motion-cues.ts` (`SUN_CUE` for the sun's moods, `CREW_CUE` for
+  the crew's moods, `CREW_STATE_CUE` for the avatars' poses, which is why an
+  agent drawn outside the live crew row still gets the shared beat). `done`
+  is literally one keyframe: `.sunself.enter`, the check-in card's finished
+  button and `.crew-avatar[data-cue="done"]` all play `sunself-pulse`, so a
+  step landing reads the same wherever the traveller is looking. `arrive` and
+  `work` are carried by the poses themselves — a second loop would fight the
+  one loop the crew is allowed — and `fail` is the only added beat, a
+  transform/opacity dip. The cue reaches CSS as `data-cue` on the avatar
+  root, so the table is the only place the mapping lives.
+- The done pulse is allowed to be seen. Marking a step resolves it, and the
+  feed hands the check-in card's hero slot straight to the next step — which
+  swapped the card away inside the same commit, leaving the pulse written
+  but never played. `RightNowCard` now holds the finished step for the length
+  of that one pulse (~760ms), badge reading **MARKED DONE**, then hands over;
+  a tap during the hold dismisses it rather than acting on the step beneath
+  (undo stays on the toast). Reduced motion skips the hold entirely, since
+  there it would be delay with nothing to watch.
 - Layout morph: a reorder or resize of cards glides by framer-motion `layout`
   (transform-based, so it stays inside the compositing-safe rule). The crew
   day strip (`DayStrip`) uses it. The layout-switch spike (`/spike/layout-switch`)
