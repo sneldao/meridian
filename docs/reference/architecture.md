@@ -279,8 +279,9 @@ SHA-256(token)[0:48]; `?tenant=` and `x-meridian-tid` never grant identity.
 The first response mirrors a just-minted token into the downstream request so
 hydration-time API calls share one identity. Personal routes 401 without a
 valid session; cross-site API reads and foreign-Origin writes are refused,
-and API responses are `private, no-store`. The Origin check compares against
-the request's own origin plus `PUBLIC_ORIGIN` (comma-separated, default
+and API responses are `private, no-store`. The Origin check accepts the request's own
+origin, any origin whose host:port matches the request's Host (a TLS-terminating
+hop preserves Host, so only the scheme disagrees), and `PUBLIC_ORIGIN` (comma-separated, default
 `https://meridian.trustfall.xyz`): behind Cloudflare→Render `nextUrl.origin`
 is the internal upstream host, so the public domain must be named explicitly
 or every browser POST is rejected as foreign. Requests without an Origin

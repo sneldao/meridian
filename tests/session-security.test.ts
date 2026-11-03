@@ -144,6 +144,19 @@ describe("middleware", () => {
     expect(r.status).toBe(200);
   });
 
+  test("any host the server actually serves may write, without PUBLIC_ORIGIN", () => {
+    // The public URL is a CNAME to the service — a judge's /onrender.com URL
+    // or a second custom domain is equally real, and Host is preserved end
+    // to end. Only the scheme can disagree behind TLS termination, so an
+    // origin whose host matches the request's Host header must be allowed
+    // even when PUBLIC_ORIGIN is unset.
+    const r = middleware(new NextRequest("http://localhost:3000/api/errors", {
+      method: "POST",
+      headers: { origin: "https://localhost:3000" },
+    }));
+    expect(r.status).toBe(200);
+  });
+
   test("API answers are marked private,no-store", () => {
     const res = middleware(new NextRequest("http://localhost:3000/api/memory"));
     expect(res.headers.get("cache-control")).toBe("private, no-store");

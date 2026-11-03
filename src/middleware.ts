@@ -43,7 +43,6 @@ export function middleware(req: NextRequest) {
         // public-origin allow-list (for upstream hops that rewrite Host).
         foreign =
           requestOrigin !== req.nextUrl.origin &&
-          requestOrigin !== new URL(req.url).host &&
           new URL(requestOrigin).host !== req.nextUrl.host &&
           !publicOrigins().includes(requestOrigin);
       } catch {
