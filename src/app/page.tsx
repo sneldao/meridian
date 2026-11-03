@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { coverageOf, fmtMin } from "@/domain/circadian";
 import { todayDayIndex } from "@/domain/today";
@@ -83,7 +83,6 @@ import { ScenarioExperience } from "@/components/ScenarioExperience";
 import type { DemoScenarioId } from "@/domain/demo-scenarios";
 import { isTasteItinerary, itineraryMatchesTrip, type TasteItinerary } from "@/domain/taste";
 import { JourneySteps } from "@/components/JourneySteps";
-import { PLACE_GROUPS } from "@/components/MoreSheet";
 import { PlanReview } from "@/components/PlanReview";
 import { TodayStage } from "@/components/TodayStage";
 import { SubscribeCalendar } from "@/components/SubscribeCalendar";
@@ -1378,28 +1377,9 @@ export default function Home() {
                 {run.locked.size}/{trip?.days.length ?? "?"} locked
               </Link>
             )}
-            {/* One shared map of the back rooms, grouped by what they are —
-                the same structure the More sheet renders
-                (MoreSheet.PLACE_GROUPS), so every place has exactly one name
-                and one entry. The payoff is not here: "Rate my trip" lives
-                on the trip it belongs to — the Trips surface and the
-                morning-after card below. */}
-            {PLACE_GROUPS.map((g) => (
-              <Fragment key={g.label}>
-                <p className="menu-label">{g.label}</p>
-                {g.places.map((p) => (
-                  <Link
-                    key={p.href}
-                    href={p.href}
-                    role="menuitem"
-                    transitionTypes={["nav-forward"]}
-                    data-place={p.href.slice(1)}
-                  >
-                    {p.label}
-                  </Link>
-                ))}
-              </Fragment>
-            ))}
+            {/* Destinations live in one place — the More sheet, reachable
+                from the tab bar on every page. The menu's job is this trip:
+                working the plan, the view, the share, the settings. */}
             <p className="menu-label">This trip</p>
             {/* Real buttons, not focusable divs: as divs these were in the tab
                 order but Enter and Space did nothing, because a div has no
