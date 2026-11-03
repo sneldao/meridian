@@ -99,12 +99,47 @@ what the run did, never a performance beside it" (`CrewFaces.tsx`). So:
   .ca-*` animating while working reports rather than performs.
 - One-shot motion caused by an arrival is not ambient and is unaffected — the
   landing hero's `lh-sun-blink` peek plays once and is fine.
-- Unchanged by both amendments: only transform/opacity/paint animate; reduced
+- Unchanged by both amendments above: only transform/opacity/paint animate; reduced
   motion stands every loop down; a performing surface's written read must be
   complete on its own; no rAF loop for a line that changes once a minute.
 
 Enforced by `tests/motion-language.test.ts` ("ambient motion stays off the
 readout"), not by prose.
+
+*Amended round 51 (2026-11-03) — the channel is open, so the next gate is
+perceptibility.* Round 50 changed a permission and nothing walked through it:
+the audit found the app already carried six-plus ambient loops, which means the
+amendment retro-legalised motion rather than unlocking any. So the complaint it
+was written to answer — the app reads as inert — was never about permission. It
+is about amplitude, and amplitude has arithmetic in it:
+
+- **A loop that follows the model's own time cannot be seen.** The sun moves at
+  0.25°/min. `stageSunFor` spends 0.84 of a stage's width on a whole day, so the
+  disc's `x` advances 0.36px per minute; the horizon band's height steps 1.0–1.1%
+  per five minutes, ≈0.5px per minute on a 220px band. Measured against the
+  shipped model over an hour straddling sunrise at the demo destination: Δaltitude
+  0.99°/5min, Δband height 1.1%, Δrgb 0/0/0 in the band and Δα 0.006 — sub-pixel,
+  sub-JND, on every minute but the two when the body sun actually crosses the
+  horizon, where the beam's hue does swing (Δrgb 0/17/26). Real solar time is
+  therefore a *change* the app reports when it happens, not ambient motion, and
+  `sun.ts` does not even model azimuth — altitude is all there is to advance.
+- **Paper has no headroom for light.** The landing's cream is `rgb(245, 239, 227)`
+  — 96% luminance. Compositing a near-white overlay toward `rgb(255, 251, 240)`
+  tops out at ΔR10 / ΔG16 / ΔB28 *at full alpha*; at the calm alphas the palette
+  allows, a light gesture on paper is undetectable by construction. Darkening the
+  same paper has 226 units below it to spend, and ink (`--stage-ink-2`
+  `rgb(12, 18, 32)`) has the whole range above it. **On paper, ambient light is a
+  shade; on ink, it may be a light.**
+- **Only a clock fast enough to see is worth syncing to.** A 60s loop is 240× the
+  sun's rate and is the fastest honest period the surface can borrow: its position
+  is then a reading (seconds into the minute) instead of an oscillator's whim. A
+  loop whose period is a taste number — 14s, `ease-in-out`, `alternate` — is
+  fabricated time, and being invisible on top of that is the worst of both.
+
+So Rule 3's channel gate stands and gains a second question, in this order:
+*does this element carry a readout* (round 50), and *can a person see it move*
+(round 51)? A loop that fails the second is not calm, it is dead code with a
+compositor cost.
 
 #### Rule 4 — Explanation is progressive, not a dial
 
@@ -221,6 +256,22 @@ disc breathes (`sunself-breath`, 6.4s) because the disc encodes nothing; the
 eyes, halo and rays are all readouts and never loop. `tests/motion-language.test.ts`
 holds the line — it fails if a future round puts a loop back on `.sunself-eye`
 or on any sun element but the disc.
+
+The landing's `.beam` is the other case, and the one round 51 was measured on.
+It used to run a 14s `ease-in-out alternate` oscillator — a taste number, on
+cream, where a light gesture has ΔR10 of headroom: invisible *and* fabricated.
+It now carries a broad cloud **shade** (peak α0.10, a 240px ramp, sized in `vw`
+so it enters and leaves off the page rather than clipping mid-viewport) crossing
+in exactly 60s, phase-locked to the real second by a negative `animation-delay`
+from `src/lib/clock-phase.ts`, written once on mount and once when the tab
+becomes visible. No tick, no rAF, and the compositor holds the tempo. Measured
+in the browser at that geometry: up to 41 channel units of change per second at
+the ramp, 22% of the frame differing between two phases 18s apart. That is the
+first landing ambient motion this round that is both true and seen.
+
+Two things it deliberately is not: it is not a *light* (paper forbids it), and it
+is not `LightSweep` — that pass is 560ms, caused, and palette-flipping, so an
+ambient gesture at 60s and one-fifth the contrast cannot be mistaken for it.
 
 #### The vocabulary applied
 
@@ -3284,6 +3335,60 @@ the results are listed under *Corrections applied when this was merged*. The
 honest summary of that pass: this project's backlog was not a list of what is
 open so much as a record of what was last written down, and the difference only
 shows up if someone goes looking.
+
+### Round 51 — the perceptibility gate (2026-11-03)
+
+Round 50 opened the ambient channel and the follow-up question was what else on
+the working surfaces earns life. The proposal tested here was to take one
+existing loop and make it both perceptible and traceable to something true by
+advancing the stage sky on real solar time, since `stageSkyFor` already computes
+the altitude. It was built, measured in the browser, and falsified — and the
+falsification is arithmetic rather than opinion, so it is now Rule 3's second
+gate (Part 1).
+
+What the measurements said:
+
+- **The model has nothing to show at 1:1.** Run against the shipped solar model
+  over an hour straddling sunrise at the demo destination: Δaltitude 0.99° per
+  five minutes, Δhorizon-band height 1.0–1.1% (≈0.5px/min on a 220px band),
+  Δα 0.006, and Δrgb 0/0/0 in the band except in the one five-minute window when
+  the body sun crosses the horizon, where it swings 0/17/26. `stageSunFor` spends
+  0.84 of a stage on a whole day — the disc's `x` advances 0.36px per minute.
+  Perceptible motion at the true solar rate would need ~960px per degree, i.e. an
+  86,000px panel. Also: `sun.ts` models zenith only; there is no azimuth to
+  advance, so the "solar azimuth" variant of the idea had no source.
+- **The landing's paper cannot carry light at all.** Compositing toward
+  `rgb(255,251,240)` over cream `rgb(245,239,227)` is capped at ΔR10 / ΔG16 /
+  ΔB28 *at full alpha*. A first attempt — the 14s oscillator replaced by a warm
+  light band, clock-locked — measured `meanDelta 1.77, max 62` across the frame
+  and read as nothing; an occlusion probe confirmed the layer was present, not
+  hidden. The old `beam` keyframe had the same problem: invisible *and* a taste
+  number.
+- **Shade is the direction paper has room for.** The same geometry, inverted to a
+  cool darkening, measured `meanDelta 3.71, max 84`, 22% of the frame differing
+  between phases 18s apart, and up to 41 channel units of change per second at
+  the ramp — the first landing ambient motion that is both true and seen.
+
+Shipped: `.beam`'s oscillator is retired; a broad cloud shade now crosses the
+landing in exactly 60s, phase-locked to the real second by a negative
+`animation-delay` from `src/lib/clock-phase.ts`, written once on mount and once
+when the tab returns to visible — no tick, no rAF, no interval. Sized in `vw`
+after measurement caught the first version clipping mid-viewport. Under reduced
+motion the global rule ends the loop in one step and the base `translate` rests
+the shade off-stage, so the landing keeps its tint and loses the movement.
+`tests/motion-language.test.ts` gains "ambient motion is clock-locked and
+perceptible": the 60s/`--beam-phase` pairing, no `alternate`/`ease-in-out` left
+on the layer, every travelling colour darker than the paper it crosses and at
+α≤0.12, and the `vw` travel. The stale claim in `globals.css` that the stage
+halo is "the only idle motion in the app" is corrected in place — it was
+contradicted by the amended rule and by six other loops.
+
+**What this closes and what it leaves.** The round-50 follow-up — "what else on
+the working surfaces earns life" — now has an answer with a number in it: not
+more loops, only loops on a period a person can see (the clock's seconds, 240×
+the sun's rate) and on a surface with contrast headroom in the direction the
+gesture moves. Working surfaces that report solar state will keep looking still,
+because that is what the sky is doing; the motion there is caused, not ambient.
 
 ### Housekeeping — the CI streak (2026-11-03)
 

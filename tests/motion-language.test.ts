@@ -510,3 +510,59 @@ describe("ambient motion stays off the readout", () => {
     expect(guards.some((g) => g.includes(".sunself-disc") && /animation:\s*none/.test(g))).toBe(true);
   });
 });
+
+/* Round 51 — the channel gate (round 50) is necessary but not sufficient: a
+ * loop nobody can see is dead code with a compositor cost. Two properties are
+ * pinned here, both measured rather than asserted in prose: the landing's
+ * ambient layer tells the time, and it tells it in the one direction the
+ * surface has headroom for. */
+describe("ambient motion is clock-locked and perceptible", () => {
+  const page = fs.readFileSync(path.join(import.meta.dir, "..", "src", "app", "page.tsx"), "utf8");
+  const beam = block(".beam::after");
+  const travel = block("@keyframes beam-travel");
+
+  it("the crossing layer is a 60s loop whose phase comes from the clock", () => {
+    expect(beam).toContain("animation: beam-travel 60s linear infinite");
+    expect(beam).toContain("animation-delay: var(--beam-phase");
+    // A taste oscillator (14s, ease-in-out, alternate) is retired, not kept
+    // beside it — one ambient gesture per layer, and this one reads time.
+    expect(beam).not.toMatch(/alternate/);
+    expect(beam).not.toMatch(/ease-in-out/);
+  });
+
+  it("the phase is written from the real second, once, with no tick", () => {
+    expect(page).toContain("clockPhaseDelay()");
+    expect(page).toContain('"--beam-phase"');
+    expect(page).not.toMatch(/setInterval\([^)]*beam/i);
+  });
+
+  it("on paper the ambient gesture is a shade, never a light", () => {
+    // Cream is rgb(245,239,227): a near-white overlay there tops out at ΔR10,
+    // so a light band is undetectable by construction. Darkening has 226 units
+    // below it. The travelling layer must therefore be darker than the paper.
+    const alphas = [...beam.matchAll(/rgba\((\d+), (\d+), (\d+), ([\d.]+)\)/g)]
+      .map((m) => ({ rgb: [Number(m[1]), Number(m[2]), Number(m[3])], a: Number(m[4]) }));
+    expect(alphas.length).toBeGreaterThan(0);
+    for (const { rgb, a } of alphas) {
+      expect(Math.max(...rgb)).toBeLessThan(120);
+      // Peak darkening stays under a tint tax on the reading surface.
+      expect(a).toBeLessThanOrEqual(0.12);
+    }
+  });
+
+  it("the layer travels off the page at both ends, not off the element", () => {
+    // Sized in vw so the shade never clips mid-viewport.
+    expect(beam).toMatch(/left: -62vw/);
+    expect(beam).toMatch(/width: 62vw/);
+    expect(travel).toContain("162vw");
+  });
+});
+
+describe("clockPhaseDelay", () => {
+  it("puts a 60s loop in phase with the minute it was read in", async () => {
+    const { clockPhaseDelay, minutePhaseSec } = await import("@/lib/clock-phase");
+    const d = new Date("2026-11-03T12:00:37.250Z");
+    expect(minutePhaseSec(d)).toBeCloseTo(37.25, 3);
+    expect(clockPhaseDelay(d)).toBe("-37.25s");
+  });
+});

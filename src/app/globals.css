@@ -172,13 +172,43 @@ body {
   /* Halved: the beam is atmosphere for the landing, not a tint tax on the
      working surface the feed is read through. */
   background: radial-gradient(ellipse at 30% 20%, rgba(157, 184, 255, 0.07), rgba(255, 196, 107, 0.04) 45%, transparent 70%);
-  animation: beam 14s ease-in-out infinite alternate;
   z-index: 0;
   pointer-events: none;
 }
-@keyframes beam {
-  from { transform: translateX(0); }
-  to { transform: translateX(160px); }
+/* The shade crossing the page — and its position is the clock's own seconds.
+   The band enters off the left edge as the minute starts and leaves off the
+   right as the minute ends, so where the shade sits is a fact about the time
+   rather than an oscillator's whim; `--beam-phase` is the negative delay that
+   puts it in phase. Unset (server render, no JS) or stood down by reduced
+   motion, the band rests off-stage and only the tint above survives.
+   Shade, not light, because of the surface it is drawn on: cream paper is at
+   96% luminance, so a near-white overlay tops out at ΔR10/ΔB28 even at α0.46
+   — a light band here is undetectable at any calm alpha. Darkening the same
+   paper has the whole range below it to spend. This is a cloud crossing the
+   light, which is the only gesture this surface can carry.
+   Deliberately 60s and one broad low-contrast blob, not a defined edge: the
+   caused light sweep is 560ms and palette-flipping, and an ambient gesture
+   must never be confusable with the transition it is supposed to make rarer. */
+.beam::after {
+  content: "";
+  position: absolute;
+  top: -10%;
+  height: 120%;
+  /* Sized and offset in viewport units so the shade always enters off the
+     left of the *page* and leaves off the right, whatever the window or the
+     width of the tint box it hangs on. */
+  left: -62vw;
+  width: 62vw;
+  background: radial-gradient(ellipse 55% 50% at 50% 50%,
+    rgba(58, 74, 106, 0.10) 0%, rgba(58, 74, 106, 0.07) 45%,
+    rgba(58, 74, 106, 0.03) 75%, transparent 100%);
+  translate: 0 0;
+  animation: beam-travel 60s linear infinite;
+  animation-delay: var(--beam-phase, 0s);
+}
+@keyframes beam-travel {
+  from { translate: 0 0; }
+  to { translate: 162vw 0; }
 }
 /* --- Motion: three named levels --------------------------------------------
    The reference build has a motion *vocabulary* — snappy, gentle, lazy — and
@@ -7171,8 +7201,9 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .stage-sun.below .stage-sun-halo { opacity: 0.4; }
 
 @media (prefers-reduced-motion: no-preference) {
-  /* The stage breathes: one ambient pulse on the halo, the only idle motion
-     in the app — stages perform, working surfaces respond (motion budget). */
+  /* The stage breathes: an ambient pulse on the halo, which carries no
+     readout — the disc's position and the caption hold the facts. Rule 3 as
+     amended allows this on any surface that is not itself a measurement. */
   .stage-sun-halo { animation: stage-sun-breathe 6s var(--ease-drift) infinite; }
 }
 @keyframes stage-sun-breathe {

@@ -59,6 +59,7 @@ import { ShiftBoard } from "@/components/lenses/ShiftBoard";
 import { CREW } from "@/agents/crew";
 import { useFocusTrap } from "@/lib/a11y";
 import { friendlyDayLabel } from "@/lib/day-label";
+import { clockPhaseDelay } from "@/lib/clock-phase";
 import { restorePlan } from "@/lib/restore-plan";
 import { syncFeed } from "@/lib/feed";
 import { useAssistantLink } from "@/lib/use-assistant-link";
@@ -1322,10 +1323,26 @@ export default function Home() {
     return Boolean(install.installEvt) || iOS;
   })();
 
+  // The shade crossing the landing keeps the clock's phase rather than its
+  // own: one write on mount, one when the tab comes back, and the compositor
+  // holds the tempo in between. No tick, no rAF.
+  const beamRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const el = beamRef.current;
+    if (!el) return;
+    const sync = () => el.style.setProperty("--beam-phase", clockPhaseDelay());
+    sync();
+    const onVisible = () => {
+      if (document.visibilityState === "visible") sync();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, []);
+
   return (
     <div className="root">
       {sweepNode}
-      <div className="beam" />
+      <div className="beam" ref={beamRef} />
       <div className="in">
         {/* The one live region on the page. Mounted here rather than inside the
             drawer, which is closed by default — a blind traveller was getting
