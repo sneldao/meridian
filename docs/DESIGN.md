@@ -526,9 +526,9 @@ model describes an estimated body clock, not weather or measured adaptation.
 ### Stages perform — the round-27 budget, superseded in spirit
 
 What survives of the round-27 motion budget is what stages exist
-to *do*. *Who may move, and when* is governed by the interaction principle
-below — it superseded this budget in spirit. The dated amendment and its
-gate bullet live in the round log.
+to *do*. *Who may move, and when* is governed by Rule 3 in Part 1 — the
+round-27 split and the round-50 amendment are both stated there, and dated in
+the round log.
 
 - **Stages perform.** Ink stages (`.hero`, `.demo`, the example stage,
   `/arrival`, crew surfaces) exist to *show* — they may carry ambient,
@@ -683,7 +683,7 @@ than a single mid-trip date.
 #### Where the loop closed
 
 Design consequences of implementation choices, so they belong here rather than
-only in the backlog. Several of the sharpest ones have since been closed — kept
+only in Part 3. Several of the sharpest ones have since been closed — kept
 in place because the *shape* of the failure is the lesson.
 
 #### Closed: the loop couldn't tell whose it was
@@ -870,7 +870,8 @@ mount line belongs in the same PR.**
 - **Rendering fixture biometrics as biometrics.** HRV / resting HR from the
   sample profile read as measured even under a demo tag — see §6. Absent
   data reads "—", never a plausible number. Contract in
-  `displayBiometrics()` (`63e8861`); `TripSetupScreen` half on B's board.
+  `displayBiometrics()` (`63e8861`); the setup sheet's `m3` grid renders
+  only on `hasAllBio`, with the upload slot beside it (`49c6722`).
 
 ---
 
@@ -1097,13 +1098,13 @@ to the Why / Crew surfaces is intact.
 
 #### Where this lands
 
-Items 11–16 in [Part 3 — Open items](#part-3--open-items), with owners, contracts
-and a day-by-day sequence. The short version:
+Items 11–16 — kept in [Part 3](#part-3--open-items) under their own provenance
+heading — with owners, contracts and a day-by-day sequence. The short version:
 
 | Item | Owner | Why | Status |
 |---|---|---|---|
 | 11 Preview is not a promise | A | Surface gate; `baselineKind` already exists | Shipped `63e8861` |
-| 12 No invented biometrics | B, whole | One file, one brief — splitting it would be a handoff for nothing | Contract shipped `63e8861`; `TripSetupScreen` half on B's board |
+| 12 No invented biometrics | B, whole | One file, one brief — splitting it would be a handoff for nothing | Shipped `63e8861` (contract) + `49c6722` (setup sheet) |
 | 13 Calendar is compliance | B shape → A render | Data already exists; it needs surfacing | Shipped `63e8861` |
 | 14 Promise the floor, window the asks | A | Copy only; the solver already holds the floor | Shipped `63e8861` |
 | 15 The meeting is the product | B data → A hero | **Sequential, never simultaneous** | Shipped `63e8861`; pre-lock gap closed round 3 — `7b6cc7d` + `3bb8e94` |
@@ -1246,18 +1247,36 @@ export or proof of completed steps.
 
 What is genuinely still undone. Round numbers below refer to Part 4.
 
-**What is actually open, counted:** 6 ICP-read items, 4 structural UX
-decisions needing a call each, 4 priority calls, 3 Track-B proof items, 2
-carried defects, 3 wearable integrations, 6 deferred. The two sections the old
-file ranked first — "Do first" and "Next — the product gaps" — are **all
-shipped** (every item struck with a commit hash) and are kept below only for
-provenance. Nothing in this Part has been validated with a user.
+**What is actually open, counted:** 4 structural UX decisions needing a call
+each (5B), 2 wearable phases (one of them only the `/arrival` half), 4 deferred
+items, and one manual pass with a real Garmin export no test can substitute
+for. Everything else this Part inherited is **shipped** — the three sections the
+old file ranked first ("Do first", "Next —
+the product gaps", "Next — ICP read"), Track B in full, and three of the four
+priority calls — each struck with the hash or the code line that closed it, and
+kept below as provenance. Nothing in this Part has been validated with a user.
 
 ### Corrections applied when this was merged (2026-11-03)
 
 The old `backlog.md` was wrong in both directions, so these were checked
 against the code before being carried over:
 
+- **Removed from open:** the 5A fixes and all of Track B. Round 5's own log
+  entry records 5A1-5A6 as gone, and the code agrees (`.tl-tag` /
+  `.cal-summary` defined, banded history score at `history/page.tsx:185`,
+  composite row key at `:149`), yet the priority list still queued them first.
+  Track B's B1/B2/B3 closed at `c95a5fe` / no-change / `src/domain/second-trip.ts`
+  and the section still read "starting now".
+- **Removed from open (again wrong in the same direction):** the reminder
+  channel ("no notification infra exists" — `src/lib/push.ts` and `/api/push`
+  shipped at `017f6b2`), Phase 1 of the wearable plan (the sky-strip
+  complications are in `DaySkyStrip.tsx`), and two thirds of "Orphaned routes"
+  (`/team` is linked from the More sheet; `/crew`'s `?screen=setup` pill no
+  longer exists). Also: item 12's setup-sheet half, `49c6722`.
+- **Decided, not open:** the "Landing tease" proposal. As written it asked for
+  what Rule 1 forbids (the entry form demoted below the example), so it is
+  recorded as rejected in favour of the route-first entry, with the showing
+  half shipped elsewhere.
 - **Removed from open:** the `heroReadiness` provenance labels, listed as "the
   one trust gap round 3 left open". They ship — `NudgeFeedScreen.tsx` and
   `HeroDawnPanel.tsx` both branch on `readiness.source` and say `"banked on
@@ -1270,6 +1289,12 @@ against the code before being carried over:
 - **Renumbered:** the old file contained Round 9 twice, Round 10 twice and
   Round 14 twice, and put "Later / deferred" and "Closed" mid-file. Part 4
   resolves this by dating every entry.
+- **Removed from open:** item 12's "`TripSetupScreen` half in flight", and the
+  whole of "Also in this round". The `Connect Garmin (CSV)` affordance shipped
+  `49c6722` (the `m3` grid renders only on `hasAllBio`), the terminator's rAF
+  `6d62d56`, and `RoutePicker` above the fold `56965c1`. The old file therefore
+  listed the same two findings as both open ("Also in this round") and shipped
+  ("Carried — the same disease, different symptom") three sections apart.
 - **Payments, corrected:** `arc-payments.md` told a reader that user-facing
   payment appears once the contract is deployed "and the flag is set".
   `.env.local` does set `NEXT_PUBLIC_PAYMENTS_ENABLED=1`, and it does nothing:
@@ -1407,13 +1432,13 @@ merely looking untidy. Verified against `main` on 2026-10-17.
     design*, so on a machine whose provider is failing the chip cannot be
     rendered at all and only a test holds the line.
 
-#### Next — ICP read (Alex, 2026-10-17)
+#### Shipped, kept for provenance — was "Next — ICP read (Alex, 2026-10-17)"
 
-From `docs/vision.md §6`: the landing pasted 2026-10-17 shows sample science
+From the old `vision.md` §6: the landing pasted 2026-10-17 shows sample science
 before it knows Alex, asks for work before earning calendar rights, and buries
 the two things he pays for — the meeting and the calendar. Ordered by bounce
-risk, not by file. Each states the A/B split from `How to split this between
-two` so ownership stays clean.
+risk, not by file. The A/B owner each item was written with is named inline in
+the item.
 
 11. **A · Preview is not a promise** — on `baselineKind === "demo-default"`,
     Today renders preview: no Done/Skip, no `0 of 4`, no `PendingMark` /
@@ -1442,10 +1467,11 @@ two` so ownership stays clean.
     returns `null` for every measured cell on preview / unknown / missing
     baseline, so `HRV 48 ms · Resting HR 58 bpm` cannot render as the
     traveller's numbers; `tests/preview.test.ts` pins the matrix.
-    **`TripSetupScreen` half in flight (B)** — `baselineKind` is now
-    forwarded through `page.tsx` so the setup sheet can read its own gate;
-    the `m3` grid replacement and the `Connect Garmin (CSV)` affordance
-    follow.
+    **Surface half shipped `49c6722`** — `baselineKind` is forwarded through
+    `page.tsx` so the setup sheet reads its own gate; the `m3` grid renders
+    only when `hasAllBio`, and the `Connect your wearable` slot with an
+    `Upload Garmin file` chip appears whenever `baselineSource !== "garmin"`.
+    Landed as the affordance *beside* the grid rather than replacing it.
 13. **A render (B shape) · Calendar is the compliance surface** — B guarantees
     `N movable / M fixed` + `readinessLabel` + a previewable `.ics` shape
     pre-run, from data that already exists in `TripSetupScreen`. A changes the
@@ -1491,7 +1517,7 @@ two` so ownership stays clean.
     `/crew`, which already owns its voice control). Rule 4's mechanics hold;
     its labels are fixed.
 
-#### Owners for round 2
+#### Owners for round 2 (provenance — all six shipped)
 
 | Item | Owner | Why this lane |
 |---|---|---|
@@ -1502,33 +1528,24 @@ two` so ownership stays clean.
 | 15 The meeting is the product | **B** data, then **A** hero | B ensures `meetingReadiness` resolves pre-run for one real fixed event with attendees; A renders the hero subhead on it. **Sequential, never simultaneous.** |
 | 16 Crew backstage | **A** | Isolated to the dial and the first viewport. Filler while B is on tests. |
 
-#### Also in this round
+#### Superseded — was "Also in this round"
 
-The globe is real but inert. The terminator moves **0.25° of longitude a minute**
-— about a quarter of a pixel on a 320px disc — so the 60s interval guarantees
-nothing appears to happen, and the hero reads as a still image. The clock should
-move continuously (a rAF at this scale is cheap; the interval was the wrong
-call), and the shift lane should animate the ghost sliding onto the terminator
-*while dragging*, not only on release. **Unassigned:** it is A's file
-(`HeroDawnPanel.tsx`) but touches no contract, so it is a genuine either-lane
-opportunity once 11 and 16 are done.
-
-Related and already real but buried: 1,145 airports are wired into
-`searchAirports` and reachable only via **Edit → Edit trip**, while the landing
-assumes LHR → HND. The input layer exists; it is a surfacing problem, not a
-build — and it belongs with item 13's "calendar is compliance" argument that the
-*path to configuring your own trip* is the thing missing above the fold.
+Both work items this section asked for have since shipped, so it is kept only to
+show what the read was. The globe's 60s interval became a throttled rAF at 4Hz
+(`6d62d56`), the drag-while-animating ghost already exists, and the 1,145
+airports behind **Edit → Edit trip** came above the fold as `RoutePicker`
+(`56965c1`). The current text of both is under *Carried — the same disease,
+different symptom*.
 
 #### Next steps (carried)
 
 - **Real integrations** — **Garmin: upload path shipped `92299c3`** —
   `POST /api/wearable` takes a sleep CSV → per-tenant baseline →
-  `/api/trip` answers `baselineSource: "garmin"` + kind `garmin`. Item 12
-  ships the contract (`displayBiometrics` returns null on preview); the
-  `Connect Garmin (CSV)` affordance in `TripSetupScreen` and the `m3` grid
-  replacement are the B-side surface work to close the carried remainder.
-  Worth a manual pass with a real export file rather than trusting the happy
-  path — the upload route has zero callers today.
+  `/api/trip` answers `baselineSource: "garmin"` + kind `garmin`. Item 12 shipped
+  the contract (`displayBiometrics` returns null on preview) and the surface
+  (`49c6722`: the `Connect your wearable` slot, and `m3` only on `hasAllBio`), so
+  the upload route has a caller. **What remains** is the part no test can do: a
+  manual pass with a real Garmin export file, not the fixture.
   **Flight inventory**: windows are now real planning inputs
   (`?flight=` threads through `c675c45`); live inventory remains deferred
   by design.
@@ -1552,30 +1569,33 @@ class as the calendar: a capability present and not felt.
   (wearable, wake band, flight window) stay behind Menu → Edit trip,
   since they aren't first-impression problems.
 
-#### Track B — proof + performance (B's files, untouched — starting now)
+#### Shipped, kept for provenance — was "Track B — proof + performance"
 
-- **B1. Wake-answer acknowledgement (delight, contract-testable).**
+All three closed (the hashes are at the end of the section), so the briefs below
+are kept to show the contract each was written against.
+
+- ~~**B1. Wake-answer acknowledgement (delight, contract-testable).**
   `resolveBaseline` re-plans the preview instantly with no refetch, but
   nothing on the hero says the numbers moved when the traveller answers.
   Contract: a pure `wakeAck(baselineKind, wakeBand)` shape in
   `domain/preview.ts` returning the acknowledgement copy (or null when no
   answer is in play); A renders one line. Test: demo-default + band →
   acknowledgement names the re-plan; garmin → null; demo-default alone →
-  null.
-- **B2. `/api/trip` refetch-storm guard (performance).** — closed
+  null. *(shipped `c95a5fe`.)*
+- ~~**B2. `/api/trip` refetch-storm guard (performance).** — closed
   2026-10-17, no change needed. Verified: `RoutePicker`'s `onChange`
   fires only on committed picks (list selection, swap, valid date);
   keystrokes stay in `AirportField`'s local `query` state and never touch
   `origin`/`dest`, so no fetch fires per keystroke. The storm this item
   predicted does not exist. No gate, no debounce, no test — adding one
-  would be code against a phantom.
-- **B3. Second-trip memory proof (value proposition).**
+  would be code against a phantom.)*
+- ~~**B3. Second-trip memory proof (value proposition).**
   Cross-trip summary needs a second real trip's data; #3 already scopes
   memory per traveller. Contract: extend the memory read path with a
   pure `secondTripProof(runs)` shape — "the crew remembers X from trip 1"
   or honest null when there is no prior trip. Test both. This is the
   Traveller-tier justification made visible; without it the retention
-  loop is claimed, not closed.
+  loop is claimed, not closed. *(shipped — see the sequence below.)*
 
 Sequence: B1 → B2 → B3 (each independent; B1 smallest, lands first).
 A's in-flight work never blocks B — disjoint files throughout.
@@ -1592,7 +1612,7 @@ the honest first-trip state).
 #### 5B. UX friction (structural — needs a decision each, not just CSS)
 
 - **5B1. CTA over-promises.** "Fit to me → to calendar" triggers a ~45s
-  crew run before any `.ics` exists (vision doc already flags: the `.ics`
+  crew run before any `.ics` exists (Part 2 already flags it: the `.ics`
   is inside the run). Fix options: preview the `.ics` shape pre-run, or
   relabel to the step it triggers ("Lock the plan →"). Product call.
 - **5B2. Depth dial is a footer.** Rule 4 calls the dial the interface;
@@ -1607,30 +1627,40 @@ the honest first-trip state).
   read as "a lot at once". Check whether the solver should space them —
   B's domain if the rule changes, otherwise copy mitigation stands.
 
-#### 5C. Priority (reviewer's order, verified sensible)
+#### 5C. Priority (reviewer's order) — only the last line is open
 
-1. 5A1 + 5A2 (CSS definitions — biggest win, smallest effort, main screen).
-2. 5A4 + 5A5 (headings + score colour).
-3. 5A3 + 5A6 (zero-case copy + key).
-4. 5B structural calls (CTA, dial, disclaimers, solver spacing).
+1. ~~5A1 + 5A2 (CSS definitions — biggest win, smallest effort, main screen).~~
+   — shipped: `.tl-tag` and `.cal-summary` are defined in `globals.css`.
+2. ~~5A4 + 5A5 (headings + score colour).~~ — shipped: `history/page.tsx:185`
+   bands the label (`✓ Passed checks` / `Below our standard` / `Didn't pass`).
+3. ~~5A3 + 5A6 (zero-case copy + key).~~ — shipped: the rows key on a
+   composite (`history/page.tsx:149`).
+4. **5B structural calls (CTA, dial, disclaimers, solver spacing) — open.**
+   Each needs a product decision, not a patch.
 
-Lane note: 5A is almost entirely `globals.css` + `NudgeFeedScreen.tsx` /
-`history` / `review` (A's files) with one B-adjacent contract question
-(5A5 filter rule, 5A3 translation boundary). B picks up 5B4 only if the
-solver rule changes; otherwise allA.
+Lane note, as written then: 5A was almost entirely `globals.css` +
+`NudgeFeedScreen.tsx` / `history` / `review` (A's files) with one B-adjacent
+contract question (5A5 filter rule, 5A3 translation boundary). B picks up 5B4
+only if the solver rule changes; otherwise allA.
 
 #### Later / deferred
 
 - **Visual pass on `/spike/globe`** — the ring pulse, flight hairline and
   tooltip fades are shader/DOM effects this host cannot render headlessly;
   one human look confirms they read right (round 7).
-- **Reminder channel** — no notification infra exists; don't fake a control.
-- **Cross-trip summary** — only surface "the crew remembers" from real prior
-  runs in the graph; needs a second real trip's data. Unblocked now that #3
-  scopes memory per traveller — still needs the second trip.
-- **Orphaned routes** — `/dev` and `/team` are complete with zero inbound
-  links; `/crew`'s "Trip Setup" pill links to `?screen=setup`, which nothing
-  reads. Link or hide.
+- ~~**Reminder channel**~~ — shipped since this line was written: `src/lib/push.ts`
+  + `/api/push`, driven by `useReminders` on the home page (`017f6b2` — "push to
+  the device, not just the open tab"). The rule it was guarding ("don't fake a
+  control") holds; the control is now real.
+- **Cross-trip summary** — the shape ships (`src/domain/second-trip.ts`,
+  B3, with its line on the hero); what is missing is a second *real* trip,
+  because without Supabase keys `secondTripProof` stays null. That is the
+  honest first-trip state, not a gap in the code.
+- **Orphaned routes** — `/dev` is still complete with zero inbound links. Half
+  this item is closed: `/team` is reachable from the More sheet and
+  `BottomNav`'s MORE_PATHS, and `/crew`'s `?screen=setup` pill is gone from the
+  code entirely. What is left of "link or hide" is `/dev` alone — a dev-only
+  surface, so arguably the right answer is that it stays unlinked.
 - ~~**Server-minted arrival share link**~~ — shipped 2026-10-31: `POST
   /api/share` accepts `{arrival,trip}` receipts (claimed vs delivered from
   the landing projection), renders on `/plan/{id}` with an OG variant, and
@@ -1644,21 +1674,34 @@ solver rule changes; otherwise allA.
 
 #### Wearable & quantified-self integration (planned 2026-10-31)
 
-Ambient jewels, not stacked blocks. Three phases:
+Ambient jewels, not stacked blocks. Three phases — one shipped, one half
+shipped, one untouched:
 
-- Phase 1 — Sky complications: photon anchor, caffeine curfew, DLMO sunset
-  as micro-icons on the existing sky strip (zero new blocks).
-- Phase 2 — Circadian Alignment Score (CAS) on dial + /arrival payoff.
-- Phase 3 — Everyday Rhythm Mode when no flight is booked.
+- ~~**Phase 1 — Sky complications**~~ — shipped. Photon anchor, caffeine curfew
+  and the DLMO wind-down render as complications on the existing
+  `DaySkyStrip.tsx`, no new block.
+- **Phase 2 — CAS on dial + /arrival payoff** — half shipped. The formula is in
+  `domain/circadian.ts` (`circadianAlignmentScore`) and the dial renders it
+  (`dial/CircadianDial.tsx`); `/arrival` still shows no alignment score.
+- **Phase 3 — Everyday Rhythm Mode when no flight is booked** — open, no code.
 
-CAS formula shipped in `domain/circadian.ts` (`circadianAlignmentScore`).
-
-#### Landing tease (proposed 2026-10-31)
+#### Landing tease (proposed 2026-10-31) — decided against as written
 
 Cold `/` should show, not ask: render the example trip's Today (read-only) as the
 hero, with the entry form demoted to "Make it yours". Tease three artifacts
 (body-clock dial + CAS, arrival scorecard, shareable passport card). Lead the
 headline with the gap ("Your 07:00 Tokyo meeting is 23:00 body time").
+
+**What actually happened, and why it wins.** Demoting the entry form to a
+secondary "Make it yours" is what Rule 1 forbids: the route has to be the
+traveller's before a plan is actionable, and the first number must be *theirs*.
+The proposal's other half did land, just not on the entry screen — the showing
+moved to `/demo` and the example stage (`entry.mode === "example"` renders the
+same Today read-only), and the gap-led headline shipped as `heroMeeting`
+(item 15). So the open question left here is not *whether* the landing shows or
+asks — that call is made — but whether the example gets more of the first
+viewport than it has now. That is a measurement question, and nothing in this
+repo has measured it.
 
 
 ---
