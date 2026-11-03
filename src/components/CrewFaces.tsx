@@ -38,6 +38,17 @@ export function agentMoods(events: CrewEvent[]): Record<AgentId, CrewMood> {
     switch (e.type) {
       case "agent_start":
       case "agent_token":
+        /* Iris narrates her own verdict, so `eval_result` always lands one
+         * event before her `agent_start` — and the start would overwrite the
+         * verdict in the same tick, before it could ever paint (the fail cue
+         * was written but never seen, in replay and live alike). A verdict
+         * holds its face until the next verdict, or until the agent settles. */
+        if (
+          e.agent === "evaluator" &&
+          (moods.evaluator === "worried" || moods.evaluator === "happy")
+        ) {
+          break;
+        }
         moods[e.agent] = "working";
         break;
       case "tool_call":

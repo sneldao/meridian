@@ -34,6 +34,26 @@ describe("agentMoods — the crew's state channel", () => {
     expect(moods.negotiator).toBe("settled");
   });
 
+  it("a verdict outlives the evaluator's own start, so the fail cue can paint", () => {
+    // The emitter always sends eval_result immediately before Iris's
+    // agent_start. If the start cleared the verdict, the fail cue would never
+    // reach the DOM — this is the regression guard for that.
+    const moods = agentMoods([
+      ev({ type: "eval_result", result: { feasible: false, violations: [{ code: "SHIFT_TOO_FAST" }] }, attempt: 1 }),
+      ev({ type: "agent_start", agent: "evaluator" }),
+      ev({ type: "agent_token", agent: "evaluator", text: "Rejected." }),
+    ]);
+    expect(moods.evaluator).toBe("worried");
+
+    // The retry's verdict still replaces it.
+    const after = agentMoods([
+      ev({ type: "eval_result", result: { feasible: false, violations: [{ code: "x" }] }, attempt: 1 }),
+      ev({ type: "agent_start", agent: "evaluator" }),
+      ev({ type: "eval_result", result: { feasible: true, score: 0.9, violations: [] }, attempt: 2 }),
+    ]);
+    expect(after.evaluator).toBe("happy");
+  });
+
   it("done settles whoever is still standing", () => {
     const moods = agentMoods([ev({ type: "agent_start", agent: "planner" }), ev({ type: "done" })]);
     expect(moods.planner).toBe("settled");
