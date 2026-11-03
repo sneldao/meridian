@@ -185,9 +185,10 @@ animations are frozen debt, counted by exact declaration text in
 - One cue vocabulary for progress. The sun-self and the crew do not each
   own a private animation language: every state on both resolves to one of
   four cues — **arrive**, **work**, **done**, **fail** — in
-  `src/domain/motion-cues.ts` (`SUN_CUE` for the sun's moods, `CREW_CUE` for
-  the crew's moods, `CREW_STATE_CUE` for the avatars' poses, which is why an
-  agent drawn outside the live crew row still gets the shared beat). `done`
+  `src/domain/motion-cues.ts` (`SUN_CUE` for the sun's moods, `CREW_STATE_CUE`
+  for the avatars' poses — `CrewFaces`' `MOOD_STATE` folds a crew mood onto a
+  pose first, which is why an agent drawn outside the live crew row still gets
+  the shared beat). `done`
   is literally one keyframe: `.sunself.enter`, the check-in card's finished
   button and `.crew-avatar[data-cue="done"]` all play `sunself-pulse`, so a
   step landing reads the same wherever the traveller is looking. `arrive` and

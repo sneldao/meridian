@@ -60,7 +60,7 @@ function useVerdictHold(events: CrewEvent[]): CrewMood | null {
   return verdict && verdict.event !== expired ? verdict.mood : null;
 }
 
-const MOOD_STATE: Record<CrewMood, CrewAvatarState> = {
+export const MOOD_STATE: Record<CrewMood, CrewAvatarState> = {
   idle: "resting",
   working: "working",
   searching: "attentive",
