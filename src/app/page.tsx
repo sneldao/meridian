@@ -1405,17 +1405,21 @@ export default function Home() {
                 order but Enter and Space did nothing, because a div has no
                 activation behaviour. The <Link> siblings above are real
                 anchors, so this also makes the menu homogeneous. */}
-            <button
-              type="button"
-              className={`m${setupOpen ? "" : " vt-morph-trip"}`}
-              role="menuitem"
-              onClick={() => {
-                openSetup();
-                setMenuOpenedAt(null);
-              }}
-            >
-              Trip settings
-            </button>
+            {/* The sheet below is gated on `trip` — render the item only
+                when it can open something, or the click silently no-ops. */}
+            {trip && (
+              <button
+                type="button"
+                className={`m${setupOpen ? "" : " vt-morph-trip"}`}
+                role="menuitem"
+                onClick={() => {
+                  openSetup();
+                  setMenuOpenedAt(null);
+                }}
+              >
+                Trip settings
+              </button>
+            )}
             {/* Depth is a view choice, not a place — toggling it used to be a
                 Link to /?depth=guided, which reloaded the whole page (killing
                 any live run) and left the param stuck in the URL. */}
