@@ -5,6 +5,9 @@ import { POST as feedbackPOST } from "../src/app/api/taste/feedback/route";
 import { readTasteProfile, readTripTaste, writeTasteProfile, writeTripTaste } from "../src/lib/use-trip-taste";
 import { readTasteSignals, recordTasteSignal } from "../src/lib/taste-signals";
 import type { TasteEntity } from "../src/domain/taste";
+import { sessionCookieName } from "../src/lib/session";
+
+const SESSION_COOKIE = `${sessionCookieName()}=${"b".repeat(64)}`;
 
 const fakeStorage = (initial: Record<string, string> = {}) => {
   const map = new Map(Object.entries(initial));
@@ -82,7 +85,7 @@ describe("GET /api/crew/run taste validation", () => {
   const req = (taste: string) =>
     new NextRequest(
       `https://x.test/api/crew/run?origin=LHR&dest=HND&date=2026-05-10&taste=${taste}`,
-      { headers: { "x-forwarded-for": "198.51.100.9" } },
+      { headers: { "x-forwarded-for": "198.51.100.9", cookie: SESSION_COOKIE } },
     );
 
   it("rejects malformed favorites with 400 before any upstream work", async () => {
@@ -135,9 +138,20 @@ describe("POST /api/taste/feedback", () => {
   const post = (body: unknown) =>
     new NextRequest("https://x.test/api/taste/feedback", {
       method: "POST",
-      headers: { "content-type": "application/json", "x-forwarded-for": "198.51.100.9" },
+      headers: { "content-type": "application/json", "x-forwarded-for": "198.51.100.9", cookie: SESSION_COOKIE },
       body: JSON.stringify(body),
     });
+
+  it("denies a verdict without a session", async () => {
+    const res = await feedbackPOST(
+      new NextRequest("https://x.test/api/taste/feedback", {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-forwarded-for": "198.51.100.9" },
+        body: JSON.stringify({ status: "dismissed", place: { name: "Tokyo Disneyland" } }),
+      }),
+    );
+    expect(res.status).toBe(401);
+  });
 
   it("accepts a verdict and stays quiet — the graph write is best-effort", async () => {
     const res = await feedbackPOST(

@@ -174,8 +174,9 @@ Per-step did/skip marks flush as structured check-ins, but `recordCheckIn`
 appended to a **single global `artifacts/crew-memory.json`** and
 `foldCheckIns` folded *every* visitor's marks into one adherence profile. One
 traveller skipping a 6am light moved the compliance floor for everyone else.
-Now scoped by a `meridian-tid` cookie through the memory files, the fold, the
-graph writes and the run records (`4933774`).
+The first fix scoped memory by `meridian-tid` (`4933774`); the current beta
+model derives a hashed owner from an anonymous HttpOnly session cookie
+through the memory files, the fold, the graph writes and the run records.
 
 The lesson generalises past check-ins: **"the crew learns" was a claim the
 architecture couldn't honour.** If any future feature says "remembers", the

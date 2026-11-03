@@ -8,9 +8,10 @@ export interface StampedCrewEvent {
   event: CrewEvent;
 }
 
-interface CrewRun {
+export interface CrewRun {
   id: string;
   createdAt: number;
+  ownerTenant?: string;
   events: StampedCrewEvent[];
   listeners: Set<(event: StampedCrewEvent) => void>;
   controller: AbortController;
@@ -63,10 +64,11 @@ function stamp(run: CrewRun, event: CrewEvent): StampedCrewEvent {
   return stamped;
 }
 
-function makeRun(id: string, createdAt = Date.now()): CrewRun {
+function makeRun(id: string, createdAt = Date.now(), ownerTenant?: string): CrewRun {
   return {
     id,
     createdAt,
+    ownerTenant,
     events: [],
     listeners: new Set(),
     controller: new AbortController(),
@@ -90,7 +92,14 @@ function hydrate(id: string): CrewRun | undefined {
   try {
     for (const line of readFileSync(file, "utf8").split("\n")) {
       if (!line.trim()) continue;
-      const stamped = JSON.parse(line) as StampedCrewEvent;
+      const parsed = JSON.parse(line) as StampedCrewEvent | RunMeta;
+      if ((parsed as RunMeta).meta === "owner") {
+        const meta = parsed as RunMeta;
+        if (meta.runId !== id) return undefined;
+        run.ownerTenant = meta.ownerTenant;
+        continue;
+      }
+      const stamped = parsed as StampedCrewEvent;
       if (!stamped || typeof stamped.seq !== "number" || stamped.runId !== id) return undefined;
       run.events.push(stamped);
       if (stamped.event.type === "done") run.done = true;
@@ -116,13 +125,30 @@ export function crewRun(runId: string): CrewRun | undefined {
   return registry().get(runId) ?? hydrate(runId);
 }
 
-export function startCrewRun(runId: string): { run: CrewRun; signal: AbortSignal } {
+interface RunMeta {
+  meta: "owner";
+  runId: string;
+  ownerTenant: string;
+}
+
+function persistOwner(runId: string, ownerTenant: string) {
+  try {
+    mkdirSync(LOG_DIR, { recursive: true });
+    appendFileSync(runFile(runId), `${JSON.stringify({ meta: "owner", runId, ownerTenant })}\n`);
+  } catch {}
+}
+
+export function startCrewRun(
+  runId: string,
+  ownerTenant?: string,
+): { run: CrewRun; signal: AbortSignal; created: boolean } {
   sweep();
   const existing = crewRun(runId);
-  if (existing) return { run: existing, signal: existing.controller.signal };
-  const run = makeRun(runId);
+  if (existing) return { run: existing, signal: existing.controller.signal, created: false };
+  const run = makeRun(runId, Date.now(), ownerTenant);
   registry().set(runId, run);
-  return { run, signal: run.controller.signal };
+  if (ownerTenant) persistOwner(runId, ownerTenant);
+  return { run, signal: run.controller.signal, created: true };
 }
 
 export function appendCrewEvent(runId: string, event: CrewEvent): StampedCrewEvent {

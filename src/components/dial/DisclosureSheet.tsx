@@ -52,11 +52,12 @@ export function DisclosureBody() {
           </p>
           <p>
             <b>What happens to your data.</b> Your trip, calendar and answers are
-            kept in this browser so your plan is there when you come back. If
-            the deployment has persistence configured, the plan and your
-            check-ins are also stored in the project&apos;s database. The
-            wearable import is simulated in this build — nothing is read from a
-            wearable.
+            kept in this browser so your plan is there when you come back. A
+            wearable export is a real CSV upload — it is parsed on the server
+            and the derived baseline can be stored there. If the deployment has
+            persistence configured, the plan and your check-ins are also stored
+            in the project&apos;s database. See <a href="/privacy">Privacy &amp;
+            support</a> for the full picture.
           </p>
         </div>
     </>

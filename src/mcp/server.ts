@@ -5,7 +5,6 @@
 
 import { z } from "zod";
 import { readFile } from "node:fs/promises";
-import path from "node:path";
 import { buildTrip, isKnownCity, ADHERENCE_PROFILE, GARMIN_BASELINE, CITY_TABLE } from "@/domain/fixtures";
 import { evaluatePlan } from "@/domain/circadian";
 import { foldCheckIns, parseCheckInText } from "@/domain/adherence";
@@ -16,6 +15,7 @@ import { searchTavily, tavilyEnabled } from "@/tools/tavily";
 import { destinationTaste, qlooEnabled } from "@/tools/qloo";
 import { runCrew } from "@/agents/runtime";
 import { providerKind } from "@/agents/providers";
+import { artifactPath } from "@/lib/artifacts";
 import type { CheckInRequest, DayPlan, Trip } from "@/domain/types";
 
 export const MCP_PROTOCOL_VERSION = "2025-11-25";
@@ -80,7 +80,8 @@ const checkInInput = z.object({
 interface McpTool {
   description: string;
   schema: z.ZodType;
-  run: (input: unknown) => Promise<unknown>;
+  run: (input: unknown, tenant?: string) => Promise<unknown>;
+  personal?: true;
 }
 
 async function tripFor(args: z.infer<typeof tripArgs>): Promise<{ trip: Trip; calendar: Awaited<ReturnType<typeof fetchCalendar>> }> {
@@ -110,13 +111,14 @@ const TOOLS: Record<string, McpTool> = {
   },
 
   plan_shift: {
+    personal: true,
     description:
       "Run the full Meridian crew for a trip — analyst, researcher, planner, evaluator, negotiator — and return the scored shift plan: per-day interventions, citations, rescheduled calendar and the .ics file. Long-running.",
     schema: tripArgs.extend({
       startDayIndex: z.number().int().min(0).max(4).optional(),
       checkIns: z.array(checkInInput).optional(),
     }),
-    run: async (raw) => {
+    run: async (raw, tenant) => {
       const args = tripArgs
         .extend({
           startDayIndex: z.number().int().min(0).max(4).optional(),
@@ -136,6 +138,7 @@ const TOOLS: Record<string, McpTool> = {
         checkIns,
         startDayIndex: args.startDayIndex ?? 0,
         interactive: false,
+        tenant,
       })) {
         if (e.type === "briefing") {
           briefing = {
@@ -174,15 +177,16 @@ const TOOLS: Record<string, McpTool> = {
   },
 
   record_check_in: {
+    personal: true,
     description:
       "Record what the traveller actually did — free text ('skipped the 5am light') or a structured status — and return the updated adherence profile the next plan will respect.",
     schema: checkInInput.refine((c) => c.text || c.status, {
       message: "provide text or status",
     }),
-    run: async (raw) => {
+    run: async (raw, tenant) => {
       const args = checkInInput.parse(raw);
       const checkIn = parseCheckInText(args as CheckInRequest);
-      const memory = await recordCheckIn(checkIn);
+      const memory = await recordCheckIn(checkIn, tenant);
       return {
         checkIn,
         adherence: foldCheckIns(ADHERENCE_PROFILE, memory.checkIns),
@@ -231,35 +235,38 @@ const TOOLS: Record<string, McpTool> = {
   },
 
   crew_memory: {
+    personal: true,
     description:
       "Cross-run memory: past runs, all check-ins, and the adherence hints the crew has learned from them.",
     schema: z.object({}),
-    run: async () => loadMemory(),
+    run: async (_raw, tenant) => loadMemory(tenant),
   },
 
   recall_findings: {
+    personal: true,
     description:
       "Query the traveller's FalkorDB memory graph for findings about a named intervention, day or trip. Every answer carries its hop path; 'not in graph' is an honest answer, not a gap.",
     schema: z.object({
       target: z.string().describe("name of the intervention, day or trip to recall"),
       limit: z.number().int().min(1).max(10).default(5),
     }),
-    run: async (raw) => {
+    run: async (raw, tenant) => {
       const args = z
         .object({ target: z.string(), limit: z.number().int().min(1).max(10).default(5) })
         .parse(raw);
       const gm = await import("@/domain/graph-memory");
       if (!gm.graphEnabled()) return { note: "graph memory offline — FALKORDB_URL not set" };
-      return gm.recallFindings(args.target, args.limit);
+      return gm.recallFindings(args.target, args.limit, tenant);
     },
   },
 
   latest_plan: {
+    personal: true,
     description: "The most recent committed shift plan artifact (days + trip + provider), if a crew run has completed on this server.",
     schema: z.object({}),
-    run: async () => {
+    run: async (_raw, tenant) => {
       try {
-        const raw = await readFile(path.join(process.cwd(), "artifacts", "shift-plan.json"), "utf8");
+        const raw = await readFile(artifactPath("shift-plan.json", tenant), "utf8");
         return JSON.parse(raw);
       } catch {
         return { note: "no plan committed yet — call plan_shift first" };
@@ -289,7 +296,7 @@ function rpcError(id: string | number | null, code: number, message: string) {
   return { jsonrpc: "2.0", id, error: { code, message } };
 }
 
-async function handleMessage(msg: JsonRpcRequest): Promise<object | "notification"> {
+async function handleMessage(msg: JsonRpcRequest, tenant?: string): Promise<object | "notification"> {
   if (!msg || typeof msg !== "object" || msg.jsonrpc !== "2.0" || typeof msg.method !== "string") {
     return rpcError(msg?.id ?? null, INVALID_REQUEST, "invalid JSON-RPC request");
   }
@@ -334,6 +341,12 @@ async function handleMessage(msg: JsonRpcRequest): Promise<object | "notificatio
         return rpcError(msg.id!, INVALID_PARAMS, `unknown tool: ${name ?? "(none)"}`);
       }
       const tool = TOOLS[name];
+      if (tool.personal && !tenant) {
+        return rpcResult(msg.id!, {
+          content: [{ type: "text", text: "session required for personal data tools" }],
+          isError: true,
+        });
+      }
       try {
         const parsed = tool.schema.safeParse(params?.arguments ?? {});
         if (!parsed.success) {
@@ -342,7 +355,7 @@ async function handleMessage(msg: JsonRpcRequest): Promise<object | "notificatio
             isError: true,
           });
         }
-        const output = await tool.run(parsed.data);
+        const output = await tool.run(parsed.data, tenant);
         return rpcResult(msg.id!, {
           content: [{ type: "text", text: JSON.stringify(output, null, 2) }],
           structuredContent: output as Record<string, unknown>,
@@ -363,13 +376,13 @@ async function handleMessage(msg: JsonRpcRequest): Promise<object | "notificatio
 
 /** Entry point for the route handler: one POST body → one response body (or
  *  null when every message was a notification → HTTP 202). */
-export async function dispatch(body: unknown): Promise<object | object[] | null> {
+export async function dispatch(body: unknown, tenant?: string): Promise<object | object[] | null> {
   if (Array.isArray(body)) {
     const out = (
-      await Promise.all(body.map((m) => handleMessage(m as JsonRpcRequest)))
+      await Promise.all(body.map((m) => handleMessage(m as JsonRpcRequest, tenant)))
     ).filter((r): r is object => r !== "notification");
     return out.length ? out : null;
   }
-  const r = await handleMessage(body as JsonRpcRequest);
+  const r = await handleMessage(body as JsonRpcRequest, tenant);
   return r === "notification" ? null : r;
 }

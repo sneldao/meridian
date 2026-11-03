@@ -12,6 +12,10 @@ export const dynamic = "force-dynamic";
 // GET returns the history so the UI can show what the crew knows.
 
 export async function POST(req: Request) {
+  const tenant = tenantOf(req);
+  if (!tenant) {
+    return NextResponse.json({ ok: false, error: "session required" }, { status: 401 });
+  }
   let body: CheckInRequest;
   try {
     body = (await req.json()) as CheckInRequest;
@@ -23,7 +27,6 @@ export async function POST(req: Request) {
   }
 
   const checkIn = parseCheckInText(body);
-  const tenant = tenantOf(req);
   const memory = await recordCheckIn(checkIn, tenant);
   const adherence = foldCheckIns(ADHERENCE_PROFILE, memory.checkIns);
   // Optional writes are bonus paths — bounded so a slow remote (a cold
@@ -31,7 +34,7 @@ export async function POST(req: Request) {
   const bonusWrites: Promise<unknown>[] = [
     (async () => {
       const { persistCheckIn } = await import("@/tools/supabase");
-      await persistCheckIn(checkIn);
+      await persistCheckIn(checkIn, tenant);
     })(),
     (async () => {
       const { recordCheckInToGraph } = await import("@/domain/graph-memory");
@@ -47,7 +50,11 @@ export async function POST(req: Request) {
 }
 
 export async function GET(req: Request) {
-  const checkIns = await listCheckIns(tenantOf(req));
+  const tenant = tenantOf(req);
+  if (!tenant) {
+    return NextResponse.json({ error: "session required" }, { status: 401 });
+  }
+  const checkIns = await listCheckIns(tenant);
   const adherence = foldCheckIns(ADHERENCE_PROFILE, checkIns);
   return NextResponse.json({ checkIns, adherence });
 }

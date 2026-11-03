@@ -97,7 +97,7 @@ export default function HistoryPage() {
       try { localStorage.removeItem(k); } catch {}
     });
     setItems([]);
-    show("All your data deleted", () => {
+    show("This browser’s data cleared", () => {
       restore(snap);
       try {
         const raw = localStorage.getItem("meridian:history");
@@ -120,10 +120,16 @@ export default function HistoryPage() {
             {items.length > 0 && (
               <button onClick={clear} className="text-xs text-clay-2 hover:text-clay-fail">Clear history</button>
             )}
-            <button onClick={deleteAll} className="text-xs text-clay-2 hover:text-clay-fail">Delete all my data</button>
+            <button onClick={deleteAll} className="text-xs text-clay-2 hover:text-clay-fail">Clear this browser’s data</button>
           </>
         }
       />
+
+      <p className="mb-4 text-xs text-clay-2">
+        Clearing affects this browser only — server records, shared cards,
+        feeds and push subscriptions are not deleted, and server history may
+        return on reload. See <Link href="/privacy" className="underline">Privacy &amp; support</Link>.
+      </p>
 
       {items.length === 0 && (
         <p className="text-sm text-clay-2">No trips yet. Plans you make will show up here — each one keeps its plan, its gate score, and its arrival report.</p>

@@ -18,11 +18,11 @@ const memoryPath = (tenant?: string) => {
   return path.join(MEMORY_DIR, safe ? `crew-memory-${safe}.json` : "crew-memory.json");
 };
 
-const EMPTY: CrewMemory = {
+const EMPTY = (): CrewMemory => ({
   runs: [],
   checkIns: [],
   learned: { skippedKinds: [], notes: [] },
-};
+});
 
 export async function loadMemory(tenant?: string): Promise<CrewMemory> {
   try {
@@ -34,7 +34,7 @@ export async function loadMemory(tenant?: string): Promise<CrewMemory> {
       learned: parsed.learned ?? { skippedKinds: [], notes: [] },
     };
   } catch {
-    return { ...EMPTY };
+    return EMPTY();
   }
 }
 

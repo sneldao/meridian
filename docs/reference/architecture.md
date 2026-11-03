@@ -17,11 +17,11 @@ GET /api/crew/run  ──SSE──▶  src/agents/runtime.ts  ──▶  provide
 Deterministic orchestration decides who acts when — agents never route to each
 other.
 
-1. **Analyst (Mara)** — reads the wearable baseline via tools. That's
-   `GARMIN_BASELINE` by default, or `resolveBaseline(wakeBand)` when the
-   traveller answered the setup question (`?wake=` on the run route) — plus
-   `ADHERENCE_PROFILE` fixtures; extracts chronotype, habitual window,
-   compliance floor.
+1. **Analyst (Mara)** — reads the wearable baseline via tools. The run route
+   loads the session's uploaded baseline first, then falls back to
+   `resolveBaseline(wakeBand)` after the setup question or `GARMIN_BASELINE`
+   when neither exists — plus `ADHERENCE_PROFILE` fixtures; extracts
+   chronotype, habitual window, compliance floor.
 2. **Researcher (Jun)** — calls `searchScience` ≥2 angles; each result becomes a
    first-class `citation` event pinned to later interventions.
 3. **Planner (Otto) × Evaluator (Iris)** — the core loop, one `DaySpec` at a
@@ -63,10 +63,13 @@ other.
    - Pass → `day_locked`, sun advances. Fail → violations feed back as the next
      prompt; day stays unlocked.
 4. **Negotiator (Rex)** — `proposeMove` stages movable calendar events that
-   survived the locked plan. Fixture runs keep going. Google-backed runs emit
-   `approval_request` and pause: `POST /api/crew/approvals` applies the staged
-   event moves and Meridian plan blocks, or rejects them and restores the
-   pre-negotiation calendar (`calendar_restore`).
+   survived the locked plan. The beta runs on fixtures only
+   (`googleCalendarEnabled()` is force-off even with Composio env), so runs
+   keep going without touching an external calendar. The guarded
+   `approval_request` path remains for a future per-traveller connection:
+   `POST /api/crew/approvals` applies the staged event moves and Meridian
+   plan blocks, or rejects them and restores the pre-negotiation calendar
+   (`calendar_restore`).
 5. **Briefing** — `buildIcs` emits a real `.ics`: the calendar events (with
    `movedTo` applied), plus — when the locked days are passed in — alarmed
    VEVENTs for the zeitgeber gates (light window, caffeine curfew,
@@ -105,7 +108,9 @@ client passes a `runId`; EventSource reconnects with `Last-Event-ID` and the
 server replays only missed events. Reloads use `runId=<id>&resume=1`. The log
 is mirrored to gitignored `artifacts/crew-runs/*.jsonl` for a 2-hour replay
 window; after a process restart an unfinished run replays its record plus an
-honest terminal error. `POST /api/crew/run` cancels the run's AbortSignal and
+honest terminal error. Each persisted run records its session-derived owner,
+and HTTP resume, streaming and cancellation refuse a different owner or an
+ownerless legacy log. `POST /api/crew/run` cancels the run's AbortSignal and
 resolves any pending calendar approval without writing.
 
 `plan_candidate` carries an optional `drift`: how far the planner's
@@ -134,14 +139,16 @@ text-to-dialogue call — see [providers.md](providers.md).
 
 ## Artifacts
 
-`persistArtifacts` writes to `artifacts/` (gitignored except `.gitkeep`):
+`persistArtifacts` writes to `artifacts/` (gitignored except `.gitkeep`),
+tenant-suffixed for session-scoped runs:
 
-- `shift-plan.json` — locked days
-- `shift-log.json` — full event/handoff log
-- `calendar-plan.ics` — calendar output
+- `shift-plan[-<tenant>].json` — locked days
+- `shift-log[-<tenant>].json` — full event/handoff log
+- `calendar-plan[-<tenant>].ics` — calendar output
 
 These are the handoff layer: context resets are safe because state lives in
-files, not in the prompt.
+files, not in the prompt. The unsuffixed paths remain only for trusted
+internal callers with no traveller identity.
 
 ## Adherence loop (`src/domain/adherence.ts`)
 
@@ -261,42 +268,53 @@ absent. The example itself (`?example=1`) is built locally from
 `buildTrip("LHR","HND")` + `GARMIN_BASELINE` + `calendarFor` — no `/api/trip`
 request, no saved plan, no reminders, no crew run.
 
-**Traveller scoping.** Middleware stamps a `meridian-tid` cookie per visitor
-and mirrors it as `x-meridian-tid` on `/api/*` requests (`src/middleware.ts`,
-`src/lib/tenant.ts` → `tenantOf`). Every memory surface scopes by it:
-`artifacts/crew-memory-{tid}.json` files, the adherence fold, graph writes,
-`recordRun`, `GET /api/memory`. `?tenant=` remains the explicit override
-(demos, seeded fixtures, MCP); absent both, the shared `crew-memory.json`
-serves the demo traveller.
+**Traveller scoping.** Middleware mints an anonymous HttpOnly session cookie
+per browser (`__Host-meridian-session` in production, `meridian-session` in
+dev; 64-hex token, Lax, 30 days). `tenantOf` derives server identity as
+SHA-256(token)[0:48]; `?tenant=` and `x-meridian-tid` never grant identity.
+The first response mirrors a just-minted token into the downstream request so
+hydration-time API calls share one identity. Personal routes 401 without a
+valid session; cross-site API reads and foreign-Origin writes are refused,
+and API responses are `private, no-store`. Every memory surface scopes by the
+hash: `artifacts/crew-memory-{tenant}.json`, the adherence fold, graph writes,
+run ownership and persistence. There is no login or cross-device recovery — a
+cleared cookie is a new traveller.
 
 ## Persistence
 
 Optional Supabase layer (`src/tools/supabase.ts`): when `SUPABASE_URL` +
 `SUPABASE_SERVICE_ROLE_KEY` are set, runs and check-ins are appended to
-`public.meridian_events` and `/api/persistence/runs` serves cross-run history.
-Feeds (`meridian_feeds`), push subscriptions (`meridian_push_subscriptions`)
-and shared cards (`meridian_shares`) live there too — feeds fall back to
-`artifacts/feeds/*.json` and shares to `artifacts/share/*.json` on disk
-without keys. Everything else falls back to `localStorage`. Project + schema details
-in [providers.md](providers.md#supabase-persistence-optional).
+`public.meridian_events` with server-assigned `payload.ownerTenant`, and
+`/api/persistence/runs` serves only the caller's history. Rows without the
+caller's owner never surface, so legacy unowned records stay hidden rather
+than becoming shared history. Feeds (`meridian_feeds`), push subscriptions
+(`meridian_push_subscriptions`) and shared cards (`meridian_shares`) live
+there too — feeds fall back to `artifacts/feeds/*.json` and shares to
+`artifacts/share/*.json` on disk without keys. Everything else falls back to
+`localStorage`. Project + schema details in
+[providers.md](providers.md#supabase-persistence-optional).
 
 ## API surface
 
+Personal routes require the anonymous session cookie and never accept a
+query/header tenant override. Public capability routes below (feeds, shares,
+push) are gated by their own unguessable ids/write keys/read tokens instead.
+
 | Route | Purpose |
 |---|---|
-| `GET /api/crew/run` | SSE crew stream (`origin`, `dest`, `date`, `checkins`, `startDay`, `wake`, `flight` query params — `wake` ∈ `before6`/`6to8`/`after8` resolves the baseline; `flight` is a departure-window id) |
-| `POST /api/crew/checkin` | Free-text check-in → structured `CheckIn` |
-| `POST /api/crew/answers` | `{questionId, optionId}` resolves the pending `crew_question` — 404 when the question is gone or the option isn't on the card |
+| `GET·POST /api/crew/run` | GET: SSE crew stream (`origin`, `dest`, `date`, `checkins`, `startDay`, `wake`, `flight`; uploaded session baseline wins, then `wake`, then fixture). `runId` must match the owner to resume/stream; malformed ids 400. POST: owner-only cancellation |
+| `GET·POST /api/crew/checkin` | Session-scoped check-in history and free-text check-in → structured `CheckIn` |
+| `POST /api/crew/answers` | `{questionId, optionId}` resolves a pending `crew_question` only for the owning run's session — 404 for another owner or an ownerless pending question |
 | `GET /api/trip` | Trip preview: `trip`, `baseline` + `baselineSource` (`"garmin"` after an upload, else `"fixture"`) + `baselineKind` (`garmin`/`wake-band`/`demo-default`), `adherence`, `calendar` + `calendarSource`, `flightId`, `provider`. `?flight=<id>` moves the flight event to that departure (`flightWindowFor` → `applyFlightChoice`); unknown or wrong-direction ids are ignored and `flightId` comes back `null`. Defaults `date` to `2026-10-18`; the client always sends an explicit date (today + 3 by default). Trip shape is `horizonFor`-sized: pre-flight capped by days left, post-flight bounded 1–5 |
 | `POST /api/wearable` | Garmin sleep-export CSV → a per-traveller `WearableBaseline`, which is what makes `baselineSource: "garmin"` possible. Garmin Health API is partner-gated, so the file export is the demo path |
 | `GET /api/team/run` | 12 parallel crews, one tagged SSE stream |
-| `GET /api/persistence/runs` | Supabase run history; `{"enabled":false}` without keys |
-| `GET /api/memory` · `GET /api/graph/health` | Learned cross-run memory; FalkorDB status (503 when unreachable); `?tenant=` selects the `meridian:{tenant}` graph |
+| `GET·POST /api/persistence/runs` | Session-scoped Supabase run history and validated saved-run writes; `{"enabled":false}` without keys |
+| `GET /api/memory` · `GET /api/graph/health` | Learned cross-run memory; FalkorDB status scoped to the session's `meridian:{tenant}` graph (503 when unreachable) |
 | `POST /api/graph/seed` | Seeds/wipes a tenant graph (`{"tenant":"demo"|"other","reset":true?}`) — needed because the Render pserv is internal-only; disabled unless `SEED_ADMIN_TOKEN` is set, then requires `x-seed-token` |
-| `GET /api/voice` · `POST /api/voice` | Voice-layer availability; TTS audio — see [providers.md](providers.md) |
+| `GET /api/voice` · `POST /api/voice` | Voice-layer availability; TTS audio, session-gated and IP-rate-limited — see [providers.md](providers.md) |
 | `GET /api/taste` · `GET /api/taste/search` | Qloo destination/favorite reads; `tasteHistory` merges kept ids into the affinity signal and suppresses dismissed places (`src/app/api/taste/`). |
 | `POST /api/taste/feedback` | Keep/swap/dismiss verdicts → `recordTasteSignal` KEPT/DISMISSED edges; best-effort 204 whether the graph lands it or not. |
-| `POST /api/mcp` | Self-hosted MCP server (Streamable HTTP, protocol 2025-11-25; stateless JSON-RPC over POST). Tools wrap the crew surface: `preview_trip`, `plan_shift`, `evaluate_plan`, `record_check_in`, `search_literature`, `crew_memory`, `recall_findings`, `latest_plan`, `search_web` (Tavily), `destination_taste` (Qloo) — implemented in `src/mcp/server.ts`. GET 405s (no server push); DELETE is a no-op. |
+| `POST /api/mcp` | Self-hosted MCP server (Streamable HTTP, protocol 2025-11-25; stateless JSON-RPC over POST). Tools wrap the crew surface: `preview_trip`, `plan_shift`, `evaluate_plan`, `record_check_in`, `search_literature`, `crew_memory`, `recall_findings`, `latest_plan`, `search_web` (Tavily), `destination_taste` (Qloo) — implemented in `src/mcp/server.ts`. GET 405s; DELETE is a no-op. A session is required; personal tools run under that tenant, batches cap at 10 messages with summed rate weight |
 | `POST /api/feed` | Create or update a plan feed `{ics, trip, days}` → `{id, key, tokens}`. `key` authorizes updates (hash stored, constant-time compare); `tokens` are per-surface read tokens (`calendar`, `assistant`). Rate-limited, ICS capped at 300KB |
 | `GET /api/feed/[id]/calendar.ics` | The webcal URL — serves the current ICS, gated on `?t=` when a calendar token exists. Legacy feeds without tokens still serve on the bare id |
 | `GET /api/feed/[id]/widget.json` | The feed as JSON for small surfaces (widget/lock-screen readers) — same `?t=` gating as the ICS |
@@ -305,7 +323,11 @@ in [providers.md](providers.md#supabase-persistence-optional).
 | `GET·POST·DELETE /api/push/subscribe` | GET: `{enabled, publicKey}` — false without VAPID env. POST: `{id, key, endpoint, keys}` stores a Web Push subscription under the feed's write key. DELETE by endpoint stops sends |
 | `GET /api/cron/dispatch` | The reminder sender — `Authorization: Bearer $CRON_SECRET`, intended to run every ~15 min. For each subscription: reads the feed, sends steps due inside the dispatch window (late beats never for a missed tick), dedupes via the row's `sent` map, culls dead endpoints (404/410). 503 when push isn't configured |
 | `POST /api/share` | Mints a `/plan/{id}` card — `{briefing,trip}` for a plan, `{arrival,trip}` for the post-landing receipt (claimed vs delivered, from the same projection `/arrival` reports). Supabase `meridian_shares` when configured, `artifacts/share/*.json` otherwise. The receipt also leaves the app client-side — the arrival passport's PNG/SVG/text export — for image-first posts |
-| `GET·POST /api/share/[id]` | GET returns the share payload (the same data the public card renders — backs the `?via=` acknowledgment + route prefill on Home). POST `{recipient:true}` increments `recipient_count` — the funnel's bottom, a share view that ended in a committed trip. The page load itself increments `view_count`; the OG image path does not |
+| `GET·POST /api/share/[id]` | GET returns the share payload (the same data the public card renders — backs the `?via=` acknowledgment + route prefill on Home). POST `{recipient:true}` increments `recipient_count` — the funnel's bottom. The page load itself increments `view_count`; the OG image path does not. Ids must be lowercase hex (legacy 10, new 32) before storage is touched |
+| `GET /api/session` | `{reference}` — the session's hashed support reference, never the raw cookie |
+| `POST /api/errors` | Digest-only client error record → `meridian.request_error` platform log |
+| `POST /api/payments/attest` · `POST /api/payments/settle` | Arc escrow routes retained for a future release; force-disabled in this beta (503 even when payment env is configured) |
+| `POST /api/crew/approvals` | Owner-only resolution of a pending staged calendar approval |
 
 ## Layout
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAddress, isHex } from "viem";
 import { sealForRun } from "@/lib/plan-seals";
-import { attestForSeal, paymentsConfig, relaySettle } from "@/lib/payments";
+import { attestForSeal, paymentsConfig, paymentsEnabled, relaySettle } from "@/lib/payments";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -11,6 +11,9 @@ export const maxDuration = 60;
  *  re-verifies the attestation, so this endpoint can only move the escrow
  *  the way the scorer's verdict says. */
 export async function POST(req: NextRequest) {
+  if (!paymentsEnabled()) {
+    return NextResponse.json({ enabled: false }, { status: 503 });
+  }
   const cfg = paymentsConfig();
   if (!cfg) {
     return NextResponse.json({ enabled: false }, { status: 503 });

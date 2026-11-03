@@ -22,6 +22,8 @@ export interface SharedPlanPayload {
   sharedAt?: string;
 }
 
+const SHARE_ID_RE = /^[0-9a-f]{10}$|^[0-9a-f]{32}$/;
+
 const dir = () => path.join(process.cwd(), "artifacts", "share");
 
 /** Persist a share payload behind a fresh /plan/{id} id. Supabase when
@@ -32,7 +34,7 @@ export async function saveSharedPlan(payload: {
   trip?: unknown;
   arrival?: ArrivalReceipt | null;
 }): Promise<string> {
-  const id = randomBytes(5).toString("hex"); // unguessable enough for a demo
+  const id = randomBytes(16).toString("hex"); // unguessable enough for a demo
   const sb = supabaseAdmin();
   if (sb) {
     const { error } = await sb.from("meridian_shares").insert({
@@ -60,6 +62,7 @@ export async function loadSharedPlan(
   id: string,
   opts?: { countView?: boolean },
 ): Promise<SharedPlanPayload | null> {
+  if (!SHARE_ID_RE.test(id)) return null;
   const sb = supabaseAdmin();
   if (sb) {
     const { data } = await sb
@@ -92,6 +95,7 @@ export async function loadSharedPlan(
  *  trip — the funnel's bottom metric. No-op without Supabase: the disk
  *  path has no counter and a missing number beats an invented one. */
 export async function recordShareRecipient(id: string): Promise<boolean> {
+  if (!SHARE_ID_RE.test(id)) return false;
   const sb = supabaseAdmin();
   if (!sb) return false;
   const { error } = await sb.rpc("increment_share_recipient", { share_id: id });

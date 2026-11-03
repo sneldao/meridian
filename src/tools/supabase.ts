@@ -81,27 +81,42 @@ export function supabaseAdmin(): SupabaseClient | null {
   return clientOrNone();
 }
 
-export async function persistRun(run: unknown): Promise<boolean> {
+const ownedPayload = (payload: unknown, tenant: string): Record<string, unknown> => ({
+  ...(payload && typeof payload === "object" && !Array.isArray(payload)
+    ? (payload as Record<string, unknown>)
+    : {}),
+  ownerTenant: tenant,
+});
+
+export async function persistRun(run: unknown, tenant?: string): Promise<boolean> {
+  if (!tenant) return false;
   const c = clientOrNone();
   if (!c) return false;
-  const { error } = await c.from("meridian_events").insert({ kind: "run", payload: run });
+  const { error } = await c
+    .from("meridian_events")
+    .insert({ kind: "run", payload: ownedPayload(run, tenant) });
   return !error;
 }
 
-export async function persistCheckIn(checkIn: unknown): Promise<boolean> {
+export async function persistCheckIn(checkIn: unknown, tenant?: string): Promise<boolean> {
+  if (!tenant) return false;
   const c = clientOrNone();
   if (!c) return false;
-  const { error } = await c.from("meridian_events").insert({ kind: "checkin", payload: checkIn });
+  const { error } = await c
+    .from("meridian_events")
+    .insert({ kind: "checkin", payload: ownedPayload(checkIn, tenant) });
   return !error;
 }
 
-export async function listRuns(limit = 20): Promise<RunPayload[]> {
+export async function listRuns(limit = 20, tenant?: string): Promise<RunPayload[]> {
+  if (!tenant) return [];
   const c = clientOrNone();
   if (!c) return [];
   const { data, error } = await c
     .from("meridian_events")
     .select("id, payload, created_at")
     .eq("kind", "run")
+    .eq("payload->>ownerTenant", tenant)
     .order("created_at", { ascending: false })
     .limit(limit);
   if (error || !data) return [];

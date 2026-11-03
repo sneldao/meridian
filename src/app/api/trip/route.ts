@@ -13,6 +13,10 @@ function isValidDate(v: string): boolean {
 }
 
 export async function GET(req: NextRequest) {
+  const tenant = tenantOf(req);
+  if (!tenant) {
+    return NextResponse.json({ error: "session required" }, { status: 401 });
+  }
   const sp = req.nextUrl.searchParams;
   const originRaw = (sp.get("origin") ?? "LHR").toUpperCase();
   const destRaw = (sp.get("dest") ?? "HND").toUpperCase();
@@ -39,7 +43,7 @@ export async function GET(req: NextRequest) {
   const calendar = flightWindow ? applyFlightChoice(cal.events, flightWindow.departMin) : cal.events;
   // A traveller who uploaded a wearable export gets their own numbers back,
   // tagged as real. Everyone else gets the labelled sample profile.
-  const wearable = await loadWearableBaseline(tenantOf(req));
+  const wearable = await loadWearableBaseline(tenant);
   return NextResponse.json({
     trip,
     baseline: wearable ?? GARMIN_BASELINE,

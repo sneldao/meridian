@@ -14,6 +14,8 @@ import {
 import { dialogueStream, speakStream, VoiceProviderError } from "@/lib/voice/elevenlabs";
 import { lookupVoice, storeVoice, voiceCacheBackend, voiceCacheKey } from "@/lib/voice/cache";
 import { cleanForTts } from "@/lib/voice/clean";
+import { tenantOf } from "@/lib/tenant";
+import { rateLimit, tooMany } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -90,6 +92,12 @@ interface Line {
 }
 
 export async function POST(req: NextRequest) {
+  const tenant = tenantOf(req);
+  if (!tenant) {
+    return NextResponse.json({ error: "session required" }, { status: 401 });
+  }
+  const rl = rateLimit(req, "voice", { limit: 30, windowMs: 3_600_000 });
+  if (!rl.ok) return tooMany(rl.retryAfterSec);
   let body: { text?: string; agent?: string; timestamps?: boolean; prev?: string; lines?: Line[] };
   try {
     body = await req.json();

@@ -284,6 +284,8 @@ describe("destinationTaste", () => {
 });
 
 const { GET: tasteGET } = await import("../src/app/api/taste/route");
+const { sessionCookieName } = await import("../src/lib/session");
+const SESSION_COOKIE = `${sessionCookieName()}=${"a".repeat(64)}`;
 const { GET: searchGET } = await import("../src/app/api/taste/search/route");
 
 describe("toPlace taxonomy + daytime curation (frozen capture)", () => {
@@ -337,8 +339,17 @@ describe("GET /api/taste", () => {
   let n = 0;
   const req = (qs: string) =>
     new Request(`https://x.test/api/taste?${qs}`, {
-      headers: { "x-forwarded-for": `10.0.0.${++n}` },
+      headers: { "x-forwarded-for": `10.0.0.${++n}`, cookie: SESSION_COOKIE },
     });
+
+  it("denies requests without a session", async () => {
+    globalThis.fetch = stub(async () => { throw new Error("must not fetch"); });
+    const bare = new Request("https://x.test/api/taste?city=Tokyo", {
+      headers: { "x-forwarded-for": "10.0.0.250" },
+    });
+    const res = await GET(bare);
+    expect(res.status).toBe(401);
+  });
 
   it("is disabled without a key", async () => {
     globalThis.fetch = stub(async () => { throw new Error("must not fetch"); });

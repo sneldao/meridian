@@ -52,7 +52,7 @@ export function paymentsConfig(): PaymentsConfig | null {
 }
 
 export function paymentsEnabled(): boolean {
-  return paymentsConfig() !== null && process.env.NEXT_PUBLIC_PAYMENTS_ENABLED === "1";
+  return false;
 }
 
 export function arcChain(cfg: PaymentsConfig) {

@@ -2,8 +2,8 @@
 
 **Agents that fly ahead of you.** A crew of long-running agents plans your
 body-clock adjustment before you land — a day-by-day sleep, light and
-caffeine plan timed to your trip, grounded in real literature and your actual
-calendar.
+caffeine plan timed to your trip, grounded in real literature and the
+schedule data the app can access.
 
 Built at Accel AI Innovate London, Oct 2026.
 
@@ -35,6 +35,19 @@ Optional extras, all in `.env.local` — every one degrades gracefully when unse
 - `CRON_SECRET` — bearer token guarding `GET /api/cron/dispatch`, the
   scheduler endpoint that actually sends pushed reminders (call it every
   ~15 min from Render cron / any scheduler)
+
+## Beta privacy boundaries
+
+There is no account. The first app visit mints an anonymous HttpOnly session
+cookie (`__Host-meridian-session` in production, `meridian-session` in dev,
+30 days); server-side traveller identity is a SHA-256 hash of that cookie.
+`?tenant=` and `x-meridian-tid` never grant identity, personal APIs require
+the session, and their responses are marked `private, no-store`.
+
+Live Google Calendar access and Arc payments are force-disabled in this beta
+even when their env keys are present. “Clear this browser's data” clears
+localStorage only; server records remain until an operator handles a deletion
+request via the support contact on `/privacy`.
 
 ## The crew
 
@@ -96,7 +109,8 @@ plan, different places.
 | `/team` | Travel-manager view: 12 travellers, 12 crews in parallel (stretch) |
 | `/dev` | Lens workbench + recorded-event fixture playback + the dial workbench + the contested-day prototype + the crew-question card specimen (dev only) |
 | `/plan/{id}` | The shared card — a plan's passport line or the post-landing arrival receipt, with a generated OG image (terminator + ghost dawn drawn from the payload's real owed minutes). "Make your own plan" lands recipients on `/?via={id}`, which acknowledges the share and prefills the sender's route |
-| `/api/*` | Server surface — run SSE, check-in, trip, wearable upload, team, persistence, memory, graph health, Qloo destination/favorite search + taste feedback, voice ([reference](docs/reference/architecture.md#api-surface)) |
+| `/privacy` | Privacy & support — session, server-processing, provider, sharing, log and deletion boundaries; includes the support reference and contact |
+| `/api/*` | Server surface — session-gated personal APIs, run SSE, check-ins, trip, wearable upload, team, persistence, memory, graph health, Qloo destination/favorite search + taste feedback, voice ([reference](docs/reference/architecture.md#api-surface)) |
 
 ## Docs
 

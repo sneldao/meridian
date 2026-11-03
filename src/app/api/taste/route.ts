@@ -14,6 +14,10 @@ export const dynamic = "force-dynamic";
 const NO_STORE = { "Cache-Control": "private, no-store" };
 
 export async function GET(req: Request) {
+  const tenant = tenantOf(req);
+  if (!tenant) {
+    return NextResponse.json({ error: "session required" }, { status: 401, headers: NO_STORE });
+  }
   const rl = rateLimit(req, "taste", { limit: 30, windowMs: 60_000 });
   if (!rl.ok) {
     return NextResponse.json(
@@ -53,7 +57,7 @@ export async function GET(req: Request) {
     /* Remembered taste rides alongside the request's favourites: kept ids
      * join the affinity signal, dismissed places are suppressed. No graph
      * → empty history → identical behaviour. */
-    const history = await tasteHistory(tenantOf(req));
+    const history = await tasteHistory(tenant);
     const interests = [...new Set([...interestIds, ...history.keptIds])].slice(0, 8);
     const out = await destinationTaste(city, lon, lat, interests);
     return NextResponse.json(

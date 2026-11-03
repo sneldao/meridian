@@ -10,6 +10,10 @@ export const dynamic = "force-dynamic";
 // that names what's missing — never a silently-shrunk baseline.
 
 export async function POST(req: Request) {
+  const tenant = tenantOf(req);
+  if (!tenant) {
+    return NextResponse.json({ ok: false, error: "session required" }, { status: 401 });
+  }
   const text = await req.text();
   if (!text.trim()) {
     return NextResponse.json({ ok: false, error: "empty body — send the export as the request body" }, { status: 400 });
@@ -19,6 +23,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: parsed.error }, { status: 422 });
   }
   const baseline = baselineFromNights(parsed.nights);
-  await saveWearableBaseline(baseline, tenantOf(req));
+  await saveWearableBaseline(baseline, tenant);
   return NextResponse.json({ ok: true, baseline, nights: parsed.nights.length });
 }

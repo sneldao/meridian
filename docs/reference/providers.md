@@ -68,25 +68,24 @@ the provider, forces one tool call, prints the round-trip.
 | `FIRECRAWL_API_KEY` | Optional second science provider. Chain: ScienceMadeReadable (free, no key) → Firecrawl → verified static citations |
 | `TAVILY_API_KEY` | Live web search — gives Jun a `searchWeb` tool (and MCP `search_web`). Hits inform the read; never enter the citation set |
 | `QLOO_API_KEY` · `QLOO_BASE_URL` | Destination taste for Otto via `destinationTaste` (and MCP `destination_taste`). Hackathon keys only work against `hackathon.api.qloo.com` with the `X-Api-Key` header |
-| `ELEVENLABS_API_KEY` | Voice layer — `POST /api/voice` streams PCM per crew member, chunk-sized so speech overlaps token generation (`timestamps:true` returns char-aligned NDJSON for feed karaoke; `{lines:[{agent,text}]}` runs multi-voice text-to-dialogue for the handoff). Config in `src/lib/voice/`: voices `ELEVENLABS_VOICE_ID`/`ELEVENLABS_VOICE_<AGENT>`; models `ELEVENLABS_MODEL_ID` (default `eleven_v4_turbo` — tags need v3/v4), `ELEVENLABS_DIALOGUE_MODEL_ID` (`eleven_v3`); `MERIDIAN_VOICE_SEED` pins determinism, `MERIDIAN_VOICE_TAGS`/`KARAOKE` are kill-switches; audio cached by content hash (memory + Supabase Storage bucket `MERIDIAN_VOICE_BUCKET`). `GET /api/voice` returns 204 when unset, `POST` 503 |
+| `ELEVENLABS_API_KEY` | Voice layer — `POST /api/voice` streams PCM per crew member, chunk-sized so speech overlaps token generation (`timestamps:true` returns char-aligned NDJSON for feed karaoke; `{lines:[{agent,text}]}` runs multi-voice text-to-dialogue for the handoff). Config in `src/lib/voice/`: voices `ELEVENLABS_VOICE_ID`/`ELEVENLABS_VOICE_<AGENT>`; models `ELEVENLABS_MODEL_ID` (default `eleven_v4_turbo` — tags need v3/v4), `ELEVENLABS_DIALOGUE_MODEL_ID` (`eleven_v3`); `MERIDIAN_VOICE_SEED` pins determinism, `MERIDIAN_VOICE_TAGS`/`KARAOKE` are kill-switches; audio cached by content hash (memory + Supabase Storage bucket `MERIDIAN_VOICE_BUCKET`). `GET /api/voice` returns 204 when unset; `POST` requires a session, is IP-rate-limited, and returns 503 with no key |
 | `REPLAY_BEAT_MS` | Replay pacing — ms between streamed events (default `60`; see [demo.md](demo.md)) |
 | `NEXT_PUBLIC_AGENT_PROVIDER` | Client-side fallback label when a run doesn't report its provider |
 
 ## Calendar backend
 
-The negotiator's calendar is fixture-backed by default. With a Composio MCP
-consumer key it reads a **real Google Calendar**, but writes now wait for an
-explicit human decision. `proposeMove` only stages a move; after calendar
-verification the run emits `approval_request` and pauses. `POST
-/api/crew/approvals` either patches the staged events and creates the locked
-`Meridian — …` blocks, or rejects and emits `calendar_restore`. If an apply
-fails part-way, already-patched moves are reverse-patched best-effort and the
-result says whether rollback succeeded. Transport is the MCP endpoint
-(`connect.composio.dev/mcp`, `x-consumer-api-key` header →
-`COMPOSIO_MULTI_EXECUTE_TOOL`); the consumer key is already bound to the
-connected account, so no project API key or entity id is needed. Any Google
-read failure falls back to fixtures, which never require approval or mutate
-external state.
+The negotiator's calendar is fixture-backed in this beta.
+`googleCalendarEnabled()` is force-off even with a Composio MCP consumer key,
+and the guarded exec path throws before any external request — there is no
+server-wide calendar connection in the personal-data beta. The future
+google-backed path stages each move first; after verification the run emits
+`approval_request` and pauses. `POST /api/crew/approvals` either patches the
+staged events and creates the locked `Meridian — …` blocks, or rejects and
+emits `calendar_restore`. If an apply fails part-way, already-patched moves
+are reverse-patched best-effort and the result says whether rollback
+succeeded. Transport is the MCP endpoint (`connect.composio.dev/mcp`,
+`x-consumer-api-key` header → `COMPOSIO_MULTI_EXECUTE_TOOL`); a future
+implementation must connect per traveller, not reuse one server account.
 
 | Var | Purpose |
 |---|---|
@@ -110,7 +109,7 @@ each user/tenant should get a distinct graph id in production.
 |---|---|
 | `FALKORDB_URL` | FalkorDB connection URL — enables graph memory |
 | `FALKORDB_HOST` + `FALKORDB_PORT` | Alternative to the URL — Render wires a private service's host/port separately (see `render.yaml` `pserv`) |
-| `MERIDIAN_GRAPH_ID` | Per-user/per-tenant graph name — defaults to `meridian:demo`; `?tenant=` on run/checkin/health maps to `meridian:{tenant}` |
+| `MERIDIAN_GRAPH_ID` | Fallback graph name — defaults to `meridian:demo`; session-scoped requests map to `meridian:{hashed-session}` |
 | `MERIDIAN_SESSION` | Session label stamped on graph writes (seed uses `run-1`; default `run-2`) |
 
 Seed local data with `bun run seed:graph`. The agent never composes Cypher;
@@ -124,9 +123,11 @@ Current state, gap vs the plan, and the sprint to the 2026-10-18 deadline:
 
 When `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are set, run history and
 check-ins are written to `public.meridian_events` (single JSONB table — spec in
-`src/tools/supabase.ts`). The browser/localStorage path remains the fallback,
-so offline/replay runs still work. Live status: `GET /api/persistence/runs`
-returns `{"enabled":true,...}` when wired up.
+`src/tools/supabase.ts`) with `payload.ownerTenant` assigned server-side.
+`GET /api/persistence/runs` requires the anonymous session and returns only
+that owner's rows; unowned legacy rows stay hidden. The browser/localStorage
+path remains the fallback, so offline/replay runs still work. Live status:
+`GET /api/persistence/runs` returns `{"enabled":true,...}` when wired up.
 
 Two more tables back the surfaces that leave the browser:
 

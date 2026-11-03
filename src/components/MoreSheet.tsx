@@ -107,6 +107,9 @@ function MoreSheetDialog({ onClose }: { onClose: () => void }) {
             >
               <span>What Meridian is, and is not</span>
             </button>
+            <Link href="/privacy" className="more-sheet-item">
+              <span>Privacy &amp; support</span>
+            </Link>
             <p className="more-sheet-note">Timing guidance, not medical advice.</p>
           </>
         )}

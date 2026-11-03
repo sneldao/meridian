@@ -1,6 +1,6 @@
-<!-- PROPOSAL — nothing here is shipped. Captures the 2026-11-02 decision on
-     whether on-chain payment belongs in Meridian, and the implementation plan
-     for the one design that survived the friction test. -->
+<!-- PROPOSAL + STATUS — captures the 2026-11-02 decision and the shipped
+     contract/app implementation. The beta currently keeps the payment gate
+     force-off; see Phase 3 before assuming env can enable it. -->
 
 # Payments on Arc — per-trip escrow, attested release (proposed 2026-11-02)
 
@@ -184,6 +184,11 @@ against. Gate predicate: payments env set + wallet present + seal exists
 Verified: typecheck, lint, 1025/1025 — all with payment env unset.
 
 ### Phase 3 — flag, env, verification
+
+**Current beta status:** payments are force-disabled at the app gate
+(`paymentsEnabled()` / `paymentsConfigured()` return false even when env is
+set), and both HTTP routes return 503 before config, signing or RPC. The
+integration below is retained for a future, deliberately re-enabled release.
 
 - ~~`NEXT_PUBLIC_PAYMENTS_ENABLED`~~ done — unset hides every payment
   surface (`paymentsAvailable()` returns false → no gate) and replay

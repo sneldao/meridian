@@ -57,6 +57,12 @@ export function requestCrewQuestion(payload: {
   return { questionId, expiresAt, result };
 }
 
+export function pendingCrewQuestion(questionId: string): { runId?: string } | null {
+  sweep();
+  const q = store().get(questionId);
+  return q ? { runId: q.runId } : null;
+}
+
 /** Answer a pending question. Returns the resolution for the response, or
  *  null when the id is unknown, expired, or the option isn't on the card. */
 export function resolveCrewQuestion(

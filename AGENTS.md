@@ -40,3 +40,17 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
     so a failure there is a real regression rather than a missing local
     FalkorDB or provider key.
   - Run tests and checks inside the container with `docker compose -f docker-compose.base44.yml exec -T web bun run test` and `docker compose -f docker-compose.base44.yml exec -T web bun run typecheck`.
+
+## Beta invariants
+
+- Identity is an anonymous HttpOnly session cookie (`__Host-meridian-session` /
+  `meridian-session`, 64-hex token). Server identity is SHA-256(token)[0:48].
+  `?tenant=` and `x-meridian-tid` never grant identity — `tenantOf(req)` reads
+  only the validated cookie.
+- Live Google Calendar (`googleCalendarEnabled`) and payments
+  (`paymentsEnabled` / `paymentsConfigured`) are disabled in this beta even
+  when env keys exist; routes check the flag before config/signing/RPC.
+- "Clear this browser's data" clears localStorage only — it does not delete
+  server records, shared cards, feeds or push subscriptions.
+- Telemetry is platform logs only: `meridian.request_error` JSON on stderr
+  (no message/stack/cookies/query/user data); no Sentry or external service.

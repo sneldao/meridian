@@ -13,8 +13,7 @@ const CALENDAR_ID = () => process.env.GOOGLE_CALENDAR_ID ?? "primary";
 let reqId = 0;
 
 export function googleCalendarEnabled(): boolean {
-  if (process.env.CALENDAR_BACKEND === "fixture") return false;
-  return Boolean(process.env.COMPOSIO_API_KEY);
+  return false;
 }
 
 /** Wall-clock date and minute of day for an instant, in an IANA zone. */
@@ -72,6 +71,9 @@ export function tripClockOf(
 /** Executes one Composio tool through the MCP JSON-RPC endpoint and unwraps
  * the nested payload: result.content[0].text → data.results[0].response.data */
 async function exec(slug: string, args: Record<string, unknown>): Promise<Record<string, unknown>> {
+  if (!googleCalendarEnabled()) {
+    throw new Error("google calendar is disabled in this build");
+  }
   const res = await fetch(MCP_URL, {
     method: "POST",
     headers: {

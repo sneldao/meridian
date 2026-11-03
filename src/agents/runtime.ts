@@ -1,5 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { artifactPath } from "@/lib/artifacts";
 import { stepCountIs, streamText, tool, type ToolSet } from "ai";
 import { z } from "zod";
 import { evaluatePlan, effectiveCalendar, fmtMin, coverageOf, passes, sunProgress, PROTECTED_KINDS } from "@/domain/circadian";
@@ -45,7 +46,7 @@ import { destinationTaste, qlooEnabled } from "@/tools/qloo";
 import { loadTasteContext, withTasteItinerary } from "./taste-context";
 import { buildTasteItinerary } from "@/domain/taste-itinerary";
 import { parseTasteFavorites, type TasteContext, type TasteEntity, type TasteMarks } from "@/domain/taste";
-import { getAdherenceProfile, getRecentNights } from "@/tools/wearable";
+import { getAdherenceProfile } from "@/tools/wearable";
 
 const ARTIFACTS_DIR = path.join(process.cwd(), "artifacts");
 const MAX_ATTEMPTS_PER_DAY = 2;
@@ -298,7 +299,7 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
         `Baseline + adherence profile are on your tools. Give the planner the constraints: chronotype, habitual window, and the compliance floor. Cross-run memory: ${memoryBriefWithCrossTrip(memory, { origin: trip.origin.code, destination: trip.destination.code })}${Object.keys(graphTools).length ? " Before answering, you MUST consult the traveller's graph memory: call priorFailures('light_exposure') and priorFailures('caffeine_cutoff'), then recallFindings for any intervention or day you constrain. Cite what came from memory with its session. If a tool answers 'not in graph', say the graph doesn't know rather than guessing." : ""}`,
       tools: {
         getWearableBaseline: bare("Read the wearer's wearable baseline", () => baseline),
-        getRecentNights: bare("Read recent sleep nights", () => getRecentNights()),
+        getRecentNights: bare("Read recent sleep nights", () => baseline.nights.slice(-5)),
         getAdherenceProfile: bare("Read the adherence profile", () => getAdherenceProfile()),
         ...graphTools,
       },
@@ -892,10 +893,10 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
       summary: state.lockedDays.length ? `${state.lockedDays.length} days locked` : "shift complete",
       days: state.lockedDays.map((d) => ({ label: d.label, shiftMin: d.shiftMin })),
       provider: kind,
-    });
+    }, tenant);
   });
 
-  await optionalWrite("artifacts", () => persistArtifacts(state, trip, calendarSource, kind));
+  await optionalWrite("artifacts", () => persistArtifacts(state, trip, calendarSource, kind, tenant));
   emit({ type: "done" });
 }
 
@@ -1122,17 +1123,17 @@ function summarizeOutput(output: unknown): string {
   return "ok";
 }
 
-async function persistArtifacts(state: RunState, trip: Trip, calendarSource: string, kind: ProviderKind = providerKind()) {
+async function persistArtifacts(state: RunState, trip: Trip, calendarSource: string, kind: ProviderKind = providerKind(), tenant?: string) {
   await mkdir(ARTIFACTS_DIR, { recursive: true });
   await writeFile(
-    path.join(ARTIFACTS_DIR, "shift-plan.json"),
+    artifactPath("shift-plan.json", tenant),
     JSON.stringify({ trip, days: state.lockedDays, provider: kind, calendarBackend: calendarSource }, null, 2),
   );
   await writeFile(
-    path.join(ARTIFACTS_DIR, "shift-log.json"),
+    artifactPath("shift-log.json", tenant),
     JSON.stringify(state.log, null, 2),
   );
   if (state.ics) {
-    await writeFile(path.join(ARTIFACTS_DIR, "calendar-plan.ics"), state.ics);
+    await writeFile(artifactPath("calendar-plan.ics", tenant), state.ics);
   }
 }

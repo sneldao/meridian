@@ -11,17 +11,17 @@ current state and the build to the deadline.
 BST Sunday, leaving ~4h buffer. Freeze deploys after submitting —
 `autoDeploy` is on for the Render service.
 
-## Current state (2026-10-15)
+## Current state
 
 | Piece | State |
 |---|---|
 | `src/domain/graph-memory.ts` | `loadGraphMemory` (2 fixed read queries), `recordFinding`, `graphMemoryBrief`; all no-op without `FALKORDB_URL` |
 | `scripts/seed-graph.ts` → `src/domain/graph-seed.ts` | Full seed: London→Tokyo trip across 2 sessions — all node types + edges; `SEED_TENANT=other` seeds the isolation demo's second traveller; `--reset` wipes. **Ran live against instance 1 (28 + 5 nodes verified)** |
-| `GET /api/graph/health` | Reports enabled + findings/failures/graph name; `?tenant=` aware; 503 when unreachable |
+| `GET /api/graph/health` | Session-gated diagnostics: reports enabled + the caller's hashed graph name; 401 without a session, 503 when unreachable |
 | Runtime wiring | `runtime.ts` offers the analyst fixed tools (`recallFindings`, `priorFailures`, `calendarConflicts`) when the graph is configured — no prompt prose; trace shows rows/ms/hop path via `tool_result`. **Verified live on instance 1**; pending a live-model run |
 | Taste edges | `recordTasteSignal`/`tasteHistory` — `Traveler`-[:KEPT/DISMISSED]->`TastePlace` edges via `POST /api/taste/feedback`; kept ids join the affinity signal, dismissed places are suppressed on `/api/taste` + `loadTasteContext` (rounds 37–39) |
 | Env | ⚠️ **FalkorDB Cloud free tier proved flaky**: instance 1 worked ~17:05–17:20 then port died despite "Healthy"; deleted. Instance 2 (`meridian-graph-2`, `node-f-0.instance-k8ly1ecmi…:50787` in `.env.local` + `MERIDIAN_SESSION=run-2`, `SEED_ADMIN_TOKEN` set) never accepted connections — retry before assuming dead. Render path: `pserv` in `render.yaml` + `FALKORDB_HOST`/`PORT`; seed via `POST /api/graph/seed` (`x-seed-token`) |
-| Tenant isolation | `?tenant=` on `/api/crew/run`, `/api/crew/checkin`, `/api/graph/health` → `meridian:{tenant}` graph; `MERIDIAN_SESSION` labels writes |
+| Tenant isolation | Anonymous session cookie → `meridian:{hashed-session}` graph on run/check-in/health; `?tenant=` and `x-meridian-tid` never select a graph; `MERIDIAN_SESSION` labels writes |
 
 ## Gap vs the frozen plan
 
@@ -34,7 +34,7 @@ Implementation order (plan §"Implementation order"):
 | 3. Fixed-tool catalogue + entity resolution | ✅ Wired on the analyst (`runtime.ts`); agents never see Cypher |
 | 4. Read path replacing `memoryBrief` | ⚠️ JSON `memoryBrief` still feeds the prompt alongside graph tools; deliberate — JSON is the fallback, graph is the evidence |
 | 5. Write path for check-ins/findings | ✅ `recordCheckInToGraph` on the check-in route; `recordFinding` at end of run attaches to the resolved entity or a `Subject` fallback |
-| 6. Cross-session demo | ⚠️ Seed now covers 2 sessions + a second tenant (`SEED_TENANT`); `MERIDIAN_GRAPH_ID` is still a static global (item E) |
+| 6. Cross-session demo | ✅ Seed covers 2 sessions + a second tenant (`SEED_TENANT`), and live requests now derive `meridian:{hashed-session}` from the anonymous session cookie; `MERIDIAN_GRAPH_ID` is the unnamed fallback |
 
 Success criteria (plan §"Success criteria for submission") — code now exists
 for all six (agent-called tools, trace with args/rows/ms/path, write path for
@@ -110,5 +110,6 @@ don't fake it. A thin live loop beats a broad story.
   FalkorDB being down mid-presentation. Already true — don't break it.
 - Agents never compose Cypher; fixed human-written tools only.
 - No dosing/claims/diagnostic phrasing in graph nodes.
+- Session-derived tenant only; query params and stamped headers never choose a graph.
 - Commit or stash the outstanding UI design-pass files before Friday so graph
   work doesn't entangle with them.

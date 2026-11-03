@@ -1,5 +1,6 @@
 import { dispatch, MCP_PROTOCOL_VERSION } from "@/mcp/server";
 import { rateLimit, RL_MCP } from "@/lib/rateLimit";
+import { tenantOf } from "@/lib/tenant";
 
 export const dynamic = "force-dynamic";
 // plan_shift drains a whole crew run; same ceiling as the SSE route.
@@ -9,6 +10,10 @@ export const maxDuration = 300;
 const EXPENSIVE_TOOLS = new Set(["plan_shift", "preview_trip"]);
 
 export async function POST(req: Request) {
+  const tenant = tenantOf(req);
+  if (!tenant) {
+    return Response.json({ error: "session required" }, { status: 401 });
+  }
   let body: unknown;
   try {
     body = await req.json();
@@ -19,14 +24,23 @@ export async function POST(req: Request) {
     );
   }
 
-  const cost =
-    typeof body === "object" && body !== null && "method" in body &&
-    body.method === "tools/call" &&
+  const weight = (m: unknown) =>
+    typeof m === "object" && m !== null && "method" in m &&
+    m.method === "tools/call" &&
     EXPENSIVE_TOOLS.has(
-      String((body as { params?: { name?: unknown } }).params?.name ?? ""),
+      String((m as { params?: { name?: unknown } }).params?.name ?? ""),
     )
       ? 5
       : 1;
+  if (Array.isArray(body) && body.length > 10) {
+    return Response.json(
+      { jsonrpc: "2.0", id: null, error: { code: -32600, message: "batch too large" } },
+      { status: 400 },
+    );
+  }
+  const cost = Array.isArray(body)
+    ? Math.max(1, body.reduce((sum, m) => sum + weight(m), 0))
+    : weight(body);
   const rl = rateLimit(req, "mcp", { limit: RL_MCP, windowMs: 3_600_000, cost });
   if (!rl.ok) {
     return Response.json(
@@ -35,7 +49,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const result = await dispatch(body);
+  const result = await dispatch(body, tenant);
   if (result === null) return new Response(null, { status: 202 });
   return Response.json(result);
 }

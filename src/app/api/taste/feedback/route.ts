@@ -14,6 +14,10 @@ const NO_STORE = { "Cache-Control": "private, no-store" };
 const STATUSES = new Set(["kept", "swapped", "dismissed"]);
 
 export async function POST(req: Request) {
+  const tenant = tenantOf(req);
+  if (!tenant) {
+    return NextResponse.json({ error: "session required" }, { status: 401, headers: NO_STORE });
+  }
   const rl = rateLimit(req, "taste-feedback", { limit: 30, windowMs: 60_000 });
   if (!rl.ok) {
     return NextResponse.json(
@@ -46,7 +50,7 @@ export async function POST(req: Request) {
   await recordTasteSignal(
     o.status as TasteSignalStatus,
     { name: p.name.trim(), ...(typeof p.id === "string" ? { id: p.id } : {}) },
-    tenantOf(req),
+    tenant,
   );
   return new NextResponse(null, { status: 204, headers: NO_STORE });
 }

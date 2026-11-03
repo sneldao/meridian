@@ -127,12 +127,16 @@ per day and may need tuning.
 | `meridian:depth` | written by the menu's "Detailed view" toggle (Calm clears it); `?depth=guided` still deep-links the visuals, and the toggle strips the param from the URL once applied |
 | `meridian:voice` | `/crew` voice toggle only — Home no longer toggles speech |
 
-Per-traveller memory is **not** localStorage — a `meridian-tid` cookie scopes
-`artifacts/crew-memory-<tid>.json`, the adherence fold, graph writes and run
-records. **Delete all my data** on `/history` removes every browser-local
-`meridian:` key (active route and action ledgers included) and snapshots them
-for Undo — but it is a *browser* reset: it does not clear the tenant cookie,
-server artifacts, the graph or Supabase memory.
+Per-traveller memory is **not** localStorage — the anonymous session cookie
+(`__Host-meridian-session`/`meridian-session`, 30 days) scopes
+`artifacts/crew-memory-<hashed-session>.json`, the adherence fold, graph
+writes, run ownership and persistence. **Clear this browser's data** on
+`/history` removes every browser-local `meridian:` key (active route and
+action ledgers included) and snapshots them for Undo — but it is a *browser*
+reset: it does not clear the session cookie, server artifacts, the graph,
+Supabase memory, shared cards, feeds or push subscriptions. `/privacy`
+carries the support contact and hashed support reference for server-data
+requests.
 
 ## Troubleshooting
 

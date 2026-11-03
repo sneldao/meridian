@@ -33,10 +33,7 @@ export const EscrowState = { None: 0, Held: 1, Settled: 2, Refunded: 3 } as cons
  *  handing out paid content on mobile. The card decides what the gate says
  *  when there's no wallet to pay with. */
 export function paymentsConfigured(): boolean {
-  return (
-    process.env.NEXT_PUBLIC_PAYMENTS_ENABLED === "1" &&
-    Boolean(process.env.NEXT_PUBLIC_TRIP_ESCROW_ADDRESS)
-  );
+  return false;
 }
 
 /** A wallet the traveller could actually pay with is present. */

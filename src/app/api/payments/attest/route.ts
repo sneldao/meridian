@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAddress, isHex } from "viem";
 import { sealForRun } from "@/lib/plan-seals";
-import { attestForSeal, paymentsConfig } from "@/lib/payments";
+import { attestForSeal, paymentsConfig, paymentsEnabled } from "@/lib/payments";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +10,9 @@ export const dynamic = "force-dynamic";
  *  EvalInput — the client supplies only pointers (runId), never the plan or
  *  its score. */
 export async function POST(req: NextRequest) {
+  if (!paymentsEnabled()) {
+    return NextResponse.json({ enabled: false }, { status: 503 });
+  }
   const cfg = paymentsConfig();
   if (!cfg) {
     return NextResponse.json({ enabled: false }, { status: 503 });

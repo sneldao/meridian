@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { applyFlightChoice, buildTrip, horizonFor, isKnownCity, resolveBaselineState, type WakeBand } from "@/domain/fixtures";
 import { flightWindowFor } from "@/domain/nudges";
+import { loadWearableBaseline } from "@/tools/wearable";
 import { fetchCalendar } from "@/tools/calendar";
 import { runCrew } from "@/agents/runtime";
 import { rateLimit, tooMany, RL_RUNS } from "@/lib/rateLimit";
@@ -17,6 +18,7 @@ import {
 } from "@/lib/crew-runs";
 import { cancelCalendarApprovalsForRun } from "@/lib/calendar-approvals";
 import { cancelCrewQuestionsForRun } from "@/lib/crew-questions";
+import { reportError } from "@/lib/error-reporting";
 import type { CheckIn, CrewEvent } from "@/domain/types";
 
 export const dynamic = "force-dynamic";
@@ -85,14 +87,27 @@ function sseResponse(runId: string, afterSeq: number, signal: AbortSignal) {
   });
 }
 
+const RUN_ID_RE = /^[\w:-]{8,80}$/;
+
 export async function GET(req: NextRequest) {
+  const tenant = tenantOf(req);
+  if (!tenant) {
+    return Response.json({ error: "session required" }, { status: 401 });
+  }
   const sp = req.nextUrl.searchParams;
   const requestedRunId = sp.get("runId");
+  if (requestedRunId !== null && !RUN_ID_RE.test(requestedRunId)) {
+    return Response.json({ error: "invalid runId" }, { status: 400 });
+  }
+  const validRunId = requestedRunId;
   const lastEventId = Number(req.headers.get("last-event-id") ?? sp.get("after") ?? 0);
-  const existingRun = requestedRunId ? crewRun(requestedRunId) : undefined;
+  const existingRun = validRunId ? crewRun(validRunId) : undefined;
 
   if (existingRun) {
-    return sseResponse(requestedRunId!, Number.isFinite(lastEventId) ? lastEventId : 0, req.signal);
+    if (!existingRun.ownerTenant || existingRun.ownerTenant !== tenant) {
+      return Response.json({ error: "run not found or expired" }, { status: 404 });
+    }
+    return sseResponse(validRunId!, Number.isFinite(lastEventId) ? lastEventId : 0, req.signal);
   }
   if (requestedRunId && req.headers.has("last-event-id")) return expiredRunResponse();
   if (requestedRunId && (sp.get("resume") === "1" || sp.has("after"))) {
@@ -136,8 +151,11 @@ export async function GET(req: NextRequest) {
     return new Response(JSON.stringify({ error: "invalid startDay" }), { status: 400 });
   }
   const wake = sp.get("wake");
+  const wearable = await loadWearableBaseline(tenant);
   const { baseline, kind: baselineKind } = resolveBaselineState(
     wake === "before6" || wake === "6to8" || wake === "after8" ? (wake as WakeBand) : null,
+    wearable ?? undefined,
+    wearable ? "garmin" : undefined,
   );
   const fetched = await fetchCalendar(trip);
   // The flight picker's choice plans around the real departure window.
@@ -158,11 +176,15 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const runId = requestedRunId && /^[\w:-]{8,80}$/.test(requestedRunId)
-    ? requestedRunId
-    : crypto.randomUUID();
-  const { signal } = startCrewRun(runId);
-  const tenant = tenantOf(req);
+  const runId = validRunId ?? crypto.randomUUID();
+  const { signal, created } = startCrewRun(runId, tenant);
+  if (!created) {
+    const run = crewRun(runId);
+    if (!run?.ownerTenant || run.ownerTenant !== tenant) {
+      return Response.json({ error: "run not found or expired" }, { status: 404 });
+    }
+    return sseResponse(runId, 0, req.signal);
+  }
   void (async () => {
     try {
       for await (const event of runCrew({
@@ -184,14 +206,15 @@ export async function GET(req: NextRequest) {
           event.type === "run_start" && !event.runId ? { ...event, runId } : event,
         );
       }
-    } catch (err) {
+    } catch {
+      if (!signal.aborted) {
+        reportError({ source: "crew", method: "GET", routePath: "/api/crew/run" });
+      }
       appendCrewEvent(runId, {
         type: "error",
         message: signal.aborted
           ? "Run cancelled — no further crew actions will run."
-          : err instanceof Error
-            ? err.message
-            : "unknown error",
+          : "The crew could not complete this plan. Try again.",
         recoverable: !signal.aborted,
       });
       appendCrewEvent(runId, { type: "done" });
@@ -204,12 +227,21 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json().catch(() => null) as { runId?: string } | null;
-  if (!body?.runId || !crewRun(body.runId)) {
+  const tenant = tenantOf(req);
+  if (!tenant) {
+    return Response.json({ ok: false, error: "session required" }, { status: 401 });
+  }
+  const body = await req.json().catch(() => null) as { runId?: unknown } | null;
+  if (typeof body?.runId !== "string" || !RUN_ID_RE.test(body.runId)) {
+    return Response.json({ ok: false, error: "invalid runId" }, { status: 400 });
+  }
+  const runId = body.runId;
+  const run = runId ? crewRun(runId) : undefined;
+  if (!runId || !run || !run.ownerTenant || run.ownerTenant !== tenant) {
     return Response.json({ ok: false, error: "run not found" }, { status: 404 });
   }
-  const ok = cancelCrewRun(body.runId);
-  cancelCalendarApprovalsForRun(body.runId);
-  cancelCrewQuestionsForRun(body.runId);
+  const ok = cancelCrewRun(runId);
+  cancelCalendarApprovalsForRun(runId);
+  cancelCrewQuestionsForRun(runId);
   return Response.json({ ok });
 }

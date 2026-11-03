@@ -181,9 +181,11 @@ merely looking untidy. Verified against `main` on 2026-10-17.
    the briefing has landed). The error is on Today, not only in the
    closed-by-default `AgentDrawer`.
 3. ~~**B** · **Identify the traveller before "the crew learns"**~~ — shipped
-   `4933774`: `meridian-tid` cookie → `x-meridian-tid` header via middleware;
-   memory files, the fold, graph writes, run records, `/api/memory` all scope
-   by it. `?tenant=` stays the explicit override.
+   `4933774`: `meridian-tid` cookie → `x-meridian-tid` header via middleware.
+   Superseded for beta: the anonymous session cookie is the only identity;
+   `?tenant=` and the legacy header never grant one, while memory files, the
+   fold, graph writes, run records and `/api/memory` scope by the hashed
+   session.
 4. ~~**B → A** · **Flight-window picker is decorative**~~ — **B's half `c675c45`**:
    every recommendation now carries `departMin`/`arriveMin`; `flightWindowFor`
    resolves ids direction-scoped (wrong-direction/stale ids → null);
