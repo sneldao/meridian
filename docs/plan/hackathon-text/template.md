@@ -42,8 +42,9 @@ The home surface is now a one-question dial with a depth toggle. The check-in
 loop is real: per-step did/skip marks a ledger entry, the rail re-solves the
 day, the calendar reshapes. The flight picker actually plans — pick a
 departure window, the whole week re-places around the moved flight. Memory is
-per-traveller (`meridian:{tid}` in FalkorDB) — your second trip differs from
-whoever used the demo last. The arrival surface (`/arrival`) finally cashes
+per-browser (`meridian:{hashed-session}` in configured FalkorDB memory) — your
+second trip differs from whoever used the browser session last. The arrival
+surface (`/arrival`) finally cashes
 "land at 100%" against the day's actual score.
 
 ## Try it
@@ -59,4 +60,4 @@ whoever used the demo last. The arrival surface (`/arrival`) finally cashes
   Factory) — provider-agnostic, verified identical outcomes on Claude and
   Nemotron against the same D-1 physiological-limit scenario
 - ElevenLabs Sarah (voice handoff) · MCP server (Streamable HTTP, protocol
-  2025-11-25, 8 tools)
+  2025-11-25, 10 session-scoped tools)

@@ -32,8 +32,10 @@ video/
 
 # stray screenshot dumps land here when a tool writes to the repo root
 --timeout
+--viewport
 
-# Visual baselines are runner-generated (-linux); laptop artifacts never commit.
+# Playwright artifacts and laptop-generated baselines never commit.
+test-results/
 visual/**/*-darwin.png
 visual/**/*-actual.png
 
