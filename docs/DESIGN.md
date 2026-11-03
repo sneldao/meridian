@@ -728,12 +728,16 @@ exactly what hid the second bug.
 
 Still open in this family:
 
-- **The wake question** is asked only in the Edit sheet, on a surface the landing
-  never sends you to. Its domain half has landed; the surface half hasn't.
-- **`/dev` and `/team`** are complete routes with zero inbound links.
+- ~~**The wake question** is asked only in the Edit sheet~~ — the surface half
+  landed. `NudgeFeedScreen` (Today) asks it inline, gated to a demo-default
+  baseline with the question unanswered, and retires once answered — which is
+  what Rule 1's "one inline question on Today" now requires.
+- **`/dev`** is a complete route with zero inbound links. `/team` closed its
+  half of this: it is in `MoreSheet`'s list and `BottomNav`'s MORE_PATHS.
   (`/shift` is the opposite case: it got its own door because a mode switch
   inside the travel view made two products look like one.)
-- **`/crew`'s "Trip Setup"** links to `?screen=setup`; nothing reads `screen`.
+- ~~**`/crew`'s "Trip Setup" links to `?screen=setup`**~~ — the pill is gone
+  from the code; `screen` no longer appears anywhere.
 
 A control that looks load-bearing and isn't is worse than a missing one: it
 spends trust.
@@ -992,10 +996,10 @@ the surface, not just in the comment.
 **Contract shipped.** `domain/preview.ts::displayBiometrics()` returns
 `null` for every measured cell on preview / unknown / missing baseline, so
 `HRV 48 ms · Resting HR 58 bpm` cannot render as the traveller's numbers.
-`TripSetupScreen` half (B): the `m3` grid replacement and the
-`Connect Garmin (CSV)` affordance are in flight on B's board. The upload
-route has zero callers today — worth a manual pass with a real export file
-when B lands the affordance.
+`TripSetupScreen` half shipped `49c6722`: the `m3` grid renders only when
+`hasAllBio`, and the `Connect your wearable` slot offers `Upload Garmin file`
+whenever `baselineSource !== "garmin"` — so the upload route has a caller. The
+manual pass with a real export file is what no test can do, and remains open.
 
 #### The meeting is the product
 
