@@ -2927,7 +2927,7 @@ html[data-theme="night"] .skel::after {
 /* Crew faces — the mood channel morphs on transform + opacity only. */
 .crew-face { transition: transform 0.35s ease, opacity 0.35s ease; }
 .crew-eyes { transition: transform 0.3s ease; }
-.crew-eyes ellipse { transition: ry 0.3s ease, opacity 0.3s ease; }
+.crew-eyes ellipse { transition: opacity 0.3s ease; }
 @media (prefers-reduced-motion: reduce) {
   .crew-face, .crew-eyes, .crew-eyes ellipse { transition: none; }
 }
@@ -3780,7 +3780,26 @@ select:focus-visible {
   to { opacity: 0; transform: scale(0.985); }
 }
 
+@keyframes vt-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes vt-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 @media (prefers-reduced-motion: no-preference) {
+  /* Untyped navigations — browser back, plain links — get the quiet
+     crossfade; typed ones still take the dawn wipe. */
+  html:active-view-transition-type(nav-fade)::view-transition-old(root) {
+    animation: vt-fade-out var(--dur-drift) var(--ease-drift) both;
+    mix-blend-mode: normal;
+  }
+  html:active-view-transition-type(nav-fade)::view-transition-new(root) {
+    animation: vt-fade-in var(--dur-drift) var(--ease-drift) both;
+    mix-blend-mode: normal;
+  }
   html:active-view-transition-type(nav-forward)::view-transition-old(root) {
     animation: vt-set-away var(--dur-drift) var(--ease-drift) both;
     mix-blend-mode: normal;
