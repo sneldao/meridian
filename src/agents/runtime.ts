@@ -39,7 +39,7 @@ import { runMorningReplay } from "./morning-replay";
 import { buildIcs, fetchCalendar, proposeMove } from "@/tools/calendar";
 import { requestCalendarApproval } from "@/lib/calendar-approvals";
 import { sealPlan } from "@/lib/plan-seals";
-import { requestCrewQuestion } from "@/lib/crew-questions";
+import { requestCrewQuestion, CREW_QUESTION_TTL_MS } from "@/lib/crew-questions";
 import { searchScience } from "@/tools/science";
 import { searchTavily, tavilyEnabled } from "@/tools/tavily";
 import { destinationTaste, qlooEnabled } from "@/tools/qloo";
@@ -354,6 +354,15 @@ async function orchestrate(emit: Emit, trip: Trip, calendarInput: CalendarEvent[
       });
       const ans = await Promise.race([
         req.result,
+        // The registry's expiry is enforced by a lazy sweep that only runs
+        // when the next request touches the store — if the traveller's
+        // answer POST never lands (tab closed, blocked writes), nobody
+        // calls sweep() and the run waits forever past the TTL. Enforce the
+        // deadline here too; the default option semantics match the sweep's
+        // expired resolution exactly (default pick, skipped).
+        new Promise<{ optionId: string; skipped: boolean }>((resolve) => {
+          setTimeout(() => resolve({ optionId: options[0].id, skipped: true }), CREW_QUESTION_TTL_MS);
+        }),
         new Promise<never>((_, reject) => {
           signal?.addEventListener("abort", () => reject(signal.reason), { once: true });
         }),
@@ -1073,13 +1082,34 @@ async function runAgent(
   // redacts anything touching the cut.
   let text = "";
   const guard = new ScopeGuard();
-  for await (const part of result.fullStream) {
-    const p = part as { type: string; text?: string };
-    if (p.type === "text-delta" && p.text) {
-      text += p.text;
-      const safe = guard.push(p.text);
-      if (safe) emit({ type: "agent_token", agent: member.id, text: safe });
+  // Surface stream failures: the AI SDK delivers uplink failures (dead key,
+  // overdue subscription, bad model id, rate limit) two ways — a thrown
+  // error while consuming the stream, and a `type: "error"` part on an
+  // otherwise-completing iteration. Left as parts, every agent came back
+  // silently empty: the planner never called submitDayPlan ("planner
+  // submitted nothing" for every day, prod 2026-11-03: 0 of 9 days locked)
+  // and nothing threw, so the provider-fallback chain and replay insurance
+  // never had a reason to engage. Handle both: the loop re-throws error
+  // parts, the catch reports and re-throws anything thrown.
+  try {
+    for await (const part of result.fullStream) {
+      const p = part as { type: string; text?: string; error?: unknown };
+      if (p.type === "error") {
+        throw p.error instanceof Error ? p.error : new Error(String(p.error));
+      }
+      if (p.type === "text-delta" && p.text) {
+        text += p.text;
+        const safe = guard.push(p.text);
+        if (safe) emit({ type: "agent_token", agent: member.id, text: safe });
+      }
     }
+  } catch (err) {
+    emit({
+      type: "error",
+      recoverable: true,
+      message: `${member.id} stream failed: ${err instanceof Error ? err.message : String(err)}`,
+    });
+    throw err;
   }
   const tail = guard.flush();
   if (tail) emit({ type: "agent_token", agent: member.id, text: tail });

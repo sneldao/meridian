@@ -3,6 +3,19 @@ import { mintSessionToken, sessionCookieName, SESSION_TOKEN_RE } from "./lib/ses
 
 const LEGACY_HEADER = "x-meridian-tid";
 
+/** The origins a real browser writes from. Behind Cloudflare→Render,
+ *  `req.nextUrl.origin` is the internal upstream host, not the public domain,
+ *  so an Origin check against it rejects every browser POST (the 403 on prod,
+ *  2026-11-03). The public origin(s) come from PUBLIC_ORIGIN (comma-separated);
+ *  the default is the deployed domain, and the request's own origin is always
+ *  allowed so local dev and direct hits keep working. */
+export function publicOrigins(): string[] {
+  return (process.env.PUBLIC_ORIGIN ?? "https://meridian.trustfall.xyz")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
 export function middleware(req: NextRequest) {
   // `/?depth=operator` is a route, not a view mode — resolve it server-side
   // so the crew surface loads directly instead of hydrating Home first.
@@ -23,7 +36,16 @@ export function middleware(req: NextRequest) {
     if (mutating && origin) {
       let foreign = true;
       try {
-        foreign = new URL(origin).origin !== req.nextUrl.origin;
+        const requestOrigin = new URL(origin).origin;
+        // Triple check: the request's own origin (local dev, direct hits),
+        // its Host header (Cloudflare→Render preserves Host, so any domain
+        // the server actually serves matches here), or the configured
+        // public-origin allow-list (for upstream hops that rewrite Host).
+        foreign =
+          requestOrigin !== req.nextUrl.origin &&
+          requestOrigin !== new URL(req.url).host &&
+          new URL(requestOrigin).host !== req.nextUrl.host &&
+          !publicOrigins().includes(requestOrigin);
       } catch {
         foreign = true;
       }

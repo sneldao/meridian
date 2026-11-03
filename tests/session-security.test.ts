@@ -134,6 +134,16 @@ describe("middleware", () => {
     expect(cli.status).toBe(200);
   });
 
+  test("a POST from the public origin is not foreign behind a proxy", () => {
+    // Behind Cloudflare→Render, req.nextUrl.origin is the internal host; the
+    // browser's Origin is the public domain. That pair must be allowed.
+    const r = middleware(new NextRequest("https://internal.render.app/api/errors", {
+      method: "POST",
+      headers: { origin: "https://meridian.trustfall.xyz" },
+    }));
+    expect(r.status).toBe(200);
+  });
+
   test("API answers are marked private,no-store", () => {
     const res = middleware(new NextRequest("http://localhost:3000/api/memory"));
     expect(res.headers.get("cache-control")).toBe("private, no-store");
