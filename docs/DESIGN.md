@@ -141,6 +141,62 @@ So Rule 3's channel gate stands and gains a second question, in this order:
 (round 51)? A loop that fails the second is not calm, it is dead code with a
 compositor cost.
 
+*Amended round 52 (2026-11-03) — the perceptibility test turns on the caused
+half.* Round 51's arithmetic says a gesture nobody can see is not calm, it is
+dead. Rule 3's other half — motion *caused by the traveller* — had never been
+held to that. Measured with real pointer input, each control's own box diffed
+120ms into the hold with the ambient loops frozen, and the floor neutralised to
+get a before/after out of one harness rather than trusting an older tool:
+
+| route | answered nothing while held | after the floor |
+| --- | --- | --- |
+| `/` | 18 of 21 | 0 (the disabled CTA stays silent, correctly) |
+| `/crew` | 16 of 24 | 0 |
+| `/demo` | 11 of 11 | 1 — `← Back`, disabled at beat one |
+
+The dead ones were the wordmark, `← Today`, the voice toggle, the crew chips,
+the day-window buttons, the ±15m steppers, the beat dots, Back/Next. They had
+hover — Tailwind `hover:` on the crew surface, `:hover` in the demo's plain
+CSS — which is the answer a mouse gets and a finger never does. On a phone, the
+most-touched surfaces in the app answered no touch at all.
+
+- **A control that changes on hover must change on press, and a control that
+  navigates must answer the tap.**
+- This is enforced *structurally*, not by review: `globals.css` gives every
+  `button`, `[role="button"]`, `summary` an opacity dip to 0.86 and every
+  `a[href]` a deeper one to 0.62, at glide. A surface now has to opt out to
+  lose the answer, instead of opting in to get it. The floor is a dip rather
+  than a scale on purpose: `scale` creates a containing block, so a `static`
+  button would re-home an absolutely positioned child only while it is held —
+  a layout bug that appears under a finger and nowhere else.
+- `.ui-btn` keeps its own `scale(0.96)`, which the floor does not override;
+  the gap was never a missing idiom. The house component already answered,
+  which is why the crew's main buttons pressed while its hand-rolled
+  neighbours did not — an opt-in idiom is an idiom with a hole in it.
+- Two exceptions, both reasoned rather than assumed: a 9px beat dot presses
+  *outward* as well as dimming (`.demo-dot:active { scale: 1.4 }`), because a
+  14% dim on 64 pixels of circle is not an answer at any distance, and a
+  `:disabled` control stays silent because an answer would promise something it
+  cannot do — which is why the legacy `.pill button:active` now carries
+  `:not(:disabled)` too.
+
+The method is part of the claim, because the number is the argument, and the
+harness was wrong three times before it was right: a synthetic `dispatchEvent`
+never sets `:active`, so the pointer really moves; hand-computed clip boxes read
+0 on small targets, so each control's own box is screenshotted
+(`locator.screenshot`) before the move, after the hover has landed, and 120ms
+into the hold; freezing *all* animations parks a one-shot entrance at opacity 0
+and every shot comes back identical, so only the endless ones pause — the
+landing's ambient shade is now strong enough to register as feedback. And before
+a control is called dead, `elementFromPoint` says whether the pointer actually
+reached it: five controls under the crew map overlay ("Flat map view", "Globe
+view", Zoom in/out, plus the dev-tools badge) are still *unverified*, not fixed.
+The static guards in `tests/motion-language.test.ts` pin the structure (the
+floor exists, covers all four selector families, answers with opacity rather
+than a transform that would create a containing block, and keeps the
+small-target exception ahead of it in the cascade); the numbers themselves are
+what a future round has to re-measure to argue against.
+
 #### Rule 4 — Explanation is progressive, not a dial
 
 The old Rule 4 was a persistent depth pill (Calm / See why / Watch the crew) as
@@ -1703,6 +1759,13 @@ only if the solver rule changes; otherwise allA.
 
 #### Later / deferred
 
+- **The press audit has two blind spots of its own (round 52).** It measures a
+  mouse held at 1280×900. On iOS `:active` is not reliable without a touch
+  handler on the element, so "0 dead controls" is a desktop claim until the same
+  harness is run on a real touchscreen — which is the device the finding was
+  *about*. And five controls under the crew map overlay ("Flat map view", "Globe
+  view", Zoom in/out) never received the pointer, so they are recorded as
+  unverified rather than fixed.
 - **Visual pass on `/spike/globe`** — the ring pulse, flight hairline and
   tooltip fades are shader/DOM effects this host cannot render headlessly;
   one human look confirms they read right (round 7).
@@ -3389,6 +3452,54 @@ more loops, only loops on a period a person can see (the clock's seconds, 240×
 the sun's rate) and on a surface with contrast headroom in the direction the
 gesture moves. Working surfaces that report solar state will keep looking still,
 because that is what the sky is doing; the motion there is caused, not ambient.
+
+### Round 52 — the caused half (2026-11-03)
+
+Round 51 closed by saying the motion on working surfaces is caused, not ambient.
+That sentence was load-bearing and had never been tested: the perceptibility
+gate was applied only to loops. So the same arithmetic was pointed at the press.
+
+What the measurements said (real pointer input, each control's own box screenshotted
+before the move, after hover lands, and 120ms into the hold; ambient loops frozen;
+the new floor neutralised to get a before/after out of one harness):
+
+- **`/` 18 of 21 controls answered nothing. `/crew` 16 of 24. `/demo` 11 of 11.**
+  Dead while held: the wordmark, `← Today`, the voice toggle, "More", every crew
+  chip, the day-window buttons and the ±15m steppers, the beat dots, Back/Next,
+  the taste links. After the floor, the only control that answers nothing on any
+  route is `:disabled` — which is the correct silence.
+- **Everything dead had hover.** Crew used Tailwind `hover:`, the demo used plain
+  `:hover`. Hover is the answer a mouse gets and a finger never does, so the app
+  was giving feedback on the input the phone does not have.
+- **`.ui-btn` already answered** (52–155 units on the crew buttons). The gap was
+  not a missing idiom, it was an opt-in one — which is exactly why the crew's
+  shared buttons pressed and their hand-rolled neighbours did not.
+
+Shipped: `globals.css` answers at the element level — every `button`,
+`[role="button"]`, `summary` dips to `opacity: 0.86` and every `a[href]` to 0.62,
+at glide, with `:not(:disabled)` on the control families so a disabled target
+stays silent. The floor is a dip rather than a scale because `scale` creates a
+containing block: a `static` button would re-home an absolutely positioned child
+only while it is held — a layout bug that appears under a finger and nowhere
+else. That is also why a scale alone was not the answer: 0.97 on a 28px icon
+button moves its edge 0.4px and measured as no change at all. Two surfaces keep
+their own treatment on top — `.demo-dot` presses outward because a 14% dim on
+64 pixels of circle is not readable at any distance, and the legacy `.pill`
+`transform: scale(0.97)` gained `:not(:disabled)` rather than being replaced, so
+`.ui-btn`'s `scale(0.96)` still wins where it exists. Reduced motion drops the
+glide, not the answer: `transition-duration: 0.01ms` leaves an instant dip, which
+is still a reply.
+
+`tests/motion-language.test.ts` gains `a press is answered` — the floor covers
+all four selector families, answers with opacity and no transform, keeps the
+small-target exception, and keeps that exception *after* the floor in the file,
+because `.demo-dot:active:not(:disabled)` ties it on specificity and would
+otherwise lose the cascade.
+
+**What this closes and what it leaves.** Rule 3 now has both halves measured: an
+ambient loop must be on a period a person can see, and a caused gesture must
+change more than nothing. The honest remainder is in Part 3 — the harness holds
+a mouse, and the finding is about fingers.
 
 ### Housekeeping — the CI streak (2026-11-03)
 

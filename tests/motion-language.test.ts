@@ -566,3 +566,43 @@ describe("clockPhaseDelay", () => {
     expect(clockPhaseDelay(d)).toBe("-37.25s");
   });
 });
+
+/* Round 52 — Rule 3's caused half, held to round 51's perceptibility test.
+ * Measured with real pointer input before this existed: 18 of 21 controls on
+ * /, 16 of 24 on /crew and 11 of 11 on /demo changed by nothing at all while
+ * held. They had hover, which is what a mouse gets and a finger never does. */
+describe("a press is answered", () => {
+  const style = css.replace(/\/\*[\s\S]*?\*\//g, "");
+
+  it("the floor covers every control that can be pressed", () => {
+    for (const sel of [
+      "button:active:not(:disabled)",
+      '[role="button"]:active:not(:disabled)',
+      "summary:active",
+      "a[href]:active",
+    ])
+      expect(style).toContain(sel);
+  });
+
+  it("the floor answers with opacity, never a transform", () => {
+    // A scale or transform on a `static` button creates a containing block,
+    // so an absolutely positioned child would re-home only while held.
+    const floor = block("button:active:not(:disabled)");
+    expect(floor).toContain("opacity: 0.86");
+    expect(floor).not.toMatch(/\b(scale|transform):/);
+    expect(block("a[href]:active")).toContain("opacity: 0.62");
+  });
+
+  it("a small target gets an answer that reads at its size", () => {
+    expect(block(".demo-dot:active:not(:disabled)")).toContain("scale: 1.4");
+  });
+
+  it("the small-target exception still wins the cascade it needs", () => {
+    // `.demo-dot:active:not(:disabled)` ties the floor on specificity, so it
+    // has to come later in the file or the 9px dot goes back to no answer.
+    expect(
+      style.indexOf(".demo-dot:active:not(:disabled)") >
+        style.indexOf("button:active:not(:disabled)"),
+    ).toBe(true);
+  });
+});
