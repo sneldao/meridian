@@ -5,7 +5,7 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { crewScript, crewStateAt } from "../src/domain/crew-performance";
 
-/* Motion language · round 16 (design.md).
+/* Motion language · round 16 (docs/DESIGN.md).
  *
  * The language is a contract, so the contract is a test: surfaces morph
  * instead of expanding, typed routes wipe like light, mode switches pass a
@@ -463,3 +463,50 @@ describe("motion language · round 28 — the crew performs in view", () => {
 
 
 
+
+/* Rule 3 (amended) — ambient motion is allowed, but not on an element that
+ * carries a readout. On the sun: eye ry is lid debt, halo opacity is glow,
+ * ray count is locked days. Only the disc encodes nothing, so only the disc
+ * may loop while the traveller is doing nothing. A one-shot caused by an
+ * arrival (the landing hero's peek blink) is not ambient and stays allowed. */
+describe("ambient motion stays off the readout", () => {
+  // Comments are stripped so a rule's selector is the selector, not the
+  // paragraph above it.
+  const style = css.replace(/\/\*[\s\S]*?\*\//g, "");
+
+  const loopingSelectors = () =>
+    [...style.matchAll(/([^{}]+)\{([^}]*animation:[^}]*infinite[^}]*)\}/g)]
+      .map((m) => m[1].trim())
+      .filter((sel) => sel.includes("sunself"));
+
+  it("the disc is the only sun element with an idle loop", () => {
+    expect(loopingSelectors()).toEqual([".sunself-disc"]);
+  });
+
+  it("no loop animates the eyes, whatever the mood", () => {
+    const eyeLoops = [...style.matchAll(/([^{}]*\.sunself-eye[^{}]*)\{([^}]*)\}/g)]
+      .filter(([, , body]) => /animation:[^;}]*infinite/.test(body));
+    expect(eyeLoops).toEqual([]);
+  });
+
+  it("the breath stands down under reduced motion", () => {
+    // block() searches from the file start, so every reduce block has to be
+    // cut out from its own index instead.
+    const frag = "@media (prefers-reduced-motion: reduce) {";
+    const guards: string[] = [];
+    for (let i = style.indexOf(frag); i >= 0; i = style.indexOf(frag, i + 1)) {
+      let depth = 0;
+      let j = i + frag.length - 1;
+      for (; j < style.length; j++) {
+        if (style[j] === "{") depth++;
+        if (style[j] === "}") {
+          depth--;
+          if (depth === 0) break;
+        }
+      }
+      guards.push(style.slice(i, j + 1));
+    }
+    expect(guards.length).toBeGreaterThan(0);
+    expect(guards.some((g) => g.includes(".sunself-disc") && /animation:\s*none/.test(g))).toBe(true);
+  });
+});

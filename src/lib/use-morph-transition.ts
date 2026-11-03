@@ -5,7 +5,7 @@ import { useCallback } from "react";
 /**
  * Same-document view transitions for in-place surface changes: the trigger
  * grows into the panel instead of a drawer sliding up from nowhere
- * (design.md · Motion language). Pair the trigger and the panel under one
+ * (docs/DESIGN.md · Motion language). Pair the trigger and the panel under one
  * `view-transition-name` in CSS — only one of them holds the name at a time,
  * so the browser FLIPs between the two rects while the rest of the page
  * crossfades underneath.

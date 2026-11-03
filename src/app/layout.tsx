@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
-/* Dawn Ember type system (design.md): self-hosted variable faces, no runtime
+/* Dawn Ember type system (docs/DESIGN.md): self-hosted variable faces, no runtime
    network requests. Display = Fraunces (the crew's voice), body = Inter,
    readouts = JetBrains Mono (every number is a measurement). */
 import "@fontsource-variable/fraunces";

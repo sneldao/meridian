@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 /**
  * A number that counts up to its true value once, when it arrives on screen.
- * The display always ENDS at exactly `value` — no invented figures (vision.md
+ * The display always ENDS at exactly `value` — no invented figures (docs/DESIGN.md
  * trust rule). Strings that don't parse as a number render untouched, and
  * reduced-motion renders the final value immediately. The animated text is
  * aria-hidden with the real value announced beside it, so a screen reader

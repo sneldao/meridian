@@ -135,7 +135,7 @@ export default function HistoryPage() {
         <p className="text-sm text-clay-2">No trips yet. Plans you make will show up here — each one keeps its plan, its gate score, and its arrival report.</p>
       )}
 
-      {/* The deck (design.md · Motion language): journeys stack and pin —
+      {/* The deck (docs/DESIGN.md · Motion language): journeys stack and pin —
           scrolling riffls through trips instead of walking a table. Plain
           sticky stacking everywhere; the covered-card recede rides
           scroll-driven animations where they exist. */}

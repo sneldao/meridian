@@ -479,7 +479,7 @@ export function MeridianDailyScreen({
       </div>
 
       {/* One ink stage for the question and its clock — the hero's sibling
-          surface (design.md · Clock view). The action and the dial share the
+          surface (docs/DESIGN.md · Clock view). The action and the dial share the
           band; the day switcher stays chrome above it. */}
       <div className="clock-stage" style={stageSkyFor(trip, stageOwedMin, trip ? liveDate : null)}>
       <div className="clock-stage-action">

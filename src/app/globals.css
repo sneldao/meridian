@@ -1,6 +1,6 @@
 @import "tailwindcss";
 /* Hallmark · genre: atmospheric · macrostructure: Marquee Hero (landing) /
- *            Workbench (app) / Statement (/arrival) · design-system: design.md
+ *            Workbench (app) / Statement (/arrival) · design-system: docs/DESIGN.md
  *            designed-as-app · tone: cinematic-dawn · anchor hue: ember-warm
  *            theme: Dawn Ember (tuned custom) · display: Fraunces Variable
  *            body: Inter Variable · mono: JetBrains Mono Variable
@@ -60,7 +60,7 @@
   --color-clay-fail: #b23a2e;
 
   /* Typography: a fluid ramp so the UI breathes across viewports. */
-  /* 12px is the declared body floor (design.md), so the smallest step on the
+  /* 12px is the declared body floor (docs/DESIGN.md), so the smallest step on the
      ramp tops out at 0.75rem — 10px labels were the first thing a tired
      traveller couldn't read. */
   --text-2xs: clamp(0.7rem, 0.8vw, 0.75rem);
@@ -71,14 +71,14 @@
   --text-xl: clamp(1.25rem, 2vw, 1.5rem);
   --text-2xl: clamp(1.5rem, 2.8vw, 2rem);
   --text-3xl: clamp(1.75rem, 3.6vw, 2.5rem);
-  /* Dawn pass — display scale for the cinematic statement moments (design.md).
+  /* Dawn pass — display scale for the cinematic statement moments (docs/DESIGN.md).
      Hero headlines ≤7 words sit at --text-display; longer statements cap at
      --text-display-s so copy length, not viewport, decides the ceiling. */
   --text-display: clamp(2.6rem, 6vw, 5rem);
   --text-display-s: clamp(2rem, 4vw, 3.25rem);
   --text-4xl: clamp(1.9rem, 4vw, 2.75rem);
 
-  /* 4-point named spacing scale (design.md). */
+  /* 4-point named spacing scale (docs/DESIGN.md). */
   --space-3xs: 0.25rem;
   --space-2xs: 0.5rem;
   --space-xs: 0.75rem;
@@ -1542,7 +1542,7 @@ body {
   font-family: var(--font-mono2);
 }
 
-/* ── Dawn pass · stage + elevation tokens (design.md) ─────────────────────
+/* ── Dawn pass · stage + elevation tokens (docs/DESIGN.md) ─────────────────────
    Cinematic stage grammar: the dawn gradient is one named thing, glows are
    ember-warm and rare, and display headings get Fraunces at display sizes.
    These sit outside @theme because they are used via var() in plain CSS. */
@@ -3237,7 +3237,7 @@ select:focus-visible {
   max-height: 400px;
 }
 
-/* ── Dawn pass · page entrance (design.md · Motion) ────────────────────────
+/* ── Dawn pass · page entrance (docs/DESIGN.md · Motion) ────────────────────────
    The terminator hairline crosses the frame once per navigation; the content
    fades in under it. Opacity only on the wrapper — a transform here would
    trap `position: fixed` overlays (the setup scene, the edit sheet) inside
@@ -3315,25 +3315,27 @@ select:focus-visible {
   from { opacity: 0; transform: translateY(7px) scale(0.9); }
   to { opacity: 1; transform: none; }
 }
-/* Ambient blink — open eyes close for a beat every ~6s, so stillness
-   reads as resting rather than rendered. scaleY on each eye's own box
-   keeps the per-read ry intact; lids (paths) are untouched, so a
-   sleeping sun never blinks over a closed eye. */
-.sunself-eye {
+/* Ambient life — the sun breathes. The disc is the only part of the face
+   that carries no readout (rays = locked days, halo opacity = glow, eye ry =
+   lid debt), so this is where an idle loop is allowed to live. The eyes never
+   animate on a timer: a blink there would read as the sun getting sleepier,
+   and the lid height is the debt readout. */
+.sunself-disc {
   transform-box: fill-box;
   transform-origin: center;
-  animation: sunself-blink 5.8s ease-in-out infinite;
+  animation: sunself-breath 6.4s ease-in-out infinite;
 }
-@keyframes sunself-blink {
-  0%, 88%, 96%, 100% { transform: scaleY(1); }
-  92% { transform: scaleY(0.12); }
+@keyframes sunself-breath {
+  0%, 100% { transform: scale(1); }
+  46% { transform: scale(1.035); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .sunself.wake, .sunself-line, .sunself-eye { animation: none; }
+  .sunself.wake, .sunself-line { animation: none; }
+  .sunself-disc { animation: none; }
   .sunself-face { transition: none; }
 }
 
-/* ── Dawn pass · the marquee hero stage (design.md · Marquee Hero) ─────────
+/* ── Dawn pass · the marquee hero stage (docs/DESIGN.md · Marquee Hero) ─────────
    The hero is a stage, not a card: a full-frame ink band, the globe its
    centerpiece, and the one thing to do rendered as the display line.
    These rules override the Sunlit Horizon card rules earlier in the file
@@ -3492,7 +3494,7 @@ select:focus-visible {
   }
 }
 
-/* ── Dawn pass · shared component voice (design.md · CTA voice, What pages
+/* ── Dawn pass · shared component voice (docs/DESIGN.md · CTA voice, What pages
    MUST share) — the wordmark, the segmented pills, the action pair, the card
    lift and the tab bar, in one voice everywhere. */
 .brand b {
@@ -3595,7 +3597,7 @@ select:focus-visible {
   }
 }
 
-/* Page headings — the design.md section rhythm: a display heading at page
+/* Page headings — the docs/DESIGN.md section rhythm: a display heading at page
    scale, roman, tight tracking, overflow-safe. */
 .page-title {
   font-family: var(--font-display);
@@ -3619,7 +3621,7 @@ select:focus-visible {
   font-size: var(--text-xl);
 }
 
-/* ── Dawn pass · the Statement surface (/arrival, design.md · Statement) ─ */
+/* ── Dawn pass · the Statement surface (/arrival, docs/DESIGN.md · Statement) ─ */
 .arr-in {
   max-width: 780px;
   padding: 96px 28px 88px;
@@ -3668,7 +3670,7 @@ select:focus-visible {
   transform: scale(0.98);
 }
 
-/* ── Dawn pass · stages flip their own palette (design.md · Clock view) ────
+/* ── Dawn pass · stages flip their own palette (docs/DESIGN.md · Clock view) ────
    Ink stages read ink in BOTH themes, so the stage scopes the same palette
    flip the night theme does — every descendant component (dial, action card,
    mascot) resolves var(--m-*) / var(--dial-*) to ink-appropriate values,
@@ -3838,7 +3840,7 @@ select:focus-visible {
   .arr-in [data-rise="11"] { animation-delay: 1600ms; } /* footer */
 }
 
-/* ── Motion language · round 16 (design.md) ──────────────────────────
+/* ── Motion language · round 16 (docs/DESIGN.md) ──────────────────────────
    Light moves, things morph, nothing slides up from nowhere. */
 
 /* 1 · Surface morphs — the trigger grows into its panel. The name lives on
@@ -3868,7 +3870,7 @@ select:focus-visible {
    incoming page rises from below the horizon while the outgoing one settles
    away; back is the sun going down. The shared dawn disc rides above the
    wipe in its own group, so the sun leads its own sunrise. `clip-path` is
-   paint-only (design.md's allowance). */
+   paint-only (docs/DESIGN.md's allowance). */
 @keyframes vt-rise-in {
   from { clip-path: inset(100% 0 0 0); }
   to { clip-path: inset(0 0 0 0); }
@@ -7311,7 +7313,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 /* ---- round 29 · the lookbook of states ---------------------------------
  * Five windows, each a computed state of the traveller's meridian. The
  * takeover reveals the face along a jagged clip-path edge (paint-only
- * allowance in design.md), driven by GSAP on the stages that earn it. The
+ * allowance in docs/DESIGN.md), driven by GSAP on the stages that earn it. The
  * written read (hour + caption) is the fact; the reveal is the enhancement.
  * The pane hides by default so no frame flashes before the choreography
  * arms. */

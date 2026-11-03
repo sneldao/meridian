@@ -243,9 +243,9 @@ export default function Home() {
   // menu's last row.
   const [settingsOpen, setSettingsOpen] = useState(false);
   /* The motion language's morph wrapper: in-place surface changes run inside
-     a same-document view transition where the API exists (design.md). */
+     a same-document view transition where the API exists (docs/DESIGN.md). */
   const morph = useMorphTransition();
-  /* Mode switches pass light across the page instead of snapping (design.md
+  /* Mode switches pass light across the page instead of snapping (docs/DESIGN.md
      · Motion language). The node mounts itself only while a pass runs. */
   const { sweep, node: sweepNode } = useLightSweep();
   const [disclosureOpen, setDisclosureOpen] = useState(false);
@@ -968,7 +968,7 @@ export default function Home() {
 
   // Setup is no longer a screen you navigate to — it's a sheet over Today.
   // Both directions run inside a same-document view transition so the menu
-  // row morphs into the sheet instead of a drawer sliding up (design.md ·
+  // row morphs into the sheet instead of a drawer sliding up (docs/DESIGN.md ·
   // Motion language).
   const openSetup = () => morph(() => setSetupOpen(true));
   const closeSetup = () => morph(() => setSetupOpen(false));

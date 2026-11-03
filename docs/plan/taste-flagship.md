@@ -3,7 +3,7 @@
 **Status:** live direction. Written during the Qloo Agentic Hackathon
 judging window (Nov 2–5, 2026); the phases below are the post-hackathon
 road, not the current contract. Work items feed
-[backlog.md](backlog.md).
+[docs/DESIGN.md](../DESIGN.md).
 
 ## The thesis
 

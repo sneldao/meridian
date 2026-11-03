@@ -11,7 +11,7 @@ This is the study. Each primitive is what the reference does, what it buys,
 what it costs, and where we stand.
 
 **Update 2026-10-24 — Cinematic Dawn.** The system is now locked in
-[design.md](../../design.md): Fraunces Variable (display), Inter Variable
+[docs/DESIGN.md](../DESIGN.md): Fraunces Variable (display), Inter Variable
 (body), JetBrains Mono Variable (readouts), and the ink-stage grammar (the
 hero and the clock stage flip the `--m-*` palette inside themselves). The
 primitives below still hold; the notes marked *Dawn pass* record where they

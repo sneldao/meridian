@@ -458,7 +458,7 @@ docs/            this documentation
 
 ## Motion language (rounds 16–18)
 
-Light moves, things morph, nothing slides up from nowhere (design.md). The
+Light moves, things morph, nothing slides up from nowhere (docs/DESIGN.md). The
 rules, all verified by `tests/motion-language.test.ts`:
 
 1. **Surface morphs.** The More tab, Settings row, Trip-settings row and

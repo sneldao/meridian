@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 /**
  * A number that tweens from its previous value to a new one when it changes
- * (design.md · number continuity). Different from `CountUp`, which counts from
+ * (docs/DESIGN.md · number continuity). Different from `CountUp`, which counts from
  * zero on mount — right for a figure that has just arrived. This one only
  * animates on a real change, never on first paint, and only while the unit
  * (the text after the number) stays the same: a unit change snaps, so a figure

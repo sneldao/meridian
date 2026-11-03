@@ -117,12 +117,13 @@ plan, different places.
 Design direction — where the product is going, and the rules every design
 decision is held to:
 
-- [Product vision](docs/vision.md) — the journey around the image: explicit
-  trip first, one question at the right moment, caption-first interaction,
-  progressive explanation, and the landing payoff
-- [Design system](design.md) — the locked *Cinematic Dawn* system: Fraunces /
-  Inter / JetBrains Mono, the ink-stage grammar, and the rules every page is
-  held to (kept in sync with `src/app/globals.css`)
+- [Design contract](docs/DESIGN.md) — one file, four parts: the laws every design
+  decision is held to (the four product rules, the *Cinematic Dawn* system —
+  Fraunces / Inter / JetBrains Mono, the ink-stage grammar, the motion gate),
+  the current state (where the product is going, the journey around the image,
+  caption-first interaction, the landing payoff), what is actually open and
+  ranked, and the round log. Kept in sync with `src/app/globals.css`, and
+  executed rather than paraphrased by `tests/design-contract.test.ts`.
 
 Reference (kept in sync with the code):
 
@@ -133,7 +134,7 @@ Reference (kept in sync with the code):
 - [Interaction research](docs/reference/interaction-research.md) — playable-day, modeled-stage and privacy-conscious sharing direction
 - [Evals](docs/reference/evals.md) — the harness that tracks plan quality over time (`bun run eval`), not a hillclimb yet, the shape of one
 - [Design primitives](docs/reference/design-primitives.md) — what the reference build does, what it buys, and what we took
-- [Backlog](docs/plan/backlog.md) — what's left, ranked
+- [Open items](docs/DESIGN.md#part-3--open-items) — what's left, ranked (Part 3 of the design contract)
 - [Flagship plan](docs/plan/taste-flagship.md) — the personal taste-graph
   direction: the agent that knows your taste and your body clock
 - [Graph memory](docs/reference/graph-memory.md) — FalkorDB state + Graph Hacks sprint to the 2026-10-18 deadline
@@ -190,7 +191,7 @@ bun run smoke            # SSE smoke against a running dev server: night run + m
 bun run replay:check     # streams the replay transcript; prints eval verdicts
 ```
 
-`tests/design-contract.test.ts` executes `design.md` instead of paraphrasing
+`tests/design-contract.test.ts` executes `docs/DESIGN.md` instead of paraphrasing
 it: every step kind has a hue in every palette, a step with no kind claims no
 data colour, the `.wide` sites are the sanctioned instrument bands, only
 transform/opacity/paint animate, and a hedged state is hedged once. The

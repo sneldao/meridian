@@ -26,7 +26,7 @@ import { CrewAvatar, type CrewAvatarState } from "@/components/CrewAvatar";
  *  written read (Rule 2), and nothing performs for a traveller who asked it
  *  not to. */
 
-/** Step-category hues are the data-colour law (design.md): one kind, one hue.
+/** Step-category hues are the data-colour law (docs/DESIGN.md): one kind, one hue.
  *  Melatonin and naps belong to the sleep lane; cutoffs and meals to food. */
 const KIND_TO_CAT: Record<string, string> = {
   light_exposure: "sunlight",

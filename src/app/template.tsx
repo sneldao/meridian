@@ -3,7 +3,7 @@
 import { ViewTransition, useEffect, useRef, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 
-/* Dawn sweep (design.md · Motion) — the brand's terminator hairline crosses
+/* Dawn sweep (docs/DESIGN.md · Motion) — the brand's terminator hairline crosses
    the frame once as each route mounts. The content itself is wrapped in a
    ViewTransition so a navigation can carry direction: links tagged
    `transitionTypes={["nav-forward"]}` slide in from the right, `nav-back`

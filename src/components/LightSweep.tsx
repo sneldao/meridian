@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
 /**
- * The light sweep (design.md · Motion language): in-page mode switches pass
+ * The light sweep (docs/DESIGN.md · Motion language): in-page mode switches pass
  * two stage layers — horizon gold, then a band of the page's own ground —
  * up across the content, so a view change reads as light crossing the page
  * instead of a drawer. Transform-only; never fires under

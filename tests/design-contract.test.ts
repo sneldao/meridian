@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "fs";
 import { join } from "path";
 
-// design.md is a contract with MUSTs in it. This is the executable half of it:
+// docs/DESIGN.md is a contract with MUSTs in it. This is the executable half of it:
 // either a rule today's code satisfies, or a measured debt frozen at today's
 // value so it can only shrink. Raising a ceiling is a design decision, not a
 // merge artifact — that is the point of keeping it in code review's face.
@@ -110,7 +110,7 @@ const STYLE_CEILING: Record<string, number> = {
   "src/components/dial/MeridianOnboarding.tsx": 1,
 };
 
-// design.md "Part 1 — Laws · The motion gate" — only compositing-safe
+// docs/DESIGN.md "Part 1 — Laws · The motion gate" — only compositing-safe
 // properties may animate: `transform`, the independent transform properties
 // (`translate`, `rotate`, `scale`), `opacity`, and paint (colour, shadow,
 // `clip-path`, `filter`, registered custom properties). Anything else —
@@ -128,7 +128,7 @@ const MOTION_DEBT: Record<string, number> = {
   "width 0.3s ease-out": 1,
 };
 
-// design.md — the surfaces allowed to break the reading column, in the order
+// docs/DESIGN.md — the surfaces allowed to break the reading column, in the order
 // they appear on the page. Adding one is a contract change, so it is a list.
 const INSTRUMENT_BANDS = [
   "marks-waiting banner",
@@ -187,7 +187,7 @@ describe("design contract", () => {
   });
 
   test("the sanctioned surfaces are written down", () => {
-    const doc = read("design.md").toLowerCase();
+    const doc = read("docs/DESIGN.md").toLowerCase();
     for (const name of INSTRUMENT_BANDS) {
       expect(doc).toContain(name.toLowerCase());
     }
@@ -240,7 +240,7 @@ describe("design contract", () => {
   });
 
   test("interactive-day and avatar type never drops below the readability floor", () => {
-    // design.md "Typography" (readability floors): nothing informative or
+    // docs/DESIGN.md "Typography" (readability floors): nothing informative or
     // interactive below 13px.
     // Any CSS rule whose selector touches the new surfaces must use a
     // font-size that is a px ≥ 13, or a rem/token ≥ 0.8125rem that is not
@@ -270,7 +270,7 @@ describe("design contract", () => {
   });
 
   test("a state is hedged once, not once per sentence", () => {
-    // design.md "Copy voice". Scanner scope: quoted copy in DOM chrome, so a
+    // docs/DESIGN.md "Copy voice". Scanner scope: quoted copy in DOM chrome, so a
     // second hedge phrase on a surface that already names its state is a new
     // decision, and every phrase retired must be retired from the allowlist.
     const HEDGES = new Set([
