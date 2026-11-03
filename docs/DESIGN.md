@@ -3264,6 +3264,18 @@ because nothing rendered it. Crew cues reach CSS through `MOOD_STATE` → pose �
 `CREW_STATE_CUE` (`CrewAvatar.tsx`), and the test that had been asserting one
 map against another now walks that path.
 
+Also in this round, the three design docs became one. `design.md`,
+`docs/vision.md` and `docs/plan/backlog.md` had drifted into contradicting each
+other — and into describing a repo they no longer matched — so they are merged
+here, laws first and history last. The merge moved the old backlog roughly
+verbatim, which moved its staleness with it: reading Part 3 back, "Also in this
+round" queued as work what three sections below it struck as shipped. So every
+inherited open claim was checked against the code, not against the old file, and
+the results are listed under *Corrections applied when this was merged*. The
+honest summary of that pass: this project's backlog was not a list of what is
+open so much as a record of what was last written down, and the difference only
+shows up if someone goes looking.
+
 ### Housekeeping — the CI streak (2026-11-03)
 
 Not a design round, recorded because it explains a gap in the log. `main` failed
