@@ -9,6 +9,9 @@ export default defineConfig({
   testDir: "./visual",
   timeout: 60_000,
   retries: process.env.CI ? 1 : 0,
+  // Serial stops the run at the first failure, so one stale baseline hid the
+  // seven behind it and each refresh only uncovered the next. Run them all.
+  maxFailures: 0,
   reporter: process.env.CI ? "github" : "list",
   use: {
     baseURL: "http://127.0.0.1:3110",
