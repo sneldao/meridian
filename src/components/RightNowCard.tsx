@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { fmtMin } from "@/domain/circadian";
 import type { TravelerNudge } from "@/domain/nudges";
 import { CAT_ICON } from "@/components/DaySkyStrip";
@@ -30,6 +31,27 @@ export function RightNowCard({
   totalSteps = 0,
   completedCount = 0,
 }: RightNowCardProps) {
+  /* The hero slot hands off the moment a step is marked — `pickNextStep`
+   * skips resolved ids — so the card would swap away before its done pulse
+   * could be seen. Hold the finished step for the length of that one pulse
+   * and show the confirmation instead. Under reduced motion there is no
+   * pulse to watch, so the hold is skipped rather than shown as dead delay. */
+  const [held, setHeld] = useState<TravelerNudge | null>(null);
+  useEffect(() => {
+    if (!held) return;
+    const t = setTimeout(() => setHeld(null), 760);
+    return () => clearTimeout(t);
+  }, [held]);
+
+  const motionAllowed = () =>
+    typeof window === "undefined" ||
+    !window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+  const handleDone = () => {
+    if (!held && step && motionAllowed()) setHeld(step);
+    onDone?.();
+  };
+
   if (!isToday) {
     return (
       <div className="right-now-card" role="region" aria-label={`Previewing ${selectedDayLabel}`}>
@@ -60,22 +82,34 @@ export function RightNowCard({
     );
   }
 
-  const StepIcon = CAT_ICON[step.category];
-  const isActiveNow = countdown === "now";
+  const shown = held ?? step;
+  const shownDone = isDone || held !== null;
+  const StepIcon = CAT_ICON[shown.category];
+  const isActiveNow = !held && countdown === "now";
 
   return (
     <div
       className={`right-now-card${isActiveNow ? " active-window" : ""}`}
       role="region"
-      aria-label={isActiveNow ? "Active intervention right now" : "Next upcoming intervention"}
+      aria-label={
+        held
+          ? "Just marked done"
+          : isActiveNow
+            ? "Active intervention right now"
+            : "Next upcoming intervention"
+      }
     >
       <div className="right-now-head">
         <span className={`right-now-badge${isActiveNow ? " active" : ""}`}>
           {isActiveNow && <span className="right-now-pulse" aria-hidden="true" />}
-          {isActiveNow ? "ACTIVE RIGHT NOW" : `NEXT UP · ${(countdown ?? "").toUpperCase()}`}
+          {held
+            ? "MARKED DONE"
+            : isActiveNow
+              ? "ACTIVE RIGHT NOW"
+              : `NEXT UP · ${(countdown ?? "").toUpperCase()}`}
         </span>
         <span className="right-now-time">
-          {fmtMin(step.startMin)}–{fmtMin(step.endMin)}
+          {fmtMin(shown.startMin)}–{fmtMin(shown.endMin)}
         </span>
       </div>
 
@@ -83,28 +117,29 @@ export function RightNowCard({
         <span className="tl-glyph" aria-hidden="true">
           <StepIcon size={16} strokeWidth={2.4} />
         </span>
-        <span>{step.title}</span>
+        <span>{shown.title}</span>
       </h4>
 
-      <p className="right-now-desc">{step.actionSummary}</p>
+      <p className="right-now-desc">{shown.actionSummary}</p>
 
       {(onDone || onSkip) && (
         <div className="right-now-actions">
           {onDone && (
             <button
               type="button"
-              className={`p1 right-now-btn${isDone ? " done just-done" : ""}`}
-              onClick={onDone}
-              aria-pressed={isDone}
+              className={`p1 right-now-btn${shownDone ? " done just-done" : ""}`}
+              onClick={held ? () => setHeld(null) : handleDone}
+              aria-pressed={shownDone}
+              aria-disabled={held ? true : undefined}
             >
-              {isDone ? "Marked done ✓" : "Done ✓"}
+              {shownDone ? "Marked done ✓" : "Done ✓"}
             </button>
           )}
           {onSkip && (
             <button
               type="button"
               className={`p2 right-now-btn${isSkip ? " skipped" : ""}`}
-              onClick={onSkip}
+              onClick={held ? () => setHeld(null) : onSkip}
               aria-pressed={isSkip}
             >
               {isSkip ? "Noted ✓" : "Can't do this"}

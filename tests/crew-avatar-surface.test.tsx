@@ -53,6 +53,19 @@ describe("CrewAvatar (SSR)", () => {
     }
   });
 
+  test("the shared cue rides on the avatar root, derived from the pose", () => {
+    const cues: [CrewAvatarState, string][] = [
+      ["resting", "arrive"],
+      ["attentive", "work"],
+      ["concerned", "fail"],
+      ["complete", "done"],
+    ];
+    for (const [state, cue] of cues) {
+      const h = renderToStaticMarkup(createElement(CrewAvatar, { id: "planner", state }));
+      expect(h).toContain(`data-cue="${cue}"`);
+    }
+  });
+
   test("decorative avatars leave the accessibility tree", () => {
     const h = renderToStaticMarkup(createElement(CrewAvatar, { id: "evaluator", decorative: true }));
     expect(h).toContain('aria-hidden="true"');

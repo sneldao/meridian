@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { CREW } from "@/agents/crew";
 import { CrewAvatar, type CrewAvatarState } from "@/components/CrewAvatar";
-import { CREW_CUE } from "@/domain/motion-cues";
 import type { AgentId, CrewEvent } from "@/domain/types";
 
 /* The crew's live state channel — bloub's mood layer on top of round 31's
@@ -102,7 +101,6 @@ export function CrewFace({ agent, mood, follow = true }: { agent: AgentId; mood:
     <span
       ref={ref}
       className="crew-face"
-      data-cue={CREW_CUE[mood]}
       role="img"
       aria-label={`${CREW[agent].name}: ${mood}`}
       title={`${CREW[agent].name} · ${mood}`}

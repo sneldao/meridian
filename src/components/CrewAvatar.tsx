@@ -1,4 +1,5 @@
 import { CREW } from "@/agents/crew";
+import { CREW_STATE_CUE } from "@/domain/motion-cues";
 import type { AgentId } from "@/domain/types";
 
 /* The crew as celestial bodies (round 31). Each agent is one bounded glyph —
@@ -165,6 +166,9 @@ export function CrewAvatar({
 }: CrewAvatarProps) {
   const member = CREW[id];
   const gazeX = Math.max(-1, Math.min(1, gaze)) * 2;
+  // The pose says what the agent is doing; the shared table says how that
+  // reads as one of the four cues. CSS animates the cue, never a private one.
+  const cue = CREW_STATE_CUE[state];
   return (
     <svg
       viewBox="0 0 48 48"
@@ -173,6 +177,7 @@ export function CrewAvatar({
       className={`crew-avatar crew-avatar-${id}${motionVar ? " ca-var" : ""}${className ? ` ${className}` : ""}`}
       data-agent={id}
       data-state={state}
+      data-cue={cue}
       {...(decorative
         ? { "aria-hidden": true }
         : { role: "img", "aria-label": `${member.name}, ${member.title} — ${STATE_WORD[state]}` })}

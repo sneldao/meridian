@@ -34,6 +34,26 @@ export const SUN_CUE: Record<SunCueMood, MotionCue> = {
   drained: "fail",
 };
 
+/** Crew avatar poses from `CrewAvatar.tsx`. Every avatar derives its cue
+ *  from its pose, so an agent drawn outside the live crew row still gets the
+ *  shared beat — this table is the only place that mapping lives. */
+export type CrewCueState =
+  | "resting"
+  | "attentive"
+  | "working"
+  | "explaining"
+  | "concerned"
+  | "complete";
+
+export const CREW_STATE_CUE: Record<CrewCueState, MotionCue> = {
+  resting: "arrive",
+  attentive: "work",
+  working: "work",
+  explaining: "work",
+  concerned: "fail",
+  complete: "done",
+};
+
 export const CREW_CUE: Record<CrewCueMood, MotionCue> = {
   idle: "arrive",
   working: "work",

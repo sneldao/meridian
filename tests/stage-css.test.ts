@@ -70,6 +70,24 @@ describe("stage backdrop", () => {
     expect(css.indexOf("@keyframes sunself-pulse")).toBeGreaterThan(cue);
   });
 
+  test("the crew reads the shared cue table, not a private one", () => {
+    // done is the sun's own beat, reused rather than re-drawn
+    expect(blockAfter('.crew-avatar[data-cue="done"]')).toContain("animation: sunself-pulse");
+    expect(blockAfter('.crew-avatar[data-cue="fail"]')).toContain("animation: crew-cue-fail");
+    // fail is composited, like every other cue
+    const kfStart = css.indexOf("@keyframes crew-cue-fail");
+    expect(kfStart).toBeGreaterThan(-1);
+    const kf = css.slice(kfStart, kfStart + 300);
+    expect(kf).toContain("transform:");
+    expect(kf).not.toMatch(/\b(width|height|top:|left:|filter|box-shadow):/);
+    // arrive and work are carried by the resting/working poses themselves
+    for (const cue of ["arrive", "work"]) {
+      expect(css).not.toContain(`.crew-avatar[data-cue="${cue}"]`);
+    }
+    // the reduced-motion kill reaches the avatar root, not only its children
+    expect(css).toMatch(/\.crew-avatar,\s*\.crew-avatar \* \{ transition: none !important;/);
+  });
+
   test("the night theme sits on the ink family", () => {
     const block = blockAfter('html[data-theme="night"] {\n  --m-bg');
     expect(block).toContain("--m-bg: #0b0e16");

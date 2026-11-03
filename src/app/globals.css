@@ -7514,7 +7514,28 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 @keyframes ca-rex-streak { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-2.5px); } }
 @keyframes ca-mara-drift { 0%, 100% { transform: rotate(21deg) translateY(1px); } 50% { transform: rotate(27deg) translateY(1px); } }
 
+/* ---- the shared cue layer (motion-cues.ts) ------------------------------
+ * The six poses above say what an agent is doing; the four cues say how the
+ * set moves together — arrive, work, done, fail. `arrive` and `work` add
+ * nothing here: the resting and working poses already carry them, and a
+ * second animation on the root would fight the loop the crew is allowed.
+ * `done` reuses `sunself-pulse` verbatim, so the crew landing and the sun
+ * landing are one keyframe; each agent keeps its own --crew-dur/--crew-ease,
+ * so they land in their own tempo rather than in lockstep. */
+.crew-avatar[data-cue="done"] { animation: sunself-pulse var(--crew-dur) var(--crew-ease); }
+.crew-avatar[data-cue="fail"] {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: crew-cue-fail 420ms var(--ease-glide);
+}
+@keyframes crew-cue-fail {
+  0% { transform: translateY(0) scale(1); opacity: 1; }
+  45% { transform: translateY(1.2px) scale(0.94); opacity: 0.82; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .crew-avatar,
   .crew-avatar * { transition: none !important; animation: none !important; }
 }
 
