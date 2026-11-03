@@ -3255,6 +3255,54 @@ select:focus-visible {
   15% { opacity: 1; }
   to { transform: translateY(112vh); opacity: 0; }
 }
+/* A small sun rides the sweep — the mascot carries you across the
+   threshold rather than the light passing anonymously. */
+.dawn-sweep::after {
+  content: "";
+  position: absolute;
+  left: 30%;
+  bottom: -14px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 217, 138, 0.9), rgba(217, 107, 67, 0.35) 70%, transparent);
+  filter: blur(1px);
+}
+
+/* ── Sun-self rapport (round 48) ──────────────────────────────────────────
+   The shared element that carries the sun between routes, the arrival wake,
+   the spoken line, and the face-lean channel. */
+.sunself-wrap { display: inline-flex; flex-direction: column; align-items: center; position: relative; }
+.sunself-wrap.speaks { cursor: pointer; }
+.sunself-wrap.speaks:focus-visible { outline: 1.5px solid var(--color-sun-dest); outline-offset: 4px; border-radius: 50%; }
+.sunself-vt { view-transition-name: sun-self; }
+.sunself-face { transition: transform 0.25s ease; }
+.sunself-line {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--color-mist);
+  animation: sunself-line 2.4s ease both;
+  pointer-events: none;
+}
+@keyframes sunself-line {
+  from { opacity: 0; transform: translateX(-50%) translateY(3px); }
+  18% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  80% { opacity: 1; }
+  to { opacity: 0; transform: translateX(-50%) translateY(-2px); }
+}
+.sunself.wake { animation: sunself-wake 560ms var(--ease-drift) both; }
+@keyframes sunself-wake {
+  from { opacity: 0; transform: translateY(7px) scale(0.9); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sunself.wake, .sunself-line { animation: none; }
+  .sunself-face { transition: none; }
+}
 
 /* ── Dawn pass · the marquee hero stage (design.md · Marquee Hero) ─────────
    The hero is a stage, not a card: a full-frame ink band, the globe its

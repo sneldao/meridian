@@ -76,7 +76,7 @@ export function ArrivalPassportCard({
         </div>
         {sun && (
           <div className="arr-passport-face" aria-label={`Your meridian — ${sun.line}`}>
-            <SunSelf read={sun} size={64} tone="ink" />
+            <SunSelf read={sun} size={64} tone="ink" vt follow />
           </div>
         )}
         <div className="arr-passport-stat"><CountUp value={passport.stat} ms={900} /></div>

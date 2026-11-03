@@ -1539,7 +1539,7 @@ export function NudgeFeedScreen({
       {arrivalView && <DayStepper {...stepperProps} />}
       {arrivalView && sunRead && (
         <div className="mb-1 flex items-center justify-end gap-2 px-2">
-          <SunSelf read={sunRead} size={34} />
+          <SunSelf read={sunRead} size={34} vt follow speak wake />
         </div>
       )}
       {(() => {

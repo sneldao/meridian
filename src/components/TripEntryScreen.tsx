@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { RoutePicker } from "@/components/RoutePicker";
@@ -93,7 +94,7 @@ export function TripEntryScreen({ initialDate, onContinue, onExploreExample, onE
         {/* The brand's face — asleep before the route resolves, awake (and
             honest about the debt) the moment it does. */}
         <div className="entry-sunself">
-          <SunSelf read={entrySun} size={56} pulseKey={gap ? "awake" : null} />
+          <SunSelf read={entrySun} size={56} pulseKey={gap ? "awake" : null} vt follow wake />
         </div>
         <p className="entry-eyebrow">Arrive with a plan</p>
         {/* Round 30: the stage above already told the demo journey — the
@@ -168,7 +169,10 @@ export function TripEntryScreen({ initialDate, onContinue, onExploreExample, onE
           <span>Just looking around?</span>
           <button type="button" className="entry-example" onClick={onExploreExample}>Explore an example</button>
         </div>
-        <p className="entry-privacy">No account needed to get started.</p>
+        <p className="entry-privacy">
+          No account needed to get started.{" "}
+          <Link href="/privacy" className="underline">Privacy &amp; support</Link>
+        </p>
         {priceUsdc !== null && (
           <p className="entry-privacy mt-1">
             Day one is free. The full week is {priceUsdc} USDC, held on Arc and
