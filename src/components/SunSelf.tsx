@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { SUN_CUE } from "@/domain/motion-cues";
 import { sunSelfMoodWord, type SunSelfRead } from "@/domain/sun-self";
 
 /* The sun-self glyph (round 23): the dial's sun stepped off the ring, with
@@ -89,6 +90,7 @@ export function SunSelf({
   return (
     <span
       ref={wrapRef}
+      data-cue={SUN_CUE[read.mood]}
       className={`sunself-wrap${speak ? " speaks" : ""}${vt ? " sunself-vt" : ""}${className ? ` ${className}` : ""}`}
       onClick={
         speak

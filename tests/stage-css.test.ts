@@ -60,6 +60,16 @@ describe("stage backdrop", () => {
     expect(transition).toContain("--stage-horizon-h");
   });
 
+  test("the card's done cue reuses the sun's transform-only pulse under motion-allowed CSS", () => {
+    const rule = blockAfter(".right-now-btn.done.just-done");
+    expect(rule).toContain("animation: sunself-pulse");
+    const gate = css.indexOf("@media (prefers-reduced-motion: no-preference)");
+    const cue = css.indexOf(".right-now-btn.done.just-done");
+    expect(gate).toBeGreaterThan(-1);
+    expect(cue).toBeGreaterThan(gate);
+    expect(css.indexOf("@keyframes sunself-pulse")).toBeGreaterThan(cue);
+  });
+
   test("the night theme sits on the ink family", () => {
     const block = blockAfter('html[data-theme="night"] {\n  --m-bg');
     expect(block).toContain("--m-bg: #0b0e16");

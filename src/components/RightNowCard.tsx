@@ -93,7 +93,7 @@ export function RightNowCard({
           {onDone && (
             <button
               type="button"
-              className={`p1 right-now-btn${isDone ? " done" : ""}`}
+              className={`p1 right-now-btn${isDone ? " done just-done" : ""}`}
               onClick={onDone}
               aria-pressed={isDone}
             >

@@ -7069,6 +7069,10 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   .sunself-halo {
     transition: opacity 420ms var(--ease-drift);
   }
+  /* The done cue on the card matches the sun's pulse: one shared beat. */
+  .right-now-btn.done.just-done {
+    animation: sunself-pulse 700ms var(--ease-drift);
+  }
 }
 @keyframes sunself-pulse {
   0% { transform: scale(1); }
