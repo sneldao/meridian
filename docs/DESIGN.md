@@ -941,8 +941,11 @@ shape as `/outcome`: no real input, nothing to grade, nothing to persist.
 
 Alex does what the calendar says and ignores what an app suggests — but the
 landing offers no `Connect Google Calendar` above the fold (only `sample —
-connect yours` in the Edit sheet), no `.ics` until after a ~45s run, and no
-reminder channel (`backlog.md` admits none exists). Done/Skip is extra work at
+connect yours` in the Edit sheet), and no `.ics` until after a ~45s run. There
+*is* a reminder channel now (`useReminders` + `/api/push/subscribe`,
+`017f6b2`), but scheduling is a client-side `setTimeout`, so a step only knocks
+while Meridian is open — an installed app that is closed sends nothing, which is
+the gap that actually remains. Done/Skip is extra work at
 lowest capacity; Rex moving meetings is the wedge and is invisible unless he
 finds `Personalise with the crew` below four steps.
 
@@ -1651,7 +1654,9 @@ only if the solver rule changes; otherwise allA.
 - ~~**Reminder channel**~~ — shipped since this line was written: `src/lib/push.ts`
   + `/api/push`, driven by `useReminders` on the home page (`017f6b2` — "push to
   the device, not just the open tab"). The rule it was guarding ("don't fake a
-  control") holds; the control is now real.
+  control") holds. What is still true is narrower than the line read: scheduling
+  is a client-side `setTimeout`, so reminders fire only while the app is open —
+  background delivery is the remainder, not the whole channel.
 - **Cross-trip summary** — the shape ships (`src/domain/second-trip.ts`,
   B3, with its line on the hero); what is missing is a second *real* trip,
   because without Supabase keys `secondTripProof` stays null. That is the
