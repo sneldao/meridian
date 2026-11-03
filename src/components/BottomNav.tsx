@@ -34,6 +34,12 @@ export function BottomNav() {
   return (
     <>
       <nav className="bottom-nav" aria-label="Sections">
+        <span
+          className="bottom-nav-pill"
+          aria-hidden="true"
+          data-idx={currentIdx >= 0 ? currentIdx : undefined}
+          data-hidden={currentIdx < 0 || undefined}
+        />
         {TABS.map(({ href, label, Icon, active }, i) => (
           <Link
             key={href}

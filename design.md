@@ -95,6 +95,17 @@ traveller-caused state change), **settle** (320ms — a panel arriving),
 cubic-bezier(0.22, 1, 0.36, 1) · `--ease-settle` cubic-bezier(0.16, 1, 0.3, 1)
 · `--ease-drift` cubic-bezier(0.4, 0, 0.2, 1).
 
+The springy layer adds `--ease-spring` (overshoot, for bounce on arrival and
+press), `--dur-spring` (the duration that carries it), and `--stagger-step`
+(the per-character step for the landing headline, set in CSS so chrome
+files stay under their inline-style ceiling). Spring motion is `transform`
+and `opacity` only, and every spring sits behind `prefers-reduced-motion:
+no-preference`, so reduced motion shows the settled pose.
+
+One deliberate impact per screen. The landing hero's "Start with your trip"
+CTA lands with a single overshoot after the headline's character stagger;
+no other element on the landing page overshoots.
+
 #### The motion gate
 
 Only compositing-safe properties may animate — `transform`, the

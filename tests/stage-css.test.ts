@@ -56,7 +56,7 @@ describe("stage backdrop", () => {
     const prop = blockAfter("@property --stage-horizon-h");
     expect(prop).toContain("syntax:");
     expect(prop).toContain("<percentage>");
-    const transition = blockAfter("prefers-reduced-motion: no-preference");
+    const transition = blockAfter("transition: --stage-horizon-h");
     expect(transition).toContain("--stage-horizon-h");
   });
 

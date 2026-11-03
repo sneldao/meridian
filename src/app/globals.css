@@ -196,6 +196,12 @@ body {
   --dur-glide: 180ms;
   --dur-settle: 320ms;
   --dur-drift: 700ms;
+  /* Delight tokens: an overshooting spring for presses and pulls, and the
+     stagger step for character and card arrivals. Used only inside the
+     motion gate below. */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-spring: 420ms;
+  --stagger-step: 22ms;
 }
 
 @keyframes rise {
@@ -1424,6 +1430,16 @@ body {
   color: var(--m-muted);
 }
 .f div,
+/* Trip-entry fields lift on a soft spring when focused, like a drop that has
+   been touched, and settle back when left. Transform only. */
+@media (prefers-reduced-motion: no-preference) {
+  .f input,
+  .f select {
+    transition: transform var(--dur-glide) var(--ease-spring);
+  }
+  .f input:focus,
+  .f select:focus { transform: translateY(-2px); }
+}
 .f input,
 .f select {
   background: var(--m-card-2);
@@ -3554,6 +3570,31 @@ select:focus-visible {
   background: var(--m-tag);
 }
 
+/* The active-tab pill: one shared surface that slides between tabs on a
+   spring, so the switch reads as a single object travelling, not two tabs
+   swapping. Transform only; reduced motion snaps it into place. */
+.bottom-nav { position: relative; }
+.bottom-nav > .bottom-nav-item { position: relative; z-index: 1; }
+.bottom-nav-pill {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc((100% - 8px) / 3);
+  border-radius: 12px;
+  background: var(--m-tag);
+  pointer-events: none;
+  transform: translateX(calc(var(--pill-idx, 0) * 100%));
+}
+.bottom-nav-pill[data-hidden] { opacity: 0; }
+.bottom-nav-pill[data-idx="0"] { --pill-idx: 0; }
+.bottom-nav-pill[data-idx="1"] { --pill-idx: 1; }
+@media (prefers-reduced-motion: no-preference) {
+  .bottom-nav-pill {
+    transition: transform var(--dur-drift) var(--ease-spring), opacity var(--dur-glide) var(--ease-glide);
+  }
+}
+
 /* Page headings — the design.md section rhythm: a display heading at page
    scale, roman, tight tracking, overflow-safe. */
 .page-title {
@@ -4557,6 +4598,26 @@ html[data-theme="night"] {
     border-radius: 14px;
     box-shadow: 0 14px 34px rgba(30, 27, 24, 0.18);
   }
+}
+/* The undo toast drops in with a springy overshoot, the way a drop lands and
+   settles, so each new message reads as a fresh object. Transform and opacity
+   only. */
+@media (prefers-reduced-motion: no-preference) {
+  .undo-toast.toast-in { animation: undo-toast-drop var(--dur-settle) var(--ease-spring) both; }
+}
+@keyframes undo-toast-drop {
+  from { transform: translate(-50%, 18px) scale(0.92); opacity: 0; }
+  to { transform: translate(-50%, 0) scale(1); opacity: 1; }
+}
+
+/* The sheet rises out of the tab bar on a soft spring, the way a drop of
+   liquid settles, instead of appearing whole. Transform only. */
+@media (prefers-reduced-motion: no-preference) {
+  .more-sheet { animation: more-sheet-rise var(--dur-settle) var(--ease-spring) both; }
+}
+@keyframes more-sheet-rise {
+  from { transform: translateY(24px) scale(0.98); opacity: 0; }
+  to { transform: none; opacity: 1; }
 }
 .more-sheet-item {
   display: flex;
@@ -7945,6 +8006,69 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
    an invitation, not dead air. */
 .landing-hero { padding: 28px 0 46px; }
 .landing-hero .landing-tease-title { font-size: var(--text-display-s); margin: 0 0 10px; }
+
+/* Press feedback on the shared Button: a springy squash on press and a
+   soft lean-back on release. Transform only, so it stays compositing-safe. */
+@media (prefers-reduced-motion: no-preference) {
+  .ui-btn {
+    transition: transform var(--dur-glide) var(--ease-spring), background-color var(--dur-glide) var(--ease-glide), color var(--dur-glide) var(--ease-glide);
+  }
+  .ui-btn:active:not(:disabled) { transform: scale(0.96); }
+  .landing-tease-cta,
+  .ls-cta-ghost {
+    transition: transform var(--dur-glide) var(--ease-spring);
+  }
+  .landing-tease-cta:active,
+  .ls-cta-ghost:active { transform: scale(0.96); }
+  /* The landing hero's one deliberate impact: the primary CTA lands with an
+     overshoot just after the headline finishes its stagger. */
+  .landing-tease-cta {
+    animation: landing-cta-land var(--dur-spring) var(--ease-spring) backwards;
+    animation-delay: calc(var(--stagger-step) * 21);
+  }
+}
+@keyframes landing-cta-land {
+  from { transform: translateY(0.6em) scale(0.92); opacity: 0; }
+  60% { transform: translateY(-0.08em) scale(1.04); opacity: 1; }
+  to { transform: none; opacity: 1; }
+}
+
+/* Headline arrival: each character rises and fades in on the stagger step.
+   Reduced motion leaves the headline seated. */
+.lh-char { display: inline-block; }
+@media (prefers-reduced-motion: no-preference) {
+  .landing-hero .lh-char {
+    animation: lh-char-rise var(--dur-settle) var(--ease-settle) both;
+  }
+  /* One step per character, from the stagger token, so the headline lands
+     left to right without an inline style on each span. */
+  .landing-hero .lh-char:nth-child(n) { animation-delay: calc(var(--stagger-step) * var(--ci, 0)); }
+}
+.landing-tease-title .lh-char:nth-child(1) { --ci: 0; }
+.landing-tease-title .lh-char:nth-child(2) { --ci: 1; }
+.landing-tease-title .lh-char:nth-child(3) { --ci: 2; }
+.landing-tease-title .lh-char:nth-child(4) { --ci: 3; }
+.landing-tease-title .lh-char:nth-child(5) { --ci: 4; }
+.landing-tease-title .lh-char:nth-child(6) { --ci: 5; }
+.landing-tease-title .lh-char:nth-child(7) { --ci: 6; }
+.landing-tease-title .lh-char:nth-child(8) { --ci: 7; }
+.landing-tease-title .lh-char:nth-child(9) { --ci: 8; }
+.landing-tease-title .lh-char:nth-child(10) { --ci: 9; }
+.landing-tease-title .lh-char:nth-child(11) { --ci: 10; }
+.landing-tease-title .lh-char:nth-child(12) { --ci: 11; }
+.landing-tease-title .lh-char:nth-child(13) { --ci: 12; }
+.landing-tease-title .lh-char:nth-child(14) { --ci: 13; }
+.landing-tease-title .lh-char:nth-child(15) { --ci: 14; }
+.landing-tease-title .lh-char:nth-child(16) { --ci: 15; }
+.landing-tease-title .lh-char:nth-child(17) { --ci: 16; }
+.landing-tease-title .lh-char:nth-child(18) { --ci: 17; }
+.landing-tease-title .lh-char:nth-child(19) { --ci: 18; }
+.landing-tease-title .lh-char:nth-child(20) { --ci: 19; }
+.landing-tease-title .lh-char:nth-child(21) { --ci: 20; }
+@keyframes lh-char-rise {
+  from { transform: translateY(0.45em); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
 
 /* The traveller sun on the poster: it peeks in once when the hero first
    enters view — a rise, one blink — then, when the visitor scrolls, it

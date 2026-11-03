@@ -135,7 +135,13 @@ export function LandingHero({
         <div className="lh-sun-orbit" ref={orbitRef}>
           <SunSelf read={heroFace} tone="paper" size={72} className="lh-sun" />
         </div>
-        <h2 className="landing-tease-title">Land on their clock.</h2>
+        <h2 className="landing-tease-title" aria-label="Land on their clock.">
+          {"Land on their clock.".split("").map((ch, i) => (
+            <span key={i} aria-hidden="true" className="lh-char">
+              {ch === " " ? "\u00A0" : ch}
+            </span>
+          ))}
+        </h2>
         <p className="ls-pain">
           {visitor
             ? routeGapHeadline(visitor.gap)
