@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { CREW } from "@/agents/crew";
 import { CrewAvatar, type CrewAvatarState } from "@/components/CrewAvatar";
+import { CUE_HOLD_MS } from "@/domain/motion-cues";
 import type { AgentId, CrewEvent } from "@/domain/types";
 
 /* The crew's live state channel — bloub's mood layer on top of round 31's
@@ -22,6 +23,43 @@ export type CrewMood =
 
 export const AGENT_IDS: AgentId[] = ["analyst", "researcher", "planner", "evaluator", "negotiator"];
 
+export interface CrewVerdict {
+  /** The verdict's own event — identity is the only reliable "this is a new
+   *  verdict" mark, and a fresh run brings fresh event objects. */
+  event: CrewEvent;
+  mood: "happy" | "worried";
+}
+
+/** The newest verdict in the stream, whatever the narration around it says. */
+export function lastVerdict(events: CrewEvent[]): CrewVerdict | null {
+  for (let i = events.length - 1; i >= 0; i--) {
+    const e = events[i];
+    if (e.type === "eval_result") {
+      return { event: e, mood: e.result.feasible ? "happy" : "worried" };
+    }
+    if (e.type === "day_locked") return { event: e, mood: "happy" };
+  }
+  return null;
+}
+
+/** Iris narrates her own verdict, so `eval_result` lands one event before her
+ *  `agent_start` and the start would overwrite the verdict in the same tick —
+ *  the fail cue was written but never painted. A verdict therefore keeps her
+ *  face for one card beat (`CUE_HOLD_MS`, the window that holds a finished
+ *  step), then the narration takes it back. The beat is given on the commit
+ *  the verdict arrives in and ends on a timer, never on the next event. */
+function useVerdictHold(events: CrewEvent[]): CrewMood | null {
+  const verdict = lastVerdict(events);
+  const event = verdict?.event ?? null;
+  const [expired, setExpired] = useState<CrewEvent | null>(null);
+  useEffect(() => {
+    if (!event) return;
+    const t = setTimeout(() => setExpired(event), CUE_HOLD_MS);
+    return () => clearTimeout(t);
+  }, [event]);
+  return verdict && verdict.event !== expired ? verdict.mood : null;
+}
+
 const MOOD_STATE: Record<CrewMood, CrewAvatarState> = {
   idle: "resting",
   working: "working",
@@ -38,17 +76,6 @@ export function agentMoods(events: CrewEvent[]): Record<AgentId, CrewMood> {
     switch (e.type) {
       case "agent_start":
       case "agent_token":
-        /* Iris narrates her own verdict, so `eval_result` always lands one
-         * event before her `agent_start` — and the start would overwrite the
-         * verdict in the same tick, before it could ever paint (the fail cue
-         * was written but never seen, in replay and live alike). A verdict
-         * holds its face until the next verdict, or until the agent settles. */
-        if (
-          e.agent === "evaluator" &&
-          (moods.evaluator === "worried" || moods.evaluator === "happy")
-        ) {
-          break;
-        }
         moods[e.agent] = "working";
         break;
       case "tool_call":
@@ -124,10 +151,15 @@ export function CrewFace({ agent, mood, follow = true }: { agent: AgentId; mood:
 
 export function CrewFaces({ events }: { events: CrewEvent[] }) {
   const moods = agentMoods(events);
+  const verdict = useVerdictHold(events);
   return (
     <span className="flex items-center gap-1.5" aria-label="crew status">
       {AGENT_IDS.map((id) => (
-        <CrewFace key={id} agent={id} mood={moods[id]} />
+        <CrewFace
+          key={id}
+          agent={id}
+          mood={id === "evaluator" && verdict ? verdict : moods[id]}
+        />
       ))}
     </span>
   );

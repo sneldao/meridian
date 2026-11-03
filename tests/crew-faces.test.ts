@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { agentMoods } from "../src/components/CrewFaces";
+import { agentMoods, lastVerdict } from "../src/components/CrewFaces";
 import type { CrewEvent } from "../src/domain/types";
 
 const ev = (partial: Partial<CrewEvent>): CrewEvent => partial as CrewEvent;
@@ -34,24 +34,41 @@ describe("agentMoods — the crew's state channel", () => {
     expect(moods.negotiator).toBe("settled");
   });
 
-  it("a verdict outlives the evaluator's own start, so the fail cue can paint", () => {
-    // The emitter always sends eval_result immediately before Iris's
-    // agent_start. If the start cleared the verdict, the fail cue would never
-    // reach the DOM — this is the regression guard for that.
+  it("the fold follows the narration that comes right after a verdict", () => {
+    // Both emitters send eval_result immediately before Iris's agent_start, so
+    // the fold alone must not be the thing carrying the verdict — CrewFaces
+    // holds `lastVerdict` for one beat and then hands the face back.
+    const verdict = ev({ type: "eval_result", result: { feasible: false, violations: [{ code: "SHIFT_TOO_FAST" }] }, attempt: 1 });
     const moods = agentMoods([
-      ev({ type: "eval_result", result: { feasible: false, violations: [{ code: "SHIFT_TOO_FAST" }] }, attempt: 1 }),
+      verdict,
       ev({ type: "agent_start", agent: "evaluator" }),
       ev({ type: "agent_token", agent: "evaluator", text: "Rejected." }),
     ]);
-    expect(moods.evaluator).toBe("worried");
+    expect(moods.evaluator).toBe("working");
 
-    // The retry's verdict still replaces it.
     const after = agentMoods([
       ev({ type: "eval_result", result: { feasible: false, violations: [{ code: "x" }] }, attempt: 1 }),
       ev({ type: "agent_start", agent: "evaluator" }),
       ev({ type: "eval_result", result: { feasible: true, score: 0.9, violations: [] }, attempt: 2 }),
     ]);
     expect(after.evaluator).toBe("happy");
+  });
+
+  it("lastVerdict reports the newest verdict, failure or pass", () => {
+    const fail = ev({ type: "eval_result", result: { feasible: false, violations: [{ code: "x" }] }, attempt: 1 });
+    const pass = ev({ type: "eval_result", result: { feasible: true, score: 0.9, violations: [] }, attempt: 2 });
+    expect(lastVerdict([])).toBeNull();
+    expect(lastVerdict([ev({ type: "agent_start", agent: "analyst" })])).toBeNull();
+    expect(lastVerdict([fail, ev({ type: "agent_start", agent: "evaluator" }), pass])).toEqual({
+      event: pass,
+      mood: "happy",
+    });
+    expect(lastVerdict([fail])).toEqual({ event: fail, mood: "worried" });
+  });
+
+  it("a locked day hands the evaluator the same cheer a pass does", () => {
+    const lock = ev({ type: "day_locked", day: {} as never, sunProgress: 0.2 });
+    expect(lastVerdict([lock])?.mood).toBe("happy");
   });
 
   it("done settles whoever is still standing", () => {

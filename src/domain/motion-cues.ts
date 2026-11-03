@@ -6,6 +6,11 @@
 
 export type MotionCue = "arrive" | "work" | "done" | "fail";
 
+/** One confirmation beat, shared by both surfaces: the card holds a finished
+ *  step this long (MARKED DONE over the 700ms pulse) and the evaluator holds
+ *  its verdict the same window, so a rejection reads before the crew moves on. */
+export const CUE_HOLD_MS = 760;
+
 /** Sun moods from `sun-self.ts`. */
 export type SunCueMood =
   | "sleeping"

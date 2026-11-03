@@ -194,12 +194,18 @@ animations are frozen debt, counted by exact declaration text in
   `work` are carried by the poses themselves — a second loop would fight the
   one loop the crew is allowed — and `fail` is the only added beat, a
   transform/opacity dip. The cue reaches CSS as `data-cue` on the avatar
-  root, so the table is the only place the mapping lives.
+  root, so the table is the only place the mapping lives. A verdict is a cue
+  that has to be read: both emitters send `eval_result` immediately before
+  Iris's own `agent_start`, so the fold hands her face to the narration in
+  the same tick. `CrewFaces` shows `lastVerdict` for `CUE_HOLD_MS` — the
+  card's hold window, adopted on the commit the verdict lands in and ended
+  by a timer — then lets the speech move her on.
 - The done pulse is allowed to be seen. Marking a step resolves it, and the
   feed hands the check-in card's hero slot straight to the next step — which
   swapped the card away inside the same commit, leaving the pulse written
   but never played. `RightNowCard` now holds the finished step for the length
-  of that one pulse (~760ms), badge reading **MARKED DONE**, then hands over;
+  of that one pulse (~760ms, `CUE_HOLD_MS`), badge reading **MARKED DONE**,
+  then hands over;
   a tap during the hold dismisses it rather than acting on the step beneath
   (undo stays on the toast). Reduced motion skips the hold entirely, since
   there it would be delay with nothing to watch.

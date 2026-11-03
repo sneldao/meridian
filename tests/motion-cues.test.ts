@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { CREW_CUE, CREW_STATE_CUE, SUN_CUE, type MotionCue } from "../src/domain/motion-cues";
+import { CREW_CUE, CREW_STATE_CUE, CUE_HOLD_MS, SUN_CUE, type MotionCue } from "../src/domain/motion-cues";
 
 const CUES: MotionCue[] = ["arrive", "work", "done", "fail"];
 
@@ -38,5 +38,11 @@ describe("shared motion vocabulary", () => {
   test("a failing sun and a worried crew agent share the fail cue", () => {
     expect(SUN_CUE.drained).toBe("fail");
     expect(CREW_CUE.worried).toBe("fail");
+  });
+
+  test("one hold window covers the pulse on both surfaces", () => {
+    // `sunself-pulse` runs 700ms; the card's MARKED DONE and the evaluator's
+    // verdict both stay up for CUE_HOLD_MS, which has to outlast it.
+    expect(CUE_HOLD_MS).toBeGreaterThanOrEqual(700);
   });
 });

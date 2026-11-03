@@ -564,17 +564,20 @@ rules, all verified by `tests/motion-language.test.ts`:
     button and `.crew-avatar[data-cue="done"]` all play `sunself-pulse`.
     Arrive and work stay pose-carried — the working poses already hold the
     one loop the crew is allowed — and fail is the only added beat, a
-    transform/opacity dip. A verdict holds its face until the next verdict:
-    both emitters send `eval_result` immediately before Iris's
-    `agent_start`, and letting that start clear the mood overwrote the
-    rejection before it could paint, so the fail cue is only real because
-    the fold keeps it. The cue rides `data-cue` on the avatar root, so
+    transform/opacity dip. A verdict holds its face for one beat: both
+    emitters send `eval_result` immediately before Iris's `agent_start`, and
+    letting that start clear the mood overwrote the rejection before it
+    could paint. `CrewFaces` therefore shows `lastVerdict` for `CUE_HOLD_MS`
+    — the card's own hold window, adopted on the commit the verdict lands in
+    and ended by a timer — and only then lets the narration take the face
+    back. The cue rides `data-cue` on the avatar root, so
     CSS reads the table instead of a parallel set of selectors, and the
     reduced-motion rule now stands down the root as well as its children.
     The card's pulse also needed somewhere to happen: marking a step
     resolves it, and the feed hands the hero slot to the next step in the
     same commit, so the cue was written but never played. `RightNowCard`
-    holds the finished step for one pulse (~760ms) under a MARKED DONE
+    holds the finished step for one pulse (~760ms, shared as `CUE_HOLD_MS`)
+    under a MARKED DONE
     badge before handing over; a tap during the hold dismisses it rather
     than acting on the step beneath (undo stays on the toast), and reduced
     motion skips the hold so it never becomes dead delay.

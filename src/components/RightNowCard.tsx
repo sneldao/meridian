@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { fmtMin } from "@/domain/circadian";
 import type { TravelerNudge } from "@/domain/nudges";
 import { CAT_ICON } from "@/components/DaySkyStrip";
+import { CUE_HOLD_MS } from "@/domain/motion-cues";
 
 export interface RightNowCardProps {
   step?: TravelerNudge | null;
@@ -35,11 +36,12 @@ export function RightNowCard({
    * skips resolved ids — so the card would swap away before its done pulse
    * could be seen. Hold the finished step for the length of that one pulse
    * and show the confirmation instead. Under reduced motion there is no
-   * pulse to watch, so the hold is skipped rather than shown as dead delay. */
+   * pulse to watch, so the hold is skipped rather than shown as dead delay.
+   * `CUE_HOLD_MS` is the same window the evaluator's verdict is held for. */
   const [held, setHeld] = useState<TravelerNudge | null>(null);
   useEffect(() => {
     if (!held) return;
-    const t = setTimeout(() => setHeld(null), 760);
+    const t = setTimeout(() => setHeld(null), CUE_HOLD_MS);
     return () => clearTimeout(t);
   }, [held]);
 
