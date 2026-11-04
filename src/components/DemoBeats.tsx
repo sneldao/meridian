@@ -18,9 +18,9 @@ import { arrivalPassportSvg } from "@/lib/arrival-passport-svg";
 import { downloadSunPortrait } from "@/lib/download-sun-portrait";
 import { buildTasteItinerary } from "@/domain/taste-itinerary";
 import { TASTE_TYPES } from "@/domain/taste";
-import { sampleTasteProfile, SAMPLE_TASTE_LABEL } from "@/lib/sample-taste";
+import { sampleTasteProfile, sampleTasteLabel, sampleTasteProfilesForCity } from "@/lib/sample-taste";
 import { useLightSweep } from "@/components/LightSweep";
-import { isDemoScenarioId } from "@/domain/demo-scenarios";
+import { DEMO_SCENARIOS, isDemoScenarioId } from "@/domain/demo-scenarios";
 import { sceneSolar } from "@/domain/day-scene";
 import { crewPerformance } from "@/domain/crew-performance";
 import { CrewPerformance } from "@/components/CrewPerformance";
@@ -81,8 +81,10 @@ function DemoBeatsInner() {
   const crewPerf = useMemo(() => crewPerformance(journey), [journey]);
 
   // The taste beat: the same recorded Qloo reads the example journey uses,
-  // switchable between the two taste profiles so the cross-domain move —
-  // music you love → places you'll love — is visible in one frame.
+  // switchable between the taste profiles that belong to this journey's
+  // destination city — the cross-domain move, music you love → places
+  // you'll love, is visible in one frame, and a Mexico City story never
+  // fits Tokyo venues into its free hours.
   const [profileKey, setProfileKey] = useState<string | null>(null);
   const tasteProfile = useMemo(
     () => sampleTasteProfile(profileKey ?? journey.scenario.profile),
@@ -337,22 +339,17 @@ function DemoBeatsInner() {
             </h2>
             <fieldset className="scenario-toggle demo-taste-toggle" data-rise="3">
               <legend>Taste preference</legend>
-              {(["bjork", "luke"] as const).map((k) => {
-                const pr = sampleTasteProfile(k);
-                return (
-                  pr && (
-                    <button
-                      key={k}
-                      type="button"
-                      aria-pressed={tasteProfile?.key === k}
-                      onClick={() => setProfileKey(k)}
-                      className="taste-button taste-button--ghost"
-                    >
-                      {pr.favorites[0].name}
-                    </button>
-                  )
-                );
-              })}
+              {sampleTasteProfilesForCity(journey.trip.destination.name).map((pr) => (
+                <button
+                  key={pr.key}
+                  type="button"
+                  aria-pressed={tasteProfile?.key === pr.key}
+                  onClick={() => setProfileKey(pr.key)}
+                  className="taste-button taste-button--ghost"
+                >
+                  {pr.favorites[0].name}
+                </button>
+              ))}
             </fieldset>
             <div className="demo-rows">
               {(tasteItinerary?.suggestions ?? []).map((s, i) => (
@@ -383,7 +380,7 @@ function DemoBeatsInner() {
             </p>
             <p className="demo-honest" data-rise="8">
               Optional ideas fitted into the free hours the verified plan leaves — taste decides{" "}
-              <i>what</i>, never <i>when</i>. {SAMPLE_TASTE_LABEL}.
+              <i>what</i>, never <i>when</i>. {sampleTasteLabel(tasteProfile)}.
             </p>
           </section>
         )}
@@ -477,15 +474,13 @@ function DemoBeatsInner() {
       <p className="demo-footnote">
         <Stamp kind="fictional" /> Fictional sample data — imagined, not a real
         schedule or endorsement.{" "}
-        {scenarioId === "miles" ? (
-          <>
-            Prefer a stage or a keynote?{" "}
-            <Link href="/demo?s=danny">Danny&apos;s day</Link> ·{" "}
-            <Link href="/demo?s=sofia">Sofia&apos;s day</Link>
-          </>
-        ) : (
-          <Link href="/demo">Miles&apos;s day</Link>
-        )}
+        {DEMO_SCENARIOS.filter((s) => s.id !== scenarioId).map((s, i) => (
+          <span key={s.id}>
+            {i === 0 && (scenarioId === "miles" ? "Prefer a stage or a keynote? " : "Prefer another story? ")}
+            {i > 0 && " · "}
+            <Link href={`/demo?s=${s.id}`}>{s.shortName}&apos;s day</Link>
+          </span>
+        ))}
       </p>
     </div>
   );

@@ -6,7 +6,7 @@ import { buildDemoScenario, DEMO_SCENARIOS, type DemoScenarioId } from "@/domain
 import { buildTasteItinerary } from "@/domain/taste-itinerary";
 import { resolvePlaceChoice } from "@/lib/place-choices";
 import { usePlaceChoices } from "@/lib/use-place-choices";
-import { sampleTasteProfile, SAMPLE_TASTE_LABEL } from "@/lib/sample-taste";
+import { sampleTasteProfile, sampleTasteLabel, sampleTasteProfilesForCity } from "@/lib/sample-taste";
 import { InteractiveDay } from "@/components/InteractiveDay";
 import { Stamp } from "@/components/ui/Stamp";
 import { buildDayScene } from "@/domain/day-scene";
@@ -235,15 +235,14 @@ export function ScenarioExperience({ id, departureDate, onChooseScenario, onMake
       <div className="scenario-taste">
         <fieldset className="scenario-toggle">
           <legend>Taste preference</legend>
-          {(["bjork", "luke"] as const).map((k) => {
-            const p = sampleTasteProfile(k);
-            return p && <button key={k} type="button" aria-pressed={profile?.key === k} onClick={() => setProfileKey(k)} className="taste-button taste-button--ghost">{p.favorites[0].name}</button>;
-          })}
+          {sampleTasteProfilesForCity(demo.trip.destination.name).map((p) => (
+            <button key={p.key} type="button" aria-pressed={profile?.key === p.key} onClick={() => setProfileKey(p.key)} className="taste-button taste-button--ghost">{p.favorites[0].name}</button>
+          ))}
         </fieldset>
-        <p role="status" className="scenario-source">Showing recorded suggestions for {profile?.favorites.map((f) => f.name).join(", ")}. {SAMPLE_TASTE_LABEL} · not a live lookup.</p>
+        <p role="status" className="scenario-source">Showing suggestions for {profile?.favorites.map((f) => f.name).join(", ")}. {sampleTasteLabel(profile)}.</p>
       </div>
       <div className="scenario-cta">
-        <button type="button" className="entry-cta" onClick={() => onMakeTrip({ origin: "LHR", dest: "HND", date: departureDate })}>Make this my trip</button>
+        <button type="button" className="entry-cta" onClick={() => onMakeTrip({ origin: demo.scenario.origin ?? "LHR", dest: demo.scenario.dest ?? "HND", date: departureDate })}>Make this my trip</button>
         <p className="scenario-sub">Start with this route. Add your own details before saving.</p>
       </div>
     </div>

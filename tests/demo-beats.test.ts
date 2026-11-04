@@ -57,7 +57,7 @@ describe("demoJourney", () => {
   });
 
   test("every scenario produces a complete journey", () => {
-    for (const id of ["miles", "danny", "sofia"] as const) {
+    for (const id of ["miles", "danny", "sofia", "diego"] as const) {
       const s = demoJourney(id);
       expect(s.plans.length).toBeGreaterThan(0);
       expect(s.read.arrived).toBe(true);
@@ -122,7 +122,7 @@ describe("sunSelfForBeat — the face never outruns the numbers (round 23)", () 
   });
 
   test("every scenario's faces stay honest end to end", () => {
-    for (const id of ["miles", "danny", "sofia"] as const) {
+    for (const id of ["miles", "danny", "sofia", "diego"] as const) {
       const journey = demoJourney(id);
       const stakes = sunSelfForBeat(journey, "stakes");
       const payoff = sunSelfForBeat(journey, "payoff");

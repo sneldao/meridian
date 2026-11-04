@@ -1,7 +1,7 @@
 import { arrivalRead } from "./arrival";
 import { arrivalPassport, type ArrivalPassport } from "./arrival-passport";
 import type { ArrivalRead } from "./arrival";
-import { buildDemoScenario, DEMO_SCENARIOS, type DemoScenarioId } from "./demo-scenarios";
+import { buildDemoScenario, DEMO_SCENARIOS, type DemoScenarioDef, type DemoScenarioId } from "./demo-scenarios";
 import type { HeroMeeting } from "./hero";
 import type { InterventionKind } from "./types";
 import type { CalendarEvent, DayPlan, Trip, WearableBaseline } from "./types";
@@ -19,7 +19,7 @@ import { sunSelfRead, type SunSelfRead } from "./sun-self";
 
 export interface DemoJourney {
   scenarioId: DemoScenarioId;
-  scenario: (typeof DEMO_SCENARIOS)[number];
+  scenario: DemoScenarioDef;
   trip: Trip;
   plans: DayPlan[];
   baseline: WearableBaseline;

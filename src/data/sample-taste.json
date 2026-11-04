@@ -3,6 +3,8 @@
   "profiles": [
     {
       "key": "bjork",
+      "city": "Tokyo",
+      "source": "recorded",
       "favorites": [
         {
           "id": "01381184-B533-4E3C-B9DB-43A2FE326744",
@@ -80,6 +82,8 @@
     },
     {
       "key": "luke",
+      "city": "Tokyo",
+      "source": "recorded",
       "favorites": [
         {
           "id": "3CBD78B1-D2F2-4551-A342-4621B6BDB5E2",
@@ -110,6 +114,53 @@
             "Traditional teahouse"
           ],
           "daytimeCandidate": true
+        }
+      ]
+    },
+    {
+      "key": "diego",
+      "city": "Mexico City",
+      "source": "imagined",
+      "favorites": [
+        {
+          "id": "diego-crate-king-krule",
+          "name": "King Krule",
+          "type": "artist"
+        },
+        {
+          "id": "diego-crate-amores-perros",
+          "name": "Amores Perros",
+          "type": "movie"
+        }
+      ],
+      "places": [
+        {
+          "id": "diego-place-omr",
+          "name": "Galería OMR",
+          "categories": [
+            "Art gallery",
+            "Contemporary art gallery"
+          ],
+          "daytimeCandidate": true,
+          "eveningCandidate": true
+        },
+        {
+          "id": "diego-place-mercado-medellin",
+          "name": "Mercado de Medellín",
+          "categories": [
+            "Market",
+            "Food market"
+          ],
+          "daytimeCandidate": true
+        },
+        {
+          "id": "diego-place-la-botica",
+          "name": "La Botica",
+          "categories": [
+            "Mezcal bar",
+            "Bar"
+          ],
+          "eveningCandidate": true
         }
       ]
     }
