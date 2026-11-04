@@ -18,7 +18,7 @@ import { arrivalPassportSvg } from "@/lib/arrival-passport-svg";
 import { downloadSunPortrait } from "@/lib/download-sun-portrait";
 import { buildTasteItinerary } from "@/domain/taste-itinerary";
 import { TASTE_TYPES } from "@/domain/taste";
-import { sampleTasteProfile, sampleTasteLabel, sampleTasteProfilesForCity, splitSamplePlaces } from "@/lib/sample-taste";
+import { sampleTasteProfile, sampleTasteLabel, sampleTasteProfilesForCity, splitSamplePlaces, tasteGraphPhrase } from "@/lib/sample-taste";
 import { useLightSweep } from "@/components/LightSweep";
 import { DEMO_SCENARIOS, isDemoScenarioId } from "@/domain/demo-scenarios";
 import { sceneSolar } from "@/domain/day-scene";
@@ -398,7 +398,7 @@ function DemoBeatsInner() {
               {tasteProfile
                 ? `${tasteProfile.favorites
                     .map((f) => `${f.name} (${TASTE_TYPES[f.type].toLowerCase()})`)
-                    .join(", ")} → ${tasteItinerary?.destination ?? journey.trip.destination.name} places — Qloo's taste graph, not a location search.`
+                    .join(", ")} → ${tasteItinerary?.destination ?? journey.trip.destination.name} places — ${tasteGraphPhrase(tasteItinerary?.sampleSource)}.`
                 : "Destination picks, powered by Qloo."}
             </p>
             <p className="demo-honest" data-rise="8">

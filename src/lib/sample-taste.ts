@@ -98,6 +98,14 @@ export function ideaSourceLabel(source?: SampleTasteSource): string {
   return "Qloo place idea · optional";
 }
 
+/** How a beat names the taste graph behind its picks — a live lookup is
+ *  Qloo's; a bundled sample says so instead of borrowing the credit. */
+export function tasteGraphPhrase(source?: SampleTasteSource): string {
+  if (source === "imagined") return "an imagined taste graph, not a location search";
+  if (source === "recorded") return "a recorded Qloo taste graph, not a location search";
+  return "Qloo's taste graph, not a location search";
+}
+
 /** Split a profile's places the way the live Qloo path does: daytime
  *  candidates compete for the plan's free hours, evening candidates are
  *  offered as the first night, never fitted. Evening-only venues lead the

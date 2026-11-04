@@ -239,6 +239,10 @@ export function ScenarioExperience({ id, departureDate, onChooseScenario, onMake
           tasteFavorites={itinerary?.favorites}
           tasteStatus={itinerary?.status}
           ideaSource={itinerary?.sampleSource}
+          /* The evening half of the crate belongs to the night of the
+           * arrival — without it, "Try Diego's day" shows the gallery but
+           * never the mezcaleria his punchline is about. */
+          firstNight={spec.dayIndex === demo.trip.departureDayIndex + 1 ? itinerary?.firstNight : undefined}
         />
       )}
 

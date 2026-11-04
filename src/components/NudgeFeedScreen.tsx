@@ -1597,6 +1597,14 @@ export function NudgeFeedScreen({
             }
             tasteStatus={tasteItinerary?.status}
             ideaSource={tasteItinerary?.sampleSource}
+            /* The evening idea belongs to the night of the arrival day —
+             * it is offered, never scheduled, and only lands on the day
+             * it actually describes. */
+            firstNight={
+              tasteItinerary && trip && spec && spec.dayIndex === trip.departureDayIndex + 1
+                ? tasteItinerary.firstNight
+                : undefined
+            }
             onUpdatePlan={canFitTaste ? onStartCrewSync : undefined}
             updateDisabled={phase === "running" || (tasteProfile ? !tasteProfile.ready : false)}
           />

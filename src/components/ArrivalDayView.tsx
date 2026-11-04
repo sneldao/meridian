@@ -7,9 +7,9 @@ import { useId } from "react";
 import { springCalendar } from "@/lib/motion";
 import { fmtMin } from "@/domain/circadian";
 import type { TravelerNudge } from "@/domain/nudges";
-import { placeKey, placeSearchUrl, type TasteEntity, type TasteItinerary } from "@/domain/taste";
+import { placeKey, placeSearchUrl, type DestinationPlace, type TasteEntity, type TasteItinerary } from "@/domain/taste";
 import type { resolvePlaceChoice } from "@/lib/place-choices";
-import { ideaSourceLabel, type SampleTasteSource } from "@/lib/sample-taste";
+import { ideaSourceLabel, tasteSignalsLabel, type SampleTasteSource } from "@/lib/sample-taste";
 
 export interface ArrivalDayViewProps {
   destination: string;
@@ -36,6 +36,9 @@ export interface ArrivalDayViewProps {
   /** Where the place idea came from — Qloo live, or a bundled sample. The
    *  row label names it so a recorded pick never reads as a live lookup. */
   ideaSource?: SampleTasteSource;
+  /** The trip's first-night idea — offered, never scheduled. Rendered so a
+   *  day view carries the same evening half the itinerary card shows. */
+  firstNight?: DestinationPlace;
   onUpdatePlan?: () => void;
   updateDisabled?: boolean;
   eyebrow?: string;
@@ -47,7 +50,7 @@ export function ArrivalDayView(props: ArrivalDayViewProps) {
   const {
     destination, date, steps, idea, completedIds, skippedIds, actionsReady, interactive,
     onDone, onSkip, onKeep, onSwap, onDismiss, onRestore, choicesReady, storageAvailable, planning, example,
-    tasteFavorites, favoritesChanged, tasteStatus, onUpdatePlan, updateDisabled, ideaSource,
+    tasteFavorites, favoritesChanged, tasteStatus, onUpdatePlan, updateDisabled, ideaSource, firstNight,
   } = props;
   const snapshot = tasteFavorites ?? [];
   const reduced = useReducedMotion();
@@ -75,7 +78,7 @@ export function ArrivalDayView(props: ArrivalDayViewProps) {
       </p>
       {snapshot.length > 0 && (
         <p className="taste-provenance">
-          {tasteStatus === "unavailable" ? "Requested favorites: " : "Qloo taste signals: "}
+          {tasteStatus === "unavailable" ? "Requested favorites: " : tasteSignalsLabel(ideaSource)}
           {snapshot.map((f) => f.name).join(", ")}
         </p>
       )}
@@ -240,6 +243,14 @@ export function ArrivalDayView(props: ArrivalDayViewProps) {
                 : tasteStatus === "ready"
                   ? "No place idea added for this day."
                   : "Choose a favorite below to add an optional place idea."}
+        </p>
+      )}
+
+      {firstNight && (
+        <p className="taste-note">
+          First night — if your plan says stay up: {firstNight.name}
+          {firstNight.categories.length > 0 &&
+            ` · ${firstNight.categories.filter(Boolean).slice(0, 2).join(" · ")}`}
         </p>
       )}
 
