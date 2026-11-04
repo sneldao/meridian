@@ -5,6 +5,15 @@
 
 set -euo pipefail
 
+# The 2026-11-04 commit shipped on a bypass because typecheck could not
+# resolve packages after a local node_modules cleanup. Fail first and loud
+# here instead: a commit is only as verified as the tree it is checked on.
+if [ ! -d node_modules ]; then
+  echo "✗ node_modules is missing — run 'bun install' and let the checks run." >&2
+  echo "  Never bypass this hook; the point of it is that HEAD is verified." >&2
+  exit 1
+fi
+
 if command -v gitleaks >/dev/null 2>&1; then
   echo "→ gitleaks: scanning staged changes for secrets"
   gitleaks protect --staged --redact

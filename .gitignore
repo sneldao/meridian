@@ -45,3 +45,6 @@ contracts/cache/
 
 # Local design-review captures, logs and baselines — review evidence, not product source.
 artifacts/design-review/
+
+# Local prod-capture script for the external qloo entry (videos land outside this repo).
+capture.mjs
