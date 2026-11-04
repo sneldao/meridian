@@ -412,6 +412,12 @@ ties the film to the product.
   carried since the model shipped was repaired in the same arc.
 
 Amendment recorded in `DESIGN.md` Part 4 under "The two-pillar landing".
+Follow-up the same day closed five story gaps a review of 3a found:
+the mezcaleria surfaces as the first-night row (sample places split day/night
+the way the live Qloo path does), the demo speaks each traveller's own
+city, the sample tiles name four arrivals and their real routes, a packed
+crate answers even without a Qloo key (replay fallback, provenance named
+on every surface), and the landing's example day shows Diego, not Miles.
 
 ### Phase 3b — Today on ink, chrome, purge (≈1 week, ongoing)
 
