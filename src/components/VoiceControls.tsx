@@ -147,8 +147,8 @@ export function VoiceControls({ nextStep, todaySteps, yesterday, bedAt, onDone, 
   if (!canListen && !canSpeak) return null;
 
   const btnCls = compact
-    ? "inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--m-border)] text-[var(--m-text)] hover:border-[#D96B43]"
-    : "inline-flex min-h-[44px] items-center gap-1.5 rounded-full border border-[var(--m-border)] px-3.5 py-1.5 text-xs font-bold text-[var(--m-text)] hover:border-[#D96B43]";
+    ? "inline-flex h-11 w-11 items-center justify-center rounded-md border border-[var(--m-border)] text-[var(--m-text)] hover:border-[#D96B43]"
+    : "inline-flex min-h-[44px] items-center gap-1.5 rounded-md border border-[var(--m-border)] px-3.5 py-1.5 text-xs font-medium text-[var(--m-text)] hover:border-[#D96B43]";
 
   return (
     <div className="flex flex-col items-end gap-1">

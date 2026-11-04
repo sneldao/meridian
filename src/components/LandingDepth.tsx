@@ -3,13 +3,11 @@
 import { useEffect, useRef } from "react";
 import { ridgePath, starPlane } from "@/domain/demo-depth";
 
-/* The landing's ambient depth — the demo stage's depth system carried onto
- * the cream surface (src/domain/demo-depth.ts generates the geometry; the
- * layers here are its planes re-dressed for daylight). One warm sky band
- * hangs at the top of the page: two mote planes at different rates, a haze
- * on the horizon, two ridges holding it down, and a fine grain over the
- * whole field — the paper-shaders lesson, carried by an SVG turbulence
- * filter instead of a shader.
+/* The landing's ambient depth on the ink statement (Phase 1): two seeded
+ * mote planes at different parallax rates, a warm sun-dest haze on the
+ * horizon, ONE dark ridge holding it down, and a fine grain over the
+ * whole field (src/domain/demo-depth.ts generates the geometry; carried
+ * by an SVG turbulence filter instead of a shader).
  *
  * `--lp` is the page's descent, written imperatively per scroll frame (the
  * stage's scrub law — a transition would lag it): planes recede and
@@ -25,9 +23,19 @@ import { ridgePath, starPlane } from "@/domain/demo-depth";
 const MOTES_FAR = starPlane(11, 20, 62);
 const MOTES_MID = starPlane(37, 14, 76);
 const RIDGE_FAR = ridgePath(61, 9, 0.8);
-const RIDGE_NEAR = ridgePath(23, 5, 0.4);
 
-export function LandingDepth() {
+/* The artwork only mounts on ink (design reset Phase 0/1): on the cream
+ * landing the ridge art read as pastel clip-art under the type, so paper
+ * renders nothing at all. On ink it is two seeded star planes, one dark
+ * ridge, a warm haze on the horizon and grain — scroll parallax only, no
+ * ambient loops. The hook rules are kept by a wrapper that returns null
+ * before the inner component — hooks live inside, never conditional. */
+export function LandingDepth({ tone = "paper" }: { tone?: "paper" | "ink" }) {
+  if (tone !== "ink") return null;
+  return <LandingDepthArtwork />;
+}
+
+function LandingDepthArtwork() {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -55,7 +63,6 @@ export function LandingDepth() {
   return (
     <div className="landing-depth" ref={ref} aria-hidden="true">
       <div className="ld-sky" />
-      <div className="ld-glow" />
       <svg
         className="ld-motes ld-motes-far"
         viewBox="0 0 100 100"
@@ -77,9 +84,6 @@ export function LandingDepth() {
       <div className="ld-haze" />
       <svg className="ld-ridge ld-ridge-far" viewBox="0 0 100 40" preserveAspectRatio="none">
         <path d={RIDGE_FAR} />
-      </svg>
-      <svg className="ld-ridge ld-ridge-near" viewBox="0 0 100 40" preserveAspectRatio="none">
-        <path d={RIDGE_NEAR} />
       </svg>
       {/* Paper grain: monochrome turbulence at a whisper of alpha, so the
           field reads as textured paper, not a flat fill. */}

@@ -26,11 +26,10 @@ describe("TripEntryScreen (first use)", () => {
   );
 
   test("states the honest value proposition", () => {
-    expect(html).toContain("Your turn.");
-    expect(html).toContain("Arrive with a plan");
-    // The mechanism lives in the hero; the entry's line says who does the
-    // work — the division of labour, not a second pitch.
-    expect(html).toContain("Your crew reads the route, drafts the days");
+    // Phase 1: the intro column is gone — the form's own heading carries
+    // the group, and the planner note says how the work proceeds.
+    expect(html).toContain("Where are you headed?");
+    expect(html).toContain("Choose airports from the suggestions, then a departure date.");
   });
 
   test("offers one primary action and the example", () => {
@@ -42,7 +41,7 @@ describe("TripEntryScreen (first use)", () => {
     for (const label of ["From airport", "To airport", "Departure date"]) {
       expect(html).toContain(`aria-label="${label}"`);
     }
-    expect(html).toContain('placeholder="City or airport"');
+    expect(html).toContain('placeholder="City or code"');
     expect(html).toContain('value="2026-05-10"');
     expect(html).toContain("disabled");
     expect(html).not.toContain("Choose different");

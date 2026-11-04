@@ -150,7 +150,7 @@ export function UnlockCard({
   if (!walletAvailable()) {
     return (
       <Card className="p-4">
-        <h3 className="text-sm font-bold text-paper">
+        <h3 className="text-sm font-medium text-paper">
           {lockedCount} more day{lockedCount === 1 ? "" : "s"} unlock with a wallet
         </h3>
         <p className="mt-1 text-xs leading-relaxed text-mist">
@@ -167,7 +167,7 @@ export function UnlockCard({
     <Card className="p-4">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <h3 className="text-sm font-bold text-paper">
+          <h3 className="text-sm font-medium text-paper">
             {phase === "refunded" ? "This trip was refunded" : `Unlock ${lockedCount} more day${lockedCount === 1 ? "" : "s"}`}
           </h3>
           <p className="mt-1 text-xs leading-relaxed text-mist">
@@ -191,7 +191,7 @@ export function UnlockCard({
           <button
             onClick={unlock}
             disabled={busy !== null}
-            className="shrink-0 rounded-lg bg-terracotta px-4 py-2 text-sm font-bold text-white transition-colors hover:brightness-110 disabled:cursor-wait disabled:opacity-60"
+            className="shrink-0 rounded-lg bg-terracotta px-4 py-2 text-sm font-medium text-white transition-colors hover:brightness-110 disabled:cursor-wait disabled:opacity-60"
           >
             {busy ?? (phase === "error" ? "Try again" : `Unlock${price !== null ? ` · ${usdc(price)}` : ""}`)}
           </button>

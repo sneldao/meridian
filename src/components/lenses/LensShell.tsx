@@ -25,6 +25,9 @@ interface Props {
   elapsedMs: number;
   toolCalls: number;
   lockedDays: number;
+  /** Workbench chrome (?dev=1): key hints and the director toggle. The
+   *  keyboard shortcuts keep working either way — only the labels hide. */
+  dev?: boolean;
   children: React.ReactNode;
 }
 
@@ -37,6 +40,7 @@ export function LensShell({
   elapsedMs,
   toolCalls,
   lockedDays,
+  dev = false,
   children,
 }: Props) {
   const reduce = useReducedMotion();
@@ -90,7 +94,7 @@ export function LensShell({
               onClick={() => onChange(l.id)}
               aria-pressed={lens === l.id}
             >
-              <KeyHint>{l.key}</KeyHint>
+              {dev && <KeyHint>{l.key}</KeyHint>}
               {l.label}
             </Button>
           ))}
@@ -111,14 +115,16 @@ export function LensShell({
             </div>
           )}
 
-          <Button
-            variant={auto ? "secondary" : "ghost"}
-            size="sm"
-            onClick={onToggleAuto}
-            title="Toggle auto-director (A)"
-          >
-            {auto ? "director on" : "director off"}
-          </Button>
+          {dev && (
+            <Button
+              variant={auto ? "secondary" : "ghost"}
+              size="sm"
+              onClick={onToggleAuto}
+              title="Toggle auto-director (A)"
+            >
+              {auto ? "director on" : "director off"}
+            </Button>
+          )}
         </div>
       </Card>
 

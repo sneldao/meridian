@@ -5,13 +5,9 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { RoutePicker } from "@/components/RoutePicker";
 import { isValidHomeRoute, type HomeRoute } from "@/lib/home-entry";
-import { SampleJourneys } from "@/components/SampleJourneys";
-import { SunSelf } from "@/components/SunSelf";
-import type { DemoScenarioId } from "@/domain/demo-scenarios";
-import { sunSelfRead, sunSelfSleeping } from "@/domain/sun-self";
 import { ADHERENCE_PROFILE, buildTrip, GARMIN_BASELINE } from "@/domain/fixtures";
 import { previewPlan, type SolvedDay } from "@/domain/solver";
-import { routeGapHeadline, routeGapLine, routeGapRead, type RouteGapRead } from "@/domain/route-gap";
+import { routeGapLine, routeGapRead, type RouteGapRead } from "@/domain/route-gap";
 import { coverageOf, fmtMin } from "@/domain/circadian";
 import { paymentsConfigured, readPrice } from "@/lib/escrow";
 import type { CityCode, Trip } from "@/domain/types";
@@ -19,7 +15,7 @@ import type { CityCode, Trip } from "@/domain/types";
 function planPreview(route: HomeRoute): { lightStart?: number; covPct: number } | null {
   try {
     const t: Trip = buildTrip(route.origin.toUpperCase() as CityCode, route.dest.toUpperCase() as CityCode, route.date);
-    // Same demo baseline as the tiles above: a preview the solver can
+    // Same demo baseline as the example day below: a preview the solver can
     // actually place, computed the moment the route resolves.
     const solved = previewPlan({ trip: t, calendar: [], adherence: ADHERENCE_PROFILE, baseline: GARMIN_BASELINE });
     const days = [...solved.values()].filter((s): s is SolvedDay => !!s).map((s) => s.plan);
@@ -38,15 +34,23 @@ export interface TripEntryScreenProps {
   initialDate: string;
   onContinue: (route: HomeRoute) => void;
   onExploreExample: () => void;
-  onExploreScenario?: (id: DemoScenarioId) => void;
+  /** Deprecated on this surface: the sample-journey tiles moved out of the
+   *  form to after the example instrument (Phase 1). Kept so existing
+   *  callers typecheck — nothing is rendered from it here. */
+  onExploreScenario?: (id: import("@/domain/demo-scenarios").DemoScenarioId) => void;
   initialRoute?: HomeRoute | null;
   /** The resolved gap + solver coverage for the draft, reported as it
-   *  changes — the landing stage plays the visitor's own route (round 30
-   *  phase 3). Null gap = the draft hasn't resolved. */
+   *  changes — the landing headline above adopts it. Null gap = the draft
+   *  hasn't resolved. Callers should pass a stable callback (useCallback);
+   *  the report effect re-runs whenever its identity changes. */
   onGapChange?: (gap: RouteGapRead | null, covPct: number | null) => void;
 }
 
-export function TripEntryScreen({ initialDate, onContinue, onExploreExample, onExploreScenario, initialRoute, onGapChange }: TripEntryScreenProps) {
+/* Design reset Phase 1 — the form is the hero's action: no intro column,
+ * no mascot, no sample tiles inside the form (they live below the example
+ * day now). The response to typing is the headline above it changing via
+ * onGapChange, plus the preview line under the CTA. */
+export function TripEntryScreen({ initialDate, onContinue, onExploreExample, initialRoute, onGapChange }: TripEntryScreenProps) {
   const [draft, setDraft] = useState<HomeRoute>(
     initialRoute && isValidHomeRoute(initialRoute) ? initialRoute : { origin: "", dest: "", date: initialDate },
   );
@@ -67,52 +71,17 @@ export function TripEntryScreen({ initialDate, onContinue, onExploreExample, onE
   const sameAirports =
     !!draft.origin && !!draft.dest && draft.origin.toUpperCase() === draft.dest.toUpperCase();
   const preview = useMemo(() => (valid ? planPreview(draft) : null), [draft, valid]);
-  // The stakes line, computed from the route being typed — the headline
-  // reacts the moment the draft resolves, not after the form is submitted.
   const gap = useMemo(() => (valid ? routeGapRead(draft) : null), [draft, valid]);
-  // Report the resolved read upward — the landing stage adopts it.
+  // Report the resolved read upward — the landing headline adopts it.
   useEffect(() => {
     onGapChange?.(gap, preview?.covPct ?? null);
   }, [gap, preview, onGapChange]);
 
-  // The face wakes as the route is typed (round 25): asleep while the draft
-  // is empty — no route yet means no debt yet — and the moment the draft
-  // resolves it shows exactly what the headline says: the gap the route
-  // carries, owed in full, nothing banked. The pulse fires once, on waking.
-  const entrySun = gap
-    ? sunSelfRead({
-        owedMin: gap.gapMin,
-        deliveredMin: 0,
-        requiredMin: gap.gapMin,
-        direction: gap.direction,
-      })
-    : sunSelfSleeping();
-
   return (
-    <div className="reading entry" id="trip-entry" role="group" aria-labelledby="entry-heading">
-      <div className="entry-intro">
-        {/* The brand's face — asleep before the route resolves, awake (and
-            honest about the debt) the moment it does. */}
-        <div className="entry-sunself">
-          <SunSelf read={entrySun} size={56} pulseKey={gap ? "awake" : null} vt follow wake />
-        </div>
-        <p className="entry-eyebrow">Arrive with a plan</p>
-        {/* Round 30: the stage above already told the demo journey — the
-            pain line is not restated here. Once the draft resolves the
-            headline names *their* gap instead. */}
-        <h1 id="entry-heading" className="entry-title">
-          {gap ? routeGapHeadline(gap) : "Your turn."}
-        </h1>
-        {/* The hero above already said what the plan does; this line says
-            who does the work — the division of labour is the new fact. */}
-        <p className="entry-sub">Your crew reads the route, drafts the days, and hands back a plan you keep.</p>
-        <p className="entry-source">Sleep timing from your trip. Place discovery powered by Qloo when available.</p>
-      </div>
+    <section className="entry" id="trip-entry" role="group" aria-labelledby="entry-heading">
       <div className="entry-planner">
-        {/* One "start" per page: the hero's CTA already said it — the
-            form's own header carries this block. */}
-        <h2>Where are you headed?</h2>
-        <p className="entry-planner-note">Choose your airports and departure date. We’ll take it one day at a time.</p>
+        <h2 id="entry-heading">Where are you headed?</h2>
+        <p className="entry-planner-note">Choose airports from the suggestions, then a departure date.</p>
         <form
           className="entry-form"
           onSubmit={(e) => {
@@ -130,26 +99,23 @@ export function TripEntryScreen({ initialDate, onContinue, onExploreExample, onE
             origin={draft.origin}
             dest={draft.dest}
             date={draft.date}
-            surface="cream"
+            surface="landing"
             onChange={(next) =>
               setDraft({ origin: next.origin, dest: next.dest, date: next.date })
             }
           />
-          <div className="entry-helper">
-            {sameAirports ? (
-              <p role="alert" className="entry-error">Choose different departure and destination airports.</p>
-            ) : (
-              <p>Pick an airport from the suggestions to continue.</p>
-            )}
-          </div>
+          {/* The helper only speaks when there's an actual error — the
+              suggestion instruction lives in the note above the fields. */}
+          {sameAirports && (
+            <p role="alert" className="entry-error">Choose different departure and destination airports.</p>
+          )}
           <button type="submit" className="entry-cta" disabled={!valid}>
             See my trip plan <ArrowRight size={18} aria-hidden="true" />
           </button>
-          {/* Live solver preview — computed as the route resolves, so the
-              landing reacts rather than promises. The gap read lands the
-              moment the airports resolve; the solver's line follows. */}
+          {/* Live solver preview — computed as the route resolves. It is a
+              model preview of coverage, never a promise of alertness. */}
           {(preview || gap) && (
-            <p className="mt-2.5 text-2xs text-mist" aria-live="polite">
+            <p className="entry-preview" aria-live="polite">
               {gap && (
                 <>
                   {routeGapLine(gap)}
@@ -158,7 +124,7 @@ export function TripEntryScreen({ initialDate, onContinue, onExploreExample, onE
               )}
               {preview && (
                 <>
-                  lands {preview.covPct}% adapted
+                  Model preview — estimated shift coverage {preview.covPct}% using example sleep timing
                   {preview.lightStart !== undefined && ` · first light ${fmtMin(preview.lightStart)}`}
                 </>
               )}
@@ -180,7 +146,6 @@ export function TripEntryScreen({ initialDate, onContinue, onExploreExample, onE
           </p>
         )}
       </div>
-      {onExploreScenario && <SampleJourneys onChoose={onExploreScenario} />}
-    </div>
+    </section>
   );
 }

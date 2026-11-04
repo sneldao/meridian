@@ -738,7 +738,7 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
       </AnimatePresence>
 
       {/* frosted status pill — floats on the world, no box inside a box */}
-      <div className="pointer-events-none absolute top-3 left-3 max-w-[calc(100%-170px)] truncate rounded-full border border-white/10 bg-ink-2/80 px-3 py-1.5 font-mono2 text-2xs backdrop-blur-md sm:top-4 sm:left-4 sm:text-xs">
+      <div className="pointer-events-none absolute top-3 left-3 max-w-[calc(100%-170px)] truncate rounded-md border border-white/10 bg-ink-2/80 px-3 py-1.5 font-mono2 text-2xs backdrop-blur-md sm:top-4 sm:left-4 sm:text-xs">
         <span className="text-sun-home">
           UTC{" "}
           {hydrated
@@ -755,13 +755,13 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
 
       {/* mode + zoom controls */}
       <div className="absolute right-4 top-4 flex items-center gap-1">
-        <div className="flex items-center rounded-full border border-white/10 bg-ink-2/80 p-1 backdrop-blur-md">
+        <div className="flex items-center rounded-md border border-white/10 bg-ink-2/80 p-1 backdrop-blur-md">
           <button
             type="button"
             aria-pressed={mode === "map"}
             aria-label="Flat map view"
             onClick={() => { buzz(4); setMode("map"); }}
-            className={`flex h-7 w-7 items-center justify-center rounded-full transition-colors ${
+            className={`flex h-7 w-7 items-center justify-center rounded-md transition-colors ${
               mode === "map" ? "bg-paper text-ink" : "text-mist hover:text-paper"
             }`}
           >
@@ -772,7 +772,7 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
             aria-pressed={mode === "globe"}
             aria-label="Globe view"
             onClick={() => { buzz(4); setMode("globe"); }}
-            className={`flex h-7 w-7 items-center justify-center rounded-full transition-colors ${
+            className={`flex h-7 w-7 items-center justify-center rounded-md transition-colors ${
               mode === "globe" ? "bg-paper text-ink" : "text-mist hover:text-paper"
             }`}
           >
@@ -780,12 +780,12 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
           </button>
         </div>
         {!isGlobe && (
-          <div className="flex items-center gap-1 rounded-full border border-white/10 bg-ink-2/80 p-1 backdrop-blur-md">
+          <div className="flex items-center gap-1 rounded-md border border-white/10 bg-ink-2/80 p-1 backdrop-blur-md">
             <button
               type="button"
               aria-label="Zoom in"
               onClick={() => { buzz(4); zoomAround(view.scale * 1.45); }}
-              className="flex h-7 w-7 items-center justify-center rounded-full text-mist transition-colors hover:bg-white/10 hover:text-paper"
+              className="flex h-7 w-7 items-center justify-center rounded-md text-mist transition-colors hover:bg-white/10 hover:text-paper"
             >
               <Plus size={13} strokeWidth={2.5} />
             </button>
@@ -797,7 +797,7 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
                 if (view.scale / 1.45 <= 1.05) resetView();
                 else zoomAround(view.scale / 1.45);
               }}
-              className="flex h-7 w-7 items-center justify-center rounded-full text-mist transition-colors hover:bg-white/10 hover:text-paper"
+              className="flex h-7 w-7 items-center justify-center rounded-md text-mist transition-colors hover:bg-white/10 hover:text-paper"
             >
               <Minus size={13} strokeWidth={2.5} />
             </button>
@@ -806,7 +806,7 @@ export function WorldLens({ trip, progress, citationCount, running, ghostGap = 0
                 type="button"
                 aria-label="Reset map view"
                 onClick={() => { buzz(4); resetView(); }}
-                className="rounded-full bg-paper px-2 py-0.5 font-mono2 text-xs font-bold text-ink"
+                className="rounded-md bg-paper px-2 py-0.5 font-mono2 text-xs font-medium text-ink"
               >
                 1x
               </button>

@@ -1,5 +1,6 @@
 import { ArrowRight } from "lucide-react";
 import { DEMO_SCENARIOS, type DemoScenarioId } from "@/domain/demo-scenarios";
+import { Stamp } from "@/components/ui/Stamp";
 
 export function SampleJourneys({ onChoose }: { onChoose: (id: DemoScenarioId) => void }) {
   return (
@@ -20,7 +21,7 @@ export function SampleJourneys({ onChoose }: { onChoose: (id: DemoScenarioId) =>
         </div>
       ))}
       <p className="sample-foot">
-        Imagined demo scenarios — fictional sample data, not real schedules or endorsements.
+        <Stamp kind="fictional" /> Imagined scenarios — not real schedules or endorsements.
       </p>
     </section>
   );

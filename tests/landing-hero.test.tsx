@@ -3,48 +3,37 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { createElement } from "react";
 import { LandingHero } from "../src/components/LandingHero";
 import { TripEntryScreen } from "../src/components/TripEntryScreen";
+import { routeGapRead, routeGapHeadline } from "../src/domain/route-gap";
 
-describe("LandingHero (round-31 landing, SSR)", () => {
+/* Design reset Phase 1 — the Statement hero: type first, the form is the
+ * action, no sun, no orbit, no instrument frame (the example day moved to
+ * LandingExampleDay). */
+
+describe("LandingHero (Phase 1 statement, SSR)", () => {
   const h = renderToStaticMarkup(createElement(LandingHero));
 
-  test("headline, primary CTA and the demo link", () => {
-    // The hero line is the promise, not the brand — the chrome already
-    // carries "Arrive better adjusted" once.
-    expect(h).toContain("Land on their clock.");
+  test("fallback headline is one h1, word-grouped, full text in aria-label", () => {
+    expect(h).toContain('aria-label="Land on their clock."');
+    expect((h.match(/<h1/g) ?? []).length).toBe(1);
+    // Words are wrapped so a word never breaks letter-by-letter.
+    expect(h).toContain("lh-word");
+    expect(h).toContain("lh-char");
     expect(h).not.toContain("Arrive better adjusted.");
+  });
+
+  test("one quiet anchor to the form and one to the demo — no second CTA button", () => {
     expect(h).toContain('href="#trip-entry"');
     expect(h).toContain("Start with your trip");
     expect(h).toContain('href="/demo"');
+    expect(h).toContain("Watch the example");
+    expect(h).not.toContain("landing-tease-cta");
+    expect(h).not.toContain("<button");
   });
 
-  test("the explorable example day is present and honestly tagged", () => {
-    expect(h).toContain("Explore an example day");
-    expect(h).toContain("Example trip — not your plan.");
-    expect(h).toContain("iday-timeline");
-  });
-
-  test("the example day sits in its instrument frame and the sun rests until seen", () => {
-    expect(h).toContain("landing-iday-frame");
-    expect(h).toContain("landing-iday-bar");
-    expect(h).toContain("lh-sun");
-    expect(h).toContain('data-peek="no"');
-  });
-
-  test("the sun rides a measured orbit to the day frame", () => {
-    // The orbit wrapper carries the scroll descent; the glyph inside keeps
-    // the one-shot peek. The frame it perches on is in the same render.
-    expect(h).toContain("lh-sun-orbit");
-  });
-
-  test("the ambient depth hangs behind the page, generated not authored", () => {
-    expect(h).toContain("landing-depth");
-    expect(h).toContain("ld-sky");
-    expect(h).toContain("ld-motes-far");
-    expect(h).toContain("ld-ridge-far");
-    expect(h).toContain("ld-grain");
-    // Pure chrome — hidden from the read, seeded geometry in the markup.
-    expect(h).toMatch(/class="landing-depth"[^>]*aria-hidden="true"/);
-    expect(h).toContain("<circle");
+  test("no sun, no orbit, no observers, no instrument frame", () => {
+    for (const gone of ["lh-sun", "sunself", "lh-sun-orbit", "data-peek", "landing-iday", "landing-depth", "IntersectionObserver"]) {
+      expect(h).not.toContain(gone);
+    }
   });
 
   test("no pinned stage", () => {
@@ -52,8 +41,20 @@ describe("LandingHero (round-31 landing, SSR)", () => {
   });
 });
 
-describe("TripEntryScreen (round 30)", () => {
-  test("the form is the hero CTA's target", () => {
+describe("LandingHero — resolved visitor gap", () => {
+  test("a resolved draft renders the routeGapHeadline plainly, one h1", () => {
+    const gap = routeGapRead({ origin: "LHR", dest: "NRT", date: "2026-11-07" })!;
+    const h = renderToStaticMarkup(createElement(LandingHero, { visitor: { gap, covPct: 62 } }));
+    expect(h).toContain(routeGapHeadline(gap));
+    expect(h).toContain("lh-title--resolved");
+    // Resolved headline is plain text — no per-character show while typing.
+    expect(h).not.toContain("lh-char");
+    expect((h.match(/<h1/g) ?? []).length).toBe(1);
+  });
+});
+
+describe("TripEntryScreen (Phase 1)", () => {
+  test("the form carries its own heading on the landing surface", () => {
     const h = renderToStaticMarkup(
       createElement(TripEntryScreen, {
         initialDate: "2026-11-04",
@@ -62,9 +63,16 @@ describe("TripEntryScreen (round 30)", () => {
       }),
     );
     expect(h).toContain('id="trip-entry"');
-    // One "start" per page: the anchor above owns the words, the form's own
-    // header carries this block.
-    expect(h).not.toContain("Start with your trip");
     expect(h).toContain("Where are you headed?");
+    expect(h).toContain('id="entry-heading"');
+    // The landing RoutePicker surface: mono cells + resolved city names.
+    expect(h).toContain("rp-picker--landing");
+    // No mascot, no sample tiles inside the form, no hero CTA words.
+    expect(h).not.toContain("sunself");
+    expect(h).not.toContain("sample-journeys");
+    expect(h).not.toContain("Start with your trip");
+    // Privacy link and the example action stay.
+    expect(h).toContain("/privacy");
+    expect(h).toContain("Explore an example");
   });
 });

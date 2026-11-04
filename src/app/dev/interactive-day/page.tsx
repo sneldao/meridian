@@ -40,12 +40,12 @@ function SegButton({
       type="button"
       aria-pressed={selected}
       onClick={onClick}
-      className="relative rounded-full px-4 py-2 text-sm font-semibold transition-transform duration-150 ease-out hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--m-text)]"
+      className="relative rounded-md px-4 py-2 text-sm font-semibold transition-transform duration-150 ease-out hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--m-text)]"
     >
       {selected && (
         <motion.span
           layoutId={thumbId}
-          className="absolute inset-0 rounded-full bg-[var(--m-text)]"
+          className="absolute inset-0 rounded-md bg-[var(--m-text)]"
           transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 380, damping: 24 }}
         />
       )}
@@ -80,7 +80,7 @@ export default function DevInteractiveDay() {
       </p>
       <div className="flex flex-wrap items-center justify-center gap-2">
         <span className="text-sm text-clay-2">Day</span>
-        <div className="flex gap-0.5 rounded-full border border-[var(--m-border-2)] bg-[var(--m-card)] p-1 shadow-sm">
+        <div className="flex gap-0.5 rounded-md border border-[var(--m-border-2)] bg-[var(--m-card)] p-1 shadow-sm">
           {planDays.map((d) => (
             <SegButton
               key={d.dayIndex}
@@ -105,7 +105,7 @@ export default function DevInteractiveDay() {
           </label>
           <button
             type="button"
-            className="rounded-full border border-[var(--m-border-2)] px-3.5 py-1.5 font-semibold transition-transform duration-150 hover:-translate-y-0.5"
+            className="rounded-md border border-[var(--m-border-2)] px-3.5 py-1.5 font-semibold transition-transform duration-150 hover:-translate-y-0.5"
             title="Perturbs the stored plan as if another tab edited it — the next Apply should refuse as stale"
             onClick={() => { store.simulateExternalEdit(); setVersion(store.read().version); }}
           >
@@ -113,7 +113,7 @@ export default function DevInteractiveDay() {
           </button>
         </div>
       </details>
-      <div role="group" aria-label="Motion mode" className="flex gap-0.5 rounded-full border border-[var(--m-border-2)] bg-[var(--m-card)] p-1 shadow-sm">
+      <div role="group" aria-label="Motion mode" className="flex gap-0.5 rounded-md border border-[var(--m-border-2)] bg-[var(--m-card)] p-1 shadow-sm">
         {([["settle", "Current"], ["momentum", "Momentum"], ["both", "Side by side"]] as const).map(([v, label]) => (
           <SegButton
             key={v}

@@ -53,7 +53,7 @@ export function CalendarLens({ days, events, readiness, ics }: CalendarLensProps
         {ics && (
           <button
             onClick={download}
-            className="rounded-lg border border-paper/40 bg-paper/5 px-3 py-1 text-xs font-bold text-paper hover:bg-paper/10"
+            className="rounded-lg border border-paper/40 bg-paper/5 px-3 py-1 text-xs font-medium text-paper hover:bg-paper/10"
           >
             download .ics
           </button>
@@ -66,7 +66,7 @@ export function CalendarLens({ days, events, readiness, ics }: CalendarLensProps
           {days.map((d) => (
             <span
               key={d.dayIndex}
-              className="text-center text-xs font-bold text-mist"
+              className="text-center text-xs font-medium text-mist"
               style={{ width: `${col}%` }}
             >
               {d.label}
@@ -128,7 +128,7 @@ export function CalendarLens({ days, events, readiness, ics }: CalendarLensProps
                   }}
                   transition={reduce ? { duration: 0 } : springCalendar}
                 >
-                  <div className="font-bold" style={{ color: tone }}>
+                  <div className="font-medium" style={{ color: tone }}>
                     {e.title}
                   </div>
                   <div className="text-mist">
@@ -136,7 +136,7 @@ export function CalendarLens({ days, events, readiness, ics }: CalendarLensProps
                   </div>
                   {badge && (
                     <div
-                      className={`mt-0.5 inline-block rounded px-1 text-xs font-bold ${
+                      className={`mt-0.5 inline-block rounded px-1 text-xs font-medium ${
                         badge.status === "risk"
                           ? "bg-fail/10 text-fail"
                           : "bg-pass/10 text-pass"
@@ -165,11 +165,11 @@ export function CalendarLens({ days, events, readiness, ics }: CalendarLensProps
                 <span className="min-w-0 flex-1 truncate text-mist">
                   {r.title} <span className="text-dim">· body clock</span>
                 </span>
-                <span className={`shrink-0 font-mono2 font-bold ${risk ? "text-fail" : "text-pass"}`}>
+                <span className={`shrink-0 font-mono2 font-medium ${risk ? "text-fail" : "text-pass"}`}>
                   {improved ? `${fmtMin(r.bodyWithoutPlanMin)} → ${fmtMin(r.bodyMin)}` : fmtMin(r.bodyMin)}
                 </span>
                 <span
-                  className={`shrink-0 rounded px-1 text-xs font-bold ${
+                  className={`shrink-0 rounded px-1 text-xs font-medium ${
                     risk ? "bg-fail/10 text-fail" : "bg-pass/10 text-pass"
                   }`}
                 >

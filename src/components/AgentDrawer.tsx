@@ -51,11 +51,11 @@ export function AgentDrawer({
           <div>
             <div className="flex items-center gap-2">
               <Sparkles size={14} className="text-sun-dest" />
-              <h2 className="text-sm font-bold text-paper">
+              <h2 className="text-sm font-medium text-paper">
                 Behind the Scenes · AI Crew Activity
               </h2>
               {running && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-progress/15 px-2 py-0.5 font-mono2 text-2xs font-semibold text-progress">
+                <span className="inline-flex items-center gap-1 rounded-md bg-progress/15 px-2 py-0.5 font-mono2 text-2xs font-semibold text-progress">
                   <span className="h-1.5 w-1.5 rounded-full bg-progress animate-pulse" />
                   LIVE
                 </span>

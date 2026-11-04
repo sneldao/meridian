@@ -249,7 +249,7 @@ export default function GlobeSpikePage() {
     <main className="mx-auto max-w-6xl px-6 py-10">
       <header className="mb-8">
         <Link href="/" className="text-xs text-clay-2 hover:text-clay">← Today</Link>
-        <h1 className="mt-2 text-xl font-bold tracking-[0.18em] text-clay">GLOBE SPIKE · TIER 1</h1>
+        <h1 className="mt-2 text-xl font-medium tracking-[0.18em] text-clay">GLOBE SPIKE · TIER 1</h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-clay-2">
           The WebGL dawn globe against the shipped SVG hero, sharing one solar model.
           Drag to orbit, scroll to zoom. Everything below the disc is the same read
@@ -259,7 +259,7 @@ export default function GlobeSpikePage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section>
-          <h2 className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-clay-2">
+          <h2 className="mb-2 text-xs font-medium uppercase tracking-[0.14em] text-clay-2">
             WebGL — {mounted && useSvg ? "unavailable, showing fallback" : "live"}
           </h2>
           {!mounted || useSvg ? (
@@ -288,7 +288,7 @@ export default function GlobeSpikePage() {
                   initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.2, ease: "easeOut" }}
-                  className="pointer-events-none absolute inset-x-0 bottom-8 mx-auto w-fit rounded-full border border-sun-dest/30 bg-ink-2/90 px-3 py-1 font-mono2 text-2xs text-sun-dest backdrop-blur"
+                  className="pointer-events-none absolute inset-x-0 bottom-8 mx-auto w-fit rounded-md border border-sun-dest/30 bg-ink-2/90 px-3 py-1 font-mono2 text-2xs text-sun-dest backdrop-blur"
                 >
                   {inCrossingWindow.direction === "dusk"
                     ? "crossed into night — the cities are coming up beneath"
@@ -309,7 +309,7 @@ export default function GlobeSpikePage() {
                   className="pointer-events-none absolute left-3 top-3 min-w-[11rem] rounded-lg border border-line bg-ink-2/95 px-3 py-2 backdrop-blur"
                 >
                   <div className="flex items-baseline gap-2">
-                    <span className="font-mono2 text-sm font-bold text-paper">
+                    <span className="font-mono2 text-sm font-medium text-paper">
                       {hover.code || "one light"}
                     </span>
                     {hover.code && hover.name && (
@@ -349,7 +349,7 @@ export default function GlobeSpikePage() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.7, duration: 0.4 }}
-                  className="pointer-events-none absolute inset-x-0 bottom-5 mx-auto w-fit rounded-full border border-white/10 bg-ink-2/85 px-3 py-1 font-mono2 text-2xs text-mist backdrop-blur"
+                  className="pointer-events-none absolute inset-x-0 bottom-5 mx-auto w-fit rounded-md border border-white/10 bg-ink-2/85 px-3 py-1 font-mono2 text-2xs text-mist backdrop-blur"
                 >
                   drag to spin · scroll to zoom · fly the route below
                 </motion.div>
@@ -369,7 +369,7 @@ export default function GlobeSpikePage() {
               ).map(([k, v]) => (
                 <div key={k} className="rounded-lg border border-clay-line bg-cream-card px-2 py-1.5">
                   <dt className="text-[10px] uppercase tracking-[0.1em] text-clay-2">{k}</dt>
-                  <dd className="font-bold text-clay">{v}</dd>
+                  <dd className="font-medium text-clay">{v}</dd>
                 </div>
               ))}
             </dl>
@@ -377,7 +377,7 @@ export default function GlobeSpikePage() {
         </section>
 
         <section>
-          <h2 className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-clay-2">
+          <h2 className="mb-2 text-xs font-medium uppercase tracking-[0.14em] text-clay-2">
             SVG hero — shipped
           </h2>
           <div className="overflow-hidden rounded-2xl border border-clay-line bg-cream-card p-4">
@@ -393,7 +393,7 @@ export default function GlobeSpikePage() {
       </div>
 
       <section className="mt-8 rounded-2xl border border-clay-line bg-cream-card p-4">
-        <label className="text-xs font-bold uppercase tracking-[0.14em] text-clay-2" htmlFor="owed">
+        <label className="text-xs font-medium uppercase tracking-[0.14em] text-clay-2" htmlFor="owed">
           minutes the body still owes
         </label>
         <input
@@ -407,7 +407,7 @@ export default function GlobeSpikePage() {
           style={{ width: "100%", marginTop: 10 }}
         />
         <div className="mt-2 flex items-baseline justify-between font-mono2 text-xs">
-          <span className="font-bold text-clay">
+          <span className="font-medium text-clay">
             owed {owedMin}m — ghost {owedMin >= 6 ? "drawn" : "hidden (below the 6m threshold)"}
           </span>
           <button
@@ -428,7 +428,7 @@ export default function GlobeSpikePage() {
       </section>
       <section className="mt-6 rounded-2xl border border-clay-line bg-cream-card p-4">
         <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-clay-2">
+          <h2 className="text-xs font-medium uppercase tracking-[0.14em] text-clay-2">
             flight — the great circle
           </h2>
           <div className="font-mono2 text-xs text-clay">
@@ -461,7 +461,7 @@ export default function GlobeSpikePage() {
               }
               setFlying((f) => !f);
             }}
-            className="rounded-lg border border-clay-line bg-paper px-4 py-2 text-sm font-bold text-ink"
+            className="rounded-lg border border-clay-line bg-paper px-4 py-2 text-sm font-medium text-ink"
           >
             {flying ? "pause" : flightT >= 1 ? "fly again" : "fly the route"}
           </button>

@@ -76,7 +76,7 @@ export function MorningCheckin({ phase, lockedCount, totalDays, sessionStartedAt
         onClick={() => setOpen((v) => !v)}
         disabled={phase === "running"}
         title="Tell the crew how it went — they'll replan from here"
-        className={`rounded-lg border px-3 py-2 text-xs font-bold transition-colors ${
+        className={`rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
           phase === "running"
             ? "cursor-not-allowed border-line text-dim"
             : "border-paper bg-paper text-ink hover:bg-white"
@@ -128,7 +128,7 @@ export function MorningCheckin({ phase, lockedCount, totalDays, sessionStartedAt
                 setOpen(false);
                 setNote("");
               }}
-              className="mt-3 w-full rounded-lg border border-paper bg-paper px-3 py-2 text-xs font-bold text-ink transition-colors hover:bg-white"
+              className="mt-3 w-full rounded-lg border border-paper bg-paper px-3 py-2 text-xs font-medium text-ink transition-colors hover:bg-white"
             >
               Check in now
             </button>

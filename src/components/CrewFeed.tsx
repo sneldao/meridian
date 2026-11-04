@@ -79,7 +79,7 @@ export function CrewFeed({ entries, running }: { entries: LogEntry[]; running?: 
           className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center"
         >
           <SunSelf read={sunSelfSleeping()} size={56} vt follow speak />
-          <div className="text-sm font-bold text-paper">The crew is on standby.</div>
+          <div className="text-sm font-medium text-paper">The crew is on standby.</div>
           <p className="max-w-xs text-xs leading-relaxed text-mist">
             Start the night shift and you&apos;ll see each agent&apos;s visible work here, in order.
           </p>
@@ -153,7 +153,7 @@ export function CrewFeed({ entries, running }: { entries: LogEntry[]; running?: 
               );
             case "locked":
               return (
-                <div className="my-1.5 rounded-md bg-pass/10 px-2.5 py-1 text-center text-xs font-bold text-pass">
+                <div className="my-1.5 rounded-md bg-pass/10 px-2.5 py-1 text-center text-xs font-medium text-pass">
                   {e.label} LOCKED · sun advances
                 </div>
               );

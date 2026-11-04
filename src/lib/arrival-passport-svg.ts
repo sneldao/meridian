@@ -138,12 +138,12 @@ export function arrivalPassportSvg(pp: ArrivalPassport, sun?: SunSelfRead): stri
     )
     .join("\n  ")}
 
-  <!-- the traveller's meridian — the same face the stage sky shows, computed
+  <!-- the traveller's meridian — the same glyph the stage sky shows, computed
        from this trip's debt and banked shift: an export is a portrait, not a logo -->
   ${
     sun
       ? `<g transform="translate(${W - 250} 690)">
-    ${sunSelfSvgGroup(sun, { r: 88, palette: { disc: GOLD, face: INK, rayLit: GOLD, rayDim: MUTED, halo: GOLD } })}
+    ${sunSelfSvgGroup(sun, { r: 88, palette: { disc: GOLD, rayLit: GOLD, rayDim: MUTED, halo: GOLD } })}
   </g>
   <text x="${W - 250}" y="816" text-anchor="middle" font-family="${MONO}" font-size="20"
     letter-spacing="3" fill="${MUTED}">${esc(sunSelfCaption(sun))}</text>`

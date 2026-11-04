@@ -473,6 +473,85 @@ over them.
 - Detail lives behind disclosure (`<details>`, drawers), not beside it.
 - Labels are noun phrases ("Example traveller"), not explanations.
 
+*Amended Phase 0 (2026-11-04, docs/plan/design-reset.md):* the toy-read
+kill list landed and supersedes these specifics wherever they conflict:
+
+- **The face is retired.** The sun-self glyph is disc + halo + rays — the
+  read arrives as light, not expression; `lid` stays in the model read for
+  Phase 2's bloom mapping. SolLuna carries the gap in its halves, not eyes.
+  The exported portrait/passport draw the same faceless geometry. This
+  supersedes every Part-1/2 description of eyes, lids, mouth or "the face".
+- **One provenance stamp per surface.** `Stamp` (ui/Stamp.tsx): JetBrains
+  Mono uppercase at the 13px readability floor — EXAMPLE, PREVIEW, LOCKED,
+  FICTIONAL — replaces sentence-length hedges. The disclosure underneath
+  (sample data isn't yours, estimates aren't measurements) stays; it is
+  consolidated, not deleted. LOCKED means the accepted/verified plan —
+  it never marks an unaccepted one.
+- **UI weight ceiling is 600.** font-weight 800→600, 700→500 everywhere
+  except the `.brand` wordmark and `.arr-cell em` / `.demo-*` display
+  numerals. Supersedes the heavier weights implied in Part 4 era rules.
+- **Radii are rectangular.** Controls, chips and badges take 6px; surface
+  cards take 10px; primary CTAs keep their pill radius; discs, dials, rays,
+  progress bars and dot geometry are untouched. The BottomNav active
+  indicator is a 2px rule, not a filled pill.
+- **The 60s beam shade is deleted.** The static `.beam` tint stays; the
+  travelling layer and `--beam-phase` are gone — ambient motion must be
+  perceivable, and this loop measured invisible.
+- **`/crew` workbench chrome is opt-in.** Provider label, director toggle,
+  key-hint pills, first-run coaching and the duplicate header CTA render
+  only with `?dev=1`; shortcuts still work. The sample-calendar disclosure
+  stays visible as an EXAMPLE stamp.
+
+*Amended Phase 1 (2026-11-04, docs/plan/design-reset.md):* the landing
+macrostructure is a **Statement on ink**, superseding the round-31
+hero-over-example-card layout wherever they conflict:
+
+- **Ink in both themes.** `.root.landing-ink` scopes the stage palette to
+  the setup surface (and unresolved boot) without touching useTheme,
+  localStorage or the Today surface; `body:has(.root.landing-ink)` paints
+  the viewport gutters so the whole cold-visit chrome is one ink field.
+- **Type is the hero.** One `<h1>`: fallback "Land on their clock." in
+  Fraunces 500 with the per-character rise kept (`lh-char` inside
+  `.lh-word` so no word breaks mid-word); once the draft route resolves,
+  the headline becomes `routeGapHeadline` plainly — typed routes never
+  trigger a per-letter show. One secondary sentence, quiet text anchors.
+  The hero's sun, orbit, observers and peek are removed — no cartoon sun
+  on the first screen.
+- **Form before sample content.** Statement order: LandingHero →
+  TripEntryScreen → LandingExampleDay → SampleJourneys → EverydayRhythm.
+  The form is compact instrument cells (mono IATA over a Fraunces city
+  name); its preview line says "Model preview — estimated shift coverage",
+  never alertness. Sample tiles live after the example instrument.
+- **Depth on ink only.** `LandingDepth tone="ink"` mounts two seeded mote
+  planes, one dark ridge, a warm haze (sun-dest α0.12) and grain — scroll
+  parallax only, no ambient loops.
+
+*Amended Phase 2 (2026-11-04, docs/plan/design-reset.md):* the sun-self is
+now a **glass instrument**, superseding the faceless-disc renderer:
+
+- **One renderer for every surface.** `GlassSun.tsx` draws the
+  refractive lenticular solar medallion; `SunSelf.tsx` is a compatibility
+  re-export so all six consumers share it. `glassSunSvgGroup` is the
+  single body for live DOM and exports — the export delegates to it.
+- **The read is still the only state.** `glassParams(read)` maps
+  `lid`→debt (bloom, roughness), `glow`→progress (core light), `tiltDeg`
+  →graticule angle, `rayCount`/`raysLit`→caustic ticks. `raysLit` counts
+  the read-provided lit ticks (locked days when supplied); `rayCount`
+  stays 12 and never implies progress. No mood
+  geometry — the face stays retired.
+- **Fallback first.** The SVG body is always rendered — beautiful glass
+  on its own: prismatic split rim, attenuated core, warped horizon,
+  specular crescent. The WebGL1 lens is an *enhancement* for glyphs ≥96px
+  when motion is allowed; its environment is procedural — it does not
+  sample the DOM — and every failure or reduced-motion state returns the
+  static SVG.
+- **Motion is caused, never idle.** The breath and stage-breathe loops
+  are retired; the glass responds to pulses, taps (300ms ripple) and
+  pointer follow only. The shared light pass is one sharp 2px edge plus a
+  ~160px blurred tail on a 900ms transform/opacity travel —
+  `useLightSweep` is unchanged API-wise and /demo picks it up
+  automatically; reduced motion degrades to a ≤150ms opacity fade.
+
 ### Per-page allowances
 
 - Landing MAY use the globe stage as full-bleed enrichment (it is real/modelled

@@ -85,7 +85,7 @@ export default function TeamPage() {
             ← run a shift
           </Link>
           <MoreNav className="ml-3 hidden text-xs text-mist hover:text-paper md:inline" />
-          <h1 className="mt-2 font-mono2 text-2xl font-bold tracking-[0.22em]">TEAM · 12 CREWS</h1>
+          <h1 className="mt-2 font-mono2 text-2xl font-medium tracking-[0.22em]">TEAM · 12 CREWS</h1>
           <p className="mt-1 text-xs text-mist">
             {streaming
               ? runs.size === 0
@@ -96,8 +96,8 @@ export default function TeamPage() {
         </div>
         <div className="text-right text-xs text-mist">
           <div>
-            <span className="font-bold text-pass">{done}</span> of {TEAM_TRAVELLERS.length} crews done ·{" "}
-            <span className="font-bold text-fail">{atRisk}</span> board meetings at risk
+            <span className="font-medium text-pass">{done}</span> of {TEAM_TRAVELLERS.length} crews done ·{" "}
+            <span className="font-medium text-fail">{atRisk}</span> board meetings at risk
           </div>
           <button
             onClick={restart}
@@ -108,7 +108,7 @@ export default function TeamPage() {
           </button>
           <div className="mt-1 text-xs text-dim">
             ~£25/traveller/mo →{" "}
-            <span className="font-bold text-mist">
+            <span className="font-medium text-mist">
               £{TEAM_TRAVELLERS.length * 25}/mo for this team
             </span>{" "}
             <span className="text-dim">(hypothesis)</span>
@@ -135,13 +135,13 @@ export default function TeamPage() {
             <Card key={t.id} className="p-4">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <div className="text-xs font-bold">{t.name}</div>
+                  <div className="text-xs font-medium">{t.name}</div>
                   <div className="mt-0.5 text-xs text-mist">
                     {trip.origin.code} <span className="text-sun-dest">→</span> {trip.destination.code} ·{" "}
                     {trip.destination.name}
                   </div>
                 </div>
-                <span className={`rounded px-1.5 py-0.5 text-xs font-bold ${badge.cls}`}>{badge.text}</span>
+                <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${badge.cls}`}>{badge.text}</span>
               </div>
 
               <div className="mt-3 h-1.5 w-full overflow-hidden rounded bg-line">
@@ -164,7 +164,7 @@ export default function TeamPage() {
                 >
                   <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${x.status === "risk" ? "bg-fail" : "bg-pass"}`} />
                   <span className="min-w-0 flex-1 truncate">{x.title}</span>
-                  <span className="shrink-0 font-mono2 font-bold">
+                  <span className="shrink-0 font-mono2 font-medium">
                     {x.bodyWithoutPlanMin !== x.bodyMin
                       ? `${fmtMin(x.bodyWithoutPlanMin)} → ${fmtMin(x.bodyMin)}`
                       : fmtMin(x.bodyMin)}

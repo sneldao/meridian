@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { findAirport, searchAirports, type Airport } from "@/domain/airports";
 import { buildTrip } from "@/domain/fixtures";
 import { fmtUtcOffset, utcOffsetMinOn } from "@/domain/timezones";
@@ -13,7 +13,7 @@ import { Card } from "@/components/ui";
 //     surface="cream"
 //     onChange={({ origin, dest, date }) => ...} />
 
-type Surface = "default" | "cream";
+type Surface = "default" | "cream" | "landing";
 
 interface Props {
   origin: string;
@@ -23,8 +23,11 @@ interface Props {
   disabled?: boolean;
   /** `default` keeps the dark `Card` chrome that lives well on /crew and
    *  other ink-2 surfaces; `cream` swaps to a cream pill that matches the
-   *  home surface (white-ish ground, warm border, dark text). The listbox
-   *  stays dark either way — list items on a cream ground are unreadable. */
+   *  home surface (white-ish ground, warm border, dark text); `landing`
+   *  is the ink Statement's compact instrument — two 56px cells side by
+   *  side, mono IATA over a Fraunces city name, the date beneath. The
+   *  listbox stays dark either way — list items on a cream ground are
+   *  unreadable. */
   surface?: Surface;
 }
 
@@ -33,31 +36,37 @@ const SURFACE_CLASSES: Record<Surface, string> = {
     "rounded-xl border border-line bg-ink-2 px-3 py-2 font-mono2 text-xs",
   cream:
     "rounded-2xl border border-[#e3d5c3] bg-[#fff8ef] px-3 py-2 font-mono2 text-xs shadow-[0_1px_0_rgba(0,0,0,0.02)]",
+  landing: "rp-picker--landing",
 };
 
 const SWAP_CLASSES: Record<Surface, string> = {
   default: "px-1 text-sun-dest hover:text-paper disabled:opacity-40",
   cream: "px-1 text-[#D96B43] hover:text-[#a8512f] disabled:opacity-40",
+  landing: "rp-swap-landing",
 };
 
 const DATE_INPUT_CLASSES: Record<Surface, string> = {
   default: "min-w-0 bg-transparent text-mist [color-scheme:dark]",
   cream: "min-w-0 bg-transparent text-[#6a5a4a] [color-scheme:light]",
+  landing: "min-w-0 bg-transparent text-paper [color-scheme:dark]",
 };
 
 const SHIFT_BADGE: Record<Surface, string> = {
   default: "text-paper",
   cream: "text-[#3a2e23]",
+  landing: "text-paper",
 };
 
 const SHIFT_LABEL: Record<Surface, string> = {
   default: "text-mist",
   cream: "text-[#6a5a4a]",
+  landing: "text-mist",
 };
 
 const FIELD_LABEL: Record<Surface, string> = {
-  default: "text-[9px] font-bold uppercase tracking-wider text-dim",
-  cream: "text-[9px] font-bold uppercase tracking-wider text-[#a89a8a]",
+  default: "text-[9px] font-medium uppercase tracking-wider text-dim",
+  cream: "text-[9px] font-medium uppercase tracking-wider text-[#a89a8a]",
+  landing: "rp-label-landing",
 };
 
 const AIRPORT_INPUT: Record<Surface, string> = {
@@ -65,6 +74,8 @@ const AIRPORT_INPUT: Record<Surface, string> = {
     "w-14 bg-transparent text-paper uppercase placeholder:normal-case placeholder:text-dim focus:w-36",
   cream:
     "w-14 bg-transparent text-[#3a2e23] uppercase placeholder:normal-case placeholder:text-[#a89a8a] focus:w-36",
+  landing:
+    "rp-input-landing w-full bg-transparent text-paper uppercase placeholder:normal-case placeholder:text-dim",
 };
 
 export function RoutePicker({
@@ -89,6 +100,53 @@ export function RoutePicker({
   const surfaceClass = SURFACE_CLASSES[surface];
 
   const destCity = findAirport(dest)?.name ?? dest;
+
+  // The landing surface: two 56px cells side by side — mono IATA over the
+  // resolved city name in Fraunces — a narrow swap column, the date beneath.
+  if (surface === "landing") {
+    return (
+      <div className={`rp-picker ${surfaceClass}`}>
+        <div className="rp-landing-route">
+          <div className="rp-field rp-field--from rp-landing-cell">
+            <span className={`rp-label ${FIELD_LABEL[surface]}`}>From</span>
+            <AirportField label="From" value={origin} date={date} disabled={disabled} onPick={(c) => onChange({ origin: c, dest, date })} surface={surface} />
+          </div>
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => onChange({ origin: dest, dest: origin, date })}
+            className={SWAP_CLASSES[surface]}
+            aria-label="Swap origin and destination"
+            title="Swap"
+          >
+            ⇄
+          </button>
+          <div className="rp-field rp-field--to rp-landing-cell">
+            <span className={`rp-label ${FIELD_LABEL[surface]}`}>To</span>
+            <AirportField label="To" value={dest} date={date} disabled={disabled} onPick={(c) => onChange({ origin, dest: c, date })} surface={surface} />
+          </div>
+        </div>
+        <div className="rp-field rp-landing-date">
+          <span className={`rp-label ${FIELD_LABEL[surface]}`}>Departs</span>
+          <input
+            type="date"
+            value={date}
+            disabled={disabled}
+            onChange={(e) => e.target.value && onChange({ origin, dest, date: e.target.value })}
+            className={`rp-input ${DATE_INPUT_CLASSES[surface]}`}
+            aria-label="Departure date"
+          />
+          {shift && (
+            <span className={`${SHIFT_LABEL[surface]}`} title="Real offsets on these dates, DST included">
+              {destCity} is <span className={SHIFT_BADGE[surface]}>{Math.abs(shift.requiredShiftMin / 60)}h</span>{" "}
+              {shift.direction === "east" ? "ahead" : "behind"}
+            </span>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   const fields = (
     <>
       <div className="rp-route-row flex items-end gap-1.5">
@@ -163,6 +221,8 @@ function AirportField({
   const [open, setOpen] = useState(false);
   const [hi, setHi] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
+  const listId = useId();
+  const cityId = useId();
   const current = findAirport(value);
   const results = useMemo(() => searchAirports(query, 8), [query]);
 
@@ -210,19 +270,37 @@ function AirportField({
           }
           e.stopPropagation(); // keep the page's Space/Esc shortcuts out of typing
         }}
-        placeholder={open ? "city or code" : value || "City or airport"}
+        placeholder={
+          open ? "city or code" : value || (surface === "landing" ? "City or code" : "City or airport")
+        }
         aria-label={`${label} airport`}
+        role="combobox"
+        aria-expanded={open && results.length > 0}
+        aria-controls={open && results.length > 0 ? listId : undefined}
+        aria-activedescendant={open && results.length > 0 && results[hi] ? `${listId}-opt-${hi}` : undefined}
+        aria-autocomplete="list"
+        aria-describedby={surface === "landing" && current ? cityId : undefined}
         title={current ? `${current.airport} · ${current.tz}` : undefined}
         className={`rp-input ${AIRPORT_INPUT[surface]}`}
       />
+      {/* Resolved city name: real text for sighted readers, announced to
+          AT via aria-describedby (kept inside the field so there's exactly
+          one description, never double-read with the suggestions). */}
+      {surface === "landing" && (
+        <span className="rp-city" id={cityId}>
+          {current?.name ?? "\u00A0"}
+        </span>
+      )}
       {open && results.length > 0 && (
         <ul
           role="listbox"
+          id={listId}
           className="rp-listbox absolute top-full left-0 z-50 mt-2 w-72 overflow-hidden rounded-xl border border-line bg-ink-2 shadow-xl"
         >
           {results.map((a, i) => (
             <li
               key={a.code}
+              id={`${listId}-opt-${i}`}
               role="option"
               aria-selected={i === hi}
               onMouseDown={(e) => {

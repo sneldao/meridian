@@ -14,6 +14,7 @@ import { sunSelfRead } from "@/domain/sun-self";
 import { CrewAvatar, type CrewAvatarState } from "@/components/CrewAvatar";
 import { StageSun } from "@/components/StageSun";
 import { useUndoToast } from "@/components/UndoToast";
+import { Stamp } from "@/components/ui/Stamp";
 import type { PlanEditApi } from "@/lib/use-plan-edit";
 
 /* The interactive day (round 31) — the one place a visitor can touch the
@@ -564,6 +565,8 @@ export function InteractiveDay({ scene, requiredMin, direction, edit, initialMin
   return (
     <section className="iday" ref={rootRef} data-motion={motionMode} data-dragging={dragging ? "yes" : "no"} aria-label={`The day over ${scene.city.name} — explore only`}>
       <header className="iday-head">
+        {example && <Stamp kind="example" className="iday-stamp" />}
+        {!example && preview && <Stamp kind="preview" className="iday-stamp" />}
         <h3 className="iday-headline">{read.headline}</h3>
         <p className="iday-lead">{read.lead}</p>
       </header>
@@ -804,11 +807,7 @@ export function InteractiveDay({ scene, requiredMin, direction, edit, initialMin
         </div>
       )}
 
-      {(read.planSummary || preview || example) && (
-        <p className="iday-plansum">
-          {read.planSummary}{preview ? " · Plan preview" : example ? " · Example plan" : ""}
-        </p>
-      )}
+      {read.planSummary && <p className="iday-plansum">{read.planSummary}</p>}
       <p className="iday-foot">
         Body-clock estimates, not measured alertness — modeled sky, not a weather forecast.
         Exploring and proposing don&rsquo;t record completed steps.

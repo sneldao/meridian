@@ -148,7 +148,7 @@ export function PlanReview({ inline = false }: { inline?: boolean }) {
   if (!plan) {
     return (
       <div className={inline ? "" : "mx-auto max-w-2xl px-6 py-10 text-center"}>
-        <h2 className={inline ? "text-sm font-bold text-clay" : "page-title"}>No saved plan yet.</h2>
+        <h2 className={inline ? "text-sm font-medium text-clay" : "page-title"}>No saved plan yet.</h2>
         <p className="mt-2 text-sm text-clay-2">Run the crew on a trip and the signed plan lands here.</p>
         {!inline && (
           <>
@@ -197,10 +197,10 @@ export function PlanReview({ inline = false }: { inline?: boolean }) {
   return (
     <div>
       {inline ? (
-        <div className={`mb-3 text-xs font-bold ${bandTone}`}>{bandLine}</div>
+        <div className={`mb-3 text-xs font-medium ${bandTone}`}>{bandLine}</div>
       ) : (
         <>
-          <div className={`text-xs font-bold ${bandTone}`}>{bandLine}</div>
+          <div className={`text-xs font-medium ${bandTone}`}>{bandLine}</div>
           {trip && (
             <div className="mt-2 mb-5 text-xs text-clay-2">
               {trip.origin.name} <span className="text-sun-dest">→</span> {trip.destination.name} ·{" "}
@@ -216,14 +216,14 @@ export function PlanReview({ inline = false }: { inline?: boolean }) {
       </p>
 
       <div className="mt-5 flex flex-wrap gap-2">
-        <button onClick={downloadIcs} className="rounded-lg bg-paper px-4 py-2 text-sm font-bold text-ink transition-colors hover:bg-white">Add to my calendar</button>
+        <button onClick={downloadIcs} className="rounded-lg bg-paper px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-white">Add to my calendar</button>
         <SubscribeCalendar
           ics={plan.ics}
           trip={trip}
           days={plan.days}
-          className="rounded-lg border border-line bg-ink-2 px-4 py-2 text-sm font-bold text-paper transition-colors hover:border-mist"
+          className="rounded-lg border border-line bg-ink-2 px-4 py-2 text-sm font-medium text-paper transition-colors hover:border-mist"
         />
-        <button onClick={downloadMarkdown} className="rounded-lg border border-line bg-ink-2 px-4 py-2 text-sm font-bold text-paper transition-colors hover:border-mist">Download as text</button>
+        <button onClick={downloadMarkdown} className="rounded-lg border border-line bg-ink-2 px-4 py-2 text-sm font-medium text-paper transition-colors hover:border-mist">Download as text</button>
         <Link href={arrivalHref} transitionTypes={["nav-forward"]} className="rounded-lg border border-line bg-ink-2 px-4 py-2 text-sm text-mist transition-colors hover:text-paper">Rate my trip</Link>
         <ReplanLink trip={trip} inline={inline} />
         <button onClick={clearPlan} className="rounded-lg px-4 py-2 text-sm text-clay-2 transition-colors hover:text-clay-fail">Delete saved plan</button>
@@ -231,7 +231,7 @@ export function PlanReview({ inline = false }: { inline?: boolean }) {
 
       <section className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_260px]">
         <div className="min-w-0">
-          <h2 className="text-sm font-bold text-clay-2">Your week at a glance</h2>
+          <h2 className="text-sm font-medium text-clay-2">Your week at a glance</h2>
           <p className="mt-1 text-xs leading-relaxed text-clay-2">
             Your sleep moves a little{" "}
             {trip?.direction === "east" ? "earlier" : "later"} each day —
@@ -245,7 +245,7 @@ export function PlanReview({ inline = false }: { inline?: boolean }) {
             {(gated ? plan.days.slice(0, 1) : plan.days).map((d) => (
               <Card key={d.dayIndex} className="p-4">
                 <div className="flex items-baseline justify-between">
-                  <h3 className="text-sm font-bold text-paper">
+                  <h3 className="text-sm font-medium text-paper">
                     {(() => {
                       const spec = trip?.days?.find((s) => s.label === d.label);
                       return spec ? friendlyDayLabel(spec, trip?.departureDayIndex) : d.label;
@@ -289,7 +289,7 @@ export function PlanReview({ inline = false }: { inline?: boolean }) {
                 return (
                   <Card key={d.dayIndex} className="p-4 opacity-70">
                     <div className="flex items-baseline justify-between">
-                      <h3 className="text-sm font-bold text-mist">
+                      <h3 className="text-sm font-medium text-mist">
                         {spec ? friendlyDayLabel(spec, trip?.departureDayIndex) : d.label}
                       </h3>
                       <span className="font-mono2 text-xs text-mist">locked</span>
@@ -314,7 +314,7 @@ export function PlanReview({ inline = false }: { inline?: boolean }) {
         </div>
 
         <aside className="lg:sticky lg:top-6 lg:self-start">
-          <h2 className="text-sm font-bold text-terracotta">The research behind it</h2>
+          <h2 className="text-sm font-medium text-terracotta">The research behind it</h2>
           {plan.citations.length === 0 ? (
             <p className="mt-2 text-xs text-clay-2">No studies were needed for this plan.</p>
           ) : (

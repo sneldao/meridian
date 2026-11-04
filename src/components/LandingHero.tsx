@@ -1,179 +1,63 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { InteractiveDay } from "@/components/InteractiveDay";
-import { LandingDepth } from "@/components/LandingDepth";
-import { SunSelf } from "@/components/SunSelf";
-import { buildDayScene } from "@/domain/day-scene";
-import { buildDemoScenario } from "@/domain/demo-scenarios";
+import { Fragment } from "react";
 import { routeGapHeadline, type RouteGapRead } from "@/domain/route-gap";
-import { sunSelfRead } from "@/domain/sun-self";
 
-/* Round 31 landing: engagement first — a stable hero, then the example day
- * the visitor can touch. No pinned stage; the choreographed story stays one
- * click away on /demo. Extracted so the landing surface is SSR-testable.
+/* Design reset Phase 1 — the Statement hero: one line of type, the
+ * visitor's own number, quiet links. The sun, the orbit, the observers
+ * and the instrument frame are gone — the form is the hero's action and
+ * the example day is its own section below (LandingExampleDay).
  *
- * Stagecraft, in rising order of commitment:
- *  - the traveller's sun peeks in once when the hero first enters view (an
- *    IntersectionObserver writes data-peek; CSS does the performance;
- *    reduced motion meets it already resting);
- *  - the ambient depth behind the page is LandingDepth's layered sky,
- *    evolving on the page's own scroll var (--lp);
- *  - the sun then makes the descent it promised: as the visitor scrolls it
- *    leaves the poster and joins the example day's own sky — the perch is
- *    measured at the band's sun anchor (the --iday-sun-x/y the scene
- *    computes), so the traveller lands on its twin inside the band and
- *    dissolves into it, one transform plus the fade on the orbit wrapper
- *    so the inner glyph's peek animation is never fought. The copy is
- *    positioned above the orbit's layer, so the traveller passes *behind*
- *    words and never over them; reduced motion never arms the trip;
- *  - the example day sits in an instrument frame — a hairline border, a
- *    labelled head bar, the honesty tag stamped in the chrome rather than
- *    floating under it — and its top edge peeks up into the hero's bottom
- *    padding to invite the scroll. */
+ * Fallback: "Land on their clock." arrives per character — words are
+ * wrapped so a word never breaks letter-by-letter; the full sentence sits
+ * in aria-label so the split is decoration, not the text. Resolved: once
+ * the draft route computes, the headline becomes the visitor's own gap
+ * (routeGapHeadline), rendered plainly — a route being typed should never
+ * trigger a per-letter show. Reduced motion meets the fallback seated. */
 
-const demo = buildDemoScenario("miles", "2026-11-04");
-const scene = buildDayScene({ ...demo, dayIndex: demo.event.dayIndex })!;
-
-// The hero face reads the same numbers the example day below it computes —
-// a character on the poster, never a made-up mood.
-const heroFace = sunSelfRead({
-  owedMin: Math.abs(Math.round(scene.bodyOffsetMin)),
-  deliveredMin: Math.max(
-    0,
-    Math.round(Math.abs(demo.trip.requiredShiftMin)) - Math.abs(Math.round(scene.bodyOffsetMin)),
-  ),
-  requiredMin: Math.max(1, Math.round(Math.abs(demo.trip.requiredShiftMin))),
-  direction: demo.trip.direction,
-});
+const FALLBACK = "Land on their clock.";
+const FALLBACK_WORDS = FALLBACK.split(" ");
 
 export function LandingHero({
   visitor,
 }: {
   visitor?: { gap: RouteGapRead; covPct: number | null } | null;
 }) {
-  const heroRef = useRef<HTMLDivElement>(null);
-  const orbitRef = useRef<HTMLDivElement>(null);
-  const frameRef = useRef<HTMLDivElement>(null);
-  const [peeked, setPeeked] = useState(false);
-
-  // Once, on first real visibility — never a loop, never on repeat views.
-  // Without an observer the sun simply rests seated; nothing is lost.
-  useEffect(() => {
-    const el = heroRef.current;
-    if (!el || peeked || !("IntersectionObserver" in window)) return;
-    const io = new IntersectionObserver(
-      ([en]) => {
-        if (en.isIntersecting) {
-          setPeeked(true);
-          io.disconnect();
-        }
-      },
-      { threshold: 0.35 },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, [peeked]);
-
-  // The descent: the sun leaves the poster and joins the example day's own
-  // sky — the perch is the band's sun anchor (the --iday-sun-x/y vars the
-  // scene writes; the frame's top edge is the fallback if the band isn't
-  // there), so the traveller lands on the sun the day already shows and
-  // the last stretch dissolves it into its twin. The rect read happens
-  // with the transform cleared, so a mid-flight measure never feeds back;
-  // progress is the scroll up to the moment the frame's edge reaches
-  // reading height. Reduced motion never arms it; the sun stays on its
-  // poster.
-  useEffect(() => {
-    const orbit = orbitRef.current;
-    const frame = frameRef.current;
-    if (!orbit || !frame) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const apply = () => {
-      orbit.style.transform = "";
-      const s = orbit.getBoundingClientRect();
-      const f = frame.getBoundingClientRect();
-      const sky = frame.querySelector(".iday-sky");
-      let px = f.left + f.width / 2;
-      let py = f.top;
-      if (sky) {
-        const b = sky.getBoundingClientRect();
-        const cs = getComputedStyle(sky);
-        const sx = parseFloat(cs.getPropertyValue("--iday-sun-x"));
-        const sy = parseFloat(cs.getPropertyValue("--iday-sun-y"));
-        px = b.left + b.width * (Number.isFinite(sx) ? sx / 100 : 0.5);
-        py = b.top + b.height * (Number.isFinite(sy) ? sy / 100 : 0.62);
-      }
-      const dx = px - (s.left + s.width / 2);
-      const dy = py - (s.top + s.height / 2);
-      const end = Math.max(240, f.top + window.scrollY - window.innerHeight * 0.5);
-      const q = Math.min(1, Math.max(0, window.scrollY / end));
-      const e = q * q * (3 - 2 * q);
-      orbit.style.transform =
-        `translate3d(${(dx * e).toFixed(1)}px, ${(dy * e).toFixed(1)}px, 0) ` +
-        `scale(${(1 - 0.34 * e).toFixed(3)})`;
-      // The last fifth of the trip dissolves the traveller into the day's
-      // own sun — the join, not a landing beside it.
-      orbit.style.opacity = sky ? (1 - Math.min(1, Math.max(0, (e - 0.8) / 0.18))).toFixed(3) : "";
-    };
-    apply();
-    window.addEventListener("scroll", apply, { passive: true });
-    window.addEventListener("resize", apply);
-    return () => {
-      window.removeEventListener("scroll", apply);
-      window.removeEventListener("resize", apply);
-      orbit.style.transform = "";
-      orbit.style.opacity = "";
-    };
-  }, []);
-
+  const resolved = visitor?.gap ? routeGapHeadline(visitor.gap) : null;
   return (
-    <>
-      <LandingDepth />
-      <div className="landing-hero" ref={heroRef} data-peek={peeked ? "yes" : "no"}>
-        <div className="lh-sun-orbit" ref={orbitRef}>
-          <SunSelf read={heroFace} tone="paper" size={72} className="lh-sun" />
-        </div>
-        <h2 className="landing-tease-title" aria-label="Land on their clock.">
-          {"Land on their clock.".split("").map((ch, i) => (
-            <span key={i} aria-hidden="true" className="lh-char">
-              {ch === " " ? "\u00A0" : ch}
-            </span>
-          ))}
-        </h2>
-        <p className="ls-pain">
-          {visitor
-            ? routeGapHeadline(visitor.gap)
-            : "Your 16:00 Tokyo meeting is 08:30 body time."}
-        </p>
-        <p className="ls-mech">
-          Meridian retimes light, sleep and caffeine across the days around the flight — and scores
-          what you banked.
-        </p>
-        <p className="ls-cta-row">
-          <a href="#trip-entry" className="landing-tease-cta">
-            Start with your trip
-          </a>
-          <Link href="/demo" className="ls-cta-ghost" transitionTypes={["nav-forward"]}>
-            Watch the ninety-second example
-          </Link>
-        </p>
-      </div>
-      <div className="landing-iday">
-        <div className="landing-iday-frame" ref={frameRef}>
-          <div className="landing-iday-bar">
-            <h3 className="landing-iday-title">Explore an example day</h3>
-            <p className="landing-iday-sub">Example trip — not your plan.</p>
-          </div>
-          <InteractiveDay
-            scene={scene}
-            requiredMin={Math.abs(demo.trip.requiredShiftMin)}
-            direction={demo.trip.direction}
-            example
-          />
-        </div>
-      </div>
-    </>
+    <div className="landing-hero">
+      {resolved ? (
+        <h1 className="lh-title lh-title--resolved">{resolved}</h1>
+      ) : (
+        <h1 className="lh-title" aria-label={FALLBACK}>
+          <span aria-hidden="true">
+            {FALLBACK_WORDS.map((word, wi) => (
+              <Fragment key={wi}>
+                <span className="lh-word">
+                  {[...word].map((ch, i) => (
+                    <span key={i} className="lh-char">
+                      {ch}
+                    </span>
+                  ))}
+                </span>
+                {wi < FALLBACK_WORDS.length - 1 ? " " : null}
+              </Fragment>
+            ))}
+          </span>
+        </h1>
+      )}
+      <p className="lh-lede">
+        A daily plan for light, sleep and caffeine, timed to your trip.
+      </p>
+      <p className="lh-links">
+        <a href="#trip-entry" className="lh-link lh-link--start">
+          Start with your trip
+        </a>
+        <Link href="/demo" className="lh-link lh-link--quiet" transitionTypes={["nav-forward"]}>
+          Watch the example
+        </Link>
+      </p>
+    </div>
   );
 }

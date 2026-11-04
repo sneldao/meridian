@@ -1,5 +1,5 @@
 @import "tailwindcss";
-/* Hallmark · genre: atmospheric · macrostructure: Marquee Hero (landing) /
+/* Hallmark · genre: atmospheric · macrostructure: Statement (landing) /
  *            Workbench (app) / Statement (/arrival) · design-system: docs/DESIGN.md
  *            designed-as-app · tone: cinematic-dawn · anchor hue: ember-warm
  *            theme: Dawn Ember (tuned custom) · display: Fraunces Variable
@@ -163,6 +163,9 @@ body {
      every scroll-driven timeline inside it (the stage recede, the deck). */
   overflow: clip;
 }
+/* The travelling shade that used to cross this tint was removed in Phase 0
+   of the design reset — a 60s loop nobody could see. The static tint stays:
+   it is atmosphere for the landing, not motion. */
 .beam {
   position: absolute;
   left: -200px;
@@ -175,41 +178,7 @@ body {
   z-index: 0;
   pointer-events: none;
 }
-/* The shade crossing the page — and its position is the clock's own seconds.
-   The band enters off the left edge as the minute starts and leaves off the
-   right as the minute ends, so where the shade sits is a fact about the time
-   rather than an oscillator's whim; `--beam-phase` is the negative delay that
-   puts it in phase. Unset (server render, no JS) or stood down by reduced
-   motion, the band rests off-stage and only the tint above survives.
-   Shade, not light, because of the surface it is drawn on: cream paper is at
-   96% luminance, so a near-white overlay tops out at ΔR10/ΔB28 even at α0.46
-   — a light band here is undetectable at any calm alpha. Darkening the same
-   paper has the whole range below it to spend. This is a cloud crossing the
-   light, which is the only gesture this surface can carry.
-   Deliberately 60s and one broad low-contrast blob, not a defined edge: the
-   caused light sweep is 560ms and palette-flipping, and an ambient gesture
-   must never be confusable with the transition it is supposed to make rarer. */
-.beam::after {
-  content: "";
-  position: absolute;
-  top: -10%;
-  height: 120%;
-  /* Sized and offset in viewport units so the shade always enters off the
-     left of the *page* and leaves off the right, whatever the window or the
-     width of the tint box it hangs on. */
-  left: -62vw;
-  width: 62vw;
-  background: radial-gradient(ellipse 55% 50% at 50% 50%,
-    rgba(58, 74, 106, 0.10) 0%, rgba(58, 74, 106, 0.07) 45%,
-    rgba(58, 74, 106, 0.03) 75%, transparent 100%);
-  translate: 0 0;
-  animation: beam-travel 60s linear infinite;
-  animation-delay: var(--beam-phase, 0s);
-}
-@keyframes beam-travel {
-  from { translate: 0 0; }
-  to { translate: 162vw 0; }
-}
+
 /* --- Motion: three named levels --------------------------------------------
    The reference build has a motion *vocabulary* — snappy, gentle, lazy — and
    the same three everywhere, so the app feels like one thing moving in one
@@ -283,26 +252,26 @@ body {
   gap: 2px;
   background: var(--m-card);
   border: 1px solid var(--m-border);
-  border-radius: 999px;
+  border-radius: 6px;
   padding: 4px;
 }
 .pill button {
   font: inherit;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 500;
   border: 0;
   background: none;
   padding: 7px 14px;
-  border-radius: 999px;
+  border-radius: 6px;
   color: var(--m-muted);
   cursor: pointer;
   transition: color var(--dur-glide) var(--ease-glide), background 0.2s;
 }
 .pill a {
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 500;
   padding: 7px 14px;
-  border-radius: 999px;
+  border-radius: 6px;
   color: var(--m-muted);
   cursor: pointer;
   transition: color var(--dur-glide) var(--ease-glide), background 0.2s;
@@ -328,7 +297,7 @@ body {
   margin: 8px 4px 0;
   padding: 0;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 500;
 }
 .journey-step {
   color: var(--m-muted);
@@ -346,11 +315,11 @@ body {
 .btn {
   font: inherit;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 500;
   border: 1px solid var(--m-border);
   background: var(--m-card);
   color: var(--m-ink);
-  border-radius: 999px;
+  border-radius: 6px;
   padding: 8px 14px;
   cursor: pointer;
   transition: background var(--dur-glide) var(--ease-glide), box-shadow 0.2s;
@@ -412,7 +381,7 @@ a[href]:active {
   width: 240px;
   background: var(--m-bg);
   border: 1px solid var(--m-border);
-  border-radius: 14px;
+  border-radius: 10px;
   padding: 8px;
   box-shadow: 0 14px 34px rgba(30, 27, 24, 0.18);
   z-index: 20;
@@ -451,7 +420,7 @@ a[href]:active {
   padding: 8px 10px 3px;
   border-top: 1px solid var(--m-border-2);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--m-muted);
@@ -511,7 +480,7 @@ a[href]:active {
   padding: 16px;
   border: 1px solid var(--m-border);
   border-left: 3px solid #D96B43;
-  border-radius: 14px;
+  border-radius: 10px;
   background: var(--m-card);
 }
 .arrival-nudge h2 {
@@ -543,7 +512,7 @@ a[href]:active {
 .arr-kicker {
   display: block;
   font-size: 10.5px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: #ffc46b;
@@ -552,7 +521,7 @@ a[href]:active {
   margin: 14px 0 0;
   font-size: 27px;
   line-height: 1.25;
-  font-weight: 800;
+  font-weight: 600;
   color: #f6f2ec;
   max-width: 30ch;
 }
@@ -587,7 +556,7 @@ a[href]:active {
   display: block;
   margin: 22px 0 0;
   font-size: 10.5px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: #8b93a7;
@@ -595,7 +564,7 @@ a[href]:active {
 .arr-cell {
   padding: 14px 15px;
   border: 1px solid #1e2637;
-  border-radius: 14px;
+  border-radius: 10px;
   background: rgba(255, 255, 255, 0.03);
 }
 /* The "what actually happened" cells — the traveller's own account, not the
@@ -621,7 +590,7 @@ a[href]:active {
   display: block;
   margin-top: 6px;
   font-size: 10.5px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #8b93a7;
@@ -647,7 +616,7 @@ a[href]:active {
   background: #ffd98a;
   color: #1a1408;
   font-size: 12.5px;
-  font-weight: 800;
+  font-weight: 600;
   text-decoration: none;
   transition: background var(--dur-glide) var(--ease-glide), color var(--dur-glide) var(--ease-glide);
 }
@@ -683,7 +652,7 @@ a[href]:active {
 .arr-passport-card {
   position: relative;
   padding: 30px 32px 24px;
-  border-radius: 20px;
+  border-radius: 10px;
   border: 1px dashed rgba(255, 217, 138, 0.45);
   background:
     radial-gradient(120% 90% at 50% 108%, rgba(255, 217, 138, 0.14), transparent 60%),
@@ -696,7 +665,7 @@ a[href]:active {
   display: block;
   font-family: var(--font-mono2);
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 500;
   letter-spacing: 0.3em;
   text-transform: uppercase;
   color: #ffd98a;
@@ -739,7 +708,7 @@ a[href]:active {
   display: block;
   font-family: var(--font-mono2);
   font-size: 15px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.28em;
   text-indent: 0.28em;
 }
@@ -756,7 +725,7 @@ a[href]:active {
   margin-top: 22px;
   font-family: var(--font-mono2);
   font-size: 52px;
-  font-weight: 800;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
   line-height: 1;
@@ -766,7 +735,7 @@ a[href]:active {
   margin-top: 8px;
   font-family: var(--font-mono2);
   font-size: 10.5px;
-  font-weight: 700;
+  font-weight: 500;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: #f4f0e8;
@@ -784,7 +753,7 @@ a[href]:active {
 .arr-passport-marks-k {
   font-family: var(--font-mono2);
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 500;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: #8b93a7;
@@ -849,7 +818,7 @@ a[href]:active {
 }
 .errcard h1 {
   font-size: 27px;
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1.15;
   margin: 10px 0 12px;
   color: #1e1b18;
@@ -895,7 +864,7 @@ a[href]:active {
 .ask p {
   margin: 0 0 10px;
   font-size: 12.5px;
-  font-weight: 700;
+  font-weight: 500;
   line-height: 1.45;
   color: #3d332b;
 }
@@ -911,7 +880,7 @@ a[href]:active {
 .ask .ask-title {
   margin: 0 0 6px;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--m-text);
 }
 .ask-foot {
@@ -923,11 +892,11 @@ a[href]:active {
 .ask-chip {
   font: inherit;
   font-size: 11.5px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.04em;
   padding: 7px 13px;
   border: 1px solid var(--m-border);
-  border-radius: 999px;
+  border-radius: 6px;
   background: var(--m-card);
   color: var(--m-text);
   cursor: pointer;
@@ -949,7 +918,7 @@ a[href]:active {
   gap: 0;
   background: var(--m-card);
   border: 1px solid var(--m-border);
-  border-radius: 28px;
+  border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 24px 50px -20px rgba(8, 10, 18, 0.45);
 }
@@ -985,14 +954,31 @@ a[href]:active {
 
 /* Evidence chips — the crew's gate output as badges, not prose. */
 .evrow { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+/* The provenance stamp — one mark per surface instead of a sentence of
+   hedging (design reset Phase 0). Mono uppercase at the readability floor;
+   colour comes from the muted token, never a new hue. */
+.perf-stamp { float: right; margin: 0 0 4px 8px; }
+.perf-source { margin: 0; font-size: 13px; color: var(--m-muted); }
+.stamp {
+  display: inline-block;
+  font-family: var(--font-mono2);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  color: var(--m-muted);
+  border: 1px solid var(--m-border);
+  border-radius: 6px;
+  padding: 2px 6px;
+  vertical-align: middle;
+}
 .evchip {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   padding: 3px 8px;
-  border-radius: 999px;
+  border-radius: 6px;
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 500;
   letter-spacing: 0.03em;
   background: rgba(217, 107, 67, 0.1);
   color: #a35a35;
@@ -1056,14 +1042,14 @@ a[href]:active {
 }
 .route {
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: #f3c9a8;
 }
 .city {
   font-size: 30px;
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1.1;
   margin-top: 8px;
 }
@@ -1077,16 +1063,16 @@ a[href]:active {
   background: rgba(245, 239, 230, 0.16);
   backdrop-filter: blur(8px);
   border: 1px solid rgba(245, 239, 230, 0.3);
-  border-radius: 14px;
+  border-radius: 10px;
   padding: 8px 12px;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 500;
 }
 .stat em {
   display: block;
   font-style: normal;
   font-size: 20px;
-  font-weight: 800;
+  font-weight: 600;
 }
 .arc {
   width: 100%;
@@ -1100,7 +1086,7 @@ a[href]:active {
   background: rgba(245, 239, 230, 0.16);
   backdrop-filter: blur(8px);
   border: 1px solid rgba(245, 239, 230, 0.3);
-  border-radius: 16px;
+  border-radius: 10px;
   padding: 12px 14px;
   font-size: 12px;
   line-height: 1.5;
@@ -1143,7 +1129,7 @@ a[href]:active {
 }
 .mini {
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: #D96B43;
@@ -1151,7 +1137,7 @@ a[href]:active {
 .badge {
   width: 44px;
   height: 44px;
-  border-radius: 14px;
+  border-radius: 6px;
   background: #D96B43;
   display: flex;
   align-items: center;
@@ -1160,17 +1146,17 @@ a[href]:active {
 .tw {
   display: inline-block;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.14em;
   background: #f6dccb;
   color: #a8431e;
-  border-radius: 999px;
+  border-radius: 6px;
   padding: 6px 12px;
 }
 .hr h2 {
   font-size: 24px;
   line-height: 1.15;
-  font-weight: 800;
+  font-weight: 600;
 }
 .hr p.s {
   font-size: 13px;
@@ -1179,7 +1165,7 @@ a[href]:active {
 }
 .drawer {
   background: var(--m-card-2);
-  border-radius: 14px;
+  border-radius: 10px;
   padding: 12px 14px;
 }
 .drawer b {
@@ -1187,7 +1173,7 @@ a[href]:active {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: #2A6F4E;
-  font-weight: 800;
+  font-weight: 600;
 }
 .drawer p {
   font-size: 12px;
@@ -1217,7 +1203,7 @@ a[href]:active {
 .p1 {
   font: inherit;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
   background: #D96B43;
   color: #fff;
   border: none;
@@ -1240,11 +1226,11 @@ a[href]:active {
 .p2 {
   font: inherit;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
   background: transparent;
   color: var(--m-ink);
   border: 1.5px solid var(--m-ink);
-  border-radius: 14px;
+  border-radius: 6px;
   padding: 11px 14px;
   cursor: pointer;
   transition: background var(--dur-glide) var(--ease-glide), color 0.2s;
@@ -1271,12 +1257,12 @@ a[href]:active {
 .day {
   font: inherit;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 600;
   padding: 11px 0;
   flex: 1 1 0;
   max-width: 150px;
   text-align: center;
-  border-radius: 16px;
+  border-radius: 10px;
   background: var(--m-card);
   border: 1px solid var(--m-border);
   color: var(--m-text);
@@ -1299,9 +1285,9 @@ a[href]:active {
 .chip {
   font: inherit;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 500;
   padding: 8px 14px;
-  border-radius: 999px;
+  border-radius: 6px;
   background: transparent;
   border: 1.5px solid #d8c6ae;
   color: var(--m-text);
@@ -1326,7 +1312,7 @@ a[href]:active {
   align-items: center;
   gap: 8px;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: #D96B43;
@@ -1341,7 +1327,7 @@ a[href]:active {
 }
 .meter .t {
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.12em;
   color: var(--m-ink);
 }
@@ -1363,7 +1349,7 @@ a[href]:active {
   align-items: center;
   gap: 7px;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.06em;
   cursor: pointer;
 }
@@ -1398,13 +1384,13 @@ a[href]:active {
   margin-top: 22px;
   background: var(--m-ink);
   color: var(--m-bg);
-  border-radius: 28px;
+  border-radius: 10px;
   padding: 26px;
   box-shadow: 0 30px 60px -24px rgba(30, 27, 24, 0.7);
 }
 .sheet h2 {
   font-size: 22px;
-  font-weight: 800;
+  font-weight: 600;
   margin-bottom: 4px;
 }
 .sheet .sub {
@@ -1427,14 +1413,14 @@ a[href]:active {
 .sheet-title {
   margin: 0 0 10px;
   font-size: 16px;
-  font-weight: 800;
+  font-weight: 600;
   color: #F5EFE6;
 }
 .fo {
   font: inherit;
   color: inherit;
   text-align: left;
-  border-radius: 18px;
+  border-radius: 10px;
   padding: 14px;
   background: #2b2621;
   border: 1px solid #3d342c;
@@ -1451,7 +1437,7 @@ a[href]:active {
 }
 .fo small {
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   opacity: 0.85;
@@ -1472,12 +1458,12 @@ a[href]:active {
 .card {
   background: var(--m-card);
   border: 1px solid var(--m-border);
-  border-radius: 22px;
+  border-radius: 10px;
   padding: 20px;
 }
 .card h3 {
   font-size: 15px;
-  font-weight: 800;
+  font-weight: 600;
   margin-bottom: 10px;
 }
 .f {
@@ -1488,7 +1474,7 @@ a[href]:active {
 }
 .f label {
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--m-muted);
@@ -1512,7 +1498,7 @@ a[href]:active {
   padding: 10px 12px;
   font: inherit;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--m-ink);
   width: 100%;
 }
@@ -1524,7 +1510,7 @@ a[href]:active {
 }
 .m3 div {
   background: var(--m-card-2);
-  border-radius: 14px;
+  border-radius: 10px;
   padding: 10px;
   font-size: 11px;
   color: var(--m-text);
@@ -1722,7 +1708,7 @@ a[href]:active {
   display: block;
   font-family: var(--font-mono2);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 500;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--m-accent);
@@ -1882,27 +1868,27 @@ textarea:focus-visible,
 }
 .trip-summary .route {
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--m-ink);
   letter-spacing: 0.08em;
 }
 .trip-summary .when,
 .trip-summary .shift {
   padding: 3px 9px;
-  border-radius: 999px;
+  border-radius: 6px;
   background: #efe3d2;
   color: #6b5b4d;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 500;
 }
 .trip-summary .edit {
   margin-left: auto;
   font: inherit;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 500;
   padding: 6px 12px;
   border: 1px solid var(--m-border);
-  border-radius: 999px;
+  border-radius: 6px;
   background: transparent;
   color: var(--m-text);
   cursor: pointer;
@@ -1956,7 +1942,7 @@ textarea:focus-visible,
   max-width: 860px;
   padding: 22px;
   border: 1px solid var(--color-line);
-  border-radius: 16px;
+  border-radius: 10px;
   background: var(--color-ink-2);
 }
 .sheet-close {
@@ -1968,7 +1954,7 @@ textarea:focus-visible,
   line-height: 1;
   padding: 4px 10px;
   border: 1px solid var(--color-line);
-  border-radius: 999px;
+  border-radius: 6px;
   background: transparent;
   color: var(--color-mist);
   cursor: pointer;
@@ -2062,7 +2048,7 @@ textarea:focus-visible,
 }
 .scrub-label {
   font-size: 9px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--color-mist);
@@ -2070,7 +2056,7 @@ textarea:focus-visible,
 }
 .scrub-val {
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--color-paper);
   font-variant-numeric: tabular-nums;
   min-width: 36px;
@@ -2132,12 +2118,12 @@ textarea:focus-visible,
   margin-top: 1px;
   padding: 3px 9px;
   border: 1px solid var(--color-line);
-  border-radius: 999px;
+  border-radius: 6px;
   background: transparent;
   color: var(--color-mist);
   font: inherit;
   font-size: 9.5px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   cursor: pointer;
@@ -2166,19 +2152,19 @@ textarea:focus-visible,
   gap: 7px;
   padding: 5px 11px;
   border: 1px solid var(--color-line);
-  border-radius: 999px;
+  border-radius: 6px;
   background: transparent;
   color: var(--color-mist);
   font: inherit;
   font-size: 10.5px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.07em;
   text-transform: uppercase;
   cursor: pointer;
   transition: background var(--dur-glide) var(--ease-glide), border-color var(--dur-glide) var(--ease-glide), color var(--dur-glide) var(--ease-glide);
 }
 .city-cell b {
-  font-weight: 800;
+  font-weight: 600;
   color: var(--color-paper);
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
@@ -2210,12 +2196,12 @@ textarea:focus-visible,
 .dawn-gap {
   margin: 0;
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 500;
   line-height: 1.35;
   color: var(--color-paper);
 }
 .dawn-gap b {
-  font-weight: 800;
+  font-weight: 600;
   white-space: nowrap;
 }
 .dawn-gap.hot b {
@@ -2234,7 +2220,7 @@ textarea:focus-visible,
   margin-top: 16px;
   padding: 10px 20px 14px;
   border: 1px solid var(--m-border);
-  border-radius: 22px;
+  border-radius: 10px;
   background: var(--m-card);
 }
 .cal-summary {
@@ -2257,14 +2243,14 @@ textarea:focus-visible,
 }
 .cal-summary-num b {
   font-size: 19px;
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1.1;
   color: #D96B43;
   font-variant-numeric: tabular-nums;
 }
 .cal-summary-num span {
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 500;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   line-height: 1.35;
@@ -2287,9 +2273,9 @@ textarea:focus-visible,
   margin-right: 6px;
   padding: 1px 7px;
   border: 1px solid var(--m-border);
-  border-radius: 999px;
+  border-radius: 6px;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--m-faint);
@@ -2346,7 +2332,7 @@ textarea:focus-visible,
   display: block;
   white-space: nowrap;
   font-size: 15px;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--cat, #D96B43);
   font-variant-numeric: tabular-nums;
 }
@@ -2354,7 +2340,7 @@ textarea:focus-visible,
   display: block;
   margin-top: 2px;
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 500;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--m-muted);
@@ -2362,7 +2348,7 @@ textarea:focus-visible,
 .tl-title {
   margin: 0;
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 500;
   line-height: 1.3;
   color: var(--m-ink);
   /* The title carries its calendar tag inline. Laying the row out as a
@@ -2389,9 +2375,9 @@ textarea:focus-visible,
   align-items: center;
   flex: none;
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: 6px;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 500;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   white-space: nowrap;
@@ -2422,11 +2408,11 @@ textarea:focus-visible,
 .tl-done {
   padding: 6px 16px;
   border: 1px solid #D96B43;
-  border-radius: 999px;
+  border-radius: 6px;
   background: #D96B43;
   color: var(--m-on-accent);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.03em;
   cursor: pointer;
 }
@@ -2450,11 +2436,11 @@ textarea:focus-visible,
 .tl-skip {
   padding: 6px 14px;
   border: 1px solid var(--m-border);
-  border-radius: 999px;
+  border-radius: 6px;
   background: transparent;
   color: var(--m-muted);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.03em;
   cursor: pointer;
 }
@@ -2478,7 +2464,7 @@ textarea:focus-visible,
   background: transparent;
   color: var(--m-muted);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 500;
   cursor: pointer;
 }
 .tl-drawer {
@@ -2630,18 +2616,18 @@ html[data-theme="night"] .evline-cite,
   flex-wrap: wrap;
   padding: 8px 12px;
   border: 1px solid var(--m-border);
-  border-radius: 999px;
+  border-radius: 6px;
   background: var(--m-card);
   color: var(--m-text);
   font-size: 12.5px;
-  font-weight: 700;
+  font-weight: 500;
   cursor: pointer;
   text-align: left;
 }
 .trip-chip-change {
   color: #D96B43;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 600;
 }
 .tz-clocks-bar {
   display: flex;
@@ -2667,7 +2653,7 @@ html[data-theme="night"] .evline-cite,
 }
 .tz-clock-time {
   font-family: var(--m-font-mono, monospace);
-  font-weight: 700;
+  font-weight: 500;
   font-size: 13px;
   color: var(--m-text);
 }
@@ -2688,7 +2674,7 @@ html[data-theme="night"] .evline-cite,
   color: var(--m-accent);
   background: color-mix(in srgb, var(--m-accent) 12%, transparent);
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: 6px;
 }
 .today-cal-action {
   display: inline-flex;
@@ -2698,7 +2684,7 @@ html[data-theme="night"] .evline-cite,
   font: inherit;
   width: 34px;
   height: 34px;
-  border-radius: 999px;
+  border-radius: 6px;
   border: 1px solid var(--m-border);
   background: var(--m-card);
   color: var(--m-text);
@@ -2714,12 +2700,12 @@ html[data-theme="night"] .evline-cite,
   width: 22px;
   height: 22px;
   margin-top: 2px;
-  border-radius: 999px;
+  border-radius: 6px;
   border: 1.5px solid #D96B43;
   background: transparent;
   color: var(--m-on-accent);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1;
   cursor: pointer;
   align-self: flex-start;
@@ -3035,7 +3021,7 @@ select:focus-visible {
   justify-content: center;
   width: 44px;
   height: 44px;
-  border-radius: 999px;
+  border-radius: 6px;
   border: 1px solid var(--m-border);
   background: var(--m-card);
   color: var(--m-muted);
@@ -3093,7 +3079,7 @@ select:focus-visible {
     align-items: center;
     gap: 12px;
     padding: 10px 16px;
-    border-radius: 999px;
+    border-radius: 10px;
     background: var(--color-clay, #1e1b18);
     color: var(--color-paper, #f5efe6);
     font-size: 13px;
@@ -3112,7 +3098,7 @@ select:focus-visible {
     margin: -6px -8px -6px 0;
     cursor: pointer;
     color: var(--m-accent, #e99a6f);
-    font-weight: 800;
+    font-weight: 600;
     font-size: 13px;
   }
   .toast-out { opacity: 0; transform: translate(-50%, 8px); transition: opacity var(--dur-glide) var(--ease-glide), transform var(--dur-glide) var(--ease-glide); }
@@ -3126,7 +3112,7 @@ select:focus-visible {
   .tl-recovery-header {
     margin: 0;
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 500;
     color: var(--m-accent);
     text-transform: uppercase;
     letter-spacing: 0.04em;
@@ -3148,9 +3134,9 @@ select:focus-visible {
     align-items: center;
     gap: 5px;
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 500;
     padding: 3px 8px;
-    border-radius: 999px;
+    border-radius: 6px;
     background: var(--m-tag);
     color: var(--m-muted);
     border: 1px solid var(--m-border);
@@ -3170,7 +3156,7 @@ select:focus-visible {
     align-items: center;
     gap: 5px;
     padding: 3px 8px;
-    border-radius: 999px;
+    border-radius: 6px;
     background: var(--m-tag);
     border: 1px solid var(--m-border);
     color: var(--m-text);
@@ -3187,9 +3173,9 @@ select:focus-visible {
     display: inline-block;
     margin-left: 8px;
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 500;
     padding: 2px 7px;
-    border-radius: 999px;
+    border-radius: 6px;
     background: var(--m-tag);
     border: 1px solid var(--m-border);
     color: var(--m-accent);
@@ -3201,7 +3187,7 @@ select:focus-visible {
     flex-direction: column;
     gap: 8px;
     padding: 14px 16px;
-    border-radius: 16px;
+    border-radius: 10px;
     background: var(--m-card);
     border: 1.5px solid var(--m-border);
     margin-bottom: 12px;
@@ -3222,7 +3208,7 @@ select:focus-visible {
     align-items: center;
     gap: 6px;
     font-size: 11px;
-    font-weight: 800;
+    font-weight: 600;
     letter-spacing: 0.05em;
     text-transform: uppercase;
     color: var(--m-muted);
@@ -3240,7 +3226,7 @@ select:focus-visible {
   .right-now-title {
     margin: 0;
     font-size: 15px;
-    font-weight: 700;
+    font-weight: 500;
     color: var(--m-text);
     display: flex;
     align-items: center;
@@ -3356,7 +3342,7 @@ select:focus-visible {
 .sunself-wrap.speaks { cursor: pointer; }
 .sunself-wrap.speaks:focus-visible { outline: 1.5px solid var(--color-sun-dest); outline-offset: 4px; border-radius: 50%; }
 .sunself-vt { view-transition-name: sun-self; }
-.sunself-face { transition: transform 0.25s ease; }
+.sunself-body { transition: transform 0.25s ease; }
 .sunself-line {
   position: absolute;
   top: calc(100% + 6px);
@@ -3379,24 +3365,20 @@ select:focus-visible {
   from { opacity: 0; transform: translateY(7px) scale(0.9); }
   to { opacity: 1; transform: none; }
 }
-/* Ambient life — the sun breathes. The disc is the only part of the face
-   that carries no readout (rays = locked days, halo opacity = glow, eye ry =
-   lid debt), so this is where an idle loop is allowed to live. The eyes never
-   animate on a timer: a blink there would read as the sun getting sleepier,
-   and the lid height is the debt readout. */
+/* Ambient life — the sun breathes. The disc is the only part of the glyph
+   that carries no readout (rays = locked days, halo opacity = glow), so this
+   is where an idle loop is allowed to live. */
 .sunself-disc {
   transform-box: fill-box;
   transform-origin: center;
-  animation: sunself-breath 6.4s ease-in-out infinite;
+  /* Phase 2: the idle breath loop is retired — the glass is a still
+     instrument; motion is caused (pulse, ripple, follow). */
 }
-@keyframes sunself-breath {
-  0%, 100% { transform: scale(1); }
-  46% { transform: scale(1.035); }
-}
+
 @media (prefers-reduced-motion: reduce) {
   .sunself.wake, .sunself-line { animation: none; }
   .sunself-disc { animation: none; }
-  .sunself-face { transition: none; }
+  .sunself-body { transition: none; }
 }
 
 /* ── Dawn pass · the marquee hero stage (docs/DESIGN.md · Marquee Hero) ─────────
@@ -3461,12 +3443,12 @@ select:focus-visible {
   background: rgba(255, 196, 107, 0.12);
   border: 1px solid rgba(255, 196, 107, 0.35);
   color: var(--color-sun-dest);
-  border-radius: 999px;
+  border-radius: 6px;
   letter-spacing: 0.04em;
 }
 .hero .badge {
   background: linear-gradient(135deg, #d96b43, #e99a6f);
-  border-radius: 16px;
+  border-radius: 6px;
   box-shadow: var(--glow-accent);
 }
 .hero .demo-tag {
@@ -3612,7 +3594,7 @@ select:focus-visible {
   background: #a8431e;
 }
 .p2 {
-  border-radius: 999px;
+  border-radius: 6px;
 }
 .p2:active {
   transform: scale(0.98);
@@ -3620,7 +3602,7 @@ select:focus-visible {
 
 /* Card lift — surfaces float a little above the ground gradient. */
 .card {
-  border-radius: 24px;
+  border-radius: 10px;
   box-shadow: 0 18px 44px -26px rgba(8, 10, 18, 0.45);
 }
 .tl {
@@ -3632,23 +3614,18 @@ select:focus-visible {
 .bottom-nav {
   box-shadow: 0 -14px 36px -20px rgba(30, 27, 24, 0.35);
 }
-.bottom-nav-item[aria-current="page"] {
-  background: var(--m-tag);
-}
-
-/* The active-tab pill: one shared surface that slides between tabs on a
-   spring, so the switch reads as a single object travelling, not two tabs
-   swapping. Transform only; reduced motion snaps it into place. */
+/* The active-tab marker: a 2px rule that slides between tabs on a spring —
+   an underline, not a filled pill (design reset Phase 0). Transform only;
+   reduced motion snaps it into place. */
 .bottom-nav { position: relative; }
 .bottom-nav > .bottom-nav-item { position: relative; z-index: 1; }
 .bottom-nav-pill {
   position: absolute;
-  top: 4px;
-  bottom: 4px;
+  top: 0;
   left: 4px;
+  height: 2px;
   width: calc((100% - 8px) / 3);
-  border-radius: 12px;
-  background: var(--m-tag);
+  background: var(--m-accent);
   pointer-events: none;
   transform: translateX(calc(var(--pill-idx, 0) * 100%));
 }
@@ -3809,7 +3786,7 @@ select:focus-visible {
 .clock-stage .dac {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 22px;
+  border-radius: 10px;
 }
 .clock-stage .dial {
   background: transparent;
@@ -3997,28 +3974,56 @@ select:focus-visible {
   pointer-events: none;
   overflow: hidden;
 }
-.light-sweep-layer {
+/* Phase 2 — the shared light pass: a sharp 2px leading edge with a
+   ~160px trailing gradient tail (static blur), one 900ms transform/opacity
+   travel on --dur-light-pass. Reduced motion degrades to a short
+   opacity-only fade. */
+:root { --dur-light-pass: 900ms; }
+.light-pass {
   position: absolute;
-  inset: 0;
-  transform: translateY(102%);
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 160px;
+  transform: translateY(100vh);
+  animation: light-pass-travel var(--dur-light-pass) var(--ease-glide) both;
 }
-.light-sweep-layer.gold {
+.light-pass::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: rgba(255, 230, 190, 0.9);
+}
+.light-pass::after {
+  /* Trailing tail: strongest just below the leading edge, fading to the
+     end — a warm wash, never a full-screen flash. */
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 0;
+  right: 0;
+  height: 158px;
+  filter: blur(18px);
   background: linear-gradient(
     180deg,
-    rgba(255, 217, 138, 0) 0%,
-    rgba(255, 196, 107, 0.5) 46%,
-    rgba(217, 107, 67, 0.34) 100%
+    rgba(255, 196, 107, 0.45) 0%,
+    rgba(217, 107, 67, 0.28) 55%,
+    transparent 100%
   );
-  animation: sweep-pass 560ms var(--ease-drift) both;
 }
-.light-sweep-layer.ground {
-  background: var(--m-bg);
-  opacity: 0.94;
-  animation: sweep-pass 560ms var(--ease-drift) 90ms both;
+@keyframes light-pass-travel {
+  from { transform: translateY(100vh); opacity: 1; }
+  to { transform: translateY(-180px); opacity: 0.85; }
 }
-@keyframes sweep-pass {
-  from { transform: translateY(102%); }
-  to { transform: translateY(-102%); }
+@media (prefers-reduced-motion: reduce) {
+  .light-pass { animation: light-pass-fade 150ms ease-out both; }
+}
+@keyframes light-pass-fade {
+  from { opacity: 0.6; }
+  to { opacity: 0; }
 }
 
 /* 4 · Places morph into their pages — the More sheet's rows carry the same
@@ -4110,7 +4115,7 @@ select:focus-visible {
   gap: 4px 10px;
   padding: 11px 13px;
   border: 1px solid rgba(255, 196, 107, 0.28);
-  border-radius: 14px;
+  border-radius: 10px;
   background: rgba(255, 196, 107, 0.07);
 }
 .stage-run-dot {
@@ -4131,7 +4136,7 @@ select:focus-visible {
 .stage-run-label {
   margin: 0;
   font-size: 12.5px;
-  font-weight: 700;
+  font-weight: 500;
   line-height: 1.35;
   color: var(--color-paper);
 }
@@ -4281,7 +4286,7 @@ html[data-theme="night"] {
   gap: 12px;
   background: var(--m-card);
   border: 1px solid var(--m-border);
-  border-radius: 22px;
+  border-radius: 10px;
   padding: 18px;
   color: var(--m-text);
 }
@@ -4295,13 +4300,13 @@ html[data-theme="night"] {
 .dial-title {
   font-family: var(--font-voice);
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--m-ink);
 }
 .dial-figure {
   font-family: var(--font-mono2, ui-monospace, SFMono-Regular, Menlo, monospace);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--m-ink);
 }
 .dial-sub {
@@ -4336,7 +4341,7 @@ html[data-theme="night"] {
 .dial-center {
   background: var(--m-card-2);
   border: 1px solid var(--m-border);
-  border-radius: 16px;
+  border-radius: 10px;
   padding: 12px;
   display: flex;
   flex-direction: column;
@@ -4372,9 +4377,9 @@ html[data-theme="night"] {
 .dial-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .dial-btn {
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 500;
   padding: 6px 12px;
-  border-radius: 999px;
+  border-radius: 6px;
   border: 1px solid var(--m-border);
   background: var(--m-card-2);
   color: var(--m-text);
@@ -4388,7 +4393,7 @@ html[data-theme="night"] {
 .dac {
   background: var(--m-card);
   border: 1px solid var(--m-border);
-  border-radius: 22px;
+  border-radius: 10px;
   padding: 18px;
   display: flex;
   flex-direction: column;
@@ -4401,11 +4406,11 @@ html[data-theme="night"] {
   align-items: center;
   gap: 5px;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: .04em;
   text-transform: uppercase;
   padding: 3px 9px;
-  border-radius: 999px;
+  border-radius: 6px;
   border: 1px solid var(--m-border);
   color: var(--m-muted);
 }
@@ -4417,13 +4422,13 @@ html[data-theme="night"] {
 .dac-time {
   font-family: var(--font-mono2, ui-monospace, SFMono-Regular, Menlo, monospace);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--m-ink);
 }
 .dac-action {
   font-family: var(--font-voice);
   font-size: 19px;
-  font-weight: 700;
+  font-weight: 500;
   line-height: 1.25;
   color: var(--m-ink);
 }
@@ -4441,9 +4446,9 @@ html[data-theme="night"] {
   align-items: center;
   gap: 7px;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
   padding: 8px 14px;
-  border-radius: 999px;
+  border-radius: 6px;
   border: 1px solid var(--m-border);
   background: var(--m-card-2);
   color: var(--m-text);
@@ -4457,7 +4462,7 @@ html[data-theme="night"] {
   color: var(--m-muted);
   background: var(--m-card-2);
   border: 1px solid var(--m-border-2);
-  border-radius: 14px;
+  border-radius: 10px;
   padding: 10px 12px;
 }
 .dac-evidence a { color: var(--m-ink); text-decoration: underline; text-underline-offset: 2px; }
@@ -4500,7 +4505,7 @@ html[data-theme="night"] {
 .setup-bar { display: flex; align-items: center; gap: 12px; }
 .setup-back {
   width: 34px; height: 34px; flex: none;
-  border-radius: 999px;
+  border-radius: 6px;
   border: 1px solid var(--m-border);
   background: var(--m-card);
   color: var(--m-text);
@@ -4532,7 +4537,7 @@ html[data-theme="night"] {
 .setup-title {
   font-family: var(--font-voice);
   font-size: 22px;
-  font-weight: 700;
+  font-weight: 500;
   line-height: 1.2;
   color: var(--m-ink);
   margin: 0;
@@ -4614,9 +4619,9 @@ html[data-theme="night"] {
     align-items: center;
     gap: 3px;
     padding: 6px 4px;
-    border-radius: 12px;
+    border-radius: 6px;
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 500;
     color: var(--m-muted);
     text-decoration: none;
   }
@@ -4625,7 +4630,7 @@ html[data-theme="night"] {
   button.bottom-nav-item { border: 0; background: none; font-family: inherit; cursor: pointer; }
   /* The More tab lights on the back-room surfaces — the traveller is on a
      page the three tabs don't name, and the bar should say so. */
-  .bottom-nav-item[data-on] { color: var(--m-accent); background: var(--m-tag); }
+  .bottom-nav-item[data-on] { color: var(--m-accent); }
   /* Room for the bar, so the last thing on the page is never under it. */
   .root { padding-bottom: 78px; }
 }
@@ -4651,7 +4656,7 @@ html[data-theme="night"] {
   padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0px));
   background: var(--m-card);
   border-top: 1px solid var(--m-border);
-  border-radius: 16px 16px 0 0;
+  border-radius: 10px 10px 0 0;
 }
 @media (min-width: 768px) {
   .more-sheet {
@@ -4661,7 +4666,7 @@ html[data-theme="night"] {
     top: 64px;
     width: 280px;
     border: 1px solid var(--m-border);
-    border-radius: 14px;
+    border-radius: 10px;
     box-shadow: 0 14px 34px rgba(30, 27, 24, 0.18);
   }
 }
@@ -4696,7 +4701,7 @@ html[data-theme="night"] {
   background: none;
   font: inherit;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--m-ink);
   text-decoration: none;
   text-align: left;
@@ -4719,7 +4724,7 @@ html[data-theme="night"] {
   margin: 8px 0 0;
   padding: 6px 12px 2px;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--m-muted);
@@ -4750,7 +4755,7 @@ html[data-theme="night"] {
 .landed-card-title {
   display: block;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 600;
 }
 .landed-card-sub {
   display: block;
@@ -4769,10 +4774,10 @@ html[data-theme="night"] .more-sheet-item:hover { background: var(--color-ink-3,
 .dac-grades { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
 .dac-grade {
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 500;
   letter-spacing: .02em;
   padding: 3px 8px;
-  border-radius: 999px;
+  border-radius: 6px;
   background: var(--m-card-2);
   border: 1px solid var(--m-border);
   color: var(--m-muted);
@@ -4784,9 +4789,9 @@ html[data-theme="night"] .more-sheet-item:hover { background: var(--color-ink-3,
 .setup-pills { display: flex; flex-wrap: wrap; gap: 6px; }
 .setup-pill {
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 500;
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: 6px;
   border: 1px solid var(--m-border);
   background: var(--m-card-2);
   color: var(--m-faint);
@@ -4806,7 +4811,7 @@ html[data-theme="night"] .more-sheet-item:hover { background: var(--color-ink-3,
   padding: 6px 8px;
   line-height: 1.15;
 }
-.dial-day-label { font-size: 11px; font-weight: 700; }
+.dial-day-label { font-size: 11px; font-weight: 500; }
 .dial-day-gap {
   font-family: var(--font-mono2, ui-monospace, SFMono-Regular, Menlo, monospace);
   font-size: 10px;
@@ -4959,7 +4964,7 @@ html[data-theme="night"] .more-sheet-item:hover { background: var(--color-ink-3,
   font-size: 11px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--m-muted);
   margin: 0 0 var(--space-xs);
 }
@@ -4994,7 +4999,7 @@ html[data-theme="night"] .more-sheet-item:hover { background: var(--color-ink-3,
 .entry-story span {
   display: block;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--m-text);
 }
 .entry-story p {
@@ -5122,13 +5127,13 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .entry-error {
   margin: 0;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--color-clay-fail);
 }
 .entry-cta {
   font: inherit;
   font-size: 15px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.04em;
   border: none;
   border-radius: 999px;
@@ -5177,7 +5182,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   display: inline-flex;
   align-items: center;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--m-muted);
   cursor: pointer;
   text-decoration: underline;
@@ -5260,7 +5265,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 }
 .taste-field-label {
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 500;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--m-muted);
@@ -5284,8 +5289,8 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .taste-button {
   font: inherit;
   font-size: 14px;
-  font-weight: 800;
-  border-radius: 999px;
+  font-weight: 600;
+  border-radius: 6px;
   min-height: 44px;
   padding: 12px 16px;
   cursor: pointer;
@@ -5333,7 +5338,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .taste-error {
   margin: 4px 0 0;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--color-clay-fail);
 }
 .taste-matches {
@@ -5371,7 +5376,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   align-items: center;
   gap: 4px;
   border: 1px solid var(--m-border);
-  border-radius: 999px;
+  border-radius: 6px;
   background: var(--m-card);
   padding: 2px 4px 2px 12px;
   font-size: 13px;
@@ -5394,7 +5399,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 999px;
+  border-radius: 6px;
 }
 .taste-chip-remove:hover {
   color: var(--color-clay-fail);
@@ -5431,7 +5436,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .taste-provenance {
   margin: 0;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--m-muted);
 }
 .taste-places-heading {
@@ -5466,7 +5471,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .taste-place-name {
   margin: 0;
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--m-text);
   overflow-wrap: anywhere;
 }
@@ -5478,7 +5483,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 }
 .taste-map-link {
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--m-text);
   text-decoration: underline;
   text-underline-offset: 3px;
@@ -5537,7 +5542,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   margin: 24px auto;
   padding: 24px;
   border: 1px solid var(--m-border);
-  border-radius: 16px;
+  border-radius: 10px;
   background: var(--m-card);
   color: var(--m-text);
   max-width: 720px;
@@ -5583,15 +5588,15 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   gap: 10px;
   flex-wrap: wrap;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--m-text);
 }
 .example-banner-cta {
   font: inherit;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
   border: none;
-  border-radius: 999px;
+  border-radius: 6px;
   padding: 8px 16px;
   min-height: 44px;
   cursor: pointer;
@@ -5614,20 +5619,20 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .now-line {
   font-size: 15px;
   align-self: flex-start;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .clock-details {
   margin-top: 22px;
   border: 1px solid var(--m-border);
-  border-radius: 14px;
+  border-radius: 10px;
   background: var(--m-card);
 }
 .clock-details-summary {
   cursor: pointer;
   padding: 12px 14px;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--m-text);
   list-style-position: inside;
 }
@@ -5690,7 +5695,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .arrival-day-step-title {
   margin: 0;
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--m-text);
   overflow-wrap: anywhere;
 }
@@ -5708,7 +5713,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 }
 .arrival-day-why summary {
   cursor: pointer;
-  font-weight: 700;
+  font-weight: 500;
   min-height: 44px;
   display: inline-flex;
   align-items: center;
@@ -5727,7 +5732,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .arrival-day-idea-label {
   margin: 0;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 500;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--m-muted);
@@ -5735,7 +5740,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .arrival-day-idea-name {
   margin: 4px 0 0;
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--m-text);
   overflow-wrap: anywhere;
 }
@@ -5904,7 +5909,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .light-row-label {
   margin:0 0 6px;
   font-size:12px;
-  font-weight:700;
+  font-weight: 500;
   letter-spacing:.06em;
   text-transform:uppercase;
 }
@@ -5974,7 +5979,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 }
 .sample-role {
   font-size:12px;
-  font-weight:700;
+  font-weight: 500;
   letter-spacing:.04em;
   margin:7px 0;
   color:var(--m-muted);
@@ -6014,7 +6019,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 }
 .scenario-person {
   font-size:14px;
-  font-weight:700;
+  font-weight: 500;
   line-height:1.6;
   margin:0 0 16px;
   color:var(--m-text);
@@ -6104,7 +6109,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 }
 .scenario-toggle legend {
   font-size:13px;
-  font-weight:700;
+  font-weight: 500;
   padding:0 8px;
   color:var(--m-text);
 }
@@ -6125,7 +6130,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .scenario-taste summary {
   cursor:pointer;
   font-size:13px;
-  font-weight:700;
+  font-weight: 500;
   color:var(--m-muted);
   padding:8px 0;
 }
@@ -6227,7 +6232,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   align-items: center;
   gap: 8px;
   border: 1px solid var(--m-border-2);
-  border-radius: 999px;
+  border-radius: 6px;
   padding: 7px 12px 7px 7px;
   font-size: 12px;
   color: var(--m-text);
@@ -6252,7 +6257,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .arrival-day-idea[data-kept="true"] .arrival-day-idea-body {
   border-left: 3px solid var(--color-terracotta);
   background: var(--m-card);
-  border-radius: 14px;
+  border-radius: 10px;
   padding: 16px;
 }
 .day-card-trigger {
@@ -6263,7 +6268,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   max-height: calc(100dvh - 24px);
   overflow: auto;
   border: 1px solid var(--m-border);
-  border-radius: 24px;
+  border-radius: 10px;
   padding: 24px;
   background: var(--m-bg);
   color: var(--m-text);
@@ -6280,7 +6285,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   display: flex;
   justify-content: center;
   background: var(--color-ink);
-  border-radius: 16px;
+  border-radius: 10px;
   padding: 12px;
   min-width: 0;
 }
@@ -6378,11 +6383,11 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   transform: translateX(-50%);
   z-index: 100;
   padding: 8px 14px;
-  border-radius: 999px;
+  border-radius: 6px;
   background: var(--color-clay, #1e1b18);
   color: var(--color-paper, #f5efe6);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 500;
   box-shadow: 0 8px 28px rgba(30, 27, 24, 0.35);
 }
 
@@ -6396,7 +6401,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   background: var(--m-card, #fff);
   border: 1px solid var(--m-border, #ddd);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 500;
 }
 .right-now-dot {
   width: 8px;
@@ -6418,7 +6423,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .dial-cas {
   text-align: center;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--m-muted);
   margin: 6px 0;
 }
@@ -6426,69 +6431,51 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .everyday-rhythm {
   padding: 16px;
   margin: 12px 0;
-  border-radius: 16px;
+  border-radius: 10px;
   background: var(--m-card, #fff);
   border: 1px solid var(--m-border, #ddd);
 }
-.everyday-title { font-size: 16px; font-weight: 700; margin: 0 0 4px; }
+.everyday-title { font-size: 16px; font-weight: 500; margin: 0 0 4px; }
 .everyday-sub { font-size: 12px; color: var(--m-muted); margin: 0 0 12px; }
 .everyday-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .everyday-chip {
   padding: 8px 12px;
-  border-radius: 999px;
+  border-radius: 6px;
   border: 1px solid var(--m-border, #ddd);
   background: transparent;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 500;
   cursor: pointer;
 }
 .everyday-chip.done { background: var(--m-tag, #eee); }
 
 .recovery-list { margin: 6px 0 0; padding-left: 18px; font-size: 12px; line-height: 1.5; }
 
-.everyday-streak { margin: 8px 0 0; font-size: 12px; font-weight: 700; }
+.everyday-streak { margin: 8px 0 0; font-size: 12px; font-weight: 500; }
 .everyday-summary { margin: 6px 0 0; font-size: 12px; color: var(--m-muted); }
 
 .constraint-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
 .constraint-chip {
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: 6px;
   background: var(--m-tag, #eee);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .constraint-replan {
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: 6px;
   border: 1px solid var(--m-border, #ddd);
   background: var(--m-accent, #d96b43);
   color: #fff;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 600;
   cursor: pointer;
 }
 
-.offline-toggle { margin-left: 8px; padding: 4px 8px; border-radius: 999px; border: none; background: var(--m-accent, #d96b43); color: #fff; font-size: 11px; font-weight: 800; cursor: pointer; }
+.offline-toggle { margin-left: 8px; padding: 4px 8px; border-radius: 6px; border: none; background: var(--m-accent, #d96b43); color: #fff; font-size: 11px; font-weight: 600; cursor: pointer; }
 .offline-hint { display: block; font-size: 11px; margin-top: 4px; }
-
-.landing-tease { padding: 24px 0; text-align: center; }
-/* Round 28: the crew performs in the first viewport — the strip reads as a
-   transcript, left-aligned inside the centred tease. */
-.landing-crew { margin: 18px 0 8px; text-align: left; }
-.landing-crew-eyebrow {
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--m-accent);
-  margin: 0 0 4px;
-}
-.landing-tease-title { font-size: 28px; font-weight: 700; margin: 0 0 8px; }
-.landing-tease-sub { font-size: 14px; color: var(--m-muted); margin: 0 0 16px; }
-.landing-tease-artifacts { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 0 0 16px; }
-.landing-tease-artifacts span { padding: 6px 12px; border-radius: 999px; background: var(--m-card, #fff); border: 1px solid var(--m-border, #ddd); font-size: 12px; font-weight: 700; }
-.landing-tease-cta { display: inline-block; padding: 12px 20px; border-radius: 999px; border: none; background: var(--m-accent, #d96b43); color: #fff; font-size: 14px; font-weight: 800; cursor: pointer; text-decoration: none; }
 
 /* ?via= acknowledgment — the shared card that brought a recipient here,
    named with its own numbers before the entry form asks for theirs. */
@@ -6638,7 +6625,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   padding: 18px 0 10px;
 }
 .demo-word {
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.28em;
   font-size: 13px;
   color: var(--m-text);
@@ -6673,7 +6660,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .demo-beat { max-width: 560px; margin: 0 auto; width: 100%; }
 .demo-kicker {
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 500;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--m-accent);
@@ -6682,7 +6669,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .demo-title {
   font-size: var(--text-2xl);
   line-height: 1.12;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--m-text);
   margin: 10px 0 0;
 }
@@ -6727,7 +6714,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   display: inline-block;
   min-width: 44px;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--m-accent);
@@ -6742,7 +6729,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   font-size: 12px;
   color: var(--m-muted);
   border: 1px solid var(--m-line);
-  border-radius: 999px;
+  border-radius: 6px;
   padding: 4px 10px;
 }
 .demo-day b { color: var(--m-text); font-variant-numeric: tabular-nums; }
@@ -6785,7 +6772,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .demo-provenance {
   margin: 14px 0 0;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--m-muted);
 }
 
@@ -6829,7 +6816,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   display: inline-block;
   background: var(--m-accent);
   color: var(--m-bg);
-  font-weight: 700;
+  font-weight: 500;
   font-size: var(--text-sm);
   border-radius: 999px;
   padding: 10px 18px;
@@ -6840,7 +6827,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   border: 1px solid var(--m-line);
   color: var(--m-text);
   font-size: var(--text-sm);
-  border-radius: 999px;
+  border-radius: 6px;
   padding: 10px 18px;
   text-decoration: none;
 }
@@ -6943,7 +6930,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 }
 .ld-card {
   border: 1px solid var(--m-line);
-  border-radius: 14px;
+  border-radius: 10px;
   background: var(--m-card);
   padding: 14px;
   display: grid;
@@ -6967,7 +6954,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .ld-cap b { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--m-text); }
 .ld-cap small { font-size: 12px; color: var(--m-muted); }
 .ld-score { margin: 0; display: grid; gap: 3px; min-height: 108px; align-content: center; }
-.ld-score b { font-size: 30px; font-weight: 800; color: var(--m-text); font-variant-numeric: tabular-nums; }
+.ld-score b { font-size: 30px; font-weight: 600; color: var(--m-text); font-variant-numeric: tabular-nums; }
 .ld-score small { font-size: 12px; color: var(--m-muted); }
 .ld-score-line { font-size: 11px; color: var(--m-faint); }
 .ld-passport { display: block; width: 100%; max-width: 150px; }
@@ -6982,7 +6969,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 }
 .ld-strip-line { margin: 0; font-size: 12px; color: var(--m-muted); }
 .ld-strip-label {
-  font-weight: 800;
+  font-weight: 600;
   font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -7007,7 +6994,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   --m-faint: #6b7590;
   --m-border: rgba(255, 255, 255, 0.12);
   --m-accent: #e99a6f;
-  border-radius: 24px;
+  border-radius: 10px;
   padding: 26px 20px 18px;
   min-height: 340px;
   display: flex;
@@ -7029,7 +7016,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 }
 .stage-next-kicker {
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--m-accent);
@@ -7101,34 +7088,31 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 }
 
 /* ── The sun-self (round 23) ────────────────────────────────────────────
-   The dial's sun stepped off the ring, with eyelids — the traveller's own
-   body clock given a face. Colours come in two tones (cream surfaces, and
-   the stage's night sky); the pulse is transform + opacity only, guarded,
-   and the face never shows a state the numbers don't carry. */
+   The dial's sun stepped off the ring — the traveller's own body clock as
+   an instrument (face retired, design reset Phase 0). Colours come in two
+   tones (cream surfaces, and the stage's night sky); the pulse is
+   transform + opacity only, guarded, and the glyph never shows a state
+   the numbers don't carry. */
 .sunself { display: block; }
 .sunself-ray { stroke-width: 3; stroke-linecap: round; }
-.sunself-lid, .sunself-mouth { fill: none; stroke-width: 2.6; stroke-linecap: round; }
 
 .sunself-paper {
   --sunself-disc: #f2b95c;
   --sunself-halo: #f2b95c;
-  --sunself-face: #3a2c1e;
   --sunself-ray-lit: #d96b43;
   --sunself-ray-dim: #dccfbc;
 }
 .sunself-ink {
   --sunself-disc: #ffc46b;
   --sunself-halo: #ffc46b;
-  --sunself-face: #0c1220;
   --sunself-ray-lit: #e99a6f;
   --sunself-ray-dim: rgba(255, 255, 255, 0.18);
 }
-.sunself-disc { fill: var(--sunself-disc); }
-.sunself-halo { fill: var(--sunself-halo); }
-.sunself-eye { fill: var(--sunself-face); }
-.sunself-lid, .sunself-mouth { stroke: var(--sunself-face); }
-.sunself-ray.lit { stroke: var(--sunself-ray-lit); }
-.sunself-ray.dim { stroke: var(--sunself-ray-dim); }
+.sunself:not(.glass) .sunself-disc { fill: var(--sunself-disc); }
+.glass .sunself-ray { stroke-width: 1.2; stroke-linecap: butt; }
+.sunself:not(.glass) .sunself-halo { fill: var(--sunself-halo); }
+.sunself:not(.glass) .sunself-ray.lit { stroke: var(--sunself-ray-lit); }
+.sunself:not(.glass) .sunself-ray.dim { stroke: var(--sunself-ray-dim); }
 
 @media (prefers-reduced-motion: no-preference) {
   .sunself.enter {
@@ -7214,8 +7198,8 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: radial-gradient(circle at 42% 38%, var(--color-sun-dest) 0%, var(--color-accent) 92%);
-  box-shadow: var(--glow-ember);
+  /* Phase 2: no opaque backing or shadow — the glass inside needs clear
+     backing to read as glass. Position/smear variables preserved. */
 }
 .stage-sun-disc .stage-sun-face { width: 100%; height: 100%; }
 .stage-sun-halo {
@@ -7238,16 +7222,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .stage-sun.below .stage-sun-disc { opacity: 0.72; }
 .stage-sun.below .stage-sun-halo { opacity: 0.4; }
 
-@media (prefers-reduced-motion: no-preference) {
-  /* The stage breathes: an ambient pulse on the halo, which carries no
-     readout — the disc's position and the caption hold the facts. Rule 3 as
-     amended allows this on any surface that is not itself a measurement. */
-  .stage-sun-halo { animation: stage-sun-breathe 6s var(--ease-drift) infinite; }
-}
-@keyframes stage-sun-breathe {
-  0%, 100% { scale: 1; }
-  50% { scale: 1.06; }
-}
+
 
 /* One stage: the CTA row stops stacking steps and simply sits below. */
 .scenario-one-stage .scenario-days { margin: 14px 0 0; }
@@ -7281,7 +7256,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   display: inline-block;
   min-width: 44px;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--m-accent);
@@ -7314,7 +7289,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .crew-perf-day[data-phase="locked"] { border-color: var(--m-accent); }
 .crew-perf-day-label {
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--m-text);
   font-family: var(--font-mono2);
 }
@@ -7335,7 +7310,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .crew-perf-day[data-phase="locked"] .crew-perf-cue { opacity: 1; transform: none; }
 .crew-perf-stamp {
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.06em;
   font-family: var(--font-mono2);
   color: var(--m-faint);
@@ -7412,7 +7387,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 /* The beats: absolute layers when staged (scroll owns their opacity and
    visibility — hidden beats leave the tab order entirely), plain stacked
    sections when not. */
-.ls-pain { font-size: 17px; font-weight: 700; color: var(--m-text); margin: 0; }
+.ls-pain { font-size: 17px; font-weight: 500; color: var(--m-text); margin: 0; }
 .ls-mech { font-size: 1rem; color: var(--m-muted); margin: 0; max-width: 46ch; }
 .ls-cta-row {
   display: flex;
@@ -7424,11 +7399,11 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .ls-cta-ghost {
   display: inline-block;
   padding: 12px 20px;
-  border-radius: 999px;
+  border-radius: 6px;
   border: 1px solid var(--m-border);
   color: var(--m-text);
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 500;
   text-decoration: none;
 }
 /* The crossing HUD — the written read of the crossing beat: both clocks
@@ -7628,10 +7603,11 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   color: var(--m-text);
 }
 .iday-head { display: grid; gap: 4px; }
+.iday-stamp { justify-self: end; }
 .iday-headline {
   margin: 0;
   font-size: var(--text-xl);
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1.15;
 }
 .iday-lead { margin: 0; font-size: 1rem; color: var(--m-muted); }
@@ -7869,7 +7845,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   top: 28px;
   transform: translateX(-50%);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--m-accent);
   white-space: nowrap;
 }
@@ -7901,7 +7877,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .iday-lane { display: grid; grid-template-columns: 92px 1fr; align-items: center; gap: 8px; }
 .iday-lane-name {
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 500;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--m-muted);
@@ -7932,7 +7908,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .iday-window[aria-pressed="true"] {
   background: var(--m-text);
   color: var(--m-bg);
-  font-weight: 700;
+  font-weight: 500;
 }
 .iday-scrub {
   display: grid;
@@ -7990,7 +7966,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .iday-window-proposed {
   border-style: solid;
   border-width: 2px;
-  font-weight: 700;
+  font-weight: 500;
   z-index: 2;
   touch-action: none;
   cursor: grab;
@@ -8069,7 +8045,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .iday-edit-apply {
   background: var(--m-text);
   color: var(--m-bg);
-  font-weight: 700;
+  font-weight: 500;
 }
 .iday-edit-apply:disabled {
   opacity: 0.45;
@@ -8086,7 +8062,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   color: var(--m-text);
   font: inherit;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 500;
   cursor: pointer;
 }
 .iday-edit-no { color: var(--m-muted); font-size: 14px; }
@@ -8100,8 +8076,252 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
  * bottom padding is the airspace the day frame peeks into — the negative
    margin below pulls the frame's top edge up so the first viewport ends on
    an invitation, not dead air. */
-.landing-hero { padding: 28px 0 46px; }
-.landing-hero .landing-tease-title { font-size: var(--text-display-s); margin: 0 0 10px; }
+/* ── Design reset Phase 1 — the ink Statement landing ────────────────────
+   The cold visit reads ink in BOTH themes: the vars below are the stage
+   palette scoped to .root.landing-ink so every descendant resolves ink
+   values — useTheme, localStorage and the Today surface are untouched.
+   body:has() paints the viewport gutters so the whole cold-visit chrome
+   (nav, menu, footer) sits on one coherent ink field. */
+:root { --landing-ink-bg: #0b0e16; }
+.root.landing-ink {
+  --m-bg: var(--landing-ink-bg);
+  --m-card: #121726;
+  --m-card-2: #171d2e;
+  --m-border: #26304a;
+  --m-border-2: #1c2436;
+  --m-faint: #75809a;
+  --m-text: #F5EFE6;
+  --m-ink: #F5EFE6;
+  --m-muted: #a89a8c;
+  --m-tag: rgba(255, 196, 107, 0.14);
+  --m-accent: #e99a6f;
+  --m-on-accent: #fff8ef;
+  --dial-target: #ffc46b;
+  --dial-ghost: #6b7590;
+  --dial-sleep: #b8a8ff;
+  --dial-body: #7adfff;
+  --dial-body-soft: rgba(122, 223, 255, 0.18);
+  --dial-committed: #ff7a7a;
+  --dial-movable: #8b93a7;
+  /* Step-kind data colours, the stage palette */
+  --cat-light: #ffc46b;
+  --cat-sleep: #b8a8ff;
+  --cat-food: #e99a6f;
+  --cat-cal: #9db8ff;
+  --cat-run: #8fc7a3;
+  --cat-flight: #8b93a7;
+}
+body:has(.root.landing-ink) { background: var(--landing-ink-bg); }
+/* The static beam tint is cream-surface atmosphere — on the ink statement
+   it reads as a hard-edged rectangle inside the root. LandingDepth's wash
+   is the landing's whole ambient layer. */
+.landing-ink > .beam { display: none; }
+
+/* First-viewport chrome stays one row on the phone: brand alone + Menu,
+   ~56px header, no wrapped row eating the statement's space. */
+@media (max-width: 599px) {
+  .landing-ink .nav { padding: 12px 0 10px; flex-wrap: nowrap; }
+  .landing-ink .brand span { display: none; }
+}
+
+/* The Statement macrostructure: headline, then the form, then the example
+   instrument — left aligned, never a centred marketing card. Desktop is a
+   12-col grid: headline spans 1–9, the form sits 1–6 beneath it, the
+   example instrument takes the full row as the second screen. */
+.landing-statement { position: relative; text-align: left; }
+@media (min-width: 960px) {
+  .landing-statement {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    column-gap: 24px;
+  }
+  .landing-statement > * { grid-column: 1 / -1; }
+  .landing-statement > .landing-hero { grid-column: 1 / 10; }
+  .landing-statement > .via-note,
+  .landing-statement > .entry { grid-column: 1 / 7; }
+  .landing-statement > .everyday-rhythm { margin-left: 0; }
+}
+/* The form joins the statement directly — no 720px reading column, no
+   card-in-card. */
+.landing-statement .entry {
+  grid-template-columns: 1fr;
+  gap: 0;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+.landing-statement .entry-planner {
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.landing-statement .entry-planner h2 {
+  font-size: var(--text-xl);
+  font-weight: 600;
+}
+.landing-statement .entry-planner-note {
+  font-size: 14px;
+  margin: 4px 0 0;
+}
+.landing-statement .via-note { max-width: 52ch; }
+.landing-statement .entry-form { gap: 12px; margin-top: 10px; }
+.landing-statement .entry-cta { min-height: 48px; }
+.landing-statement .entry-error { margin: 0; }
+
+/* Phase 2 — the glass instrument: refractive medallion beside the form. */
+.landing-ink {
+  --glass-tint: rgba(233, 154, 111, 0.85);
+  --glass-edge: rgba(255, 196, 107, 0.5);
+}
+.sunself-wrap { position: relative; display: inline-block; }
+/* Glass palette lives on the WRAPPER so the GPU can re-read it per draw —
+   the svg child only carries the svg-side tone class. */
+.sunself-wrap[data-tone="paper"] {
+  --glass-tint: rgba(242, 185, 92, 0.9);
+  --glass-edge: rgba(217, 107, 67, 0.5);
+  --glass-bg: #f7efe4;
+  --glass-spec: #fff8ef;
+}
+.sunself-wrap[data-tone="ink"] {
+  --glass-tint: rgba(255, 196, 107, 0.9);
+  --glass-edge: rgba(255, 196, 107, 0.5);
+  --glass-bg: #0b0e16;
+  --glass-spec: #fff4e2;
+}
+/* Mood shifts the tint subtly — never a generic flat yellow. */
+.sunself-wrap[data-mood="drained"] { --glass-tint: rgba(200, 168, 140, 0.9); }
+.sunself-wrap[data-mood="sleeping"] { --glass-tint: rgba(178, 164, 200, 0.85); }
+.sunself-wrap[data-mood="half-lit"] { --glass-tint: rgba(255, 196, 107, 0.9); }
+.sunself-wrap[data-mood="adjusted"] { --glass-tint: rgba(233, 154, 111, 0.95); }
+/* The tap ring: one finite 300ms expanding circle per press — the keyed
+   element restarts the animation each time. */
+@media (prefers-reduced-motion: no-preference) {
+  .sunself-ripple {
+    position: absolute;
+    inset: 18%;
+    border-radius: 50%;
+    border: 1.5px solid var(--glass-spec);
+    opacity: 0;
+    pointer-events: none;
+    animation: sunself-ripple 260ms ease-out both;
+  }
+}
+@keyframes sunself-ripple {
+  from { transform: scale(0.85); opacity: 0.7; }
+  to { transform: scale(1.5); opacity: 0; }
+}
+.sunself-wrap .sunself-gl { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; }
+/* Exactly one body draws: the canvas takes over only after a real first
+   draw (data-renderer flips), and the SVG stays laid out underneath so
+   the wrapper keeps its intrinsic size. */
+.sunself-wrap[data-renderer="webgl"] .sunself-gl { opacity: 1; }
+.sunself-wrap[data-renderer="webgl"] .sunself { visibility: hidden; }
+/* Native button for speak — reset to wrapper chrome, keep focus-visible. */
+button.sunself-wrap {
+  appearance: none;
+  border: none;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  text-align: inherit;
+  min-width: 44px;
+  min-height: 44px;
+}
+button.sunself-wrap:focus-visible {
+  outline: 2px solid var(--color-focus, var(--m-accent));
+  outline-offset: 3px;
+}
+.landing-entry-stage { display: grid; grid-template-columns: 1fr; gap: 16px; }
+@media (min-width: 960px) {
+  .landing-entry-stage { grid-column: 1 / -1; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 48px; align-items: start; max-width: 100%; }
+}
+.landing-instrument { margin: 0; display: grid; place-items: center; gap: 12px; position: relative; }
+.landing-instrument-base { width: 62%; height: 0; border-top: 1px solid var(--m-border); }
+.landing-instrument-cap { display: grid; gap: 2px; text-align: center; max-width: 34ch; }
+.li-label { font-family: var(--font-mono2); font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--m-muted); }
+.li-line { font-size: 14px; color: var(--m-text); }
+.li-hint { font-size: 13px; color: var(--m-faint); }
+
+@media (max-width: 599px) {
+  .landing-hero { padding: 16px 0 12px; }
+  .landing-hero .lh-title { font-size: clamp(32px, 11.5vw, 44px); line-height: 1.02; }
+  .landing-hero .lh-title--resolved { font-size: clamp(28px, 8.5vw, 34px); }
+  .landing-hero .lh-lede { font-size: 16px; line-height: 1.4; margin-bottom: 12px; }
+  /* The form's CTA is already the primary action — the anchor duplicates
+     it and eats a row. Desktop keeps both links. */
+  .landing-hero .lh-link--start { display: none; }
+}
+
+/* The headline: Fraunces 500 at display size, tight tracking, left rail.
+   The resolved visitor headline steps down a rung so the form stays in
+   the first viewport. */
+.landing-hero { padding: 40px 0 18px; }
+.lh-title {
+  margin: 0 0 14px;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-optical-sizing: auto;
+  font-size: var(--text-display);
+  letter-spacing: -0.02em;
+  line-height: 1.0;
+  color: var(--m-ink);
+  overflow-wrap: anywhere;
+}
+.lh-title--resolved {
+  font-size: clamp(32px, 5.2vw, 56px);
+}
+/* One secondary sentence — Inter 400, muted. */
+.lh-lede {
+  font-size: 17px;
+  line-height: 1.55;
+  color: var(--m-muted);
+  margin: 0 0 16px;
+  max-width: 46ch;
+}
+/* Quiet text anchors — the form's own CTA is the only button. */
+.lh-links {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+.lh-link {
+  color: var(--m-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.lh-link--quiet { color: var(--m-muted); }
+
+/* Fallback headline arrival: each character rises, fades and unblurs on
+   the stagger step — words are wrapped so a word never breaks mid-word;
+   the delay is --wo per word plus --ci per character inside it, so no
+   inline style is needed. Reduced motion leaves the headline seated. */
+.lh-word { display: inline-block; white-space: nowrap; }
+.lh-char { display: inline-block; }
+@media (prefers-reduced-motion: no-preference) {
+  .landing-hero .lh-char {
+    animation: lh-char-rise 560ms var(--ease-settle) both;
+    animation-delay: calc(var(--stagger-step) * var(--ci, 0) + var(--wo, 0ms));
+  }
+}
+.lh-word:nth-of-type(2) { --wo: calc(4 * var(--stagger-step)); }
+.lh-word:nth-of-type(3) { --wo: calc(6 * var(--stagger-step)); }
+.lh-word:nth-of-type(4) { --wo: calc(11 * var(--stagger-step)); }
+.lh-word .lh-char:nth-child(1) { --ci: 0; }
+.lh-word .lh-char:nth-child(2) { --ci: 1; }
+.lh-word .lh-char:nth-child(3) { --ci: 2; }
+.lh-word .lh-char:nth-child(4) { --ci: 3; }
+.lh-word .lh-char:nth-child(5) { --ci: 4; }
+.lh-word .lh-char:nth-child(6) { --ci: 5; }
+.lh-word .lh-char:nth-child(7) { --ci: 6; }
+.lh-word .lh-char:nth-child(8) { --ci: 7; }
+@keyframes lh-char-rise {
+  from { transform: translateY(0.45em); opacity: 0; filter: blur(6px); }
+  to { transform: none; opacity: 1; filter: blur(0); }
+}
 
 /* Press feedback on the shared Button: a springy squash on press and a
    soft lean-back on release. Transform only, so it stays compositing-safe. */
@@ -8110,96 +8330,92 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
     transition: transform var(--dur-glide) var(--ease-spring), background-color var(--dur-glide) var(--ease-glide), color var(--dur-glide) var(--ease-glide);
   }
   .ui-btn:active:not(:disabled) { transform: scale(0.96); }
-  .landing-tease-cta,
-  .ls-cta-ghost {
-    transition: transform var(--dur-glide) var(--ease-spring);
-  }
-  .landing-tease-cta:active,
-  .ls-cta-ghost:active { transform: scale(0.96); }
-  /* The landing hero's one deliberate impact: the primary CTA lands with an
-     overshoot just after the headline finishes its stagger. */
-  .landing-tease-cta {
-    animation: landing-cta-land var(--dur-spring) var(--ease-spring) backwards;
-    animation-delay: calc(var(--stagger-step) * 21);
-  }
-}
-@keyframes landing-cta-land {
-  from { transform: translateY(0.6em) scale(0.92); opacity: 0; }
-  60% { transform: translateY(-0.08em) scale(1.04); opacity: 1; }
-  to { transform: none; opacity: 1; }
 }
 
-/* Headline arrival: each character rises and fades in on the stagger step.
-   Reduced motion leaves the headline seated. */
-.lh-char { display: inline-block; }
-@media (prefers-reduced-motion: no-preference) {
-  .landing-hero .lh-char {
-    animation: lh-char-rise var(--dur-settle) var(--ease-settle) both;
-  }
-  /* One step per character, from the stagger token, so the headline lands
-     left to right without an inline style on each span. */
-  .landing-hero .lh-char:nth-child(n) { animation-delay: calc(var(--stagger-step) * var(--ci, 0)); }
+/* The landing form's instrument cells — warm ink backing, hairline
+   borders, mono IATA over the resolved city name in Fraunces. Rules are
+   scoped under `.entry .rp-picker--landing` so they win the cascade
+   against the app's generic `.entry .rp-*` overrides. */
+.entry .rp-picker--landing { display: grid; gap: 12px; }
+.rp-landing-route {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: stretch;
 }
-.landing-tease-title .lh-char:nth-child(1) { --ci: 0; }
-.landing-tease-title .lh-char:nth-child(2) { --ci: 1; }
-.landing-tease-title .lh-char:nth-child(3) { --ci: 2; }
-.landing-tease-title .lh-char:nth-child(4) { --ci: 3; }
-.landing-tease-title .lh-char:nth-child(5) { --ci: 4; }
-.landing-tease-title .lh-char:nth-child(6) { --ci: 5; }
-.landing-tease-title .lh-char:nth-child(7) { --ci: 6; }
-.landing-tease-title .lh-char:nth-child(8) { --ci: 7; }
-.landing-tease-title .lh-char:nth-child(9) { --ci: 8; }
-.landing-tease-title .lh-char:nth-child(10) { --ci: 9; }
-.landing-tease-title .lh-char:nth-child(11) { --ci: 10; }
-.landing-tease-title .lh-char:nth-child(12) { --ci: 11; }
-.landing-tease-title .lh-char:nth-child(13) { --ci: 12; }
-.landing-tease-title .lh-char:nth-child(14) { --ci: 13; }
-.landing-tease-title .lh-char:nth-child(15) { --ci: 14; }
-.landing-tease-title .lh-char:nth-child(16) { --ci: 15; }
-.landing-tease-title .lh-char:nth-child(17) { --ci: 16; }
-.landing-tease-title .lh-char:nth-child(18) { --ci: 17; }
-.landing-tease-title .lh-char:nth-child(19) { --ci: 18; }
-.landing-tease-title .lh-char:nth-child(20) { --ci: 19; }
-.landing-tease-title .lh-char:nth-child(21) { --ci: 20; }
-@keyframes lh-char-rise {
-  from { transform: translateY(0.45em); opacity: 0; }
-  to { transform: none; opacity: 1; }
+.rp-landing-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 94px; /* label + 44px input + reserved city line + padding — same height blank or resolved */
+  padding: 8px 12px;
+  border: 1px solid var(--m-border);
+  border-radius: 10px;
+  background: var(--m-card);
+  min-width: 0;
 }
-
-/* The traveller sun on the poster: it peeks in once when the hero first
-   enters view — a rise, one blink — then, when the visitor scrolls, it
-   makes the descent LandingHero measures: the orbit wrapper carries the
-   transform so the glyph's own peek animation is never fought, and the
-   hero copy is positioned a layer up so the traveller passes *behind*
-   words, never over them. Reduced motion and repeat views meet it seated
-   on the poster. */
-.lh-sun-orbit {
-  position: relative;
-  width: fit-content;
-  margin: 0 auto 12px;
+/* 13px floor on landing labels — must outrank `.entry .rp-label` (12px). */
+.entry .rp-picker--landing .rp-label {
+  font-family: var(--font-mono2);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--m-muted);
 }
-.lh-sun { display: block; }
-.landing-hero > :not(.lh-sun-orbit) { position: relative; }
-@media (prefers-reduced-motion: no-preference) {
-  .landing-hero[data-peek="yes"] .lh-sun {
-    transform-box: fill-box;
-    transform-origin: center;
-    animation: lh-sun-peek 900ms var(--ease-settle) both;
-  }
-  .landing-hero[data-peek="yes"] .lh-sun .sunself-eye {
-    transform-box: fill-box;
-    transform-origin: center;
-    animation: lh-sun-blink 380ms 540ms var(--ease-glide) both;
-  }
+/* The cell owns the border; the input inside it carries none. */
+.entry .rp-picker--landing .rp-landing-cell .rp-input {
+  font-family: var(--font-mono2);
+  font-size: 16px;
+  letter-spacing: 0.04em;
+  min-height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--m-text);
 }
-@keyframes lh-sun-peek {
-  0% { transform: translateY(16px) rotate(-6deg) scale(0.9); opacity: 0; }
-  55% { transform: translateY(-3px) rotate(2deg) scale(1.03); opacity: 1; }
-  100% { transform: none; opacity: 1; }
+.rp-input-landing { min-height: 56px; }
+.rp-city {
+  font-family: var(--font-display);
+  font-size: 15px;
+  line-height: 1.25;
+  color: var(--m-muted);
+  min-height: 1.25em; /* reserved even when blank, so the cell never jumps */
 }
-@keyframes lh-sun-blink {
-  0%, 100% { transform: scaleY(1); }
-  45% { transform: scaleY(0.08); }
+.rp-swap-landing {
+  align-self: center;
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--m-accent);
+  border: 1px solid var(--m-border);
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+.rp-swap-landing:disabled { opacity: 0.4; }
+.rp-landing-date { display: flex; flex-direction: column; gap: 6px; }
+.entry .rp-picker--landing .rp-landing-date .rp-input {
+  min-height: 56px;
+  padding: 8px 12px;
+  font-size: 16px;
+  border: 1px solid var(--m-border);
+  border-radius: 10px;
+  background: var(--m-card);
+  color: var(--m-text);
+}
+.rp-picker--landing .rp-listbox {
+  width: min(18rem, calc(100vw - 40px));
+}
+.rp-picker--landing .rp-field--to .rp-listbox { left: auto; right: 0; }
+/* The preview line under the CTA — a model read, never a promise. */
+.entry-preview {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--m-muted);
 }
 
 /* The example day in its instrument frame: a hairline border, a labelled
@@ -8212,7 +8428,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
    hairline draws itself, the head bar slides in a breath behind, and the
    lower sections wake as the frame traverses. An instrument opening, not
    a card scrolling past. */
-.landing-iday { margin: -18px 0 0; text-align: left; }
+.landing-iday { margin: 28px 0 0; text-align: left; }
 .landing-iday-frame {
   border: 1px solid var(--m-border);
   border-radius: var(--radius-xl);
@@ -8230,19 +8446,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   margin-bottom: 14px;
   border-bottom: 1px solid var(--m-border);
 }
-.landing-iday-title { margin: 0; font-size: var(--text-xl); font-weight: 800; }
-.landing-iday-sub {
-  margin: 0;
-  flex: none;
-  font-family: var(--font-mono2);
-  font-size: 13px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--m-muted);
-  border: 1px solid var(--m-border);
-  border-radius: 999px;
-  padding: 3px 9px;
-}
+.landing-iday-title { margin: 0; font-size: var(--text-xl); font-weight: 600; }
 @media (max-width: 560px) {
   .landing-iday-bar { flex-direction: column; align-items: flex-start; gap: 6px; }
 }
@@ -8278,18 +8482,12 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 }
 
 /* ---- the landing's ambient depth ---------------------------------------
- * The demo stage's depth system carried onto the cream surface: one warm
- * sky band hangs at the top of the page — two mote planes at different
- * rates, a haze on the horizon, two ridges holding it down — plus a fine
- * grain over the whole field (the paper-shaders lesson, carried by an SVG
- * turbulence filter rather than a shader). `--lp` is the page's descent,
- * written per scroll frame by LandingDepth: each plane recedes and
- * compresses at its own rate, so the backdrop evolves continuously as the
- * visitor scrolls — never swapping per section, the shader-sees reference's
- * seamless transitions done in 2D. Transform + opacity only; with the var
- * at rest the layered sky simply sits — SSR and reduced motion meet it
- * seated, and every colour is a token mix so the wash adapts to the theme
- * and never eats the text floors. Fixed at z -1 inside .in's stacking
+ * The demo stage's depth system on the ink statement: two seeded mote
+ * planes, a warm haze on the horizon, ONE dark ridge — plus grain over the
+ * whole field. `--lp` is the page's descent, written per scroll frame by
+ * LandingDepth: each plane recedes and compresses at its own rate — scroll
+ * parallax only, no ambient loops. Transform + opacity only; SSR and
+ * reduced motion meet it seated. Fixed at z -1 inside .in's stacking
  * context: behind every word, above the painted ground. */
 .landing-depth {
   position: fixed;
@@ -8300,29 +8498,17 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 }
 .landing-depth > * { position: absolute; }
 
+/* Phase 1 ink statement: one broad warm horizon wash in the right-side
+   negative space — tokens only, never a pink polygon. */
 .ld-sky {
   inset: 0 0 auto;
   height: 88vh;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--color-sun-dest) 22%, transparent) 0%,
-    color-mix(in srgb, var(--color-terracotta) 9%, transparent) 42%,
-    transparent 84%
+  background: radial-gradient(
+    ellipse 72% 58% at 78% 30%,
+    color-mix(in srgb, var(--color-sun-dest) 12%, transparent),
+    transparent 72%
   );
   transform: translateY(calc(var(--lp, 0) * -30vh));
-}
-.ld-glow {
-  top: -14vh;
-  left: 8%;
-  width: 84%;
-  height: 46vh;
-  background: radial-gradient(
-    ellipse 62% 58% at 68% 30%,
-    color-mix(in srgb, var(--color-sun-dest) 26%, transparent),
-    transparent 70%
-  );
-  opacity: calc(0.9 - var(--lp, 0) * 0.35);
-  transform: translateY(calc(var(--lp, 0) * -16vh));
 }
 .ld-motes {
   top: 0;
@@ -8339,15 +8525,17 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   opacity: 0.5;
   transform: translateY(calc(var(--lp, 0) * -19vh));
 }
+/* The haze is the sun-dest token at a whisper of alpha along the horizon —
+   atmosphere, never a light band. */
 .ld-haze {
-  top: 34vh;
+  top: 40vh;
   left: -6%;
   width: 112%;
   height: 18vh;
   background: linear-gradient(
     180deg,
     transparent,
-    color-mix(in srgb, var(--color-terracotta) 10%, transparent) 50%,
+    color-mix(in srgb, var(--color-sun-dest) 12%, transparent) 50%,
     transparent
   );
   opacity: calc(0.8 - var(--lp, 0) * 0.3);
@@ -8358,37 +8546,14 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   width: 106%;
 }
 .ld-ridge-far {
-  top: 40vh;
+  top: 44vh;
   height: 16vh;
   transform: translateY(calc(var(--lp, 0) * -14vh)) scaleY(calc(1 - var(--lp, 0) * 0.22));
   transform-origin: bottom;
 }
-.ld-ridge-far path { fill: color-mix(in srgb, var(--color-terracotta) 16%, transparent); }
-.ld-ridge-near {
-  top: 48vh;
-  height: 11vh;
-  transform: translateY(calc(var(--lp, 0) * -24vh)) scaleY(calc(1 - var(--lp, 0) * 0.34));
-  transform-origin: bottom;
-}
-.ld-ridge-near path { fill: color-mix(in srgb, var(--color-terracotta) 24%, transparent); }
+.ld-ridge-far path { fill: var(--color-ink-3, #131826); }
+.ld-ridge-far { opacity: 0.25; }
 .ld-grain { inset: 0; width: 100%; height: 100%; opacity: 0.55; }
-
-/* The motes drift on the `translate` property so the scroll-written
-   `transform` is never fought — the same rule the feed cadence keeps. */
-@media (prefers-reduced-motion: no-preference) {
-  .ld-motes-far { animation: ld-motes-far 210s ease-in-out infinite alternate; }
-  .ld-motes-mid { animation: ld-motes-mid 150s ease-in-out infinite alternate; }
-}
-@keyframes ld-motes-far { from { translate: -0.8% 0; } to { translate: 0.8% 0; } }
-@keyframes ld-motes-mid { from { translate: 1.2% 0; } to { translate: -1.2% 0; } }
-
-/* The landing alternates its lean instead of marching one centred column:
-   the poster stays centred, the day frame pulls toward the left rail, the
-   rhythm card hangs right. Mobile keeps the single centred column. */
-@media (min-width: 720px) {
-  .landing-iday { margin-right: clamp(0px, 7vw, 84px); }
-  .everyday-rhythm { margin-left: clamp(0px, 10vw, 140px); }
-}
 
 /* Sections arrive as they enter — the design language's reveal pattern,
    gated on the capability and the preference like every other scroll
@@ -8396,8 +8561,6 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
     .landing-iday,
-    .entry-intro,
-    .entry-planner,
     .sample-journeys,
     .everyday-rhythm {
       animation: rise-view linear both;

@@ -79,20 +79,29 @@ describe("motion language — the five rules are declared", () => {
     expect(block("@keyframes vt-descend-in")).toContain("clip-path: inset(0 0 100% 0)");
   });
 
-  it("3 · the light sweep: two staggered, transform-only layers", () => {
-    const gold = block(".light-sweep-layer.gold");
-    const ground = block(".light-sweep-layer.ground");
-    expect(gold).toContain("sweep-pass");
-    expect(ground).toContain("sweep-pass");
-    // The ground band is the page's own surface, not a hardcoded colour.
-    expect(ground).toContain("background: var(--m-bg)");
-    // Staggered: the ground layer rides 90ms behind the gold.
-    expect(ground).toContain("90ms");
-    // Transform-only pass.
-    const pass = block("@keyframes sweep-pass");
-    expect(pass).toContain("translateY");
-    expect(pass).not.toContain("box-shadow");
-    expect(pass).not.toContain("filter");
+  it("3 · the light pass: one sharp edge + a trailing gradient tail", () => {
+    const pass = block(".light-pass");
+    expect(pass).toContain("light-pass-travel");
+    expect(pass).toContain("--dur-light-pass");
+    // Sharp leading edge (2px) + trailing blurred tail that follows it.
+    const edge = block(".light-pass::before");
+    expect(edge).toContain("top: 0");
+    expect(edge).toContain("height: 2px");
+    const tail = block(".light-pass::after");
+    expect(tail).toContain("top: 2px");
+    expect(tail).toContain("blur(18px)");
+    // Transform/opacity travel only — enters at 100vh, exits above the top.
+    const kf = block("@keyframes light-pass-travel");
+    expect(kf).toContain("translateY(100vh)");
+    expect(kf).toContain("translateY(-180px)");
+    expect(kf).toContain("opacity");
+    expect(kf).not.toContain("box-shadow");
+    // Reduced motion: the pass degrades to a short opacity fade — find
+    // the specific reduce gate that contains the rule.
+    const rmBlocks = [...css.matchAll(/@media \(prefers-reduced-motion: reduce\) \{([\s\S]*?)\n\}/g)];
+    const lp = rmBlocks.find((b) => b[1].includes(".light-pass"));
+    expect(lp).toBeTruthy();
+    expect(lp![1]).toContain("light-pass-fade");
   });
 
   it("4 · places morph into pages: rows and destination headers share names", () => {
@@ -389,14 +398,15 @@ describe("motion language · round 23 — the sun-self", () => {
 
   it("the glyph is computed, not authored — one component, zero inline styles", () => {
     const glyph = fs.readFileSync(
-      path.join(import.meta.dir, "..", "src", "components", "SunSelf.tsx"),
+      path.join(import.meta.dir, "..", "src", "lib", "glass-sun-svg.ts"),
       "utf8",
     );
     expect(glyph.match(/style=\{/g)?.length ?? 0).toBe(0);
-    // The face comes from the domain read; the component never invents state.
-    expect(glyph).toContain("SunSelfRead");
-    expect(glyph).toContain("read.raysLit");
-    expect(glyph).toContain("read.lid");
+    // The glyph comes from the domain read; the component never invents state.
+    // The shared glass body: every feature is a read-derived string.
+    expect(glyph).toContain("glassParams");
+    expect(glyph).toContain("raysLit");
+    expect(glyph).toContain("tiltDeg");
   });
 });
 
@@ -465,10 +475,10 @@ describe("motion language · round 28 — the crew performs in view", () => {
 
 
 /* Rule 3 (amended) — ambient motion is allowed, but not on an element that
- * carries a readout. On the sun: eye ry is lid debt, halo opacity is glow,
- * ray count is locked days. Only the disc encodes nothing, so only the disc
- * may loop while the traveller is doing nothing. A one-shot caused by an
- * arrival (the landing hero's peek blink) is not ambient and stays allowed. */
+ * carries a readout. On the sun: halo opacity is glow, ray count is locked
+ * days. Only the disc encodes nothing, so only the disc may loop while the
+ * traveller is doing nothing. A one-shot caused by an arrival (the landing
+ * hero's peek) is not ambient and stays allowed. */
 describe("ambient motion stays off the readout", () => {
   // Comments are stripped so a rule's selector is the selector, not the
   // paragraph above it.
@@ -479,14 +489,16 @@ describe("ambient motion stays off the readout", () => {
       .map((m) => m[1].trim())
       .filter((sel) => sel.includes("sunself"));
 
-  it("the disc is the only sun element with an idle loop", () => {
-    expect(loopingSelectors()).toEqual([".sunself-disc"]);
+  it("no sun element carries an idle loop (Phase 2)", () => {
+    // The glass is a still instrument — breath and stage breathe are
+    // retired; motion is caused (pulse, ripple, follow).
+    expect(loopingSelectors()).toEqual([]);
   });
 
-  it("no loop animates the eyes, whatever the mood", () => {
-    const eyeLoops = [...style.matchAll(/([^{}]*\.sunself-eye[^{}]*)\{([^}]*)\}/g)]
-      .filter(([, , body]) => /animation:[^;}]*infinite/.test(body));
-    expect(eyeLoops).toEqual([]);
+  it("the face stays retired — no face geometry in the stylesheet", () => {
+    // Design reset Phase 0: eyes, lids and mouth are gone, so no selector may
+    // name them again (a returning loop or fill would silently re-draw a face).
+    expect(style).not.toMatch(/sunself-(eye|lid|mouth|face)/);
   });
 
   it("the breath stands down under reduced motion", () => {
@@ -511,50 +523,30 @@ describe("ambient motion stays off the readout", () => {
   });
 });
 
-/* Round 51 — the channel gate (round 50) is necessary but not sufficient: a
- * loop nobody can see is dead code with a compositor cost. Two properties are
- * pinned here, both measured rather than asserted in prose: the landing's
- * ambient layer tells the time, and it tells it in the one direction the
- * surface has headroom for. */
-describe("ambient motion is clock-locked and perceptible", () => {
+/* Phase 0 of the design reset — the 60s travelling shade measured out as
+ * motion nobody could see, so it is retired rather than re-tuned. These
+ * guards pin the absence: the loop must not come back under another name,
+ * and the static beam tint it hung on stays. The clock-phase helper lives
+ * on in src/lib/clock-phase.ts with its own unit test for Phase 2 reuse. */
+describe("the retired beam shade stays retired", () => {
+  const style = css.replace(/\/\*[\s\S]*?\*\//g, "");
   const page = fs.readFileSync(path.join(import.meta.dir, "..", "src", "app", "page.tsx"), "utf8");
-  const beam = block(".beam::after");
-  const travel = block("@keyframes beam-travel");
 
-  it("the crossing layer is a 60s loop whose phase comes from the clock", () => {
-    expect(beam).toContain("animation: beam-travel 60s linear infinite");
-    expect(beam).toContain("animation-delay: var(--beam-phase");
-    // A taste oscillator (14s, ease-in-out, alternate) is retired, not kept
-    // beside it — one ambient gesture per layer, and this one reads time.
-    expect(beam).not.toMatch(/alternate/);
-    expect(beam).not.toMatch(/ease-in-out/);
+  it("the travelling layer and its keyframes are gone", () => {
+    expect(style).not.toContain(".beam::after");
+    expect(style).not.toContain("beam-travel");
+    expect(style).not.toContain("--beam-phase");
   });
 
-  it("the phase is written from the real second, once, with no tick", () => {
-    expect(page).toContain("clockPhaseDelay()");
-    expect(page).toContain('"--beam-phase"');
+  it("the page no longer writes a beam phase", () => {
+    expect(page).not.toContain("--beam-phase");
     expect(page).not.toMatch(/setInterval\([^)]*beam/i);
   });
 
-  it("on paper the ambient gesture is a shade, never a light", () => {
-    // Cream is rgb(245,239,227): a near-white overlay there tops out at ΔR10,
-    // so a light band is undetectable by construction. Darkening has 226 units
-    // below it. The travelling layer must therefore be darker than the paper.
-    const alphas = [...beam.matchAll(/rgba\((\d+), (\d+), (\d+), ([\d.]+)\)/g)]
-      .map((m) => ({ rgb: [Number(m[1]), Number(m[2]), Number(m[3])], a: Number(m[4]) }));
-    expect(alphas.length).toBeGreaterThan(0);
-    for (const { rgb, a } of alphas) {
-      expect(Math.max(...rgb)).toBeLessThan(120);
-      // Peak darkening stays under a tint tax on the reading surface.
-      expect(a).toBeLessThanOrEqual(0.12);
-    }
-  });
-
-  it("the layer travels off the page at both ends, not off the element", () => {
-    // Sized in vw so the shade never clips mid-viewport.
-    expect(beam).toMatch(/left: -62vw/);
-    expect(beam).toMatch(/width: 62vw/);
-    expect(travel).toContain("162vw");
+  it("the static tint stays — atmosphere, not motion", () => {
+    const beam = block(".beam {");
+    expect(beam).toContain("radial-gradient");
+    expect(beam).not.toContain("animation");
   });
 });
 

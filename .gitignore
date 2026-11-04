@@ -42,3 +42,6 @@ visual/**/*-actual.png
 # Foundry build output — contracts/src is the source, out/ and cache/ regenerate.
 contracts/out/
 contracts/cache/
+
+# Local design-review captures, logs and baselines — review evidence, not product source.
+artifacts/design-review/

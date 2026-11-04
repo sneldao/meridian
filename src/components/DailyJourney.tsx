@@ -166,7 +166,7 @@ export function DailyJourney({
           <button
             type="button"
             onClick={() => setMapExpanded((v) => !v)}
-            className="pointer-events-auto inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-ink-2/85 px-3 py-1.5 text-xs font-medium text-paper backdrop-blur-md transition-colors hover:border-white/30"
+            className="pointer-events-auto inline-flex items-center gap-1.5 rounded-md border border-white/15 bg-ink-2/85 px-3 py-1.5 text-xs font-medium text-paper backdrop-blur-md transition-colors hover:border-white/30"
           >
             {mapExpanded ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
             {mapExpanded ? "Compact map" : "Expand globe"}
@@ -179,7 +179,7 @@ export function DailyJourney({
         <div aria-label="Trip days" className="flex flex-col gap-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <h2 className="text-sm font-bold text-paper">
+              <h2 className="text-sm font-medium text-paper">
                 Your 5-Day Circadian &amp; Work Itinerary
               </h2>
               <p className="text-xs text-mist">
@@ -283,7 +283,7 @@ export function DailyJourney({
                 >
                   <div className="flex w-full items-center justify-between gap-1">
                     <span
-                      className={`text-xs font-bold ${
+                      className={`text-xs font-medium ${
                         isSelected
                           ? "text-paper"
                           : plan
@@ -296,7 +296,7 @@ export function DailyJourney({
                       {isFlightDay ? `${d.label} · Fly` : d.label}
                     </span>
                     {plan ? (
-                      <span className="rounded-full bg-pass/15 px-1.5 py-0.5 font-mono2 text-2xs font-semibold text-pass">
+                      <span className="rounded-md bg-pass/15 px-1.5 py-0.5 font-mono2 text-2xs font-semibold text-pass">
                         {plan.shiftMin > 0 ? `+${plan.shiftMin}m` : `${plan.shiftMin}m`}
                       </span>
                     ) : isActive ? (
@@ -410,7 +410,7 @@ export function DailyJourney({
               <button
                 type="button"
                 onClick={onStart}
-                className="mt-6 inline-flex items-center gap-2 rounded-xl bg-paper px-5 py-3 text-sm font-bold text-ink shadow-md transition-colors hover:bg-white"
+                className="mt-6 inline-flex items-center gap-2 rounded-xl bg-paper px-5 py-3 text-sm font-medium text-ink shadow-md transition-colors hover:bg-white"
               >
                 <Sparkles size={15} />
                 Personalize my trip plan
@@ -442,12 +442,12 @@ export function DailyJourney({
                       {currentLabel} · {formatDateReadable(activeDaySpec?.date ?? "")}
                     </h3>
                     {isLocked ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-pass/15 px-2.5 py-0.5 text-xs font-bold text-pass">
+                      <span className="inline-flex items-center gap-1 rounded-md bg-pass/15 px-2.5 py-0.5 text-xs font-medium text-pass">
                         <CheckCircle2 size={12} />
                         Verified Plan
                       </span>
                     ) : isPlanningThisDay ? (
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-progress/15 px-2.5 py-0.5 text-xs font-semibold text-progress">
+                      <span className="inline-flex items-center gap-1.5 rounded-md bg-progress/15 px-2.5 py-0.5 text-xs font-semibold text-progress">
                         <span className="h-1.5 w-1.5 rounded-full bg-progress animate-pulse" />
                         Verifying…
                       </span>
@@ -469,7 +469,7 @@ export function DailyJourney({
                     <div className="text-2xs font-semibold tracking-wider text-sleep uppercase">
                       Target Sleep Window
                     </div>
-                    <div className="font-mono2 text-sm font-bold text-paper">
+                    <div className="font-mono2 text-sm font-medium text-paper">
                       {fmtMin(currentPlan.targetBedtimeMin)} → {fmtMin(currentPlan.targetWakeMin)}
                     </div>
                   </div>
@@ -481,7 +481,7 @@ export function DailyJourney({
                 {/* Column 1: Timed Circadian & Health Protocols */}
                 <div className="min-w-0 space-y-3">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-xs font-bold tracking-wider text-mist uppercase">
+                    <h4 className="text-xs font-medium tracking-wider text-mist uppercase">
                       Daily Health, Light &amp; Sleep Actions ({currentPlan.interventions.length})
                     </h4>
                   </div>
@@ -513,10 +513,10 @@ export function DailyJourney({
 
                               <div className="min-w-0 flex-1">
                                 <div className="flex flex-wrap items-center justify-between gap-2">
-                                  <span className="text-sm font-bold text-paper">
+                                  <span className="text-sm font-medium text-paper">
                                     {meta.title}
                                   </span>
-                                  <span className="rounded-lg bg-ink-2 px-2.5 py-1 font-mono2 text-xs font-bold text-paper">
+                                  <span className="rounded-lg bg-ink-2 px-2.5 py-1 font-mono2 text-xs font-medium text-paper">
                                     {fmtMin(iv.startMin)}
                                     {iv.endMin ? ` – ${fmtMin(iv.endMin)}` : ""}
                                   </span>
@@ -562,7 +562,7 @@ export function DailyJourney({
                 {/* Column 2: Work Calendar & Meeting Readiness for this day */}
                 <div className="min-w-0 space-y-3">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-xs font-bold tracking-wider text-mist uppercase">
+                    <h4 className="text-xs font-medium tracking-wider text-mist uppercase">
                       Schedule &amp; Meeting Readiness ({dayEvents.length})
                     </h4>
                     <button
@@ -577,7 +577,7 @@ export function DailyJourney({
                   {/* Smart Reschedules callout if any happened on this day */}
                   {dayMoves.length > 0 && (
                     <div className="rounded-xl border border-sun-home/30 bg-sun-home/10 p-3">
-                      <div className="text-xs font-bold text-sun-home">
+                      <div className="text-xs font-medium text-sun-home">
                         Smart Calendar Adjustments
                       </div>
                       <ul className="mt-1.5 space-y-1.5">
@@ -588,7 +588,7 @@ export function DailyJourney({
                               {fmtMin(m.from.startMin)}
                             </span>{" "}
                             <ArrowRight size={11} className="inline text-sun-home" />{" "}
-                            <span className="font-mono2 font-bold text-paper">
+                            <span className="font-mono2 font-medium text-paper">
                               {fmtMin(m.to.startMin)}
                             </span>
                             <div className="text-2xs text-mist">{m.reason}</div>
@@ -619,7 +619,7 @@ export function DailyJourney({
                               <div>
                                 <div className="flex items-center gap-2">
                                   <Calendar size={13} className="text-sun-home" />
-                                  <span className="text-xs font-bold text-paper">
+                                  <span className="text-xs font-medium text-paper">
                                     {ev.title}
                                   </span>
                                 </div>
@@ -638,7 +638,7 @@ export function DailyJourney({
 
                               {badge ? (
                                 <span
-                                  className={`shrink-0 rounded-full px-2 py-0.5 text-2xs font-bold ${
+                                  className={`shrink-0 rounded-md px-2 py-0.5 text-2xs font-medium ${
                                     badge.status === "risk"
                                       ? "bg-fail/15 text-fail"
                                       : "bg-pass/15 text-pass"
@@ -647,7 +647,7 @@ export function DailyJourney({
                                   {badge.status === "risk" ? "AT RISK" : "BIOLOGICALLY READY"}
                                 </span>
                               ) : (
-                                <span className="rounded-full bg-ink-2 px-2 py-0.5 text-2xs text-mist">
+                                <span className="rounded-md bg-ink-2 px-2 py-0.5 text-2xs text-mist">
                                   {ev.movable ? "Flexible" : "Fixed"}
                                 </span>
                               )}

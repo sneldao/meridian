@@ -119,7 +119,7 @@ export function Ledger({ events }: LedgerProps) {
           return (
             <li key={i} className="grid grid-cols-[40px_104px_1fr] gap-2 border-b border-line/10 py-0.5">
               <span className="text-dim">{String(i + 1).padStart(3, "0")}</span>
-              <span className="flex items-center gap-1.5 truncate font-bold" style={{ color: d.tone }}>
+              <span className="flex items-center gap-1.5 truncate font-medium" style={{ color: d.tone }}>
                 {d.agent && Icon && (
                   <Icon size={12} className="shrink-0" style={{ color: CREW[d.agent].color }} />
                 )}
@@ -139,7 +139,7 @@ export function Ledger({ events }: LedgerProps) {
 function Stat({ label, value, tone }: { label: string; value: number; tone?: string }) {
   return (
     <span className="text-xs text-mist">
-      {label} <span className="ml-1 text-xs font-bold" style={{ color: tone ?? "var(--color-paper)" }}>{value}</span>
+      {label} <span className="ml-1 text-xs font-medium" style={{ color: tone ?? "var(--color-paper)" }}>{value}</span>
     </span>
   );
 }

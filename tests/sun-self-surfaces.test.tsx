@@ -11,22 +11,20 @@ import { buildTrip } from "@/domain/fixtures";
 import {
   sunSelfMoodWord,
   sunSelfRead,
-  sunSelfSleeping,
   type SunSelfRead,
 } from "@/domain/sun-self";
 import { sunSelfSvgGroup } from "@/lib/sun-self-svg";
 import { arrivalPassportSvg } from "@/lib/arrival-passport-svg";
 import { utcOffsetMinOn } from "@/domain/timezones";
 
-/* Round 24: one face family, many places. These tests lock that the
- * exported SVG twin draws the same geometry the component does, that the
- * passport carries the portrait only when a read computed it, that SolLuna's
- * sun half obeys the same lids law, and that the stage sky and the empty
- * entry each show their honest face. */
+/* Round 24: one glyph family, many places — face retired in Phase 0 of the
+ * design reset. These tests lock that the exported SVG twin draws the same
+ * geometry the component does, that the passport carries the portrait only
+ * when a read computed it, that SolLuna's halves carry the misalignment, and
+ * that the stage sky and the empty entry each show their honest glyph. */
 
 const PALETTE = {
   disc: "#ffd98a",
-  face: "#0b0e16",
   rayLit: "#ffd98a",
   rayDim: "#8b93a7",
   halo: "#ffd98a",
@@ -46,13 +44,13 @@ const halfLit: SunSelfRead = sunSelfRead({
   daysLocked: 3,
 });
 
-describe("the exported twin draws the same face", () => {
+describe("the exported twin draws the same faceless glyph", () => {
   test("rays: one line per ray, lit count identical", () => {
     for (const read of [drained, halfLit]) {
       const str = sunSelfSvgGroup(read, { r: 30, palette: PALETTE });
       const dom = renderToStaticMarkup(createElement(SunSelf, { read, size: 64 }));
       const strRays = (str.match(/<line /g) ?? []).length;
-      const strLit = (str.match(/stroke="#ffd98a" stroke-width="3"/g) ?? []).length;
+      const strLit = (str.match(/sunself-ray lit/g) ?? []).length;
       const domRays = (dom.match(/sunself-ray/g) ?? []).length;
       const domLit = (dom.match(/sunself-ray lit/g) ?? []).length;
       expect(strRays).toBe(domRays);
@@ -62,26 +60,31 @@ describe("the exported twin draws the same face", () => {
     }
   });
 
-  test("lids: both renderers close at the same threshold", () => {
-    const strDrained = sunSelfSvgGroup(drained, { r: 30, palette: PALETTE });
-    const domDrained = renderToStaticMarkup(createElement(SunSelf, { read: drained, size: 64 }));
-    expect(strDrained).not.toContain("<ellipse");
-    expect(domDrained).not.toContain("sunself-eye");
-    expect(strDrained).toContain("Q 48 59.5");
-    expect(domDrained).toContain("sunself-lid");
-
-    const strHalf = sunSelfSvgGroup(halfLit, { r: 30, palette: PALETTE });
-    const domHalf = renderToStaticMarkup(createElement(SunSelf, { read: halfLit, size: 64 }));
-    expect(strHalf).toContain("<ellipse");
-    expect(domHalf).toContain("sunself-eye");
+  test("disc + halo + rays, and no face in either renderer", () => {
+    for (const read of [drained, halfLit]) {
+      const str = sunSelfSvgGroup(read, { r: 30, palette: PALETTE });
+      const dom = renderToStaticMarkup(createElement(SunSelf, { read, size: 64 }));
+      // The readout survives as light: disc, halo and rays in both.
+      expect(str).toContain("<circle");
+      expect(dom).toContain("sunself-disc");
+      expect(dom).toContain("sunself-halo");
+      // The face is retired: no eyes, lids or mouth anywhere.
+      for (const face of ["sunself-eye", "sunself-lid", "sunself-mouth", "sunself-face"]) {
+        expect(str).not.toContain(face);
+        expect(dom).not.toContain(face);
+      }
+    }
   });
 
   test("halo: the glow formula is shared", () => {
     const str = sunSelfSvgGroup(halfLit, { r: 30, palette: PALETTE });
     const dom = renderToStaticMarkup(createElement(SunSelf, { read: halfLit, size: 64 }));
-    const expected = (0.12 + halfLit.glow * 0.5).toFixed(3);
-    expect(str).toContain(`opacity="${expected}"`);
-    expect(dom).toContain(`opacity="${Number((0.12 + halfLit.glow * 0.5).toFixed(3))}"`);
+    const bloom = 0.08 + 0.16 * halfLit.lid;
+    const expected = (0.12 + halfLit.glow * 0.5 + bloom * 0.3).toFixed(3);
+    // Phase 2: the halo is a radial gradient; the state formula rides
+    // its outer stop, carried on data-halo for parity checks.
+    expect(str).toContain(`data-halo="${expected}"`);
+    expect(dom).toContain(`data-halo="${expected}"`);
   });
 });
 
@@ -121,8 +124,8 @@ describe("the passport portrait", () => {
   });
 });
 
-describe("SolLuna speaks the sun-self's language", () => {
-  test("a wide gap closes the sun-side lid", () => {
+describe("SolLuna carries the gap in its halves, not a face", () => {
+  test("a wide gap leans the halves apart", () => {
     const h = renderToStaticMarkup(
       createElement(SolLunaMascot, {
         state: "drifting",
@@ -131,22 +134,23 @@ describe("SolLuna speaks the sun-self's language", () => {
         baselineMisalignmentHours: 9,
       }),
     );
-    expect(h).toContain("Q 35 33.2"); // closed-lid arc on the sun side
-    expect(h).not.toContain('cx="35"'); // no open sun-side eye
-    expect(h).toContain('cx="21"'); // the moon side keeps its dot
+    expect(h).toContain("rotate(-11"); // drifting split is 22deg, half each way
+    expect(h).toContain("rotate(11");
   });
 
-  test("a small gap keeps the sun-side eye open", () => {
+  test("calm closes the split; the two halves stay one body", () => {
     const h = renderToStaticMarkup(
       createElement(SolLunaMascot, {
-        state: "syncing",
+        state: "calm",
         tone: "gentle",
-        misalignmentHours: 1,
+        misalignmentHours: 0,
         baselineMisalignmentHours: 9,
       }),
     );
-    expect(h).toContain('cx="35"');
-    expect(h).not.toContain("Q 35 33.2");
+    expect(h).toContain("rotate(0 28 28)"); // calm: the two halves sit flush
+    // The rim still reads the halves as one body — and there is no face.
+    expect(h).toContain('r="22"');
+    expect(h).not.toContain("<ellipse");
   });
 
   test("three rays crown the sun half", () => {
@@ -208,35 +212,31 @@ describe("the stage sky carries the traveller", () => {
   });
 });
 
-describe("the empty entry sleeps, it does not sulk", () => {
-  test("no route yet shows the sleeping face", () => {
+describe("the entry carries no mascot (Phase 1)", () => {
+  test("the form shows no sun at all — the headline above does the talking", () => {
     const h = renderToStaticMarkup(
       createElement(TripEntryScreen, {
         initialDate: "2026-05-10",
         onContinue: () => {},
         onExploreExample: () => {},
-        onExploreScenario: () => {},
       }),
     );
-    expect(h).toContain("entry-sunself");
-    const sleeping = sunSelfSleeping();
-    expect(h).toContain(sunSelfMoodWord(sleeping.mood)); // "asleep"
-    expect(h).toContain("No route yet");
+    expect(h).not.toContain("sunself");
+    expect(h).not.toContain("entry-sunself");
   });
 
-  test("the face wakes as the route is typed — drained by the full gap", () => {
+  test("a resolved draft stays honest — gap line + model preview, no fake mood", () => {
     const h = renderToStaticMarkup(
       createElement(TripEntryScreen, {
         initialDate: "2026-05-10",
         onContinue: () => {},
         onExploreExample: () => {},
-        onExploreScenario: () => {},
         initialRoute: { origin: "LHR", dest: "HND", date: "2026-11-04" },
       }),
     );
-    expect(h).toContain("drained"); // nine hours east, nothing banked
-    expect(h).not.toContain("sunself-ray lit"); // no rays before any crew work
-    expect(h).toContain("sunself-paper enter"); // the wake pulse is armed
-    expect(h).not.toContain("No route yet");
+    expect(h).toContain("9.0h to move · eastbound"); // the real gap, not a mood
+    expect(h).toContain("Model preview — estimated shift coverage");
+    expect(h).not.toContain("sunself");
+    expect(h).not.toContain("lands");
   });
 });

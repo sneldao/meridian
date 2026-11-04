@@ -28,12 +28,12 @@ describe("sunPortraitSvg", () => {
     expect(svg).toContain("TIMING GUIDANCE, NOT MEDICAL ADVICE");
   });
 
-  test("the face on the card is exactly the read it was given", () => {
+  test("the glyph on the card is exactly the read it was given", () => {
     const svg = sunPortraitSvg({ read, routeLabel: "LONDON → TOKYO" });
     expect((svg.match(/<line /g) ?? []).length).toBe(read.rayCount);
     expect(svg).toContain(`THE TRAVELLER'S MERIDIAN`);
-    // half-lit read: eyes open (ellipse), honest line from the domain
-    expect(svg).toContain("<ellipse");
+    // half-lit read, faceless (Phase 0): disc + halo, never a drawn face
+    expect(svg).not.toContain("sunself-eye");
     expect(svg).toContain(read.line);
   });
 

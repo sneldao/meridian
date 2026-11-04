@@ -13,7 +13,6 @@
 // the model's rules, so they can be tested without rendering anything.
 
 import { getMascotCopy, type MascotTone } from "@/domain/mascot";
-import { sunSelfLidForDebt } from "@/domain/sun-self";
 
 export type MascotState = "calm" | "syncing" | "drifting" | "droop" | "serious";
 
@@ -53,13 +52,9 @@ export function SolLunaMascot({
 }: SolLunaMascotProps) {
   const split = SPLIT_BY_STATE[state];
   const droop = state === "droop" ? 4 : 0;
-  // One face family (round 24): the sun half speaks the sun-self's language —
-  // the misalignment is debt, so the sun-side eye carries the same lid law
-  // the traveller's own sun does, and three rays crown the sun half. The
-  // moon half stays a moon: it is where the night should be.
-  const lid = sunSelfLidForDebt(misalignmentHours * 60);
-  const eyeRy = Math.max(0.4, 1.6 * (1 - lid));
-  const eyeClosed = eyeRy < 0.62;
+  // One glyph family (round 24, face retired in Phase 0): the two halves and
+  // their split carry the misalignment; three rays crown the sun half as the
+  // family mark. The moon half stays a moon: it is where the night should be.
   const copy = line ?? getMascotCopy({
     tone,
     state,
@@ -108,21 +103,6 @@ export function SolLunaMascot({
           stroke="var(--m-border)"
           strokeWidth="1.5"
         />
-        {/* the eyes: the moon side keeps its dot; the sun side carries the
-            lid — heavier the further the body is from the target */}
-        <circle cx="21" cy="25" r="1.6" fill="var(--m-ink)" opacity={0.75} />
-        {eyeClosed ? (
-          <path
-            d="M 32.6 31 Q 35 33.2 37.4 31"
-            fill="none"
-            stroke="var(--m-ink)"
-            strokeWidth="1.4"
-            strokeLinecap="round"
-            opacity={0.75}
-          />
-        ) : (
-          <ellipse cx="35" cy="31" rx="1.6" ry={eyeRy.toFixed(2)} fill="var(--m-ink)" opacity={0.75} />
-        )}
       </svg>
       <p className="mascot-say">{copy}</p>
     </div>

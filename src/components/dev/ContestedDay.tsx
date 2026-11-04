@@ -209,7 +209,7 @@ function BeatRow({ beat, phase, attemptIdx, reduce }: { beat: ContestBeat; phase
     <div>
       <div className="grid grid-cols-[64px_1fr_150px] items-center gap-3">
         <div className="flex flex-col">
-          <span className="text-xs font-bold text-paper">{beat.label}</span>
+          <span className="text-xs font-medium text-paper">{beat.label}</span>
           <span className="text-[10px] text-dim">
             {phase === "queued" ? "queued" : phase === "ghost" ? "solver placed" : phase === "candidate" ? "Otto submits" : failed ? "gate: fail" : "gate: pass"}
           </span>
@@ -311,7 +311,7 @@ function BeatRow({ beat, phase, attemptIdx, reduce }: { beat: ContestBeat; phase
                 initial={reduce ? false : { scale: 1.6, rotate: -8, opacity: 0 }}
                 animate={{ scale: 1, rotate: 0, opacity: 1 }}
                 transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 420, damping: 16 }}
-                className="inline-block text-xs font-bold text-pass"
+                className="inline-block text-xs font-medium text-pass"
               >
                 PASS {attempt!.verdict.score.toFixed(2)}
               </motion.span>
@@ -325,7 +325,7 @@ function BeatRow({ beat, phase, attemptIdx, reduce }: { beat: ContestBeat; phase
                 initial={reduce ? false : { scale: 1.6, rotate: 6, opacity: 0 }}
                 animate={{ scale: 1, rotate: 0, opacity: 1 }}
                 transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 420, damping: 16 }}
-                className="inline-block text-xs font-bold text-fail"
+                className="inline-block text-xs font-medium text-fail"
               >
                 {attempt!.verdict.violations[0]?.code ?? "FAIL"}
               </motion.span>

@@ -120,7 +120,7 @@ export function DevDial() {
           <button
             key={d.label}
             type="button"
-            className="rounded-full border border-line px-3 py-1 text-xs"
+            className="rounded-md border border-line px-3 py-1 text-xs"
             aria-pressed={i === dayIndex}
             onClick={() => setDayIndex(i)}
           >

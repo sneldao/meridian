@@ -309,7 +309,7 @@ export function ShiftBoard({ days, drafts, verdicts, locked, activeLabel, active
         return (
           <div key={d.dayIndex} className="grid grid-cols-[96px_1fr_84px] items-center gap-3">
             <div className="flex flex-col">
-              <span className="text-xs font-bold" style={{ color: STATE_COLOR[state] }}>
+              <span className="text-xs font-medium" style={{ color: STATE_COLOR[state] }}>
                 {readOnly && rowLabel ? rowLabel(d) : d.label}
               </span>
               {!readOnly && (
@@ -523,20 +523,20 @@ export function ShiftBoard({ days, drafts, verdicts, locked, activeLabel, active
             <div className="flex flex-col items-end">
               {readOnly ? (
                 plan ? (
-                  <span className="text-xs font-bold text-pass">
+                  <span className="text-xs font-medium text-pass">
                     {Math.abs(plan.shiftMin)} min
                   </span>
                 ) : null
               ) : state === "locked" ? (
                 <>
-                  <span className="text-xs font-bold text-pass">
+                  <span className="text-xs font-medium text-pass">
                     {cumulative.get(d.label)}m
                   </span>
                   <span className="text-xs text-dim">{plan?.shiftMin}m today</span>
                 </>
               ) : state === "rejected" && last?.violations[0] ? (
                 <span
-                  className="max-w-[84px] truncate text-right text-xs font-bold text-fail"
+                  className="max-w-[84px] truncate text-right text-xs font-medium text-fail"
                   title={last.violations[0].message}
                 >
                   {last.violations[0].code}

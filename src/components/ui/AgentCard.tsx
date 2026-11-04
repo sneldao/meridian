@@ -59,7 +59,7 @@ export function AgentCard({ id, onClose }: AgentCardProps) {
               <CrewAvatar id={id} size={40} decorative />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-paper">{agent.name}</h3>
+              <h3 className="text-lg font-medium text-paper">{agent.name}</h3>
               <p className="text-xs text-mist">
                 {agent.callsign} · {agent.title}
               </p>

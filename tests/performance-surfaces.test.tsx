@@ -9,6 +9,7 @@ import { buildDemoScenario } from "../src/domain/demo-scenarios";
 import { resolveHomeEntry } from "../src/lib/home-entry";
 import type { DayPlan, Intervention } from "../src/domain/types";
 import { NudgeFeedScreen, type NudgeFeedScreenProps } from "../src/components/NudgeFeedScreen";
+import { SampleJourneys } from "../src/components/SampleJourneys";
 
 describe("PerformanceBrief (SSR)", () => {
   const d = buildDemoScenario("danny", "2026-11-04");
@@ -19,7 +20,8 @@ describe("PerformanceBrief (SSR)", () => {
     expect(h).toContain("Event time");
     expect(h).toContain("Estimated body time");
     expect(h).toContain("Example sleep profile");
-    expect(h).not.toContain("Example event");
+    // Fixture inputs are both named — the stamp never hides the source.
+    expect(h).toContain("Example event");
     expect(h).toContain("not a measurement of alertness");
     for (const bad of ["%", "guaranteed", "You will be sharp", "fix jetlag"]) expect(h).not.toContain(bad);
   });
@@ -54,13 +56,16 @@ describe("LightWindowPanel (SSR)", () => {
 describe("entry + selector (SSR)", () => {
   test("new copy, real CTA, sample buttons", () => {
     const h = renderToStaticMarkup(createElement(TripEntryScreen, { initialDate: "2026-05-10", onContinue: () => {}, onExploreExample: () => {}, onExploreScenario: () => {} }));
-    expect(h).toContain("Your turn.");
-    expect(h).toContain("Arrive with a plan");
+    expect(h).toContain("Where are you headed?");
     expect(h).toContain("See my trip plan");
-    expect(h).toContain("Try Miles");
-    expect(h).toContain("Try Danny");
-    expect(h).toContain("Try Sofia");
-    expect(h).toContain("Imagined demo scenarios");
+    expect(h).not.toContain("sample-journeys"); // Phase 1: tiles moved below the example day
+    const s = renderToStaticMarkup(createElement(SampleJourneys, { onChoose: () => {} }));
+    expect(s).toContain("Try Miles");
+    expect(s).toContain("Try Danny");
+    expect(s).toContain("Try Sofia");
+    // Phase 0: one FICTIONAL stamp plus a clause replaces the sentence.
+    expect(s).toContain('data-kind="fictional"');
+    expect(s).toContain("Imagined scenarios");
   });
   test("home entry resolves known/legacy/unknown example params", () => {
     const sp = (v: string) => new URLSearchParams(`example=${v}`);
@@ -79,7 +84,8 @@ describe("ScenarioExperience + prefill (SSR)", () => {
     try {
       for (const id of ["miles", "danny", "sofia"] as const) {
         const h = renderToStaticMarkup(createElement(ScenarioExperience, { id, departureDate: "2026-11-04", onChooseScenario: () => {}, onMakeTrip: () => {}, onBack: () => {} }));
-        expect(h).toContain("Imagined demo scenarios");
+        expect(h).toContain('data-kind="fictional"');
+        expect(h).toContain("imagined scenarios");
         expect(h).toContain("not their actual data or endorsements");
         // Milestone 5: the three steps are gone — the explorable interactive
         // day stands where the stage did, honestly tagged.
@@ -174,7 +180,7 @@ describe("feed ordering (SSR)", () => {
     expect(lp).toBeLessThan(hero);
     expect(html).not.toContain("hero-meeting");
     expect(html).toContain("Seek light");
-    expect(html).toContain("Plan preview");
+    expect(html).toContain('data-kind="preview"');
     expect(html.slice(pb, hero)).not.toContain("Example event");
   });
 });

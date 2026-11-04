@@ -88,7 +88,7 @@ export default function OutcomePage() {
   };
 
   const chip = (selected: boolean) =>
-    `rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+    `rounded-md border px-3.5 py-1.5 text-xs font-semibold transition-colors ${
       selected
         ? "border-terracotta bg-terracotta text-paper"
         : "border-line bg-ink-2 text-mist hover:text-paper"
@@ -120,7 +120,7 @@ export default function OutcomePage() {
           <p className="mt-1 text-xs leading-relaxed text-mist">
             Make a plan and follow it for a while, then come back and tell us how it went.
           </p>
-          <Link href="/" className="mt-4 inline-block rounded-lg bg-paper px-4 py-2 text-xs font-bold text-ink transition-colors hover:bg-white">
+          <Link href="/" className="mt-4 inline-block rounded-lg bg-paper px-4 py-2 text-xs font-medium text-ink transition-colors hover:bg-white">
             Make my plan →
           </Link>
         </Card>
@@ -189,7 +189,7 @@ export default function OutcomePage() {
             <button
               onClick={save}
               disabled={adherence === null || jetlag === null}
-              className="rounded-lg bg-paper px-4 py-2 text-xs font-bold text-ink hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded-lg bg-paper px-4 py-2 text-xs font-medium text-ink hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
             >
               Save
             </button>
@@ -203,7 +203,7 @@ export default function OutcomePage() {
 
       {memory && hasHistory && (
         <Card className="mt-8 p-4">
-          <h2 className="text-sm font-bold text-paper">What we&apos;ve learned about you</h2>
+          <h2 className="text-sm font-medium text-paper">What we&apos;ve learned about you</h2>
           {memory.learned.skippedKinds?.length ? (
             <div className="mt-2 text-xs text-mist">
               Harder for you:{" "}

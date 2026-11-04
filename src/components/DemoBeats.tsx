@@ -27,6 +27,7 @@ import { CrewPerformance } from "@/components/CrewPerformance";
 import { stageSky, stageSkyVars, STAGE_SKY_VARS } from "@/domain/stage-sky";
 import { STAGE_SUN_VARS, stageSunFor, stageSunVars } from "@/domain/stage-sun";
 import { ridgePath, starPlane } from "@/domain/demo-depth";
+import { Stamp } from "@/components/ui/Stamp";
 
 /* The demo journey (round 19), told as beats instead of a dashboard.
  *
@@ -474,7 +475,8 @@ function DemoBeatsInner() {
       </footer>
 
       <p className="demo-footnote">
-        Imagined demo scenario — fictional sample data, not a real schedule or endorsement.{" "}
+        <Stamp kind="fictional" /> Fictional sample data — imagined, not a real
+        schedule or endorsement.{" "}
         {scenarioId === "miles" ? (
           <>
             Prefer a stage or a keynote?{" "}

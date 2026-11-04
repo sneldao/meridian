@@ -46,11 +46,16 @@ const TripEntryScreen = dynamic(
 );
 import { HandoffBanner } from "@/components/HandoffBanner";
 import { LandingHero } from "@/components/LandingHero";
+import { LandingExampleDay } from "@/components/LandingExampleDay";
+import { LandingInstrument } from "@/components/LandingInstrument";
+import { LandingDepth } from "@/components/LandingDepth";
+import { SampleJourneys } from "@/components/SampleJourneys";
 import type { RouteGapRead } from "@/domain/route-gap";
 const AgentDrawer = dynamic(
   () => import("@/components/AgentDrawer").then((m) => m.AgentDrawer),
 );
 import { RunAnnouncer } from "@/components/RunAnnouncer";
+import { Stamp } from "@/components/ui/Stamp";
 import { CrewTrace } from "@/components/CrewTrace";
 import { CalendarApprovalCard } from "@/components/CalendarApprovalCard";
 import { CrewQuestionCard } from "@/components/CrewQuestionCard";
@@ -59,7 +64,6 @@ import { ShiftBoard } from "@/components/lenses/ShiftBoard";
 import { CREW } from "@/agents/crew";
 import { useFocusTrap } from "@/lib/a11y";
 import { friendlyDayLabel } from "@/lib/day-label";
-import { clockPhaseDelay } from "@/lib/clock-phase";
 import { restorePlan } from "@/lib/restore-plan";
 import { syncFeed } from "@/lib/feed";
 import { useAssistantLink } from "@/lib/use-assistant-link";
@@ -176,6 +180,14 @@ export default function Home() {
   // Round 30 phase 3: the route the visitor is typing, resolved — the
   // landing stage plays their gap, their direction, their sky.
   const [visitorInfo, setVisitorInfo] = useState<{ gap: RouteGapRead; covPct: number | null } | null>(null);
+  /* Phase 1 — the gap report must come back through a STABLE callback: an
+     inline lambda is a new identity every render, so the child's report
+     effect re-ran forever (the "Maximum update depth" loop). */
+  const handleVisitorGap = useCallback(
+    (gap: RouteGapRead | null, covPct: number | null) =>
+      setVisitorInfo(gap ? { gap, covPct } : null),
+    [],
+  );
   /* ?via={shareId} — arrived from a shared card. The payload is fetched for
      the acknowledgment line and the route prefill; the id is kept so a
      committed trip counts back against the share (the funnel's bottom). */
@@ -1323,26 +1335,10 @@ export default function Home() {
     return Boolean(install.installEvt) || iOS;
   })();
 
-  // The shade crossing the landing keeps the clock's phase rather than its
-  // own: one write on mount, one when the tab comes back, and the compositor
-  // holds the tempo in between. No tick, no rAF.
-  const beamRef = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    const el = beamRef.current;
-    if (!el) return;
-    const sync = () => el.style.setProperty("--beam-phase", clockPhaseDelay());
-    sync();
-    const onVisible = () => {
-      if (document.visibilityState === "visible") sync();
-    };
-    document.addEventListener("visibilitychange", onVisible);
-    return () => document.removeEventListener("visibilitychange", onVisible);
-  }, []);
-
   return (
-    <div className="root">
+    <div className={entry === null || entry.mode === "setup" ? "root landing-ink" : "root"}>
       {sweepNode}
-      <div className="beam" ref={beamRef} />
+      <div className="beam" />
       <div className="in">
         {/* The one live region on the page. Mounted here rather than inside the
             drawer, which is closed by default — a blind traveller was getting
@@ -1707,13 +1703,12 @@ export default function Home() {
             {bootScene}
           </div>
         ) : entry.mode === "setup" ? (
-          <div ref={setupRef}>
-            <div className="landing-tease" role="region" aria-label="What you get">
-              {/* Round 31: engagement first — a stable hero, then the example
-                  day you can touch. No pinned stage; the choreographed story
-                  stays one click away on /demo. */}
-              <LandingHero visitor={visitorInfo} />
-            </div>
+          /* Design reset Phase 1 — the Statement landing on ink: type first,
+             the form is the hero's action, the example day and the sample
+             journeys follow as their own sections. */
+          <div ref={setupRef} className="landing-statement">
+            <LandingDepth tone="ink" />
+            <LandingHero visitor={visitorInfo} />
             {via && (
               /* The shared card that brought them here, acknowledged with its
                  own numbers — receipt when there is one, route always. */
@@ -1727,16 +1722,22 @@ export default function Home() {
                 .{entryDraft ? " Their route is prefilled below — change anything." : ""}
               </p>
             )}
-            <TripEntryScreen
-              initialDate={departureDate || defaultDepartureDate()}
-              onContinue={commitRoute}
-              onExploreExample={() => exploreExample()}
-              onExploreScenario={(id) => exploreExample(id)}
-              initialRoute={entryDraft}
-              onGapChange={(gap, covPct) => setVisitorInfo(gap ? { gap, covPct } : null)}
-            />
-            {/* Round 30: the habit tracker leaves the funnel — after the
-                form, for the visitor who is still looking around. */}
+            <div className="landing-entry-stage">
+              <TripEntryScreen
+                initialDate={departureDate || defaultDepartureDate()}
+                onContinue={commitRoute}
+                onExploreExample={() => exploreExample()}
+                initialRoute={entryDraft}
+                onGapChange={handleVisitorGap}
+              />
+              {/* Phase 2 — the glass instrument: the traveller's meridian
+                  rendered as a refractive medallion beside the form. */}
+              <LandingInstrument visitor={visitorInfo} />
+            </div>
+            <LandingExampleDay />
+            <SampleJourneys onChoose={(id) => exploreExample(id)} />
+            {/* The habit tracker stays after the funnel — for the visitor
+                who is still looking around. */}
             <EverydayRhythm />
           </div>
         ) : entry.mode === "example" && entry.scenarioId ? (
@@ -1763,7 +1764,8 @@ export default function Home() {
             )}
             {entry.mode === "example" && (
               <div className="example-banner" role="note">
-                <span>Example trip — not your plan</span>
+                <Stamp kind="example" />
+                <span className="example-banner-note">Not your plan</span>
                 <Link href="/demo" className="example-banner-cta" transitionTypes={["nav-forward"]}>
                   See the story first
                 </Link>

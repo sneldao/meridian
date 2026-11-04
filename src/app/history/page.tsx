@@ -217,7 +217,7 @@ function HistoryCard({ entry: it, older }: { entry: HistEntry; older: HistEntry[
       {it.days.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-1.5">
           {it.days.map((d) => (
-            <span key={d.label} className="rounded-full border border-line px-2 py-0.5 font-mono2 text-xs text-dim">
+            <span key={d.label} className="rounded-md border border-line px-2 py-0.5 font-mono2 text-xs text-dim">
               {d.label} {d.shiftMin === 0 ? "·" : `${d.shiftMin > 0 ? "+" : "−"}${Math.abs(d.shiftMin)}m`}
             </span>
           ))}

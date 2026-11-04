@@ -8,6 +8,7 @@ import { resolvePlaceChoice } from "@/lib/place-choices";
 import { usePlaceChoices } from "@/lib/use-place-choices";
 import { sampleTasteProfile, SAMPLE_TASTE_LABEL } from "@/lib/sample-taste";
 import { InteractiveDay } from "@/components/InteractiveDay";
+import { Stamp } from "@/components/ui/Stamp";
 import { buildDayScene } from "@/domain/day-scene";
 import { fmtMin } from "@/domain/circadian";
 import { ArrivalDayView } from "@/components/ArrivalDayView";
@@ -142,7 +143,8 @@ export function ScenarioExperience({ id, departureDate, onChooseScenario, onMake
       </header>
 
       <p className="scenario-disclosure" role="note">
-        Imagined demo scenarios — fictional sample data, not their actual data or endorsements. Nothing is saved.
+        <Stamp kind="fictional" /> Fictional sample data — imagined scenarios,
+        not their actual data or endorsements. Nothing is saved.
       </p>
       <nav className="scenario-nav" aria-label="Demo scenarios">
         {DEMO_SCENARIOS.map((s) => (

@@ -57,7 +57,7 @@ function useMediaQuery(query: string) {
 function DayCardBody({ label, plan }: { label: string; plan: DayPlan }) {
   return (
     <>
-      <div className="text-xs font-bold text-pass">{label}</div>
+      <div className="text-xs font-medium text-pass">{label}</div>
       <div className="mt-1 font-mono2 text-xs text-paper">
         <div>bed {fmtMin(plan.targetBedtimeMin)}</div>
         <div>wake {fmtMin(plan.targetWakeMin)}</div>
@@ -176,7 +176,7 @@ export function DayStrip({ days, locked, activeLabel, rejectedLabels }: Props) {
             }`}
           >
             <div className="flex items-baseline justify-between">
-              <span className={`text-xs font-bold ${plan ? "text-pass" : active ? "text-progress" : "text-mist"}`}>
+              <span className={`text-xs font-medium ${plan ? "text-pass" : active ? "text-progress" : "text-mist"}`}>
                 {d.label}
               </span>
               {plan && (

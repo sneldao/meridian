@@ -13,8 +13,9 @@ import type {
   WearableBaseline,
 } from "@/domain/types";
 import { CREW } from "@/agents/crew";
-import { MoonStar } from "lucide-react";
+import { MoonStar, Volume2, VolumeX } from "lucide-react";
 import { Button, Card, Badge, KeyHint, AgentChip } from "@/components/ui";
+import { Stamp } from "@/components/ui/Stamp";
 import { BottomNav } from "@/components/BottomNav";
 import { BriefingCard } from "@/components/BriefingCard";
 import { MorningCheckin } from "@/components/MorningCheckin";
@@ -49,6 +50,12 @@ function clockAt(offsetMin: number, now = new Date()): string {
   return fmtMin(now.getUTCHours() * 60 + now.getUTCMinutes() + offsetMin);
 }
 
+/** The header CTA is duplicate workbench chrome while idle — but once a run
+ *  exists it is the only rerun control, so it must come back. */
+export function crewHeaderCtaVisible(dev: boolean, phase: string): boolean {
+  return dev || phase !== "idle";
+}
+
 /** Same default as `/`: three days out in the viewer's local date, so a visit
  *  after 18 Oct doesn't open on a trip that already happened. Derived in the
  *  mount effect, not at render, to avoid a server/browser hydration mismatch. */
@@ -75,6 +82,10 @@ export default function Home() {
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [briefingDismissed, setBriefingDismissed] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  // Workbench chrome (provider label, key hints, first-run coaching) mounts
+  // only on ?dev=1 — read from the location on mount like the rest of the
+  // page's params, so no searchParams Suspense boundary is needed.
+  const [dev, setDev] = useState(false);
   const trip = (run.trip ?? data?.trip ?? null) as Trip | null;
 
   const esRef = useRef<EventSource | null>(null);
@@ -128,6 +139,7 @@ export default function Home() {
               ? qDate
               : defaultDepartureDate(),
           );
+          setDev(sp.get("dev") === "1");
           if (sp.get("checkins")) setCheckInsParam(sp.get("checkins")!);
           const sd = Number(sp.get("startDay"));
           if (!Number.isNaN(sd)) setStartDayParam(sd);
@@ -487,14 +499,19 @@ export default function Home() {
             }} disabled={run.phase === "running"} />
         </div>
 
-        <Button
-          onClick={startShift}
-          disabled={run.phase === "running"}
-          variant="primary"
-          title="Space — send the crew out"
-        >
-          {run.phase === "running" ? "Building your plan…" : run.phase === "done" ? "Make it again" : "Make my plan"}
-        </Button>
+        {/* The duplicate header CTA is workbench chrome while the shift is
+            idle — but once a run exists it is the only way to rerun, so it
+            comes back whenever the phase leaves idle. */}
+        {crewHeaderCtaVisible(dev, run.phase) && (
+          <Button
+            onClick={startShift}
+            disabled={run.phase === "running"}
+            variant="primary"
+            title="Space — send the crew out"
+          >
+            {run.phase === "running" ? "Building your plan…" : run.phase === "done" ? "Make it again" : "Make my plan"}
+          </Button>
+        )}
 
         {run.phase === "running" && (
           <Button variant="danger" onClick={cancelShift}>
@@ -523,24 +540,25 @@ export default function Home() {
             setVoiceEnabled(next);
             if (!next) stopVoice();
           }}
-          className="shrink-0 rounded-lg border border-line bg-ink-2 px-3 py-1.5 text-xs font-semibold text-mist transition-colors hover:text-paper disabled:opacity-40"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-line bg-ink-2 px-3 py-1.5 text-xs font-semibold text-mist transition-colors hover:text-paper disabled:opacity-40"
         >
-          {voiceOn ? "🔊 Voice on" : "🔈 Voice off"}
+          {voiceOn ? <Volume2 size={13} aria-hidden="true" /> : <VolumeX size={13} aria-hidden="true" />}
+          <span>{voiceOn ? "Voice on" : "Voice off"}</span>
         </button>
 
         <div className="ml-auto flex shrink-0 items-center gap-2">
           {/* The provider is a fact about the run, not a menu — the old
               "menu" button opened a popover with no items in it. */}
-          {providerLabel && (
+          {dev && providerLabel && (
             <span className="hidden rounded-lg px-2 py-1 text-xs text-dim lg:inline">
               {providerLabel}{providerFallback ? " · fallback" : ""}
             </span>
           )}
-          <MoreNav className="hidden items-center justify-center gap-2 rounded-lg border border-line px-3 py-1.5 text-xs font-bold text-mist transition-all hover:border-mist hover:text-paper sm:inline-flex" />
+          <MoreNav className="hidden items-center justify-center gap-2 rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-mist transition-all hover:border-mist hover:text-paper sm:inline-flex" />
         </div>
       </header>
 
-      {showOnboarding && (
+      {dev && showOnboarding && (
         <motion.div
           initial={reduce ? false : { opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -586,8 +604,9 @@ export default function Home() {
         </div>
       )}
       {data?.calendarSource === "fixture" && (
-        <div className="mb-3 rounded-lg border border-line bg-ink-2 px-4 py-2 text-xs text-mist">
-          Sample calendar in use — your live Google Calendar isn&apos;t being read.
+        <div className="mb-3 flex items-center gap-2 rounded-lg border border-line bg-ink-2 px-4 py-2 text-xs text-mist">
+          <Stamp kind="example" />
+          <span>calendar — sample data, not your live Google Calendar</span>
         </div>
       )}
 
@@ -598,6 +617,7 @@ export default function Home() {
             onChange={chooseLens}
             auto={autoDirector}
             onToggleAuto={() => setAutoDirector((v) => !v)}
+            dev={dev}
             running={run.phase === "running"}
             elapsedMs={run.elapsedMs}
             toolCalls={run.toolCalls}
@@ -687,14 +707,16 @@ export default function Home() {
                     </Button>
                   </div>
 
-                  <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 font-mono2 text-xs text-dim">
-                    <span className="inline-flex items-center gap-1">
-                      <KeyHint>space</KeyHint> to start
-                    </span>
-                    <span className="inline-flex items-center gap-1">
-                      <KeyHint>1</KeyHint><KeyHint>2</KeyHint><KeyHint>3</KeyHint><KeyHint>4</KeyHint> to switch views
-                    </span>
-                  </div>
+                  {dev && (
+                    <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 font-mono2 text-xs text-dim">
+                      <span className="inline-flex items-center gap-1">
+                        <KeyHint>space</KeyHint> to start
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <KeyHint>1</KeyHint><KeyHint>2</KeyHint><KeyHint>3</KeyHint><KeyHint>4</KeyHint> to switch views
+                      </span>
+                    </div>
+                  )}
                 </Card>
               </motion.div>
             )}

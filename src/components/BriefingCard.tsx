@@ -87,7 +87,7 @@ export function BriefingCard({ summary, score, citations, days, ics, lines, cove
       </button>
       <div className="flex items-start justify-between gap-6">
         <div className="min-w-0 flex-1">
-          <div className="text-sm font-bold text-sun-dest">Morning handoff</div>
+          <div className="text-sm font-medium text-sun-dest">Morning handoff</div>
           {fallback && (
             <div className="mt-2 rounded-md border border-fail/20 bg-fail/5 px-2.5 py-1.5 text-xs text-fail">
               Fell back to the recorded shift mid-run — review before acting.
@@ -101,7 +101,7 @@ export function BriefingCard({ summary, score, citations, days, ics, lines, cove
             // number a sceptical reader would push on, so show it unprompted.
             <div className="mt-2 flex flex-wrap items-baseline gap-x-2.5 gap-y-1 text-xs text-mist">
               <span
-                className={`font-bold ${coverage.complete ? "text-pass" : "text-sun-dest"}`}
+                className={`font-medium ${coverage.complete ? "text-pass" : "text-sun-dest"}`}
                 title="Share of the required phase shift the locked days actually cover."
               >
                 {Math.round(coverage.ratio * 100)}% of the shift covered
@@ -119,7 +119,7 @@ export function BriefingCard({ summary, score, citations, days, ics, lines, cove
 
           {firstMove && (
             <div className="mt-2 inline-flex items-center gap-2 rounded-md border border-pass/20 bg-pass/5 px-2.5 py-1 text-xs text-pass">
-              <span className="font-bold tracking-wider uppercase">first move</span>
+              <span className="font-medium tracking-wider uppercase">first move</span>
               <span className="text-paper">
                 {firstMove.day.label} · {fmtMin(firstMove.iv.startMin)} — {firstMove.iv.note}
               </span>
@@ -153,7 +153,7 @@ export function BriefingCard({ summary, score, citations, days, ics, lines, cove
         </div>
 
         <div className="shrink-0 text-right">
-          <div className="font-mono2 text-3xl font-bold text-pass">{score.toFixed(2)}</div>
+          <div className="font-mono2 text-3xl font-medium text-pass">{score.toFixed(2)}</div>
           <div
             className="text-xs text-mist"
             title="Mean of the passing eval verdicts across locked days — not the last day's score."
@@ -162,7 +162,7 @@ export function BriefingCard({ summary, score, citations, days, ics, lines, cove
           </div>
           <button
             onClick={downloadIcs}
-            className="mt-4 rounded-lg bg-paper px-4 py-2 text-xs font-bold text-ink transition-colors hover:bg-white"
+            className="mt-4 rounded-lg bg-paper px-4 py-2 text-xs font-medium text-ink transition-colors hover:bg-white"
           >
             Add to calendar (.ics)
           </button>
@@ -170,7 +170,7 @@ export function BriefingCard({ summary, score, citations, days, ics, lines, cove
             <button
               onClick={listen}
               disabled={voiceState === "loading" || voiceState === "playing"}
-              className="mt-2 rounded-lg border border-paper/30 bg-paper/5 px-4 py-2 text-xs font-bold text-paper transition-colors hover:bg-paper/10 disabled:opacity-50"
+              className="mt-2 rounded-lg border border-paper/30 bg-paper/5 px-4 py-2 text-xs font-medium text-paper transition-colors hover:bg-paper/10 disabled:opacity-50"
             >
               {voiceState === "loading" ? "Generating voice…" : voiceState === "playing" ? "Playing…" : voiceState === "error" ? "Voice failed" : "Listen (ElevenLabs)"}
             </button>

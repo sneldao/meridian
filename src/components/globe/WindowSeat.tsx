@@ -72,7 +72,7 @@ function Pane({
       aria-label={`${label} — ${band === null || altitude === null ? "no reading yet" : `${BAND_COPY[band]}, sun ${altitude >= 0 ? "+" : "−"}${Math.abs(altitude).toFixed(1)}°`}`}
     >
       <figcaption className="mb-1.5 flex items-baseline justify-between gap-2">
-        <span className="font-mono2 text-[10px] font-bold uppercase tracking-[0.14em] text-clay-2">
+        <span className="font-mono2 text-[10px] font-medium uppercase tracking-[0.14em] text-clay-2">
           {label}
         </span>
         <span className="font-mono2 text-[10px] text-clay-3">{sublabel}</span>
@@ -123,7 +123,7 @@ export function WindowSeat({ trip, date, owedMin, className }: WindowSeatProps) 
   return (
     <section className={className} aria-label="Window seat">
       <header className="mb-3">
-        <h2 className="text-xs font-bold uppercase tracking-[0.16em] text-clay-2">
+        <h2 className="text-xs font-medium uppercase tracking-[0.16em] text-clay-2">
           the window seat
         </h2>
         <p className="mt-1 max-w-2xl text-sm leading-relaxed text-clay">

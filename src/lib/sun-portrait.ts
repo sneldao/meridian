@@ -3,7 +3,7 @@ import { sunSelfSvgGroup, sunSelfCaption } from "@/lib/sun-self-svg";
 import { DOCUMENT_PALETTE } from "@/lib/arrival-passport-svg";
 
 /* The body-clock portrait (round 25) — the Wrapped-style artifact: one
- * shareable state-portrait, not a data dump. The face IS the card: big,
+ * shareable state-portrait, not a data dump. The glyph IS the card: big,
  * centred, honest. Everything on it is passed in by a caller that computed
  * it (the arrival read, the demo journey) — the portrait invents nothing,
  * and a traveller with no read gets no portrait.
@@ -39,7 +39,7 @@ function wrap(text: string, budget: number): string[] {
 }
 
 export interface SunPortraitInput {
-  /** The computed face — never authored, never invented. */
+  /** The computed glyph — never authored, never invented. */
   read: SunSelfRead;
   /** The route as the passport writes it, e.g. "LONDON → TOKYO". */
   routeLabel: string;
@@ -78,11 +78,11 @@ export function sunPortraitSvg({ read, routeLabel, subLabel }: SunPortraitInput)
   <text x="540" y="228" text-anchor="middle" font-family="${SERIF}" font-size="58"
     font-weight="700" fill="${paper}" letter-spacing="-1">${esc(routeLabel)}</text>
 
-  <!-- the face is the card -->
+  <!-- the glyph is the card -->
   <g transform="translate(540 520)">
     ${sunSelfSvgGroup(read, {
       r: 200,
-      palette: { disc: gold, face: ink, rayLit: gold, rayDim: muted, halo: gold },
+      palette: { disc: gold, rayLit: gold, rayDim: muted, halo: gold },
     })}
   </g>
 
