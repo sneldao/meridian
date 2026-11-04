@@ -63,8 +63,8 @@ components.
 ### Still pending
 
 - Physical iOS/Android GPU profiling (never claimed, not done).
-- `update_baselines` visual-baseline workflow — not dispatched.
-- Phase 3: Today on ink, remaining pages, CSS purge, DESIGN.md compaction.
+- Phase 3b: Today on ink, remaining pages, CSS purge, DESIGN.md compaction.
+  (Phase 3a — the two-pillar landing — shipped 2026-11-07.)
 - Landing→entry measurement is NOT measured: the funnel starts at
   `entry`, so no landing-view denominator exists; requires separately
   approved measurement work. No conversion or FPS claims were made; no
@@ -244,7 +244,7 @@ number, one field, all in the first viewport.
   `<div className="landing-ink">` that sets `--m-bg`, `--m-ink`, `--m-muted`,
   `--m-card`, `--m-border` to the night values already declared at
   `globals.css:2822-2834`. Nothing else on `/` changes theme in this phase;
-  Today stays cream until Phase 3.
+  Today stays cream until Phase 3b.
 - `LandingDepth` returns on this surface: two mote planes + one ridge, ink
   family, grain. Haze colour `--color-sun-dest` at α0.12 along the horizon.
 
