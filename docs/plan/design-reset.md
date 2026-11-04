@@ -1,9 +1,11 @@
 # Design reset — implementation plan
 
 **Status:** Phases 0, 1 and 2 are implemented and landed on `main` as of
-2026-11-04. Phase 3 is not started. The thesis below describes the
-pre-reset state (cream landing, mascot face) — it is kept for history;
-the current landing is the ink Statement described in Phase 1.
+2026-11-04. Phase 3a (the two-pillar landing: rubric + taste crate + Diego)
+shipped 2026-11-07 with its amendment recorded in `DESIGN.md` Part 4. Phase
+3b (Today on ink, chrome, purge) is the ongoing remainder. The thesis below
+describes the pre-reset state (cream landing, mascot face) — it is kept for
+history; the current landing is the ink Statement described in Phase 1.
 
 Work lands directly on `main`; no long-lived branch. Review that produced
 this: `artifacts/design-review/` (live captures, mobile + desktop, every
@@ -379,9 +381,41 @@ transitions.
 
 ---
 
-## Phase 3 — Today on ink, chrome, purge (≈1 week, ongoing)
+## Phase 3 — Two pillars: the landing names them, the ink day lives them
 
-### 3.1 Today joins the stage
+The film ended on a thesis the product never carried into the app: *the crew
+decides when, Qloo decides what*. The landing sold only the first half —
+light, sleep, caffeine — and the WHAT pillar (the taste crate) was four
+clicks deep inside Today. Phase 3 is the work of closing that gap in two
+moves: name both pillars at the door (3a), then make the working day live on
+ink like the stage it follows (3b). Diego Vidal's dispatch is the thread that
+ties the film to the product.
+
+### Phase 3a — Name both pillars (SHIPPED, design-reset amendment)
+
+- The lede carries the rubric `The crew decides when · Qloo decides what` in
+  the stamp's type idiom (mono, floor size, letterspaced, no border) — the
+  thesis, not a provenance mark. Stamps stay provenance-only.
+- The entry form offers the WHAT pillar one tap below the route: three crate
+  pills in story order (Diego's dispatch leads), unselected by default,
+  never a gate — Rule 1 holds.
+- Choosing a crate seeds the trip's taste scope at submit, the same
+  `meridian:taste:ORIGIN-DEST-DATE` key Today reads on arrival. The seed is
+  storage, not a claim: without a Qloo key it waits for the live path rather
+  than performing a lookup it cannot make.
+- Ghost pills read their pressed state from one structural inversion
+  (`aria-pressed`) rather than per-surface colour, pinned by
+  `tests/stage-css.test.ts`.
+- Diego Vidal (JFK→MEX, gallery opening the night after landing) joins the
+  demo as the scenario that carries the film, flying his own route with an
+  imagined crate that says imagined. The small-shift overshoot the solver
+  carried since the model shipped was repaired in the same arc.
+
+Amendment recorded in `DESIGN.md` Part 4 under "The two-pillar landing".
+
+### Phase 3b — Today on ink, chrome, purge (≈1 week, ongoing)
+
+#### 3b.1 Today joins the stage
 
 - `NudgeFeedScreen.tsx` (2209 lines) and `TodayStage.tsx`: default theme
   becomes night; `auto` keeps flipping to cream *only* when the destination
@@ -390,12 +424,12 @@ transitions.
 - `BottomNav.tsx`: 56px, ink, three labels in 12px mono uppercase, active =
   2px `--color-sun-dest` top rule.
 
-### 3.2 `/history`, `/review`, `/outcome`, `/shift`, `/team`
+#### 3b.2 `/history`, `/review`, `/outcome`, `/shift`, `/team`
 
 - Already dark or near it; apply 0.3 weights/radii and the Stamp. No
   layout changes.
 
-### 3.3 CSS purge
+#### 3b.3 CSS purge
 
 - `globals.css` is 8,444 lines. After Phases 0–2, run a coverage pass
   (Chrome DevTools CSS coverage across every route in
@@ -405,7 +439,7 @@ transitions.
 - `tests/stage-css.test.ts` and `design-contract` selector lists are the
   guardrail: a deleted rule that a test names fails the commit.
 
-### 3.4 DESIGN.md compaction
+#### 3b.4 DESIGN.md compaction
 
 - Part 4 (the round log) moves to `docs/archive/design-log-2026-10.md`.
   Part 1 keeps the four rules plus the three phase amendments. Target:
@@ -421,9 +455,11 @@ transitions.
 | 0 Kill list | 6 | 1 day | once, at exit |
 | 1 Landing on ink | 5 | 3–4 days | once, at exit; measurement separately approved |
 | 2 Glass sun + light tail | 4 | 5–6 days | once, at exit |
-| 3 Today + purge | 6–10 | ongoing, 1 week first pass | per 2–3 commits |
+| 3a Two pillars (SHIPPED) | 3 | done | once, at exit |
+| 3b Today + purge | 6–10 | ongoing, 1 week first pass | per 2–3 commits |
 
-Phases 0 and 1 are the churn fix. Phase 2 is the delight. Phase 3 is debt.
+Phases 0 and 1 are the churn fix. Phase 2 is the delight. Phase 3a named
+both pillars at the door; 3b is debt — make the working day live on ink.
 If only one week is available, ship 0 and 1 and measure.
 
 ## Risks

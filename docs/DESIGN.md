@@ -3595,3 +3595,38 @@ sheet, the sun-self face on the handoff, the taste beat).
 **The standing rule this leaves:** a new `toHaveScreenshot` requires a baseline
 dispatch. A local run cannot satisfy it — the snapshots that would be produced
 are `-darwin`, which `.gitignore:39` blocks by design.
+
+### The two-pillar landing (design-reset Phase 3a, 2026-11-07)
+
+The film shipped with the product's thesis on its end card — THE CREW DECIDES
+WHEN · QLOO DECIDES WHAT — and the landing answered with only the first half:
+'Land on their clock', light, sleep and caffeine, never a word about the
+crate. The gap was structural, not copy: the WHAT pillar lived four clicks
+inside Today, unreachable from the door.
+
+Two moves close it at the landing. The lede carries the rubric in the stamp's
+type idiom — mono, floor size, letterspaced, no border — because it is the
+thesis, not a provenance mark; Stamps stay provenance-only, and this
+amendment does not widen their meaning. The entry form offers the crates one
+tap below the route: three pills in story order (the film's dispatch leads),
+unselected by default, never a gate — Rule 1 holds, one question at the
+moment it first matters, and the crate question is optional at that moment.
+
+Choosing a crate seeds the trip's taste scope at submit, the same
+`meridian:taste:ORIGIN-DEST-DATE` key Today reads on arrival, so a plan can
+land already knowing the traveller. The seed is storage, not a claim: with no
+Qloo key deployed it waits quietly for the live path instead of performing a
+lookup it cannot make, and ghost pills read their pressed state from the one
+structural inversion rather than per-surface colour.
+
+Diego Vidal's dispatch (JFK→MEX, gallery opening the night after landing) is
+the scenario that carries the film into the demo, flying his own route with
+an imagined crate that says imagined. The small-shift overshoot the solver
+carried since the model shipped was repaired in the same arc — a traveller
+who needs to shift two hours was being told to shift four — because the
+founding scenarios never exercised the small end.
+
+**What this leaves.** The ink Today (dossier layout, two-track cards, the
+stake line at the door) remains open as Phase 3b; the crew's briefing voice
+still has no place on Today that matches the film's narrator; and the crate
+seed proves itself only on a Qloo-keyed deploy.
