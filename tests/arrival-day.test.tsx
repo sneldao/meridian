@@ -61,6 +61,21 @@ describe("ArrivalDayView (SSR)", () => {
     expect(html).toContain("on this device");
   });
 
+  test("a sample-sourced idea names its provenance in the row label", () => {
+    const r = renderToStaticMarkup(
+      createElement(ArrivalDayView, { ...base, idea: idea(), ideaSource: "recorded" }),
+    );
+    expect(r).toContain("Recorded sample idea · optional");
+    expect(r).not.toContain("Qloo place idea");
+    const i = renderToStaticMarkup(
+      createElement(ArrivalDayView, { ...base, idea: idea(), ideaSource: "imagined" }),
+    );
+    expect(i).toContain("Imagined sample idea · optional");
+    // No source named — the live Qloo voice stays the default.
+    const q = renderToStaticMarkup(createElement(ArrivalDayView, { ...base, idea: idea() }));
+    expect(q).toContain("Qloo place idea · optional");
+  });
+
   test("dismissed/unavailable ideas leave the timeline with restore affordance", () => {
     const d = renderToStaticMarkup(createElement(ArrivalDayView, { ...base, idea: idea("dismissed") }));
     expect(d).toContain("Idea set aside.");

@@ -12,6 +12,7 @@ import { coverageOf, fmtMin } from "@/domain/circadian";
 import { paymentsConfigured, readPrice } from "@/lib/escrow";
 import { SAMPLE_TASTE_CRATES, sampleTasteProfile } from "@/lib/sample-taste";
 import { writeTripTaste } from "@/lib/use-trip-taste";
+import { TASTE_TYPES } from "@/domain/taste";
 import type { CityCode, Trip } from "@/domain/types";
 
 function planPreview(route: HomeRoute): { lightStart?: number; covPct: number } | null {
@@ -64,6 +65,7 @@ export function TripEntryScreen({ initialDate, onContinue, onExploreExample, ini
   // love — the film's WHAT half, offered at the door instead of four clicks
   // in. Unselected by default; it is a garnish, never a gate.
   const [crateKey, setCrateKey] = useState<string | null>(null);
+  const selectedCrate = crateKey ? sampleTasteProfile(crateKey) : null;
   useEffect(() => {
     if (!paymentsConfigured()) return;
     let on = true;
@@ -154,10 +156,31 @@ export function TripEntryScreen({ initialDate, onContinue, onExploreExample, ini
                 </button>
               ))}
             </div>
-            {crateKey && (
+            {selectedCrate && (
               <p className="entry-crate-note">
-                Your crate shapes the places the crew suggests when you get there.
+                {selectedCrate.favorites
+                  .map((f) => `${f.name} (${TASTE_TYPES[f.type].toLowerCase()})`)
+                  .join(" · ")}
+                {" — shapes the places the crew suggests when you get there."}
               </p>
+            )}
+            {/* One tap from crate to route: a visitor who packed a crate
+                before typing anything gets the story's flight offered, not
+                forced — their own route always wins once typed. */}
+            {selectedCrate && (!draft.origin.trim() || !draft.dest.trim()) && (
+              <button
+                type="button"
+                className="taste-button taste-button--ghost entry-crate-route"
+                onClick={() =>
+                  setDraft((d) => ({
+                    ...d,
+                    origin: selectedCrate.sampleRoute.origin,
+                    dest: selectedCrate.sampleRoute.dest,
+                  }))
+                }
+              >
+                Fly the crate’s route · {selectedCrate.sampleRoute.origin} → {selectedCrate.sampleRoute.dest}
+              </button>
             )}
           </div>
           <button type="submit" className="entry-cta" disabled={!valid}>

@@ -60,9 +60,18 @@ describe("entry + selector (SSR)", () => {
     expect(h).toContain("See my trip plan");
     expect(h).not.toContain("sample-journeys"); // Phase 1: tiles moved below the example day
     const s = renderToStaticMarkup(createElement(SampleJourneys, { onChoose: () => {} }));
+    expect(s).toContain("Try Diego");
     expect(s).toContain("Try Miles");
     expect(s).toContain("Try Danny");
     expect(s).toContain("Try Sofia");
+    // Diego leads — the film sends viewers to his dispatch.
+    expect(s.indexOf("Try Diego")).toBeLessThan(s.indexOf("Try Miles"));
+    // The heading names four arrivals now, and never claims one flight.
+    expect(s).toContain("Four arrivals. Four very different days.");
+    expect(s).not.toContain("Same flight");
+    // Each row carries the route its story actually flies.
+    expect(s).toContain("JFK → MEX");
+    expect(s).toContain("LHR → HND");
     // Phase 0: one FICTIONAL stamp plus a clause replaces the sentence.
     expect(s).toContain('data-kind="fictional"');
     expect(s).toContain("Imagined scenarios");

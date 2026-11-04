@@ -1596,6 +1596,7 @@ export function NudgeFeedScreen({
                 tasteSelectionKey(tasteProfile.favorites) !== tasteSelectionKey(tasteItinerary.favorites))
             }
             tasteStatus={tasteItinerary?.status}
+            ideaSource={tasteItinerary?.sampleSource}
             onUpdatePlan={canFitTaste ? onStartCrewSync : undefined}
             updateDisabled={phase === "running" || (tasteProfile ? !tasteProfile.ready : false)}
           />

@@ -103,7 +103,8 @@ describe("TripEntryScreen (Phase 1)", () => {
     expect(h.indexOf("Björk")).toBeLessThan(h.indexOf("Luke Combs"));
     // Optional, not a gate: every pill starts unpressed.
     expect(h).not.toContain('aria-pressed="true"');
-    // The note only appears once a crate is chosen.
+    // The note and the one-tap route fill only appear once a crate is chosen.
     expect(h).not.toContain("entry-crate-note");
+    expect(h).not.toContain("entry-crate-route");
   });
 });

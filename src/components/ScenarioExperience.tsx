@@ -6,7 +6,7 @@ import { buildDemoScenario, DEMO_SCENARIOS, type DemoScenarioId } from "@/domain
 import { buildTasteItinerary } from "@/domain/taste-itinerary";
 import { resolvePlaceChoice } from "@/lib/place-choices";
 import { usePlaceChoices } from "@/lib/use-place-choices";
-import { sampleTasteProfile, sampleTasteLabel, sampleTasteProfilesForCity } from "@/lib/sample-taste";
+import { sampleTasteProfile, sampleTasteLabel, sampleTasteProfilesForCity, splitSamplePlaces } from "@/lib/sample-taste";
 import { InteractiveDay } from "@/components/InteractiveDay";
 import { Stamp } from "@/components/ui/Stamp";
 import { buildDayScene } from "@/domain/day-scene";
@@ -99,10 +99,19 @@ export function ScenarioExperience({ id, departureDate, onChooseScenario, onMake
   const day = selectedDay ?? demo.trip.departureDayIndex + 1;
   const spec = demo.trip.days.find((d) => d.dayIndex === day) ?? null;
   const plan = spec ? demo.plans.find((p) => p.dayIndex === spec.dayIndex) ?? null : null;
-  const itinerary = useMemo(
-    () => profile ? buildTasteItinerary(demo.trip, demo.plans, demo.calendar, { favorites: profile.favorites, status: profile.places.length ? "ready" : "no-matches", places: profile.places }, "replay") : null,
-    [demo, profile],
-  );
+  const itinerary = useMemo(() => {
+    if (!profile) return null;
+    // Same split as the live path: daytime candidates are fitted into free
+    // hours, evening candidates are offered as the first night.
+    const { daytime, evening } = splitSamplePlaces(profile.places);
+    return buildTasteItinerary(demo.trip, demo.plans, demo.calendar, {
+      favorites: profile.favorites,
+      status: daytime.length ? "ready" : "no-matches",
+      places: daytime,
+      ...(evening.length ? { eveningPlaces: evening } : {}),
+      sampleSource: profile.source,
+    }, "replay");
+  }, [demo, profile]);
   const suggestion = spec && itinerary ? itinerary.suggestions.find((s) => s.dayIndex === spec.dayIndex) : undefined;
   const resolved = spec && itinerary && suggestion ? resolvePlaceChoice(itinerary, suggestion, choices.state) : undefined;
   const scene = useMemo(
@@ -229,6 +238,7 @@ export function ScenarioExperience({ id, departureDate, onChooseScenario, onMake
           eyebrow={spec.dayIndex <= demo.trip.departureDayIndex ? "Before you land" : "After you land"}
           tasteFavorites={itinerary?.favorites}
           tasteStatus={itinerary?.status}
+          ideaSource={itinerary?.sampleSource}
         />
       )}
 

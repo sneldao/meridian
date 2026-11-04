@@ -18,7 +18,7 @@ import { arrivalPassportSvg } from "@/lib/arrival-passport-svg";
 import { downloadSunPortrait } from "@/lib/download-sun-portrait";
 import { buildTasteItinerary } from "@/domain/taste-itinerary";
 import { TASTE_TYPES } from "@/domain/taste";
-import { sampleTasteProfile, sampleTasteLabel, sampleTasteProfilesForCity } from "@/lib/sample-taste";
+import { sampleTasteProfile, sampleTasteLabel, sampleTasteProfilesForCity, splitSamplePlaces } from "@/lib/sample-taste";
 import { useLightSweep } from "@/components/LightSweep";
 import { DEMO_SCENARIOS, isDemoScenarioId } from "@/domain/demo-scenarios";
 import { sceneSolar } from "@/domain/day-scene";
@@ -90,26 +90,33 @@ function DemoBeatsInner() {
     () => sampleTasteProfile(profileKey ?? journey.scenario.profile),
     [profileKey, journey],
   );
-  const tasteItinerary = useMemo(
-    () =>
-      tasteProfile
-        ? buildTasteItinerary(
+  const tasteItinerary = useMemo(() => {
+      if (!tasteProfile) return null;
+      // Split the crate the way the live Qloo path does: daytime candidates
+      // compete for the plan's free hours, evening candidates are offered
+      // as the first night — never fitted. Diego's story needs the split:
+      // the mezcaleria is an evening venue, and fitting it into a daytime
+      // slot would quietly break the punchline.
+      const { daytime, evening } = splitSamplePlaces(tasteProfile.places);
+      return buildTasteItinerary(
             journey.trip,
             journey.plans,
             journey.calendar,
             {
               favorites: tasteProfile.favorites,
-              status: tasteProfile.places.length ? "ready" : "no-matches",
-              places: tasteProfile.places,
+              status: daytime.length ? "ready" : "no-matches",
+              places: daytime,
+              ...(evening.length ? { eveningPlaces: evening } : {}),
+              sampleSource: tasteProfile.source,
               // A remembered prior keep, seeded so the memory story is
               // visible in the demo — "you kept this before" reads live.
-              ...(tasteProfile.places[0]?.id
-                ? { memory: { kept: 1, suppressed: 0, keptIds: [tasteProfile.places[0].id] } }
+              ...(daytime[0]?.id
+                ? { memory: { kept: 1, suppressed: 0, keptIds: [daytime[0].id] } }
                 : {}),
             },
             "replay",
-          )
-        : null,
+          );
+    },
     [journey, tasteProfile],
   );
   const gap = stakesGapHours(journey.moment);
@@ -158,7 +165,7 @@ function DemoBeatsInner() {
     const url = `${window.location.origin}/demo`;
     const payload = {
       title: "Meridian — the ninety-second example",
-      text: "Your meeting is at 16:00 Tokyo time and your body thinks it's 07:00. Watch a crew of agents move it.",
+      text: `The moment is at ${clockLabel(journey.moment.localMin)} ${journey.trip.destination.name} time and the body thinks it's ${clockLabel(journey.moment.bodyWithoutPlanMin)}. Watch a crew of agents move it.`,
       url,
     };
     try {
@@ -276,7 +283,7 @@ function DemoBeatsInner() {
             </p>
             <h1 className="demo-title" data-rise="3">{journey.moment.title}</h1>
             <p className="demo-clocks" data-rise="4">
-              <b>{clockLabel(journey.moment.localMin)}</b> Tokyo time
+              <b>{clockLabel(journey.moment.localMin)}</b> {journey.trip.destination.name} time
               <span className="demo-clocks-sep">·</span>
               <b>{clockLabel(journey.moment.bodyWithoutPlanMin)}</b> body time
             </p>
@@ -312,7 +319,7 @@ function DemoBeatsInner() {
           <section className="demo-beat" aria-label={DEMO_BEAT_TITLES.plan}>
             <p className="demo-kicker" data-rise="1">The plan</p>
             <h2 className="demo-title" data-rise="2">
-              Day 1 in Tokyo{arrivalSpec?.date ? ` · ${arrivalSpec.date}` : ""}
+              Day 1 in {journey.trip.destination.name}{arrivalSpec?.date ? ` · ${arrivalSpec.date}` : ""}
             </h2>
             <div className="demo-rows">
               {rows.map((r, i) => (
@@ -365,6 +372,22 @@ function DemoBeatsInner() {
                   </span>
                 </div>
               ))}
+              {/* The evening half of the crate: offered, never fitted. This
+                  is where Diego's mezcaleria lives — the film's punchline,
+                  on screen. */}
+              {tasteItinerary?.firstNight && (
+                <div key={`night-${tasteItinerary.firstNight.name}`} className="demo-row demo-row--night" data-rise={(tasteItinerary?.suggestions.length ?? 0) + 4}>
+                  <span className="demo-row-time">Tonight</span>
+                  <span className="demo-row-body">
+                    <b>{tasteItinerary.firstNight.name}</b>
+                    <small>
+                      first night — if the plan says stay up
+                      {tasteItinerary.firstNight.categories.length > 0 &&
+                        ` · ${tasteItinerary.firstNight.categories.filter(Boolean).slice(0, 2).join(" · ")}`}
+                    </small>
+                  </span>
+                </div>
+              )}
             </div>
             {(tasteItinerary?.suggestions.length ?? 0) === 0 && (
               <p className="demo-honest" data-rise="4">

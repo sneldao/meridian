@@ -56,6 +56,9 @@ export interface TasteContext {
   eveningPlaces?: DestinationPlace[];
   /** Present when remembered taste (kept/dismissed history) shaped the read. */
   memory?: { kept: number; suppressed: number; keptIds?: string[] };
+  /** Present when the places came from a bundled sample profile instead of
+   *  a live lookup — the surfaces must say so wherever the picks appear. */
+  sampleSource?: "recorded" | "imagined";
 }
 export interface TasteItinerary {
   destinationCode: string;
@@ -80,6 +83,9 @@ export interface TasteItinerary {
   crewNote?: string;
   /** Present when remembered taste shaped these picks — the card says so. */
   memory?: { kept: number; suppressed: number; keptIds?: string[] };
+  /** Carried from the context when the picks came from a bundled sample
+   *  profile, so the card names the provenance instead of claiming Qloo. */
+  sampleSource?: "recorded" | "imagined";
 }
 /** Wire shape for the local-first marks param: kept ids to boost,
  *  dismissed places to suppress. Same semantics as the graph's history. */
@@ -175,6 +181,7 @@ export function isTasteItinerary(value: unknown): value is TasteItinerary {
     if (!o.alternatives.every(isDestinationPlace)) return false;
   }
   if (o.firstNight !== undefined && !isDestinationPlace(o.firstNight)) return false;
+  if (o.sampleSource !== undefined && o.sampleSource !== "recorded" && o.sampleSource !== "imagined") return false;
   if (o.crewNote !== undefined && (typeof o.crewNote !== "string" || o.crewNote.length > 400)) return false;
   if (o.status === "ready" && o.suggestions.length === 0) return false;
   if (o.status !== "ready" && o.suggestions.length !== 0) return false;

@@ -341,6 +341,68 @@ describe("loadTasteContext", () => {
   });
 });
 
+describe("the replay fallback for packed crates", () => {
+  // No Qloo key on this beta deploy — but a crate packed at the door still
+  // deserves an answer. When the favourites carry a bundled sample crate and
+  // the trip is headed for that crate's city, the recorded places fit
+  // instead of an empty "unavailable", and the context names the source so
+  // no surface can present them as a live lookup.
+  const diegoTrip = buildTrip("JFK", "MEX", "2026-11-07");
+  const tokyoTrip = buildTrip("LHR", "HND", "2026-11-07");
+
+  it("recognises Diego's crate on his route, evening-only venues lead the night", async () => {
+    const { sampleTasteProfile } = await import("../src/lib/sample-taste");
+    const crate = sampleTasteProfile("diego")!;
+    const ctx = await loadTasteContext(diegoTrip, crate.favorites);
+    expect(ctx.status).toBe("ready");
+    expect(ctx.sampleSource).toBe("imagined");
+    // Daytime picks are the daytime candidates only — the mezcaleria is an
+    // evening venue and must never compete for a daytime slot…
+    expect(ctx.places.map((p) => p.name)).toEqual(["Galería OMR", "Mercado de Medellín"]);
+    // …it leads the evening list instead, so the first night is the story's
+    // punchline, not a gallery that already fits by day.
+    expect(ctx.eveningPlaces?.[0].name).toBe("La Botica");
+  });
+
+  it("recognises a recorded crate and says recorded", async () => {
+    const { sampleTasteProfile } = await import("../src/lib/sample-taste");
+    const crate = sampleTasteProfile("bjork")!;
+    const ctx = await loadTasteContext(tokyoTrip, crate.favorites);
+    expect(ctx.status).toBe("ready");
+    expect(ctx.sampleSource).toBe("recorded");
+    expect(ctx.places.length).toBe(6);
+    expect(ctx.eveningPlaces).toBeUndefined();
+  });
+
+  it("a crate on the wrong route stays honestly unavailable", async () => {
+    const { sampleTasteProfile } = await import("../src/lib/sample-taste");
+    const crate = sampleTasteProfile("diego")!;
+    const ctx = await loadTasteContext(tokyoTrip, crate.favorites);
+    expect(ctx.status).toBe("unavailable");
+    expect(ctx.sampleSource).toBeUndefined();
+    expect(ctx.places).toEqual([]);
+  });
+
+  it("still matches after the traveller adds their own favourites", async () => {
+    const { sampleTasteProfile } = await import("../src/lib/sample-taste");
+    const crate = sampleTasteProfile("diego")!;
+    const ctx = await loadTasteContext(diegoTrip, [
+      ...crate.favorites,
+      { id: "user-added-1", name: "Caifanes", type: "artist" },
+    ]);
+    expect(ctx.status).toBe("ready");
+    expect(ctx.sampleSource).toBe("imagined");
+  });
+
+  it("carries sampleSource onto the itinerary so surfaces can name it", () => {
+    const out = buildTasteItinerary(trip, days, [], ctx({ sampleSource: "recorded" }), "live");
+    expect(out.sampleSource).toBe("recorded");
+    expect(isTasteItinerary(out)).toBe(true);
+    // And the validator refuses anything outside the two provenances.
+    expect(isTasteItinerary({ ...out, sampleSource: "live" })).toBe(false);
+  });
+});
+
 describe("withTasteItinerary (replay stream wrapper)", () => {
   const mkEvent = (e: CrewEvent) => e;
   async function* fakeStream(t: Trip, cal: CalendarEvent[], locked: DayPlan[]): AsyncGenerator<CrewEvent> {

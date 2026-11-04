@@ -194,3 +194,65 @@ describe("the landing's crate seeds", () => {
     }
   });
 });
+
+describe("splitSamplePlaces — daytime fits, evening offers", () => {
+  it("splits Diego's crate so the mezcaleria leads the night", async () => {
+    const { sampleTasteProfile, splitSamplePlaces } = await import("../src/lib/sample-taste");
+    const diego = sampleTasteProfile("diego")!;
+    const { daytime, evening } = splitSamplePlaces(diego.places);
+    // The evening-only venue is never a daytime candidate…
+    expect(daytime.map((p) => p.name)).toEqual(["Galería OMR", "Mercado de Medellín"]);
+    // …and it leads the evening list ahead of venues that also fit by day,
+    // so firstNight is La Botica, not the gallery.
+    expect(evening.map((p) => p.name)).toEqual(["La Botica", "Galería OMR"]);
+  });
+
+  it("recorded Tokyo crates have no evening leg", async () => {
+    const { sampleTasteProfile, splitSamplePlaces } = await import("../src/lib/sample-taste");
+    for (const key of ["bjork", "luke"] as const) {
+      const { daytime, evening } = splitSamplePlaces(sampleTasteProfile(key)!.places);
+      expect(daytime.length).toBeGreaterThan(0);
+      expect(evening).toEqual([]);
+    }
+  });
+});
+
+describe("matchSampleProfileForTrip — the crate the door packed", () => {
+  it("matches on city + full crate, ignores extra favourites, refuses wrong cities", async () => {
+    const { matchSampleProfileForTrip, sampleTasteProfile } = await import("../src/lib/sample-taste");
+    const diego = sampleTasteProfile("diego")!;
+    expect(matchSampleProfileForTrip("Mexico City", diego.favorites)?.key).toBe("diego");
+    expect(
+      matchSampleProfileForTrip("Mexico City", [
+        ...diego.favorites,
+        { id: "extra-1", name: "Caifanes", type: "artist" },
+      ])?.key,
+    ).toBe("diego");
+    expect(matchSampleProfileForTrip("Tokyo", diego.favorites)).toBeNull();
+    expect(matchSampleProfileForTrip("Mexico City", [])).toBeNull();
+  });
+});
+
+describe("the provenance labels, named once upstream", () => {
+  it("every label says not-a-live-lookup or names Qloo — never both voices", async () => {
+    const { sampleSourceLabel, tasteSignalsLabel, ideaSourceLabel, sampleTasteProfile, sampleTasteLabel } =
+      await import("../src/lib/sample-taste");
+    expect(sampleSourceLabel("imagined")).toContain("not a live lookup");
+    expect(sampleSourceLabel("recorded")).toContain("not a live lookup");
+    expect(tasteSignalsLabel("imagined")).toBe("Imagined sample signals: ");
+    expect(tasteSignalsLabel("recorded")).toBe("Recorded sample signals: ");
+    expect(tasteSignalsLabel(undefined)).toBe("Qloo taste signals: ");
+    expect(ideaSourceLabel(undefined)).toBe("Qloo place idea · optional");
+    expect(ideaSourceLabel("recorded")).toContain("optional");
+    // The profile-label helper delegates to the source label.
+    expect(sampleTasteLabel(sampleTasteProfile("diego"))).toBe(sampleSourceLabel("imagined"));
+  });
+
+  it("every crate carries the route its story flies", async () => {
+    const { SAMPLE_TASTE_CRATES } = await import("../src/lib/sample-taste");
+    const routes = Object.fromEntries(SAMPLE_TASTE_CRATES.map((c) => [c.key, c.sampleRoute]));
+    expect(routes.diego).toEqual({ origin: "JFK", dest: "MEX" });
+    expect(routes.bjork).toEqual({ origin: "LHR", dest: "HND" });
+    expect(routes.luke).toEqual({ origin: "LHR", dest: "HND" });
+  });
+});

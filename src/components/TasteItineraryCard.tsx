@@ -8,6 +8,7 @@ import {
   type TasteItinerary,
 } from "@/domain/taste";
 import { resolvePlaceChoice, type PlaceChoiceState } from "@/lib/place-choices";
+import { sampleSourceLabel, tasteSignalsLabel } from "@/lib/sample-taste";
 
 export interface TasteItineraryCardProps {
   itinerary: TasteItinerary;
@@ -38,7 +39,7 @@ export function TasteItineraryCard({
       <p className="entry-eyebrow">A little room for what you love</p>
       <h2 id="taste-itinerary-heading">Your kind of {itinerary.destination}.</h2>
       <p className="taste-provenance">
-        {itinerary.status === "unavailable" ? "Requested favorites: " : "Qloo taste signals: "}
+        {itinerary.status === "unavailable" ? "Requested favorites: " : tasteSignalsLabel(itinerary.sampleSource)}
         {itinerary.favorites
           .map((f) => `${f.name} (${TASTE_TYPES[f.type].toLowerCase()})`)
           .join(", ")}
@@ -48,9 +49,11 @@ export function TasteItineraryCard({
       <p className="taste-note">
         {itinerary.status === "unavailable"
           ? "Place discovery unavailable"
-          : itinerary.planningMode === "replay"
-            ? "Example schedule · Qloo place ideas"
-            : "Qloo-ranked ideas, fitted around your plan"}
+          : itinerary.sampleSource
+            ? sampleSourceLabel(itinerary.sampleSource)
+            : itinerary.planningMode === "replay"
+              ? "Example schedule · Qloo place ideas"
+              : "Qloo-ranked ideas, fitted around your plan"}
       </p>
 
       {stale && (

@@ -7,10 +7,11 @@ import { buildDemoScenario } from "@/domain/demo-scenarios";
 /* The example day the visitor can touch, as its own section of the ink
  * Statement landing (design reset Phase 1). Extracted from LandingHero so
  * the hero carries only the statement: headline, one sentence, quiet links.
- * The instrument frame and the Miles scenario are unchanged — same seed,
- * same honesty tag inside the day's own head. */
+ * The day shown is Diego's dispatch — the film sends viewers to the
+ * landing, and the example below the form continues his story instead of
+ * switching travellers on them. */
 
-const demo = buildDemoScenario("miles", "2026-11-04");
+const demo = buildDemoScenario("diego", "2026-11-04");
 const scene = buildDayScene({ ...demo, dayIndex: demo.event.dayIndex })!;
 
 export function LandingExampleDay() {

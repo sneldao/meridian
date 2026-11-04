@@ -5190,6 +5190,9 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   color: var(--m-muted);
   margin: 8px 0 0;
 }
+.entry-crate-route {
+  margin-top: 8px;
+}
 .entry-example-row {
   margin-top: var(--space-sm);
   display: flex;
@@ -6018,6 +6021,19 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   margin:0;
   font-weight:550;
   overflow-wrap:anywhere;
+}
+/* The route badge beside each name — mono at the floor, quiet, so the row
+   tells you which flight the story flies without raising its voice. */
+.sample-route {
+  display:inline-block;
+  font-family:var(--font-mono2);
+  font-size:13px;
+  font-weight:500;
+  letter-spacing:0.06em;
+  color:var(--m-faint);
+  margin-left:10px;
+  vertical-align:middle;
+  white-space:nowrap;
 }
 .sample-role {
   font-size:12px;

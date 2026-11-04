@@ -9,6 +9,7 @@ import { fmtMin } from "@/domain/circadian";
 import type { TravelerNudge } from "@/domain/nudges";
 import { placeKey, placeSearchUrl, type TasteEntity, type TasteItinerary } from "@/domain/taste";
 import type { resolvePlaceChoice } from "@/lib/place-choices";
+import { ideaSourceLabel, type SampleTasteSource } from "@/lib/sample-taste";
 
 export interface ArrivalDayViewProps {
   destination: string;
@@ -32,6 +33,9 @@ export interface ArrivalDayViewProps {
   tasteFavorites?: TasteEntity[];
   favoritesChanged?: boolean;
   tasteStatus?: TasteItinerary["status"];
+  /** Where the place idea came from — Qloo live, or a bundled sample. The
+   *  row label names it so a recorded pick never reads as a live lookup. */
+  ideaSource?: SampleTasteSource;
   onUpdatePlan?: () => void;
   updateDisabled?: boolean;
   eyebrow?: string;
@@ -43,7 +47,7 @@ export function ArrivalDayView(props: ArrivalDayViewProps) {
   const {
     destination, date, steps, idea, completedIds, skippedIds, actionsReady, interactive,
     onDone, onSkip, onKeep, onSwap, onDismiss, onRestore, choicesReady, storageAvailable, planning, example,
-    tasteFavorites, favoritesChanged, tasteStatus, onUpdatePlan, updateDisabled,
+    tasteFavorites, favoritesChanged, tasteStatus, onUpdatePlan, updateDisabled, ideaSource,
   } = props;
   const snapshot = tasteFavorites ?? [];
   const reduced = useReducedMotion();
@@ -116,7 +120,7 @@ export function ArrivalDayView(props: ArrivalDayViewProps) {
                   <span>{fmtMin(active.suggestion.endMin)}</span>
                 </span>
                 <div className="arrival-day-idea-body">
-                  <p className="arrival-day-idea-label">{kept ? "Your pick · optional" : "Qloo place idea · optional"}</p>
+                  <p className="arrival-day-idea-label">{kept ? "Your pick · optional" : ideaSourceLabel(ideaSource)}</p>
                   <AnimatePresence initial={false} mode="wait">
                     <motion.div
                       key={`${scope}-${placeKey(active.place)}`}

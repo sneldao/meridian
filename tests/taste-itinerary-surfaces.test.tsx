@@ -88,6 +88,29 @@ describe("TasteItineraryCard (SSR)", () => {
     expect(h).toContain("Example schedule · Qloo place ideas");
   });
 
+  test("a sample-sourced itinerary names the provenance, not Qloo", () => {
+    // The replay fallback fits recorded places when no Qloo key is set; the
+    // card must say so wherever the picks appear — even in replay mode,
+    // where the generic example label would otherwise blur the source.
+    for (const [source, signals, note] of [
+      ["recorded", "Recorded sample signals: ", "Recorded Qloo sample"],
+      ["imagined", "Imagined sample signals: ", "Imagined sample for this story"],
+    ] as const) {
+      const h = renderToStaticMarkup(
+        createElement(TasteItineraryCard, {
+          itinerary: { ...base, planningMode: "replay", sampleSource: source },
+        }),
+      );
+      expect(h).toContain(`${signals}Björk (music), Past Lives (film) → Tokyo`);
+      expect(h).toContain(note);
+      expect(h).toContain("not a live lookup");
+      // It never claims a live lookup it did not make.
+      expect(h).not.toContain("Qloo-ranked ideas");
+      expect(h).not.toContain("Qloo taste signals");
+      expect(h).not.toContain("Example schedule · Qloo place ideas");
+    }
+  });
+
   test("changed favorites surface a stale notice, not silent relabeling", () => {
     const h = renderToStaticMarkup(
       createElement(TasteItineraryCard, {
