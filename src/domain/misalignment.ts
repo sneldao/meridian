@@ -418,10 +418,25 @@ export function computeTripTrajectory(input: TrajectoryInput): DayMisalignmentPo
         ? undefined
         : (prevTargets ?? { bedtimeMin: habitualBed, wakeMin: habitualWake });
       const support = modelShiftMin(effective, sleepRef, body);
-      modelledShiftMin = Math.max(
+      // The projection believes the model's number — with one completion.
+      // On a MOVING day the traveller lives the new schedule, and phase
+      // follows the imposed sleep window: zeitgebers can under-deliver a
+      // bold target (mistimed light), but they cannot drag the body past
+      // the day's own schedule change. On a HOLD day the schedule stands
+      // still, so the maintenance zeitgebers are the only movers and their
+      // full modelled effect applies — that is the "push, then hold while
+      // travelling" shape the solver drafts for big eastbound shifts.
+      // Without the moving-day cap a small shift (JFK → MEX, 2h west)
+      // overshot inside two days and the projection reported the plan
+      // doing worse than nothing.
+      const capped = Math.max(
         -MAX_SHIFT_MIN_PER_DAY,
         Math.min(MAX_SHIFT_MIN_PER_DAY, support),
       );
+      const intent = Math.abs(effective.shiftMin);
+      modelledShiftMin = intent === 0
+        ? capped
+        : Math.max(-intent, Math.min(intent, capped));
       body = {
         bedtimeMin: wrapClockMin(body.bedtimeMin + modelledShiftMin),
         wakeMin: wrapClockMin(body.wakeMin + modelledShiftMin),

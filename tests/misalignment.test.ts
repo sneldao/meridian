@@ -14,7 +14,8 @@ import {
   sleepMidpointMin,
 } from "../src/domain/misalignment";
 import { modelShiftMin } from "../src/domain/circadian";
-import { buildTrip, CALENDAR, DEMO_TRIP, GARMIN_BASELINE } from "../src/domain/fixtures";
+import { previewPlan } from "../src/domain/solver";
+import { ADHERENCE_PROFILE, buildTrip, CALENDAR, DEMO_TRIP, GARMIN_BASELINE } from "../src/domain/fixtures";
 import type { DayPlan } from "../src/domain/types";
 
 describe("circular time", () => {
@@ -269,5 +270,56 @@ describe("ambient daylight in the destination", () => {
     expect(win!.startMin).toBeLessThan(7 * 60);
     expect(win!.endMin).toBeGreaterThan(16 * 60);
     expect(win!.endMin).toBeLessThan(18 * 60 + 30);
+  });
+});
+
+describe("small shifts never overshoot their own plan", () => {
+  /* JFK → MEX is the small end of the model: a 2h westbound delay. Before
+   * the intent cap, the trajectory applied each day's full zeitgeber
+   * support — far more than the solver's conservative daily target — so the
+   * body overshot inside two days and the projection reported the plan
+   * doing WORSE than doing nothing (misalignment above the baseline chain,
+   * zero hours delivered). A traveller on this route — one of the most
+   * common short hops in the Americas — was told the crew made them worse.
+   * The body follows the schedule the plan sets: on a moving day it cannot
+   * out-run the day's own shift. */
+  const trip = buildTrip("JFK", "MEX", "2026-11-03");
+  const preview = previewPlan({
+    trip,
+    calendar: [],
+    adherence: ADHERENCE_PROFILE,
+    baseline: GARMIN_BASELINE,
+  });
+  const days = [...preview.values()]
+    .filter((s): s is NonNullable<typeof s> => s !== null)
+    .map((s) => s.plan);
+
+  test("the solver still places every day of a 2h westbound shift", () => {
+    expect(days.length).toBeGreaterThan(0);
+    expect(days.every((d) => d.interventions.length > 0)).toBe(true);
+  });
+
+  test("the plan chain is never worse than doing nothing", () => {
+    const traj = computeTripTrajectory({ trip, days, baseline: GARMIN_BASELINE, calendar: [] });
+    for (const t of traj) {
+      expect(
+        t.misalignmentHours,
+        `day ${t.dayIndex}: plan worse than baseline`,
+      ).toBeLessThanOrEqual(t.baselineMisalignmentHours);
+    }
+    // And it closes: strictly better than baseline by arrival.
+    const arrival = traj.find((t) => t.dayIndex === trip.departureDayIndex + 1);
+    expect(arrival!.misalignmentHours).toBeLessThan(arrival!.baselineMisalignmentHours);
+  });
+
+  test("a moving day's body cannot out-run its own schedule change", () => {
+    const traj = computeTripTrajectory({ trip, days, baseline: GARMIN_BASELINE, calendar: [] });
+    for (const t of traj) {
+      if (t.declaredShiftMin === 0) continue; // holds keep their zeitgeber drift
+      expect(
+        Math.abs(t.modelledShiftMin),
+        `day ${t.dayIndex}: modelled ${t.modelledShiftMin} outran declared ${t.declaredShiftMin}`,
+      ).toBeLessThanOrEqual(Math.abs(t.declaredShiftMin));
+    }
   });
 });
