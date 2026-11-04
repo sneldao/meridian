@@ -99,3 +99,37 @@ describe("stage backdrop", () => {
     }
   });
 });
+
+describe("pressed ghost buttons keep their label", () => {
+  // Prod bug 2026-11-05: the ghost hover rule recoloured the label to
+  // --m-text at specificity (0,3,1), beating every scoped pressed-state rule
+  // ((0,2,1)) — and the pressed fill paints from that same --m-text. On ink,
+  // a hovered (or touch-tapped, where hover sticks) selected pill showed no
+  // text at all. The fix bars the hover recolour from pressed buttons; these
+  // tests pin the cascade arithmetic so it cannot quietly regress.
+
+  test("no ghost hover rule that recolors can reach a pressed button", () => {
+    const hovers = [...css.matchAll(/\.taste-button--ghost:hover[^{]*(\{[^}]*\})/g)];
+    expect(hovers.length).toBeGreaterThan(0);
+    for (const m of hovers) {
+      const selector = m[0].slice(0, m[0].indexOf("{"));
+      const block = m[1];
+      if (/\bcolor\s*:/.test(block)) {
+        expect(selector).toContain(':not([aria-pressed="true"])');
+      }
+    }
+  });
+
+  test("the scoped pressed states still own the label colour", () => {
+    for (const needle of [
+      '.demo-taste-toggle button[aria-pressed="true"]',
+      '.day-card-dialog button[aria-pressed="true"]',
+      ".scenario :is(.scenario-nav,.scenario-days,.scenario-toggle) button[aria-pressed=\"true\"]",
+    ]) {
+      const block = blockAfter(needle).replace(/\s+/g, " ").replace(/:\s*/g, ": ");
+      expect(block).not.toBe("");
+      expect(block).toContain("background: var(--m-text)");
+      expect(block).toContain("color: var(--m-bg)");
+    }
+  });
+});

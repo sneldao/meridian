@@ -5317,7 +5317,13 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   border: 1px solid var(--m-border);
   color: var(--m-text);
 }
-.taste-button--ghost:hover:not(:disabled) {
+/* Hover recolors ONLY an unpressed ghost button. This selector is (0,3,1);
+   every scoped pressed-state rule (.demo-taste-toggle, .day-card-dialog,
+   .scenario :is(...)) is (0,2,1), so a hover recolor here would beat them
+   and repaint the label to --m-text — the same value the pressed fill paints
+   from. On ink surfaces (and on touch, where hover sticks after the tap)
+   the selected pill's name dissolved into its fill (prod bug, 2026-11-05). */
+.taste-button--ghost:hover:not(:disabled):not([aria-pressed="true"]) {
   color: var(--m-text);
   text-decoration: underline;
 }
