@@ -143,3 +143,59 @@ describe("pressed ghost buttons keep their label", () => {
     }
   });
 });
+
+/* The 2026-11-07 review: the stage told a loading lie, sat as a 340px island
+ * in a full-viewport pin with a 64px sun, and let 11px text carry the page's
+ * most important numbers. These tests pin the fix: the stage fills the pin,
+ * the sun grows on its horizon, and nothing informative on the stage or its
+ * clocks/chip sits under the 13px floor. */
+describe("the stage answers the first viewport", () => {
+  const stageSrc = readFileSync(
+    join(import.meta.dir, "..", "src", "components", "TodayStage.tsx"),
+    "utf8",
+  );
+
+  test("inside the scroll pin the stage is the whole viewport, not an island", () => {
+    const block = blockAfter(".today-stage-pin .today-stage").replace(/\s+/g, " ");
+    expect(block).toContain("width: 100%;");
+    expect(block).toContain("height: 100%;");
+    expect(block).toContain("border-radius: 0;");
+  });
+
+  test("one custom property sizes the sun, and the JSX keeps it in lockstep", () => {
+    const stage = blockAfter(".today-stage {").replace(/\s+/g, " ");
+    expect(stage).toContain("--stage-sun-size: 140px;");
+    // Single-sized on purpose: the var only moves the horizon offset, so a
+    // media query shrinking it would desync placement from <SunSelf size>.
+    expect(css).not.toContain("--stage-sun-size: 110px");
+    // The horizon offset tracks the size so the centre stays put.
+    const sunself = blockAfter(".stage-sunself").replace(/\s+/g, " ");
+    expect(sunself).toContain("var(--stage-sun-size) / 2");
+    // And the component renders the same 140 the CSS declares.
+    expect(stageSrc).toContain("size={140}");
+    expect(stageSrc).not.toContain("size={64}");
+  });
+
+  test("stage, clock and chip type honour the 13px floor", () => {
+    const px = (sel: string) => {
+      const m = blockAfter(sel).match(/font-size:\s*([\d.]+)px/);
+      return m ? Number(m[1]) : 0;
+    };
+    // The one-line plan is the page's headline — it reads larger than body.
+    expect(px(".stage-next")).toBeGreaterThanOrEqual(17);
+    expect(px(".stage-next-kicker")).toBeGreaterThanOrEqual(13);
+    expect(px(".tz-clock-label")).toBeGreaterThanOrEqual(13);
+    expect(px(".tz-clock-time")).toBeGreaterThanOrEqual(13);
+    expect(px(".tz-clock-diff")).toBeGreaterThanOrEqual(13);
+    expect(px(".tz-clocks-bar")).toBeGreaterThanOrEqual(13);
+    expect(px(".trip-chip")).toBeGreaterThanOrEqual(13);
+    expect(px(".trip-chip-change")).toBeGreaterThanOrEqual(13);
+  });
+
+  test("the run's door has a quiet home on the stage", () => {
+    const block = blockAfter(".stage-start").replace(/\s+/g, " ");
+    expect(block).toContain("margin-top:");
+    expect(stageSrc).toContain("Make my plan");
+    expect(stageSrc).toContain("stage-start");
+  });
+});

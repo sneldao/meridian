@@ -1218,7 +1218,7 @@ export default function Home() {
   // locked days, so the stage falls back to the same preview the feed reads.
   const stagePreview = useMemo(
     () =>
-      entry?.mode === "example" && trip
+      trip
         ? previewPlan({
             trip,
             calendar: currentEvents,
@@ -1226,7 +1226,10 @@ export default function Home() {
             baseline,
           })
         : null,
-    [entry?.mode, trip, currentEvents, data?.adherence, baseline],
+    // One preview for the stage and the feed — gating this to example mode
+    // left the trip-mode hero saying “the crew is reading your route”
+    // forever while the feed below showed the plan (the 2026-11-07 review).
+    [trip, currentEvents, data?.adherence, baseline],
   );
   const stageOwedMin = useMemo(() => {
     if (!trip) return 0;
@@ -1787,6 +1790,12 @@ export default function Home() {
                   nudges={stageNudges}
                   marks={tripActions.marks}
                   daysLocked={stageDaysLocked}
+                  running={effectivePhase === "running"}
+                  // The run's door shows only where a run can actually start:
+                  // idle (nothing locked or running) and in trip mode — the
+                  // example journey's crew sync lives on its own card.
+                  canStart={effectivePhase === "idle" && entry?.mode === "trip"}
+                  onStart={startShift}
                   routeOpen={routeOpen}
                   onChip={() => {
                     setRouteOpen((v) => {

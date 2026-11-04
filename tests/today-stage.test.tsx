@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
+import { readFileSync } from "fs";
+import { join } from "path";
 import { TodayStage } from "@/components/TodayStage";
 import { buildTrip } from "@/domain/fixtures";
 import type { TravelerNudge } from "@/domain/nudges";
@@ -65,7 +67,7 @@ describe("TodayStage", () => {
     expect(html).toContain("Body");
   });
 
-  test("before a plan exists, the stage says the crew is reading — nothing more", () => {
+  test("without today's steps, the stage says planning ahead — never a fake load", () => {
     const html = renderToStaticMarkup(
       <TodayStage
         trip={trip}
@@ -77,8 +79,75 @@ describe("TodayStage", () => {
         onChip={() => {}}
       />,
     );
-    expect(html).toContain("The crew is reading your route.");
+    // The old line claimed a crew run that wasn't happening; it now renders
+    // only while one is genuinely live (see the running test below).
+    expect(html).not.toContain("The crew is reading your route.");
+    expect(html).toContain("Planning ahead");
+    expect(html).toContain("Your days unfold below.");
     expect(html).not.toContain("Next</span>");
+  });
+
+  test("while a run is live, the stage says the crew is reading — truthfully", () => {
+    const html = renderToStaticMarkup(
+      <TodayStage
+        trip={trip}
+        owedMin={540}
+        bodyShiftMin={0}
+        nudges={null}
+        marks={[]}
+        routeOpen={false}
+        onChip={() => {}}
+        running
+      />,
+    );
+    expect(html).toContain("The crew is reading your route.");
+    expect(html).not.toContain("Planning ahead");
+  });
+
+  test("the run's door sits on the stage where the eye already is", () => {
+    const open = renderToStaticMarkup(
+      <TodayStage
+        trip={trip}
+        owedMin={540}
+        bodyShiftMin={0}
+        nudges={null}
+        marks={[]}
+        routeOpen={false}
+        onChip={() => {}}
+        canStart
+        onStart={() => {}}
+      />,
+    );
+    // Same words as the setup sheet's CTA — the two doors never disagree.
+    expect(open).toContain("Make my plan");
+    const closed = renderToStaticMarkup(
+      <TodayStage
+        trip={trip}
+        owedMin={540}
+        bodyShiftMin={0}
+        nudges={null}
+        marks={[]}
+        routeOpen={false}
+        onChip={() => {}}
+      />,
+    );
+    expect(closed).not.toContain("Make my plan");
+    // A live run shows its line, not the door.
+    const running = renderToStaticMarkup(
+      <TodayStage
+        trip={trip}
+        owedMin={540}
+        bodyShiftMin={0}
+        nudges={null}
+        marks={[]}
+        routeOpen={false}
+        onChip={() => {}}
+        running
+        canStart
+        onStart={() => {}}
+      />,
+    );
+    expect(running).not.toContain("Make my plan");
   });
 
   test("with today's steps, the stage names exactly one next step", () => {
@@ -136,5 +205,25 @@ describe("TodayStage", () => {
       />,
     );
     expect(html).toContain("Everything is placed for today.");
+  });
+
+  test("the page shares one preview with the stage, not an example-gated one", () => {
+    /* The 2026-11-07 review: stagePreview was computed only when
+     * entry?.mode === "example", so a real trip URL left the hero saying
+     * "the crew is reading your route" forever while the feed below showed
+     * the plan. The stage and the feed must share one preview keyed to the
+     * trip alone — the same contract NudgeFeedScreen's preview keeps. */
+    const page = readFileSync(join(import.meta.dir, "..", "src", "app", "page.tsx"), "utf8");
+    const block = page.slice(
+      page.indexOf("const stagePreview"),
+      page.indexOf("const stagePreview") + 700,
+    );
+    expect(block).not.toContain('"example"');
+    expect(block).not.toContain("entry?.mode");
+    expect(block).toContain("previewPlan");
+    // And the stage receives the run's state and door from the page.
+    expect(page).toContain('running={effectivePhase === "running"}');
+    expect(page).toContain("onStart={startShift}");
+    expect(page).toContain('canStart={effectivePhase === "idle" && entry?.mode === "trip"}');
   });
 });

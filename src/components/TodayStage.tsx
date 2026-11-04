@@ -31,6 +31,12 @@ export interface TodayStageProps {
   marks: ActionMark[];
   routeOpen: boolean;
   onChip: () => void;
+  /** True only while a crew run is genuinely live — the stage may then say
+   *  the crew is reading the route. Never use the line as a default. */
+  running?: boolean;
+  /** Show the run's door on the stage (trip mode, nothing locked yet). */
+  canStart?: boolean;
+  onStart?: () => void;
   /** How many days of the window the crew has locked — the sky face's rays. */
   daysLocked?: number;
 }
@@ -43,6 +49,9 @@ export function TodayStage({
   marks,
   routeOpen,
   onChip,
+  running = false,
+  canStart = false,
+  onStart,
   daysLocked = 0,
 }: TodayStageProps) {
   // The sky and the next line share one clock — the live date ticks so both
@@ -89,9 +98,10 @@ export function TodayStage({
       style={stageSkyFor(trip, owedMin, liveDate)}
       aria-label={`Today — ${trip.destination.name}. ${sun.line}`}
     >
-      {/* the traveller's meridian, on the horizon where the sun belongs */}
+      {/* the traveller's meridian, on the horizon where the sun belongs —
+          size mirrors --stage-sun-size in globals.css (pinned in tests) */}
       <div className="stage-sunself">
-        <SunSelf read={sun} size={64} tone="ink" pulseKey={lastDone?.at ?? null} />
+        <SunSelf read={sun} size={140} tone="ink" pulseKey={lastDone?.at ?? null} />
       </div>
       <div className="today-stage-inner">
         <button
@@ -116,8 +126,16 @@ export function TodayStage({
         />
 
         <p className="stage-next" aria-live="polite">
-          {nudges === null ? (
+          {running ? (
+            // The one time the line is true: a run is actually streaming.
             "The crew is reading your route."
+          ) : nudges === null ? (
+            // No step for today yet — the plan below is a preview, and the
+            // stage says so instead of pretending to load.
+            <>
+              <span className="stage-next-kicker">Planning ahead</span> Your
+              days unfold below.
+            </>
           ) : next ? (
             <>
               <span className="stage-next-kicker">Next</span>{" "}
@@ -127,6 +145,14 @@ export function TodayStage({
             "Everything is placed for today."
           )}
         </p>
+
+        {/* The run's own door, where the eye already is — same words as the
+            setup sheet's CTA, so the two never disagree. */}
+        {canStart && !running && onStart && (
+          <button type="button" className="taste-button taste-button--ghost stage-start" onClick={onStart}>
+            Make my plan
+          </button>
+        )}
 
         <p className="stage-cue" aria-hidden="true">
           ↓

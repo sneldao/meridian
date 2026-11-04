@@ -3630,3 +3630,48 @@ founding scenarios never exercised the small end.
 stake line at the door) remains open as Phase 3b; the crew's briefing voice
 still has no place on Today that matches the film's narrator; and the crate
 seed proves itself only on a Qloo-keyed deploy.
+
+### The stage answers (design-reset Phase 3b.0, 2026-11-07)
+
+**What broke.** A trip URL (`/?origin=…&dest=…&date=…`) landed on a first
+viewport that lied and starved at once. The stage said "The crew is reading
+your route." indefinitely — verified at t+65s with zero run requests — because
+`stagePreview` was gated to example mode while `beginStream` fires only from
+the setup sheet, so `stageNudges` never resolved in trip mode. The feed below
+computed its own preview and showed the plan anyway: two code paths, one of
+them hungry. The Honesty rule ("say what is true, mark what is not") was
+broken by omission, not by a false claim. Geometry compounded it: the sky
+painted a 340px island inside a `100dvh` pin, leaving ~560px of dead first
+viewport with a 64px sun reading as debris, and the readability floor —
+nothing informative under 13px — was unenforced on exactly these surfaces
+(11px kickers, labels, badges; the 9h gap, the page's dramatic number, at
+11px).
+
+**What the fix does.** The stage and the feed now share one preview keyed to
+the trip alone — the same contract `NudgeFeedScreen`'s preview already kept —
+and the stage's copy follows the run's real state: the crew line renders only
+while a run is genuinely streaming; the plan-less state says "Planning ahead
+— your days unfold below."; a day in the window names exactly one next step.
+The run gets its own door where the eye already is — "Make my plan", the
+setup sheet's exact words, ghost on the ink sky, shown only where a run can
+start (idle, trip mode). Inside the scroll-driven pin the stage becomes the
+whole first viewport, sky edge to edge; browsers without scroll-driven
+animation keep the card form. The sun grows to 140px on its horizon, one
+custom property sizing it and the JSX mirror kept in lockstep by test, its
+centre tracking `--stage-horizon-h` as the sky's debt is paid. Stage, chip
+and clock type come up to the floor: 17px for the one-line plan, 15px for
+clock times, nothing informative under 13px.
+
+**What holds it.** The copy contract is pinned by `today-stage.test.tsx` (the
+loading line only while running; the door's states), the geometry and floor
+by `stage-css.test.ts` (stage fills the pin, single sun size in lockstep,
+every stage surface ≥13px), and the shared-preview wiring by a source pin —
+the gate that starved the hero cannot quietly return.
+
+**What this leaves.** The floor scan still covers only `.iday`, the stage and
+its chrome; ~140 sub-13px declarations remain elsewhere and belong to a
+widening pass. The cream flow's ink outliers (performance brief, ask card)
+still whiplash the scroll — 3b.1's territory. And the stage's door shares the
+setup sheet's limitation: a run starts only when asked, never on arrival,
+which stays deliberate for a beta where voice, funnel and persistence all
+follow consent.

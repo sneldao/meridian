@@ -2619,14 +2619,14 @@ html[data-theme="night"] .evline-cite,
   border-radius: 6px;
   background: var(--m-card);
   color: var(--m-text);
-  font-size: 12.5px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   text-align: left;
 }
 .trip-chip-change {
   color: #D96B43;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
 }
 .tz-clocks-bar {
@@ -2638,7 +2638,7 @@ html[data-theme="night"] .evline-cite,
   background: var(--m-card);
   border: 1px solid var(--m-border);
   border-radius: 12px;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--m-text);
   flex-wrap: wrap;
 }
@@ -2649,12 +2649,12 @@ html[data-theme="night"] .evline-cite,
 }
 .tz-clock-label {
   color: var(--m-muted);
-  font-size: 11px;
+  font-size: 13px;
 }
 .tz-clock-time {
   font-family: var(--m-font-mono, monospace);
   font-weight: 500;
-  font-size: 13px;
+  font-size: 15px;
   color: var(--m-text);
 }
 .tz-clock-divider {
@@ -2669,7 +2669,7 @@ html[data-theme="night"] .evline-cite,
 }
 .tz-clock-diff {
   margin-left: auto;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--m-accent);
   background: color-mix(in srgb, var(--m-accent) 12%, transparent);
@@ -7052,6 +7052,11 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   --m-faint: #6b7590;
   --m-border: rgba(255, 255, 255, 0.12);
   --m-accent: #e99a6f;
+  /* One number sizes the sun on the horizon; the JSX <SunSelf size> mirror
+     stays in lockstep (pinned by tests/stage-css.test.ts). Kept single-sized:
+     the var only moves the horizon offset, so a second mobile value would
+     desync it from the rendered sun. */
+  --stage-sun-size: 140px;
   border-radius: 10px;
   padding: 26px 20px 18px;
   min-height: 340px;
@@ -7069,16 +7074,21 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .stage-chip { backdrop-filter: none; }
 .stage-next {
   margin: 0;
-  font-size: var(--text-base);
+  font-size: 17px;
   color: var(--m-text);
 }
 .stage-next-kicker {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--m-accent);
   margin-right: 2px;
+}
+/* The run's own door, under the one-line plan — ghost on the ink sky so it
+   reads as a quiet invitation, not a second CTA fighting the setup sheet. */
+.stage-start {
+  margin-top: 14px;
 }
 .stage-cue {
   margin: 6px 0 0;
@@ -7110,6 +7120,15 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
       height: 100dvh;
       display: flex;
       align-items: center;
+    }
+    /* Inside the pin the stage IS the first viewport — sky edge to edge, no
+       dead band around a 340px island. Browsers without scroll-driven
+       animation keep the card form (min-height rule above). */
+    .today-stage-pin .today-stage {
+      width: 100%;
+      height: 100%;
+      min-height: 100%;
+      border-radius: 0;
     }
     /* The signature move for entering Today: while the stage holds, the sky
        recedes and the clocks rise to meet the plan. */
@@ -7213,8 +7232,9 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .stage-sunself {
   position: absolute;
   left: 18px;
-  /* sit on the horizon band: half-risen, where a sun belongs */
-  bottom: calc(var(--stage-horizon-h, 26%) - 24px);
+  /* sit on the horizon band: half-risen, where a sun belongs — the offset
+     tracks --stage-sun-size so the centre stays 8px above the horizon. */
+  bottom: calc(var(--stage-horizon-h, 26%) - var(--stage-sun-size) / 2 + 8px);
   z-index: 1;
   pointer-events: none;
 }

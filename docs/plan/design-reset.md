@@ -421,6 +421,45 @@ on every surface), and the landing's example day shows Diego, not Miles.
 
 ### Phase 3b — Today on ink, chrome, purge (≈1 week, ongoing)
 
+#### 3b.0 The stage answers (prerequisite fix, shipped 2026-11-07)
+
+A live review of a trip URL (`/?origin=LGW&dest=HND&date=…`) found the first
+viewport broken before any ink work could matter:
+
+- **The hero told a lie.** The stage said “The crew is reading your route.”
+  indefinitely — verified at t+65s with zero `/api/crew/run` requests. In trip
+  mode `stagePreview` was gated to example mode, no run auto-starts
+  (`beginStream` fires only from the setup sheet and check-ins), so
+  `stageNudges` stayed null forever while the feed below computed its own
+  preview and showed the plan. Two code paths, one of them starving.
+- **A 340px island in a 100dvh pin.** The sky painted only the stage box;
+  ~560px of first viewport was dead space, with a 64px sun at the island's
+  bottom-left reading as debris.
+- **The readability floor was not enforced here.** 11px kickers, labels and
+  badges across the stage and the flow's chrome; the contract test's floor
+  scan only covered `.iday`/`.crew-avatar`/`.crew-perf`.
+
+The fix, in order:
+
+1. `stagePreview` computes in trip mode too — the stage and the feed share
+   one preview, and the sun's preview-fallback (documented intent since round
+   20) finally engages. “The crew is reading your route.” now renders only
+   while a run is genuinely live; the plan-less state says “Planning ahead —
+   your days unfold below.”, and the stage carries the run's own door:
+   “Make my plan”, the setup sheet's exact words.
+2. Inside the scroll-driven pin the stage fills the viewport — sky edge to
+   edge, no dead band; outside `@supports (animation-timeline)` it stays the
+   340px card. The sun grows to 140px (110px on narrow screens) on its
+   horizon, sized by one CSS custom property the JSX mirrors.
+3. Stage, chip and clock type comes up to the floor: nothing informative
+   under 13px on these surfaces, the next line at 17px, clock times at 15px,
+   pinned by `tests/stage-css.test.ts`.
+
+Deferred to the next pass: widening the floor scan across all chrome (140
+sub-13px declarations remain outside the stage), and the cream-flow ink
+outliers (performance brief, ask card) that whiplash the scroll — both named
+in 3b.2/3b.1 territory. Baselines dispatched at exit.
+
 #### 3b.1 Today joins the stage
 
 - `NudgeFeedScreen.tsx` (2209 lines) and `TodayStage.tsx`: default theme
