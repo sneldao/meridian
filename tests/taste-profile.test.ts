@@ -256,3 +256,14 @@ describe("the provenance labels, named once upstream", () => {
     expect(routes.luke).toEqual({ origin: "LHR", dest: "HND" });
   });
 });
+
+describe("tasteGraphPhrase — the graph named by its real source", () => {
+  it("a live lookup credits Qloo; samples say what they are", async () => {
+    const { tasteGraphPhrase } = await import("../src/lib/sample-taste");
+    expect(tasteGraphPhrase(undefined)).toBe("Qloo's taste graph, not a location search");
+    expect(tasteGraphPhrase("recorded")).toContain("recorded Qloo taste graph");
+    expect(tasteGraphPhrase("imagined")).toContain("imagined taste graph");
+    expect(tasteGraphPhrase("recorded")).toContain("not a location search");
+    expect(tasteGraphPhrase("imagined")).toContain("not a location search");
+  });
+});

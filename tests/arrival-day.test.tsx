@@ -147,3 +147,21 @@ describe("ArrivalDayView regressions", () => {
     expect(m).toContain("Use current suggestion");
   });
 });
+
+describe("ArrivalDayView first night", () => {
+  test("renders the offered evening idea when present", () => {
+    const html = renderToStaticMarkup(
+      createElement(ArrivalDayView, {
+        ...base,
+        idea: idea(),
+        firstNight: { name: "La Botica", categories: ["Mezcal bar", "Bar"] },
+      }),
+    );
+    expect(html).toContain("First night — if your plan says stay up: La Botica");
+    expect(html).toContain("Mezcal bar");
+  });
+  test("no first-night line without one", () => {
+    const html = renderToStaticMarkup(createElement(ArrivalDayView, { ...base, idea: idea() }));
+    expect(html).not.toContain("First night — if your plan says stay up");
+  });
+});
