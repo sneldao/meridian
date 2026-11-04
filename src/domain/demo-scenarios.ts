@@ -25,6 +25,24 @@ export interface DemoScenarioDef {
 
 export const DEMO_SCENARIOS = [
   {
+    id: "diego",
+    name: "Diego Vidal",
+    shortName: "Diego",
+    role: "The Roma Norte Dispatch",
+    persona: "Vinyl & art curator — a Roma Norte gallery opening the night after landing.",
+    origin: "JFK",
+    dest: "MEX",
+    title: "Land awake. Walk straight into the opening.",
+    moment: "Gallery opening",
+    // 18:00–20:00: a real reception hour — and the latest window the
+    // solver can still place D+1's westbound zeitgebers around (a 19:00
+    // start blocks the evening light anchor and the day goes unplaced).
+    startMin: 1080,
+    endMin: 1200,
+    joke: "It knew the mezcaleria. Before I did.",
+    profile: "diego",
+  },
+  {
     id: "miles",
     name: "Miles Mercer",
     shortName: "Miles",
@@ -62,24 +80,6 @@ export const DEMO_SCENARIOS = [
     endMin: 900,
     joke: "An excellent taste graph. A deeply confused body clock.",
     profile: "bjork",
-  },
-  {
-    id: "diego",
-    name: "Diego Vidal",
-    shortName: "Diego",
-    role: "The Roma Norte Dispatch",
-    persona: "Vinyl & art curator — a Roma Norte gallery opening the night after landing.",
-    origin: "JFK",
-    dest: "MEX",
-    title: "Land awake. Walk straight into the opening.",
-    moment: "Gallery opening",
-    // 18:00–20:00: a real reception hour — and the latest window the
-    // solver can still place D+1's westbound zeitgebers around (a 19:00
-    // start blocks the evening light anchor and the day goes unplaced).
-    startMin: 1080,
-    endMin: 1200,
-    joke: "It knew the mezcaleria. Before I did.",
-    profile: "diego",
   },
 ] as const satisfies readonly DemoScenarioDef[];
 

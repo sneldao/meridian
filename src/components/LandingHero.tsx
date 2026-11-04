@@ -50,6 +50,10 @@ export function LandingHero({
       <p className="lh-lede">
         A daily plan for light, sleep and caffeine, timed to your trip.
       </p>
+      {/* The product's two pillars, straight from the film's end card: the
+          lede above sells WHEN; the rubric names WHAT so the landing never
+          promises only half the product. */}
+      <p className="lh-rubric">The crew decides when · Qloo decides what</p>
       <p className="lh-links">
         <a href="#trip-entry" className="lh-link lh-link--start">
           Start with your trip

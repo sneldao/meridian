@@ -19,6 +19,8 @@ export interface SampleTasteProfile {
    *  into a trip headed there. */
   city: string;
   source: SampleTasteSource;
+  /** The landing entry's pill name for this crate. */
+  crateLabel: string;
   favorites: TasteEntity[];
   places: DestinationPlace[];
 }
@@ -29,7 +31,7 @@ export function sampleTasteProfile(key: string): SampleTasteProfile | null {
   const p = (snapshot.profiles as unknown[]).find(
     (x) => !!x && typeof x === "object" && (x as { key?: unknown }).key === key,
   ) as
-    | { key?: string; city?: unknown; source?: unknown; favorites?: unknown; places?: unknown }
+    | { key?: string; city?: unknown; source?: unknown; crateLabel?: unknown; favorites?: unknown; places?: unknown }
     | undefined;
   if (!p) return null;
   const favorites = parseTasteFavorites(JSON.stringify(p.favorites ?? []));
@@ -40,10 +42,21 @@ export function sampleTasteProfile(key: string): SampleTasteProfile | null {
     key: p.key as SampleTasteProfile["key"],
     city: typeof p.city === "string" && p.city ? p.city : "",
     source: p.source === "imagined" ? "imagined" : "recorded",
+    crateLabel:
+      typeof p.crateLabel === "string" && p.crateLabel
+        ? p.crateLabel
+        : favorites[0].name,
     favorites,
     places,
   };
 }
+
+/** The crates the landing entry offers as one-tap seeds, in story order:
+ *  Diego's dispatch first — the film sends viewers to the landing, and his
+ *  crate is the WHAT half of that promise. */
+export const SAMPLE_TASTE_CRATES: readonly SampleTasteProfile[] = ["diego", "bjork", "luke"]
+  .map(sampleTasteProfile)
+  .filter((p): p is SampleTasteProfile => p !== null);
 
 /** The provenance line for a profile — recorded samples name the capture,
  *  imagined ones say plainly that they were written for the story. Both

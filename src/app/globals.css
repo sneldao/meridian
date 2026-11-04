@@ -5164,6 +5164,32 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   opacity: 0.45;
   cursor: not-allowed;
 }
+/* The taste crate row — the WHAT half of the landing's promise, offered
+   inside the entry form. Label in the stamp's type idiom; pills reuse the
+   ghost taste button so the pressed inversion is already answered. */
+.entry-crate {
+  margin: 16px 0 0;
+}
+.entry-crate-label {
+  font-family: var(--font-mono2);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--m-faint);
+  margin: 0 0 8px;
+}
+.entry-crate-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.entry-crate-note {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--m-muted);
+  margin: 8px 0 0;
+}
 .entry-example-row {
   margin-top: var(--space-sm);
   display: flex;
@@ -5326,6 +5352,16 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .taste-button--ghost:hover:not(:disabled):not([aria-pressed="true"]) {
   color: var(--m-text);
   text-decoration: underline;
+}
+/* The structural pressed answer for ghost buttons — the same inversion the
+   scoped surfaces (demo taste toggle, day-card dialog, scenario) use, so a
+   ghost pill with aria-pressed reads as chosen wherever it appears,
+   including the landing's crate row. The hover recolour above stays out of
+   the way of this. */
+.taste-button--ghost[aria-pressed="true"] {
+  background: var(--m-text);
+  border-color: var(--m-text);
+  color: var(--m-bg);
 }
 .taste-button:focus-visible {
   outline: 2px solid var(--color-focus);
@@ -8285,6 +8321,18 @@ button.sunself-wrap:focus-visible {
   color: var(--m-muted);
   margin: 0 0 16px;
   max-width: 46ch;
+}
+/* The two-pillar rubric — the film's end card, carried into the product.
+   The stamp's type idiom (mono, floor size, letterspaced) without the
+   border: this is the thesis, not a provenance mark. */
+.lh-rubric {
+  font-family: var(--font-mono2);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--m-faint);
+  margin: -6px 0 18px;
 }
 /* Quiet text anchors — the form's own CTA is the only button. */
 .lh-links {

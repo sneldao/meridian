@@ -5,6 +5,7 @@
       "key": "bjork",
       "city": "Tokyo",
       "source": "recorded",
+      "crateLabel": "Björk",
       "favorites": [
         {
           "id": "01381184-B533-4E3C-B9DB-43A2FE326744",
@@ -84,6 +85,7 @@
       "key": "luke",
       "city": "Tokyo",
       "source": "recorded",
+      "crateLabel": "Luke Combs",
       "favorites": [
         {
           "id": "3CBD78B1-D2F2-4551-A342-4621B6BDB5E2",
@@ -121,6 +123,7 @@
       "key": "diego",
       "city": "Mexico City",
       "source": "imagined",
+      "crateLabel": "Diego's crate",
       "favorites": [
         {
           "id": "diego-crate-king-krule",

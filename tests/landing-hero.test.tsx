@@ -39,6 +39,17 @@ describe("LandingHero (Phase 1 statement, SSR)", () => {
   test("no pinned stage", () => {
     expect(h).not.toContain("ls-track");
   });
+
+  test("the two-pillar rubric names WHEN and WHAT under the lede", () => {
+    // The film's end card, carried into the product: the lede sells the
+    // body-clock half; the rubric names the taste half so the landing
+    // never promises only one pillar.
+    expect(h).toContain("lh-rubric");
+    expect(h.toLowerCase()).toContain("the crew decides when");
+    expect(h.toLowerCase()).toContain("qloo decides what");
+    // It is the thesis, not a provenance mark — no stamp chrome.
+    expect(h.indexOf("lh-rubric")).toBeGreaterThan(h.indexOf("lh-lede"));
+  });
 });
 
 describe("LandingHero — resolved visitor gap", () => {
@@ -74,5 +85,25 @@ describe("TripEntryScreen (Phase 1)", () => {
     // Privacy link and the example action stay.
     expect(h).toContain("/privacy");
     expect(h).toContain("Explore an example");
+  });
+
+  test("the entry offers the taste crates, unselected, Diego first", () => {
+    const h = renderToStaticMarkup(
+      createElement(TripEntryScreen, {
+        initialDate: "2026-11-04",
+        onContinue: () => {},
+        onExploreExample: () => {},
+      }),
+    );
+    expect(h).toContain("entry-crate");
+    expect(h).toContain("Pack a taste crate");
+    // Story order: the film's dispatch leads, then the two recorded crates.
+    expect(h.indexOf("Diego&#x27;s crate")).toBeGreaterThan(-1);
+    expect(h.indexOf("Diego&#x27;s crate")).toBeLessThan(h.indexOf("Björk"));
+    expect(h.indexOf("Björk")).toBeLessThan(h.indexOf("Luke Combs"));
+    // Optional, not a gate: every pill starts unpressed.
+    expect(h).not.toContain('aria-pressed="true"');
+    // The note only appears once a crate is chosen.
+    expect(h).not.toContain("entry-crate-note");
   });
 });

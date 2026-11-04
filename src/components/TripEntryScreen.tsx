@@ -10,6 +10,8 @@ import { previewPlan, type SolvedDay } from "@/domain/solver";
 import { routeGapLine, routeGapRead, type RouteGapRead } from "@/domain/route-gap";
 import { coverageOf, fmtMin } from "@/domain/circadian";
 import { paymentsConfigured, readPrice } from "@/lib/escrow";
+import { SAMPLE_TASTE_CRATES, sampleTasteProfile } from "@/lib/sample-taste";
+import { writeTripTaste } from "@/lib/use-trip-taste";
 import type { CityCode, Trip } from "@/domain/types";
 
 function planPreview(route: HomeRoute): { lightStart?: number; covPct: number } | null {
@@ -57,6 +59,11 @@ export function TripEntryScreen({ initialDate, onContinue, onExploreExample, ini
   // Price disclosed at intent, read live from the contract — a stale number
   // in copy is worse than none, so the line only renders once the read lands.
   const [priceUsdc, setPriceUsdc] = useState<string | null>(null);
+  // The optional taste crate. Selecting one seeds the trip's taste scope on
+  // submit, so the traveller lands on a plan that already knows what they
+  // love — the film's WHAT half, offered at the door instead of four clicks
+  // in. Unselected by default; it is a garnish, never a gate.
+  const [crateKey, setCrateKey] = useState<string | null>(null);
   useEffect(() => {
     if (!paymentsConfigured()) return;
     let on = true;
@@ -87,11 +94,29 @@ export function TripEntryScreen({ initialDate, onContinue, onExploreExample, ini
           onSubmit={(e) => {
             e.preventDefault();
             if (valid) {
-              onContinue({
+              const route = {
                 origin: draft.origin.toUpperCase(),
                 dest: draft.dest.toUpperCase(),
                 date: draft.date,
-              });
+              };
+              // Seed the crate into this trip's taste scope before handing
+              // the route up — the same key page.tsx reads on arrival.
+              if (crateKey) {
+                const crate = sampleTasteProfile(crateKey);
+                if (crate && typeof window !== "undefined") {
+                  try {
+                    writeTripTaste(
+                      window.localStorage,
+                      `${route.origin}-${route.dest}-${route.date}`,
+                      crate.favorites,
+                    );
+                  } catch {
+                    // Storage unavailable (private mode) — the trip still
+                    // works, it simply starts without a crate.
+                  }
+                }
+              }
+              onContinue(route);
             }
           }}
         >
@@ -109,6 +134,32 @@ export function TripEntryScreen({ initialDate, onContinue, onExploreExample, ini
           {sameAirports && (
             <p role="alert" className="entry-error">Choose different departure and destination airports.</p>
           )}
+          {/* The WHAT half of the promise, offered at the door: one tap
+              packs a crate of music/film the destination gets curated
+              around. Optional, unselected by default, never a gate. */}
+          <div className="entry-crate">
+            <p className="entry-crate-label" id="entry-crate-label">
+              Pack a taste crate · optional
+            </p>
+            <div className="entry-crate-pills" role="group" aria-labelledby="entry-crate-label">
+              {SAMPLE_TASTE_CRATES.map((c) => (
+                <button
+                  key={c.key}
+                  type="button"
+                  className="taste-button taste-button--ghost"
+                  aria-pressed={crateKey === c.key}
+                  onClick={() => setCrateKey(crateKey === c.key ? null : c.key)}
+                >
+                  {c.crateLabel}
+                </button>
+              ))}
+            </div>
+            {crateKey && (
+              <p className="entry-crate-note">
+                Your crate shapes the places the crew suggests when you get there.
+              </p>
+            )}
+          </div>
           <button type="submit" className="entry-cta" disabled={!valid}>
             See my trip plan <ArrowRight size={18} aria-hidden="true" />
           </button>

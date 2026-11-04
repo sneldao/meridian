@@ -120,6 +120,16 @@ describe("pressed ghost buttons keep their label", () => {
     }
   });
 
+  test("a ghost taste button answers its pressed state anywhere", () => {
+    // The structural answer for the crate row (and any future ghost pill):
+    // the generic pressed rule inverts fill and label from the same tokens
+    // the scoped surfaces use, so aria-pressed reads as chosen without each
+    // surface hand-rolling the inversion.
+    const block = blockAfter('.taste-button--ghost[aria-pressed="true"]');
+    expect(block).toContain("background: var(--m-text)");
+    expect(block).toContain("color: var(--m-bg)");
+  });
+
   test("the scoped pressed states still own the label colour", () => {
     for (const needle of [
       '.demo-taste-toggle button[aria-pressed="true"]',

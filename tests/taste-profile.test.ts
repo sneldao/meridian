@@ -174,3 +174,23 @@ describe("POST /api/taste/feedback", () => {
     }
   });
 });
+
+describe("the landing's crate seeds", () => {
+  it("every sample crate round-trips through a trip's taste scope", async () => {
+    const { SAMPLE_TASTE_CRATES } = await import("../src/lib/sample-taste");
+    // Story order on the landing: the film's dispatch leads.
+    expect(SAMPLE_TASTE_CRATES.map((c) => c.key)).toEqual(["diego", "bjork", "luke"]);
+    for (const crate of SAMPLE_TASTE_CRATES) {
+      expect(crate.crateLabel.length).toBeGreaterThan(0);
+      const s = new (class {
+        m = new Map<string, string>();
+        getItem(k: string) { return this.m.get(k) ?? null; }
+        setItem(k: string, v: string) { this.m.set(k, v); }
+      })();
+      // The exact scope shape page.tsx reads on arrival in trip mode.
+      const scope = `JFK-MEX-2026-11-07`;
+      writeTripTaste(s, scope, crate.favorites);
+      expect(readTripTaste(s, scope)).toEqual(crate.favorites);
+    }
+  });
+});

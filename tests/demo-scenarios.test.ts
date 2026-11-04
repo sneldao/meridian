@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { buildDemoScenario, isDemoScenarioId } from "../src/domain/demo-scenarios";
+import { buildDemoScenario, DEMO_SCENARIOS, isDemoScenarioId } from "../src/domain/demo-scenarios";
 import { evaluatePlan } from "../src/domain/circadian";
 import { ADHERENCE_PROFILE, GARMIN_BASELINE } from "../src/domain/fixtures";
 import { performanceMoment } from "../src/domain/trip-performance";
@@ -95,6 +95,10 @@ describe("demo scenarios", () => {
     // never presented as a captured Qloo response.
     expect(profile!.source).toBe("imagined");
     expect(sampleTasteProfile("bjork")!.source).toBe("recorded");
+  });
+
+  it("diego leads the list — the film sends viewers to his dispatch", () => {
+    expect(DEMO_SCENARIOS[0].id).toBe("diego");
   });
 
   it("profiles only toggle into journeys headed for their city", () => {
