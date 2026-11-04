@@ -272,8 +272,9 @@ absent. The example itself (`?example=1`) is built locally from
 `buildTrip("LHR","HND")` + `GARMIN_BASELINE` + `calendarFor` — no `/api/trip`
 request, no saved plan, no reminders, no crew run.
 
-**Traveller scoping.** Middleware mints an anonymous HttpOnly session cookie
-per browser (`__Host-meridian-session` in production, `meridian-session` in
+**Traveller scoping.** The proxy (`src/proxy.ts`, the Next 16 rename of
+middleware) mints an anonymous HttpOnly session cookie per browser
+(`__Host-meridian-session` in production, `meridian-session` in
 dev; 64-hex token, Lax, 30 days). `tenantOf` derives server identity as
 SHA-256(token)[0:48]; `?tenant=` and `x-meridian-tid` never grant identity.
 The first response mirrors a just-minted token into the downstream request so

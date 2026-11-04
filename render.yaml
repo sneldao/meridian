@@ -26,9 +26,9 @@ services:
         value: replay
       - key: NODE_VERSION
         value: 22.12.0
-      # The Origin allow-list for mutating API requests (src/middleware.ts).
+      # The Origin allow-list for mutating API requests (src/proxy.ts).
       # Behind Cloudflare→Render, req.nextUrl.origin is the internal upstream
-      # host, so the middleware needs the public origin(s) named explicitly —
+      # host, so the proxy needs the public origin(s) named explicitly —
       # comma-separated if a second domain is ever added. Without this, prod
       # falls back to the hardcoded default in code; keep the two in sync.
       - key: PUBLIC_ORIGIN

@@ -4,7 +4,7 @@ import { rmSync, mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { NextRequest } from "next/server";
 
-const { middleware } = await import("../src/middleware");
+const { proxy } = await import("../src/proxy");
 const { sessionCookieName } = await import("../src/lib/session");
 const { tenantOf, tenantForToken } = await import("../src/lib/tenant");
 const { crewRun, startCrewRun, appendCrewEvent } = await import("../src/lib/crew-runs");
@@ -80,9 +80,9 @@ describe("session identity", () => {
   });
 });
 
-describe("middleware", () => {
+describe("proxy", () => {
   test("a first visit to an app page mints and mirrors the session cookie", () => {
-    const res = middleware(new NextRequest("http://localhost:3000/crew"));
+    const res = proxy(new NextRequest("http://localhost:3000/crew"));
     const setCookie = res.headers.get("set-cookie") ?? "";
     expect(setCookie).toContain(`${sessionCookieName()}=`);
     expect(setCookie).toContain("HttpOnly");
@@ -93,7 +93,7 @@ describe("middleware", () => {
   });
 
   test("the first API call carries the minted token downstream — one identity, not many", () => {
-    const res = middleware(new NextRequest("http://localhost:3000/api/memory"));
+    const res = proxy(new NextRequest("http://localhost:3000/api/memory"));
     const mirrored = res.headers.get("x-middleware-request-cookie") ?? "";
     const token = mirrored.match(new RegExp(`${sessionCookieName()}=([0-9a-f]{64})`))?.[1];
     expect(token).toMatch(/^[0-9a-f]{64}$/);
@@ -101,7 +101,7 @@ describe("middleware", () => {
   });
 
   test("a valid existing cookie is reused, not reminted", () => {
-    const res = middleware(new NextRequest("http://localhost:3000/api/memory", {
+    const res = proxy(new NextRequest("http://localhost:3000/api/memory", {
       headers: { cookie: cookie(TOKEN_A) },
     }));
     expect(res.headers.get("set-cookie")).toBeNull();
@@ -109,35 +109,35 @@ describe("middleware", () => {
   });
 
   test("the forged legacy header is stripped downstream", () => {
-    const res = middleware(new NextRequest("http://localhost:3000/api/memory", {
+    const res = proxy(new NextRequest("http://localhost:3000/api/memory", {
       headers: { "x-meridian-tid": "victim", cookie: cookie(TOKEN_A) },
     }));
     expect(res.headers.get("x-middleware-request-x-meridian-tid")).toBeNull();
   });
 
   test("cross-site API reads and cross-origin writes are refused", () => {
-    const crossSite = middleware(new NextRequest("http://localhost:3000/api/memory", {
+    const crossSite = proxy(new NextRequest("http://localhost:3000/api/memory", {
       headers: { "sec-fetch-site": "cross-site" },
     }));
     expect(crossSite.status).toBe(403);
-    const foreignWrite = middleware(new NextRequest("http://localhost:3000/api/crew/checkin", {
+    const foreignWrite = proxy(new NextRequest("http://localhost:3000/api/crew/checkin", {
       method: "POST",
       headers: { origin: "https://evil.example" },
     }));
     expect(foreignWrite.status).toBe(403);
-    const sameOrigin = middleware(new NextRequest("http://localhost:3000/api/crew/checkin", {
+    const sameOrigin = proxy(new NextRequest("http://localhost:3000/api/crew/checkin", {
       method: "POST",
       headers: { origin: "http://localhost:3000" },
     }));
     expect(sameOrigin.status).toBe(200);
-    const cli = middleware(new NextRequest("http://localhost:3000/api/crew/checkin", { method: "POST" }));
+    const cli = proxy(new NextRequest("http://localhost:3000/api/crew/checkin", { method: "POST" }));
     expect(cli.status).toBe(200);
   });
 
   test("a POST from the public origin is not foreign behind a proxy", () => {
     // Behind Cloudflare→Render, req.nextUrl.origin is the internal host; the
     // browser's Origin is the public domain. That pair must be allowed.
-    const r = middleware(new NextRequest("https://internal.render.app/api/errors", {
+    const r = proxy(new NextRequest("https://internal.render.app/api/errors", {
       method: "POST",
       headers: { origin: "https://meridian.trustfall.xyz" },
     }));
@@ -150,7 +150,7 @@ describe("middleware", () => {
     // to end. Only the scheme can disagree behind TLS termination, so an
     // origin whose host matches the request's Host header must be allowed
     // even when PUBLIC_ORIGIN is unset.
-    const r = middleware(new NextRequest("http://localhost:3000/api/errors", {
+    const r = proxy(new NextRequest("http://localhost:3000/api/errors", {
       method: "POST",
       headers: { origin: "https://localhost:3000" },
     }));
@@ -158,7 +158,7 @@ describe("middleware", () => {
   });
 
   test("API answers are marked private,no-store", () => {
-    const res = middleware(new NextRequest("http://localhost:3000/api/memory"));
+    const res = proxy(new NextRequest("http://localhost:3000/api/memory"));
     expect(res.headers.get("cache-control")).toBe("private, no-store");
   });
 });

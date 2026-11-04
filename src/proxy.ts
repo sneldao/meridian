@@ -16,7 +16,7 @@ export function publicOrigins(): string[] {
     .filter(Boolean);
 }
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   // `/?depth=operator` is a route, not a view mode — resolve it server-side
   // so the crew surface loads directly instead of hydrating Home first.
   if (req.nextUrl.searchParams.get("depth") === "operator") {
