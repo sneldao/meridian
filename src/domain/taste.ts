@@ -48,6 +48,12 @@ export function isTasteEntitiesResponse(d: unknown): d is { enabled: boolean; en
   );
 }
 
+/** The rungs of the taste resolver ladder (agent-native §4b): a live Qloo
+ *  lookup, a live answer cached on this device, a recorded or imagined
+ *  bundled sample, or nothing. */
+export type TasteTier = "live" | "cached" | "recorded" | "imagined" | "unavailable";
+export const TASTE_TIERS: readonly TasteTier[] = ["live", "cached", "recorded", "imagined", "unavailable"];
+
 export interface TasteContext {
   favorites: TasteEntity[];
   status: "ready" | "unavailable" | "no-matches";
@@ -55,10 +61,15 @@ export interface TasteContext {
   /** Evening-window ideas (dining/venues) — never fitted, just offered. */
   eveningPlaces?: DestinationPlace[];
   /** Which rung of the resolver ladder answered — a live Qloo lookup, a
-   *  recorded or imagined bundled sample, or nothing. `sampleSource`
-   *  already carries the two sample tiers; the field makes the ladder
-   *  explicit so surfaces name the tier instead of re-deriving it. */
-  tier: "live" | "recorded" | "imagined" | "unavailable";
+   *  device-cached live answer, a recorded or imagined bundled sample, or
+   *  nothing. `sampleSource` already carries the two sample tiers; the
+   *  field makes the ladder explicit so surfaces name the tier instead of
+   *  re-deriving it. */
+  tier: TasteTier;
+  /** Epoch ms the answering data dates from — now for `live`, the saved
+   *  stamp for `cached`, the capture day for `recorded`. Absent where the
+   *  tier has no honest timestamp (imagined, unavailable). */
+  resolvedAt?: number;
   /** Set when the live rung was reachable (a Qloo key exists) but failed
    *  before a lower rung answered — surfaces can say "recorded · live
    *  lookup unavailable" instead of letting the fallback read as a
@@ -99,7 +110,10 @@ export interface TasteItinerary {
   sampleSource?: "recorded" | "imagined";
   /** The ladder rung that answered, carried from the context. Optional on
    *  the wire so itineraries stored before the ladder still validate. */
-  tier?: "live" | "recorded" | "imagined" | "unavailable";
+  tier?: TasteTier;
+  /** Carried from the context — the stamp the tier badge reads ("Live ·
+   *  HH:MM", "Cached live answer · HH:MM"). Optional like `tier`. */
+  resolvedAt?: number;
   /** Set when the live lookup was tried and failed before a lower rung
    *  answered — the provenance line names the fall, not just the tier. */
   liveUnavailable?: boolean;
@@ -199,7 +213,14 @@ export function isTasteItinerary(value: unknown): value is TasteItinerary {
   }
   if (o.firstNight !== undefined && !isDestinationPlace(o.firstNight)) return false;
   if (o.sampleSource !== undefined && o.sampleSource !== "recorded" && o.sampleSource !== "imagined") return false;
-  if (o.tier !== undefined && !["live", "recorded", "imagined", "unavailable"].includes(o.tier as string)) return false;
+  if (o.tier !== undefined && !TASTE_TIERS.includes(o.tier as TasteTier)) return false;
+  /* The stamp is optional (pre-ladder itineraries validate without it) but
+   *  when present it must be a plausible epoch-ms — a badge renders it
+   *  straight onto the card. */
+  if (
+    o.resolvedAt !== undefined &&
+    (!Number.isSafeInteger(o.resolvedAt) || o.resolvedAt <= 0 || o.resolvedAt > 4e12)
+  ) return false;
   if (o.liveUnavailable !== undefined && typeof o.liveUnavailable !== "boolean") return false;
   if (o.crewNote !== undefined && (typeof o.crewNote !== "string" || o.crewNote.length > 400)) return false;
   if (o.status === "ready" && o.suggestions.length === 0) return false;

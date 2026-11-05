@@ -3,7 +3,8 @@ import { tasteHistory } from "@/domain/graph-memory";
 import { placeKey, withoutDismissed, type TasteContext, type TasteEntity, type TasteMarks } from "@/domain/taste";
 import type { CalendarEvent, CrewEvent, Trip } from "@/domain/types";
 import { likedCategories, rankByAdjacency } from "@/lib/place-choices";
-import { matchSampleProfileForTrip, splitSamplePlaces } from "@/lib/sample-taste";
+import { matchSampleProfileForTrip, SAMPLE_TASTE_CAPTURED_AT, splitSamplePlaces } from "@/lib/sample-taste";
+import { TASTE_CACHE_MAX_AGE_MS, type TasteCacheEntry } from "@/lib/taste-cache";
 import { destinationTaste, qlooEnabled } from "@/tools/qloo";
 
 /** Evening candidates, evening-only venues first — a place that also fits
@@ -16,15 +17,15 @@ function orderEvening(evening: ReturnType<typeof withoutDismissed>): ReturnType<
   ].slice(0, 3);
 }
 
-/* The resolver ladder (agent-native §4b): live → recorded → imagined →
- * unavailable, one resolver, each tier carrying its own provenance. A live
- * failure falls *down* the ladder instead of dead-ending — a crate packed
- * at the door still gets a recorded answer, stamped as recorded, never
- * dressed as a live lookup. Memory reads once and shapes every rung:
- * kept ids feed the live affinity signal and re-rank a recorded pool by
- * the same session adjacency the swap list uses; dismissed places are
- * suppressed on either lane. */
-export async function loadTasteContext(trip: Trip, favorites: TasteEntity[], tenant?: string, marks?: TasteMarks): Promise<TasteContext> {
+/* The resolver ladder (agent-native §4b): live → device cache → recorded →
+ * imagined → unavailable, one resolver, each tier carrying its own
+ * provenance. A live failure falls *down* the ladder instead of dead-ending
+ * — a live answer the device cached earlier still answers (stamped
+ * `cached`, never `live`), then the bundled crates answer below it. Memory
+ * reads once and shapes every rung: kept ids feed the live affinity signal
+ * and re-rank a cached or recorded pool by the same session adjacency the
+ * swap list uses; dismissed places are suppressed on every lane. */
+export async function loadTasteContext(trip: Trip, favorites: TasteEntity[], tenant?: string, marks?: TasteMarks, deviceCache?: TasteCacheEntry | null): Promise<TasteContext> {
   const snapshot = favorites.map((f) => ({ ...f }));
   /* The remembered traveller: memory is unioned from two sources — the
    * device's own marks (local-first, needs nothing) and graph history
@@ -66,6 +67,7 @@ export async function loadTasteContext(trip: Trip, favorites: TasteEntity[], ten
         favorites: snapshot,
         status: qualified.length ? "ready" : "no-matches",
         tier: "live",
+        resolvedAt: Date.now(),
         places: qualified,
         ...(evening.length ? { eveningPlaces: evening } : {}),
         ...memoryFor(suppressed),
@@ -75,6 +77,42 @@ export async function loadTasteContext(trip: Trip, favorites: TasteEntity[], ten
        * context flags the fall so surfaces can name it. */
       liveUnavailable = true;
     }
+  }
+  /* The device-cache rung (move 4): a live answer this device saved earlier
+   * still answers when live is unreachable — fresh only (older than a week
+   * falls through), for the exact dest+interests it was asked for, and it
+   * never masquerades: the tier says `cached`, the stamp says when. The
+   * same shaping as the sample lane — dismissed suppressed, kept-adjacent
+   * places first. */
+  if (
+    deviceCache &&
+    deviceCache.resolvedAt > 0 &&
+    Date.now() - deviceCache.resolvedAt <= TASTE_CACHE_MAX_AGE_MS
+  ) {
+    const pool = withoutDismissed(deviceCache.places, dismissed);
+    const eveningPool = withoutDismissed(deviceCache.eveningPlaces ?? [], dismissed);
+    const suppressed =
+      deviceCache.places.length +
+      (deviceCache.eveningPlaces?.length ?? 0) -
+      pool.length -
+      eveningPool.length;
+    const liked = likedCategories(
+      pool.filter((p) => keptIds.includes(placeKey(p))),
+    );
+    const qualified = rankByAdjacency(pool, liked).filter(
+      (p) => p.daytimeCandidate === true,
+    );
+    const evening = orderEvening(rankByAdjacency(eveningPool, liked));
+    return {
+      favorites: snapshot,
+      status: qualified.length ? "ready" : "no-matches",
+      tier: "cached",
+      resolvedAt: deviceCache.resolvedAt,
+      places: qualified,
+      ...(evening.length ? { eveningPlaces: evening } : {}),
+      ...(liveUnavailable ? { liveUnavailable: true } : {}),
+      ...memoryFor(suppressed),
+    };
   }
   /* No key, or the live rung failed — a crate packed at the door still
    * deserves an answer. When the favourites carry one of the bundled
@@ -96,6 +134,9 @@ export async function loadTasteContext(trip: Trip, favorites: TasteEntity[], ten
       favorites: snapshot,
       status: daytime.length ? "ready" : "no-matches",
       tier: sample.source,
+      /* The stamp an honest tier can carry: a recorded answer dates from
+       * its capture, an imagined one has no timestamp to claim. */
+      ...(sample.source === "recorded" ? { resolvedAt: SAMPLE_TASTE_CAPTURED_AT } : {}),
       places: daytime,
       ...(evening.length ? { eveningPlaces: evening } : {}),
       sampleSource: sample.source,

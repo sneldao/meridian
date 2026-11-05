@@ -7,6 +7,10 @@ import {
 import snapshot from "@/data/sample-taste.json";
 
 export const SAMPLE_TASTE_LABEL = "Recorded Qloo sample · captured 31 Oct 2026";
+/** The capture day the label above names, as an epoch stamp — the recorded
+ *  tier's `resolvedAt`: not when the context resolved but when the answer's
+ *  data dates from, so surfaces quoting a time quote the capture. */
+export const SAMPLE_TASTE_CAPTURED_AT = Date.UTC(2026, 9, 31);
 
 /** How a sample profile came to exist. `recorded` = a real captured Qloo
  *  response; `imagined` = written for a fictional scenario, so its

@@ -7,6 +7,7 @@ import { buildTasteItinerary } from "@/domain/taste-itinerary";
 import { resolvePlaceChoice } from "@/lib/place-choices";
 import { usePlaceChoices } from "@/lib/use-place-choices";
 import { sampleTasteProfile, sampleTasteLabel, sampleTasteProfilesForCity, splitSamplePlaces } from "@/lib/sample-taste";
+import { TasteTierBadge } from "@/components/TasteTierBadge";
 import { InteractiveDay } from "@/components/InteractiveDay";
 import { Stamp } from "@/components/ui/Stamp";
 import { buildDayScene } from "@/domain/day-scene";
@@ -254,7 +255,14 @@ export function ScenarioExperience({ id, departureDate, onChooseScenario, onMake
             <button key={p.key} type="button" aria-pressed={profile?.key === p.key} onClick={() => setProfileKey(p.key)} className="taste-button taste-button--ghost">{p.favorites[0].name}</button>
           ))}
         </fieldset>
-        <p role="status" className="scenario-source">Showing suggestions for {profile?.favorites.map((f) => f.name).join(", ")}. {sampleTasteLabel(profile)}.</p>
+        <p role="status" className="scenario-source">
+          {profile && (
+            <>
+              <TasteTierBadge tier={profile.source} resolvedAt={itinerary?.resolvedAt} />{" "}
+            </>
+          )}
+          Showing suggestions for {profile?.favorites.map((f) => f.name).join(", ")}. {sampleTasteLabel(profile)}.
+        </p>
       </div>
       <div className="scenario-cta">
         <button type="button" className="entry-cta" onClick={() => onMakeTrip({ origin: demo.scenario.origin ?? "LHR", dest: demo.scenario.dest ?? "HND", date: departureDate })}>Make this my trip</button>

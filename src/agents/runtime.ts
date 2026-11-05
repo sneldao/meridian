@@ -46,6 +46,7 @@ import { destinationTaste, qlooEnabled } from "@/tools/qloo";
 import { loadTasteContext, withTasteItinerary } from "./taste-context";
 import { buildTasteItinerary } from "@/domain/taste-itinerary";
 import { parseTasteFavorites, type TasteContext, type TasteEntity, type TasteMarks } from "@/domain/taste";
+import type { TasteCacheEntry } from "@/lib/taste-cache";
 import { getAdherenceProfile } from "@/tools/wearable";
 
 const ARTIFACTS_DIR = path.join(process.cwd(), "artifacts");
@@ -82,6 +83,9 @@ export function runCrew(opts?: {
   tasteFavorites?: TasteEntity[];
   /** Local-first marks from the device — merged with graph history. */
   tasteMarks?: TasteMarks;
+  /** The device's cached live answer for this exact dest+interests (move
+   *  4) — the rung below live, offered up with the run like the marks. */
+  tasteCache?: TasteCacheEntry | null;
   runId?: string;
   signal?: AbortSignal;
   /** Interactive callers (the app's own streams) can be asked `crew_question`s.
@@ -102,7 +106,7 @@ export function runCrew(opts?: {
   void (async () => {
     const favorites = parseTasteFavorites(JSON.stringify(opts?.tasteFavorites ?? [])) ?? [];
     const tasteContext = favorites.length
-      ? loadTasteContext(opts?.trip ?? DEMO_TRIP, favorites, opts?.tenant, opts?.tasteMarks)
+      ? loadTasteContext(opts?.trip ?? DEMO_TRIP, favorites, opts?.tenant, opts?.tasteMarks, opts?.tasteCache)
       : undefined;
     try {
       if (providerKind() === "replay") {

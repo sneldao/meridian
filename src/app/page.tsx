@@ -88,6 +88,8 @@ import { ScenarioExperience } from "@/components/ScenarioExperience";
 import type { DemoScenarioId } from "@/domain/demo-scenarios";
 import { isTasteItinerary, itineraryMatchesTrip, type TasteItinerary } from "@/domain/taste";
 import { matchSampleProfileForTrip, splitSamplePlaces } from "@/lib/sample-taste";
+import { findAirport } from "@/domain/airports";
+import { readTasteCacheEntry, tasteCacheKey, writeTasteCacheEntry } from "@/lib/taste-cache";
 import { JourneySteps } from "@/components/JourneySteps";
 import { PlanReview } from "@/components/PlanReview";
 import { TodayStage } from "@/components/TodayStage";
@@ -840,6 +842,28 @@ export default function Home() {
           } catch {
             /* ignore */
           }
+          /* §4b move 4 — write-through: a live answer is worth keeping on
+           *  the device. The next run's ladder rides it as `cached` when
+           *  the lookup can't be reached — keyed to this exact dest +
+           *  interests, stamped, capped like every local write. */
+          {
+            const it = e.tasteItinerary;
+            const t = runTripRef.current;
+            if (it?.tier === "live" && t && (it.alternatives?.length ?? 0) > 0) {
+              try {
+                writeTasteCacheEntry(
+                  localStorage,
+                  tasteCacheKey(t.destination.name, it.favorites.map((f) => f.id)),
+                  {
+                    places: it.alternatives!,
+                    ...(it.firstNight ? { eveningPlaces: [it.firstNight] } : {}),
+                    resolvedAt: it.resolvedAt ?? Date.now(),
+                    tier: "live",
+                  },
+                );
+              } catch { /* quota — the cache is a hint, never required */ }
+            }
+          }
           // Funnel: the plan just changed hands — the run's third stage.
           // Keyed off the run's trip (the briefing event carries none).
           {
@@ -937,6 +961,19 @@ export default function Home() {
         if (marks.kept.length || marks.dismissed.length) {
           params.set("marks", JSON.stringify(marks));
         }
+        /* §4b move 4 — offer the device's cached live answer for this exact
+         *  dest+interests as the rung below live. Storage is best-effort:
+         *  nothing offered → the ladder simply starts lower. */
+        try {
+          const destName = findAirport(dest)?.name;
+          if (destName) {
+            const cached = readTasteCacheEntry(
+              localStorage,
+              tasteCacheKey(destName, tasteProfile.favorites.map((f) => f.id)),
+            );
+            if (cached) params.set("tasteCache", JSON.stringify(cached));
+          }
+        } catch { /* private mode — the run goes up without the hint */ }
       }
       const runId = crypto.randomUUID();
       runIdRef.current = runId;

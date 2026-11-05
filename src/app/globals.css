@@ -6695,6 +6695,79 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   outline: 2px solid var(--m-text);
   outline-offset: 3px;
 }
+
+/* §4b — the tier badge: one honest rung tag wherever an answer lands.
+   Pressed open it carries a one-line explainer under itself. */
+.tier-badge {
+  position: relative;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+}
+.tier-badge-btn {
+  font-family: var(--font-mono2);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border: 1px solid var(--m-border-2);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--m-muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tier-badge-btn::after {
+  content: " ▾";
+}
+.tier-badge-btn:hover {
+  color: var(--m-text);
+}
+.tier-badge-btn[aria-expanded="true"] {
+  color: var(--m-text);
+  border-color: var(--m-text);
+}
+.tier-badge[data-tier="live"] .tier-badge-btn {
+  color: var(--m-text);
+  border-color: var(--m-text);
+}
+.tier-badge-refresh {
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 2px 4px;
+  border: none;
+  background: transparent;
+  color: var(--m-muted);
+  cursor: pointer;
+}
+.tier-badge-refresh:hover {
+  color: var(--m-text);
+}
+.tier-badge :is(button):focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+.tier-badge-pop {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 30;
+  width: max-content;
+  max-width: min(320px, 84vw);
+  padding: 8px 12px;
+  border: 1px solid var(--m-border);
+  border-radius: 8px;
+  background: var(--m-card);
+  color: var(--m-text);
+  font-family: var(--font-body);
+  font-size: 13px;
+  letter-spacing: normal;
+  line-height: 1.45;
+  white-space: normal;
+  box-shadow: 0 14px 34px rgba(30, 27, 24, 0.18);
+}
+
 @media (max-width: 480px) {
   .taste-place-links {
     grid-column: 2;

@@ -1,6 +1,7 @@
 import { evaluatePlan, fmtMin, passes } from "@/domain/circadian";
 import type { SolvedDay } from "@/domain/solver";
 import { matchSampleProfileForTrip, splitSamplePlaces } from "@/lib/sample-taste";
+import { cachedAnswerLabel } from "@/lib/taste-tier";
 import type { TasteEntity, TasteItinerary } from "@/domain/taste";
 import type {
   AdherenceProfile,
@@ -173,6 +174,9 @@ export function placeProvenance(it: TasteItinerary): string {
   /* A live rung that failed on the way down gets named — the Scout row
    * says the recorded sample answered *because* live was unreachable. */
   const fell = it.liveUnavailable ? " · live lookup unavailable" : "";
+  /* The device-cache rung names itself and its stamp — a saved live
+   * answer, never the live lookup it came from. */
+  if (it.tier === "cached") return cachedAnswerLabel(it.resolvedAt, it.liveUnavailable);
   if (it.sampleSource === "imagined") return `imagined sample${fell} — not a live lookup`;
   if (it.sampleSource === "recorded") return `recorded Qloo sample${fell} — not a live lookup`;
   return "Qloo place lookup";

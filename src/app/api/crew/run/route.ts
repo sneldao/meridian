@@ -7,6 +7,7 @@ import { runCrew } from "@/agents/runtime";
 import { rateLimit, tooMany, RL_RUNS } from "@/lib/rateLimit";
 import { tenantOf } from "@/lib/tenant";
 import { parseTasteFavorites, parseTasteMarks } from "@/domain/taste";
+import { parseTasteCacheParam } from "@/lib/taste-cache";
 import {
   appendCrewEvent,
   crewRun,
@@ -136,6 +137,9 @@ export async function GET(req: NextRequest) {
   if (tasteMarks === null) {
     return new Response(JSON.stringify({ error: "invalid taste marks" }), { status: 400 });
   }
+  /* The device's cached live answer, offered for the rung below live —
+   *  a hint, never a gate: malformed input simply offers nothing. */
+  const tasteCache = parseTasteCacheParam(sp.get("tasteCache"));
 
   const startDayRaw = sp.get("startDay");
   const startDayIndex = startDayRaw === null ? 0 : Number(startDayRaw);
@@ -198,6 +202,7 @@ export async function GET(req: NextRequest) {
         tenant,
         tasteFavorites,
         tasteMarks,
+        tasteCache,
         runId,
         signal,
       })) {

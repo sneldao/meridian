@@ -21,6 +21,7 @@ export function buildTasteItinerary(
     ...(context.eveningPlaces?.length ? { firstNight: context.eveningPlaces[0] } : {}),
     ...(context.sampleSource ? { sampleSource: context.sampleSource } : {}),
     tier: context.tier,
+    ...(context.resolvedAt !== undefined ? { resolvedAt: context.resolvedAt } : {}),
     ...(context.liveUnavailable ? { liveUnavailable: true } : {}),
   };
   if (context.status !== "ready") return { ...base, status: context.status };

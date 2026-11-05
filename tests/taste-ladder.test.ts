@@ -6,6 +6,18 @@ import { buildTrip } from "../src/domain/fixtures";
 import { isTasteItinerary, type TasteContext, type TasteMarks } from "../src/domain/taste";
 import { placeProvenance } from "../src/lib/crew-jobs";
 import { sampleSourceLabel, sampleTasteProfile, splitSamplePlaces } from "../src/lib/sample-taste";
+import {
+  mergeTasteCache,
+  parseTasteCacheParam,
+  readTasteCacheEntry,
+  tasteCacheKey,
+  TASTE_CACHE_KEY,
+  TASTE_CACHE_MAX_AGE_MS,
+  TASTE_CACHE_MAX_ENTRIES,
+  writeTasteCacheEntry,
+  type TasteCacheEntry,
+} from "../src/lib/taste-cache";
+import { cachedAnswerLabel } from "../src/lib/taste-tier";
 
 /* The taste resolver ladder (agent-native §4b): live → recorded →
  * imagined → unavailable. A live failure falls *down* the ladder instead
@@ -218,11 +230,164 @@ describe("the honesty law — every rung names itself", () => {
     expect(sampleSourceLabel("imagined")).toBe("Imagined sample for this story — not a live lookup");
   });
 
-  it("the wire validator pins the tier vocabulary — nothing outside the four rungs", () => {
+  it("the wire validator pins the tier vocabulary — nothing outside the five rungs", () => {
     const it = buildTasteItinerary(tokyoTrip, [], [], ctx({ status: "unavailable", places: [] }), "replay");
     expect(isTasteItinerary({ ...it, tier: "unavailable", liveUnavailable: true })).toBe(true);
     expect(isTasteItinerary({ ...it, tier: "live" })).toBe(true);
-    expect(isTasteItinerary({ ...it, tier: "cached" })).toBe(false);
+    expect(isTasteItinerary({ ...it, tier: "cached" })).toBe(true);
+    expect(isTasteItinerary({ ...it, tier: "cached", resolvedAt: Date.now() })).toBe(true);
+    expect(isTasteItinerary({ ...it, tier: "guessed" })).toBe(false);
+    expect(isTasteItinerary({ ...it, resolvedAt: "later" })).toBe(false);
     expect(isTasteItinerary({ ...it, liveUnavailable: "yes" })).toBe(false);
+  });
+});
+
+/* Move 4 — the write-through device cache rung: live → cached → recorded →
+ * imagined → unavailable. The cache is the device's own localStorage map —
+ * a live answer is written through when it resolves, and the ladder rides
+ * it only while it's fresh and keyed to the exact dest+interests. It never
+ * masquerades: the tier says `cached`, the stamp says when it resolved. */
+
+const fakeStorage = () => {
+  const map = new Map<string, string>();
+  return {
+    getItem: (k: string) => map.get(k) ?? null,
+    setItem: (k: string, v: string) => void map.set(k, String(v)),
+    removeItem: (k: string) => void map.delete(k),
+    _map: map,
+  };
+};
+
+const cacheEntry = (over: Partial<TasteCacheEntry> = {}): TasteCacheEntry => ({
+  places: [
+    { id: "c1", name: "Cached Café", categories: ["cafe"], daytimeCandidate: true },
+    { id: "c2", name: "Cached Gallery", categories: ["art gallery"], daytimeCandidate: true },
+  ],
+  eveningPlaces: [{ id: "c3", name: "Cached Bar", categories: ["wine bar"], eveningCandidate: true }],
+  resolvedAt: Date.now() - 60_000,
+  tier: "live",
+  ...over,
+});
+
+describe("the device cache — written through, keyed exactly, bounded", () => {
+  it("a live answer written through reads back under the same dest+interests key", () => {
+    const storage = fakeStorage();
+    const key = tasteCacheKey("Mexico City", ["b", "a"]);
+    expect(key).toBe(tasteCacheKey("Mexico City", ["a", "b"])); // sorted ids — order never forks the key
+    writeTasteCacheEntry(storage, key, cacheEntry());
+    const hit = readTasteCacheEntry(storage, key);
+    expect(hit?.places.map((p) => p.name)).toEqual(["Cached Café", "Cached Gallery"]);
+    expect(hit?.tier).toBe("live");
+    // A different interest set misses — the cache never answers a crate it wasn't asked for.
+    expect(readTasteCacheEntry(storage, tasteCacheKey("Mexico City", ["a", "b", "x"]))).toBeNull();
+    // …and a different destination misses too.
+    expect(readTasteCacheEntry(storage, tasteCacheKey("Tokyo", ["a", "b"]))).toBeNull();
+  });
+
+  it("stale entries (>7d) read as nothing — they fall through, never answer", () => {
+    const storage = fakeStorage();
+    const key = tasteCacheKey("Mexico City", ["a"]);
+    writeTasteCacheEntry(storage, key, cacheEntry({ resolvedAt: Date.now() - TASTE_CACHE_MAX_AGE_MS - 1 }));
+    expect(readTasteCacheEntry(storage, key)).toBeNull();
+  });
+
+  it("the map is bounded — the 21st entry evicts the oldest, stale entries prune first", () => {
+    let cache = {};
+    const base = Date.now() - 1000;
+    for (let i = 0; i < TASTE_CACHE_MAX_ENTRIES; i++) {
+      cache = mergeTasteCache(cache, `k${i}`, cacheEntry({ resolvedAt: base + i }), base + i);
+    }
+    expect(Object.keys(cache)).toHaveLength(TASTE_CACHE_MAX_ENTRIES);
+    cache = mergeTasteCache(cache, "new", cacheEntry({ resolvedAt: base + 100 }), base + 100);
+    expect(Object.keys(cache)).toHaveLength(TASTE_CACHE_MAX_ENTRIES);
+    expect(cache["k0"]).toBeUndefined(); // FIFO — the oldest goes first
+    expect(cache["new"]).toBeDefined();
+    // A stale entry is pruned before eviction ever runs.
+    cache = mergeTasteCache(
+      cache,
+      "stale",
+      cacheEntry({ resolvedAt: base - TASTE_CACHE_MAX_AGE_MS - 1 }),
+      base + 200,
+    );
+    expect(cache["stale"]).toBeUndefined();
+  });
+
+  it("the run param validates like the storage read — malformed input offers nothing", () => {
+    expect(parseTasteCacheParam(null)).toBeNull();
+    expect(parseTasteCacheParam("not json")).toBeNull();
+    expect(parseTasteCacheParam(JSON.stringify({ places: [] }))).toBeNull();
+    expect(parseTasteCacheParam(JSON.stringify(cacheEntry()))?.tier).toBe("live");
+    // Storage junk is dropped at the read, not trusted.
+    const storage = fakeStorage();
+    storage.setItem(TASTE_CACHE_KEY, JSON.stringify({ bad: { tier: "live", resolvedAt: 1, places: [] } }));
+    expect(readTasteCacheEntry(storage, "bad")).toBeNull();
+  });
+});
+
+describe("the ladder — the cached rung rides between live and recorded", () => {
+  it("a live failure rides the device's cache — stamped cached, never live", async () => {
+    process.env.QLOO_API_KEY = "qk";
+    failQloo();
+    const entry = cacheEntry();
+    const ctx = await loadTasteContext(tokyoTrip, noCrate, undefined, undefined, entry);
+    expect(ctx.status).toBe("ready");
+    expect(ctx.tier).toBe("cached");
+    expect(ctx.resolvedAt).toBe(entry.resolvedAt);
+    expect(ctx.liveUnavailable).toBe(true); // the fall is still named
+    expect(ctx.sampleSource).toBeUndefined();
+    expect(ctx.places.map((p) => p.name)).toEqual(["Cached Café", "Cached Gallery"]);
+    expect(ctx.eveningPlaces?.[0].name).toBe("Cached Bar");
+  });
+
+  it("the cache outranks the recorded crate — rung order, not preference", async () => {
+    process.env.QLOO_API_KEY = "qk";
+    failQloo();
+    const ctx = await loadTasteContext(tokyoTrip, bjork.favorites, undefined, undefined, cacheEntry());
+    expect(ctx.tier).toBe("cached");
+    expect(ctx.places.map((p) => p.name)).not.toContain("Mori Art Museum");
+  });
+
+  it("a keyless run rides the cache too — live was unreachable, not failed", async () => {
+    globalThis.fetch = stub(async () => { throw new Error("must not fetch"); });
+    const ctx = await loadTasteContext(mexTrip, diego.favorites, undefined, undefined, cacheEntry());
+    expect(ctx.tier).toBe("cached");
+    expect(ctx.liveUnavailable).toBeUndefined(); // nothing fell — the ladder simply started lower
+  });
+
+  it("a stale entry falls through to the recorded crate", async () => {
+    const stale = cacheEntry({ resolvedAt: Date.now() - TASTE_CACHE_MAX_AGE_MS - 1 });
+    const ctx = await loadTasteContext(tokyoTrip, bjork.favorites, undefined, undefined, stale);
+    expect(ctx.tier).toBe("recorded");
+    expect(ctx.places.map((p) => p.name)).toContain("Mori Art Museum");
+  });
+
+  it("memory shapes the cached pool like every other lane — dismissed out, kept-adjacent first", async () => {
+    const entry = cacheEntry();
+    const dismissed = await loadTasteContext(
+      tokyoTrip, noCrate, undefined,
+      marks({ dismissed: [{ id: "c1", name: "Cached Café" }] }),
+      entry,
+    );
+    expect(dismissed.tier).toBe("cached");
+    expect(dismissed.places.map((p) => p.name)).toEqual(["Cached Gallery"]);
+    expect(dismissed.memory?.suppressed).toBe(1);
+    const kept = await loadTasteContext(
+      tokyoTrip, noCrate, undefined,
+      marks({ kept: ["c2"] }),
+      entry,
+    );
+    expect(kept.places[0].name).toBe("Cached Gallery");
+    expect(kept.memory?.kept).toBe(1);
+  });
+
+  it("the cached tier carries its provenance onto the itinerary and the Scout row", async () => {
+    const entry = cacheEntry();
+    const ctx = await loadTasteContext(tokyoTrip, noCrate, undefined, undefined, entry);
+    const it = buildTasteItinerary(tokyoTrip, [], [], ctx, "replay");
+    expect(it.tier).toBe("cached");
+    expect(it.resolvedAt).toBe(entry.resolvedAt);
+    expect(isTasteItinerary(it)).toBe(true);
+    expect(placeProvenance(it)).toContain("Cached live answer");
+    expect(cachedAnswerLabel(entry.resolvedAt, true)).toContain("live lookup unavailable");
   });
 });

@@ -9,6 +9,7 @@ import {
 } from "@/domain/taste";
 import { resolvePlaceChoice, type PlaceChoiceState } from "@/lib/place-choices";
 import { sampleSourceLabel, tasteSignalsLabel } from "@/lib/sample-taste";
+import { TasteTierBadge } from "@/components/TasteTierBadge";
 
 export interface TasteItineraryCardProps {
   itinerary: TasteItinerary;
@@ -47,13 +48,27 @@ export function TasteItineraryCard({
           ` → ${itinerary.destination}${itinerary.memory ? " · remembered picks" : ""}`}
       </p>
       <p className="taste-note">
+        {/* §4b — the tier badge names the rung that answered, pressable for
+            what the rung means; the sentence after it is the same provenance
+            line the card always carried (the badge owns the fall tail, so
+            the label renders its unfallen form and the two don't repeat). */}
+        {itinerary.tier && (
+          <TasteTierBadge
+            tier={itinerary.tier}
+            resolvedAt={itinerary.resolvedAt}
+            liveUnavailable={itinerary.liveUnavailable}
+            onRefresh={!planning ? onUpdate : undefined}
+          />
+        )}{" "}
         {itinerary.status === "unavailable"
           ? "Place discovery unavailable"
-          : itinerary.sampleSource
-            ? sampleSourceLabel(itinerary.sampleSource, itinerary.liveUnavailable)
-            : itinerary.planningMode === "replay"
-              ? "Example schedule · Qloo place ideas"
-              : "Qloo-ranked ideas, fitted around your plan"}
+          : itinerary.tier === "cached"
+            ? "— saved on this device"
+            : itinerary.sampleSource
+              ? sampleSourceLabel(itinerary.sampleSource)
+              : itinerary.planningMode === "replay"
+                ? "Example schedule · Qloo place ideas"
+                : "Qloo-ranked ideas, fitted around your plan"}
       </p>
 
       {stale && (
