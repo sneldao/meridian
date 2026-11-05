@@ -44,8 +44,8 @@ export const DEMO_SCENARIOS = [
   },
   {
     id: "miles",
-    name: "Miles Mercer",
-    shortName: "Miles",
+    name: "Marcus Mercer",
+    shortName: "Marcus",
     role: "The Investor Sprint",
     persona: "Venture partner — one meeting that funds the year.",
     title: "Be there for the big decision.",
@@ -57,8 +57,8 @@ export const DEMO_SCENARIOS = [
   },
   {
     id: "danny",
-    name: "Danny Rivers",
-    shortName: "Danny",
+    name: "Earl Rivers",
+    shortName: "Earl",
     role: "The Show Must Go On",
     persona: "Stand-up comic — an evening show at the end of a red-eye.",
     title: "Save something for the spotlight.",

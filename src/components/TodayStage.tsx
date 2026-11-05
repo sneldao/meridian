@@ -5,6 +5,9 @@ import { TimezoneClocks } from "@/components/TimezoneClocks";
 import { StageStars } from "@/components/StageStars";
 import { StageRidges } from "@/components/StageRidges";
 import { StageArc } from "@/components/StageArc";
+import { MeridianSkyCanvas } from "@/components/MeridianSkyCanvas";
+import { cssRgb, type MeridianSkyState } from "@/lib/meridian-sky-webgl";
+import { useState } from "react";
 import { SunSelf } from "@/components/SunSelf";
 import { fmtMin } from "@/domain/circadian";
 import type { TravelerNudge } from "@/domain/nudges";
@@ -65,6 +68,9 @@ export function TodayStage({
   // at their own depths; instruments stay still, they are the read.
   const stageRef = useRef<HTMLElement>(null);
   useDepthParallax(stageRef);
+  // The painted world — when WebGL is alive the DOM depth layers stand down;
+  // reduced-motion and context loss keep the CSS stack as the same scene.
+  const [skyLive, setSkyLive] = useState(false);
 
   const next = useMemo(() => {
     const now = liveDate ?? new Date();
@@ -100,13 +106,49 @@ export function TodayStage({
       })
     : "";
 
+  const skyVars = stageSkyFor(trip, owedMin, liveDate) as Record<string, string>;
+  // The scene's state is the same model the DOM writes as vars — parsed back
+  // so the canvas can never disagree with the CSS fallback beside it.
+  const skyState = (w: number, h: number): MeridianSkyState => {
+    const hor = cssRgb(skyVars["--stage-horizon"], [0.91, 0.6, 0.44]);
+    const zen = cssRgb(skyVars["--stage-ink-2"], [0.047, 0.07, 0.125]);
+    const horH = (parseFloat(skyVars["--stage-horizon-h"] ?? "26") || 26) / 100;
+    const s = Math.min(220, Math.max(140, w * 0.15));
+    const strip = Math.min(560, w * 0.58);
+    const left = (w - strip) / 2;
+    return {
+      top: [zen[0] * 0.55, zen[1] * 0.55, zen[2] * 0.7],
+      mid: zen,
+      hor,
+      horizonH: horH,
+      stars: parseFloat(skyVars["--stage-star-o"] ?? "0") || 0,
+      cover: Math.min(1, owedMin / Math.max(1, required)),
+      sun: { x: (18 + s / 2) / w, y: horH + 8 / h, r: s / 2 / h, color: hor },
+      arc: {
+        ax: (left + 0.04 * strip) / w,
+        ay: horH - 0.06,
+        bx: (left + 0.96 * strip) / w,
+        by: horH - 0.06,
+        t: sun.glow,
+      },
+      // The crew rides ahead of the body's marker — scouts out on the route
+      // the run already flew, spaced down the arc from where the body is.
+      scouts: [0.12, 0.2, 0.09, 0.16, 0.06].map((f) =>
+        Math.min(0.97, sun.glow + f),
+      ),
+    };
+  };
+
   return (
     <section
       ref={stageRef}
-      className="today-stage"
-      style={stageSkyFor(trip, owedMin, liveDate)}
+      className={`today-stage${skyLive ? " sky-gl" : ""}`}
+      style={skyVars}
       aria-label={`Today — ${trip.destination.name}. ${sun.line}`}
     >
+      {/* the world — one painted scene behind every DOM read; when it lives,
+          the DOM stars/ridge/arc stand down (they remain the fallback) */}
+      <MeridianSkyCanvas state={skyState} onLive={setSkyLive} />
       {/* the modeled darkness — the same star field the demo hangs, fading
           as the body sun climbs (stage-sky's starFade via --stage-star-o) */}
       <StageStars seed={`stage-${trip.destination.name}`} />

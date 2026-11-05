@@ -61,11 +61,11 @@ describe("entry + selector (SSR)", () => {
     expect(h).not.toContain("sample-journeys"); // Phase 1: tiles moved below the example day
     const s = renderToStaticMarkup(createElement(SampleJourneys, { onChoose: () => {} }));
     expect(s).toContain("Try Diego");
-    expect(s).toContain("Try Miles");
-    expect(s).toContain("Try Danny");
+    expect(s).toContain("Try Marcus");
+    expect(s).toContain("Try Earl");
     expect(s).toContain("Try Sofia");
     // Diego leads — the film sends viewers to his dispatch.
-    expect(s.indexOf("Try Diego")).toBeLessThan(s.indexOf("Try Miles"));
+    expect(s.indexOf("Try Diego")).toBeLessThan(s.indexOf("Try Marcus"));
     // The heading names four arrivals now, and never claims one flight.
     expect(s).toContain("Four arrivals. Four very different days.");
     expect(s).not.toContain("Same flight");
@@ -110,7 +110,7 @@ describe("ScenarioExperience + prefill (SSR)", () => {
       globalThis.fetch = saved;
     }
     const jason = renderToStaticMarkup(createElement(ScenarioExperience, { id: "miles", departureDate: "2026-11-04", onChooseScenario: () => {}, onMakeTrip: () => {}, onBack: () => {} }));
-    expect(jason).toContain("Miles Mercer");
+    expect(jason).toContain("Marcus Mercer");
     expect(jason).toContain("10:00 morning");
     expect(jason).toContain("16:00 afternoon");
     expect(jason).toContain("Be there for the big decision.");

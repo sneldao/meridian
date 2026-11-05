@@ -173,6 +173,26 @@ most-touched surfaces in the app answered no touch at all.
   the gap was never a missing idiom. The house component already answered,
   which is why the crew's main buttons pressed while its hand-rolled
   neighbours did not — an opt-in idiom is an idiom with a hole in it.
+
+*Amended round 53 — the world moves.* The scene model (`docs/FLIGHT.md`) asks
+for one clause, and the contract's own categories already hold it:
+
+- **Drift on modeled weather is a loop that *is* the state.** Cloud advection,
+  mote rise, haze breath animate the *texture* of a readout, never its value:
+  cover amount is `owedMin` and stays constant under drift, exactly as the
+  working avatar's scan animates while `data-state="working"` stays fixed. A
+  cloud that does not move is not calm, it is a photograph of a cloud.
+- **The perceptibility arithmetic still applies.** Drift rates must register —
+  a cloud at 0.4px/min is dead code with a GPU cost, so the scene borrows rates
+  a person can see (the sun's model time cannot be seen; the weather's can).
+- **Degradation is a rendering decision, never a content one.** The scene may
+  step High→Low once on GPU tier, discharging battery, or sustained frame
+  drop; the fallback keeps every read. Quality is adaptive, state is not.
+- **The camera rides, never owns.** Scroll and pointer are the playhead;
+  scroll input is never hijacked, and no live-canvas morphs through view
+  transitions — route changes recut or wipe, they do not blend frames.
+- **Instruments stay DOM.** Text, forms and controls never enter the canvas;
+  the scene is `aria-hidden` and every visual read remains a word.
 - Two exceptions, both reasoned rather than assumed: a 9px beat dot presses
   *outward* as well as dimming (`.demo-dot:active { scale: 1.4 }`), because a
   14% dim on 64 pixels of circle is not an answer at any distance, and a
@@ -678,6 +698,25 @@ stay legible.
   action ledger, no setup or action controls. The gold-on-ink `.clock-stage`
   styling remains with the retained legacy screen, not Home; dev and shift
   surfaces continue to use the shared dial widgets.
+- **Today's feed below the stage** · Altitudes — six viewport-sized rooms
+  in one painted world (`FeedWorld`/`Room`, `src/domain/feed-scenes.ts`,
+  `docs/plan/feed-altitudes.md`). Each room owns a side and an opaque ink
+  slab for its words; the sky's keyframe is modeled per room and blends
+  into the next room's over the room's last 35% of scroll. One horizon per
+  viewport; text never over paint; no scrim, no backdrop blur; native
+  scroll only. Room entries fire a one-shot scout flyover; the sun and arc
+  lean toward the pointer (`SkyKey.magnet`); the plan's route draws itself
+  as the room's progress climbs; a sticky altimeter chip reads the room
+  index and body time. Below 760px the split collapses to a 38dvh world
+  band over a full-width slab. Reduced motion / no GL shows each room's
+  settled sky as CSS (`.room-sky`) with the same words.
+- **The adverts** — `public/ads/` cast film pairs with the landing's ask:
+  the feature frame sits in `.landing-entry-stage` beside the trip form,
+  its tile rail beneath; taps play the full 34s spots with audio, and
+  every persona card (`SampleJourneys`, portraits alternating sides)
+  carries a voice-line toggle. The cast names are the personas' first
+  names (diego/earl/marcus); Sofia has no asset and stays text-only.
+  `EverydayRhythm` is off the landing — the close ends on the travellers.
 - **App pages** (`/review`, `/history`, `/outcome`, `/shift`, `/team`, `/crew`)
   · Workbench — instrument cards on the centred reading column
   (`.reading`, 720px), media allowed to break wider.

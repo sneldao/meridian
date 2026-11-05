@@ -163,8 +163,13 @@ body {
   font-family: var(--font-body);
   padding: 0 0 56px;
   /* clip, not hidden: hidden would make .root a scroll container and steal
-     every scroll-driven timeline inside it (the stage recede, the deck). */
+     every scroll-driven timeline inside it (the stage recede, the deck).
+     The clip edge is pushed a full viewport out so the full-bleed
+     .feed-world escapes the 1140px measure to the real frame edge —
+     anything wider than the viewport is still caught by html's
+     overflow-x:clip. */
   overflow: clip;
+  overflow-clip-margin: 100vw;
 }
 /* The travelling shade that used to cross this tint was removed in Phase 0
    of the design reset — a 60s loop nobody could see. The static tint stays:
@@ -1773,6 +1778,250 @@ a[href]:active {
   filter: drop-shadow(0 0 2px var(--m-accent));
 }
 
+/* The painted world (meridian-sky-webgl): one canvas behind the DOM
+   instruments. When it lives, the DOM depth layers stand down — the canvas
+   carries stars, weather, ridge, arc — and the DOM sun keeps only its face,
+   which the scene's halo now underlays. */
+.meridian-sky { position: absolute; inset: 0; width: 100%; height: 100%; }
+.sky-gl .stage-stars,
+.sky-gl .stage-ridge,
+.sky-gl .stage-arc { display: none; }
+
+/* The world continues beneath the stage — the feed's own painted sky as a
+   viewport-sticky canvas the sections float over. `isolation` keeps the
+   negative-z canvas inside the feed's stacking; sticky + the collapsing
+   margin pin it to the viewport for the whole descent without a tall
+   texture. Cards keep their translucent fills so the world bleeds through. */
+/* Full-bleed: the feed lives inside the 720px .reading column but the world
+   is the whole viewport — escape the measure, not the document. */
+.feed-world {
+  position: relative;
+  isolation: isolate;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+}
+.feed-world > .meridian-sky {
+  position: sticky;
+  top: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100dvh;
+  margin-bottom: -100dvh;
+  pointer-events: none;
+}
+/* Altitudes (docs/plan/feed-altitudes.md): the feed as rooms in one world.
+   The composition law the references use — a viewport-sized scene owns its
+   backdrop and its side; the slab is the words, the world is the rest, and
+   the two never overlap. Slabs are OPAQUE: text never sits over painted
+   detail, so there is no scrim and no frosted pane. Inside the feed the
+   surfaces read against the painted sky, so the slab carries the night
+   palette's text/border tokens whatever the page theme. */
+.feed-world {
+  --m-ink-solid: #10151f;
+  --m-text: #f5efe6;
+  --m-muted: #a89a8c;
+  --m-faint: #7c88a4;
+  --m-border: #26304a;
+  --m-border-2: #1c2436;
+  --m-card: #121726;
+  --m-card-2: #171d2e;
+  --m-tag: rgba(255, 196, 107, 0.14);
+}
+
+/* One horizon per viewport: the hero's own star plane stands down inside a
+   room — the canvas is its sky now. The hero surface itself goes opaque
+   ink so the slab, not its gradient vars, is the ground under the words. */
+.feed-world .hero .stage-stars { display: none; }
+/* The hero's breakout margins reach for the old column's frame edge; inside
+   the slab they would spill past the one surface, so it fills its slab. */
+.room .hero {
+  background: var(--m-ink-solid);
+  margin: 0;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* The room: a full-viewport grid with three lanes. The slab takes two of
+   them on its owned side (left/right) leaving the open side to the world;
+   the centre room's slab spans all three. */
+.room {
+  position: relative;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  padding-block: clamp(48px, 8dvh, 96px);
+}
+.room[data-side="left"] .slab {
+  grid-column: 1 / 3;
+  justify-self: start;
+  margin-left: clamp(24px, 8vw, 160px);
+}
+.room[data-side="right"] .slab {
+  grid-column: 2 / 4;
+  justify-self: end;
+  margin-right: clamp(24px, 8vw, 160px);
+}
+.room[data-side="center"] .slab {
+  grid-column: 1 / 4;
+  justify-self: center;
+}
+.slab {
+  box-sizing: border-box;
+  padding: clamp(18px, 2.4vw, 28px);
+  border-radius: var(--radius-lg, 18px);
+  background: var(--m-ink-solid);
+  border: 1px solid var(--m-border);
+}
+/* The slab width lives on the room (data-slab), not the slab itself — the
+   room owns the width, the slab just fills it. */
+.slab { width: min(520px, 100%); }
+.room[data-slab="slim"] .slab { width: min(520px, 100%); }
+.room[data-slab="wide"] .slab { width: min(760px, 100%); }
+.room[data-slab="full"] .slab { width: min(1200px, 100%); }
+
+/* The slab is the one surface: instruments inside it shed their own
+   translucent panels so nothing double-frames against the painted world. */
+.room .card,
+.room .tl,
+.room .cal-summary,
+.room .marks-waiting,
+.room .right-now-card,
+.room .dac,
+.room .dial {
+  background: transparent;
+  box-shadow: none;
+  border-color: transparent;
+}
+/* .wide's negative margins break out of the old column; inside a slab they
+   would spill past the one surface, so the breakout is neutralised. */
+.room .slab .wide,
+.room .slab .marks-waiting.wide,
+.room .slab .cal-summary.wide,
+.room .slab .tl.wide {
+  margin-left: 0;
+  margin-right: 0;
+}
+/* The glass surfaces the stage and passport use read as fog inside the
+   one-surface slab — the slab is already the opaque plane, so the panes
+   flatten to it. */
+.room .slab .ask,
+.room .slab .arr-passport-card {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* The settled frame: each room's own keyframe as a static CSS sky, shown
+   only when the canvas isn't live — reduced motion, no GL, context lost.
+   Ground under the horizon band, beam at the line, zenith above — same
+   colours, same horizon height, same words on the slab. */
+.room-sky {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  display: none;
+  background: linear-gradient(
+    to top,
+    var(--rs-top) 0,
+    var(--rs-top) calc(var(--rs-horH) - 10%),
+    var(--rs-hor) calc(var(--rs-horH) - 2%),
+    var(--rs-hor) calc(var(--rs-horH) + 2%),
+    var(--rs-mid) calc(var(--rs-horH) + 20%),
+    var(--rs-top) 100%
+  );
+}
+.feed-world--css .room-sky { display: block; }
+.feed-world--css > .meridian-sky { display: none; }
+
+/* The discover room's mascot — a DOM sun-self face seated over the
+   painted disc (the "who" of the arrival room). The canvas is
+   viewport-sticky and the discover keyframe holds the sun at x 0.72,
+   y 0.36 (y-up) of it, so the disc sits at a fixed viewport point while
+   the room is located: the pin is sticky at that same point inside a
+   room-filling overlay — it rides the room's top edge in, parks on the
+   disc for the read, and leaves with the room's foot. Decorative only
+   (aria-hidden, pointer-events none); it fades in on the room's own
+   progress, and on the settled CSS skies it simply stands at full
+   opacity. */
+.room-mascot { position: absolute; inset: 0; pointer-events: none; }
+.room-mascot-pin {
+  position: sticky;
+  top: calc(64dvh - 45px);   /* disc centre 0.36 y-up → 64% down the 100dvh canvas; 90px face */
+  margin-left: calc(72% - 45px);
+  width: 90px;
+  height: 90px;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+}
+/* The face rises with the room's own progress — but discover is the last
+   room, so --room-p saturates where the page ends (~0.15-0.2 for a
+   one-viewport room, more for taller). A literal var(--room-p) opacity
+   would leave the face a permanent ghost; scaling ×8 keeps the fade
+   keyed to progress and settles it inside the first eighth of the room. */
+.feed-world[data-room="discover"] .room-mascot-pin { opacity: min(1, calc(var(--room-p, 0) * 8)); }
+.feed-world--css .room-mascot-pin { opacity: 1; }
+
+/* The altimeter — one mono line riding the viewport's bottom edge through
+   the descent (sticky-bottom floats it while the feed's natural end is
+   still below the fold, then it docks at the feed's foot). The room index,
+   the room's name and the body clock are the read; redundant with the
+   slabs, so aria-hidden. */
+.alti {
+  position: sticky;
+  bottom: 12px;
+  z-index: 0;
+  margin-left: clamp(16px, 4vw, 48px);
+  width: max-content;
+  font-family: var(--font-mono2);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--m-faint);
+  pointer-events: none;
+}
+
+/* Narrow viewports collapse the lateral split the joebentaylor way: the
+   world becomes a 38dvh sticky band above a full-width slab. */
+@media (max-width: 759px) {
+  .feed-world > .meridian-sky {
+    height: 38dvh;
+    margin-bottom: -38dvh;
+  }
+  .room {
+    display: block;
+    padding-block: 0;
+    padding-top: 38dvh;
+    min-height: 100dvh;
+  }
+  .room .slab {
+    width: 100%;
+    margin: 0;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+  /* The band, not the room: the settled sky sits above the slab where the
+     sticky canvas would be. */
+  .room-sky {
+    inset: 0 0 auto 0;
+    height: 38dvh;
+  }
+  /* Same disc, shorter sky: the canvas band is 38dvh, so the mascot's
+     pin drops to the band's own sun point. */
+  .room-mascot-pin { top: calc(24.3dvh - 45px); }
+}
+
+/* The rail's mobile time column (60px at ≤720px) clips a `HH:MM–HH:MM`
+   range — the row inherits a wider slot inside the slab so the range stays
+   inside its own cell. Container-scoped; the upstream `.tl-row` is untouched. */
+@media (max-width: 720px) {
+  .room .slab .tl-row {
+    grid-template-columns: 22px 96px 1fr;
+  }
+}
+
 /* Pointer depth — the hand tilts the diorama: --px/--py (depth-parallax.ts,
    fine pointers only) drift each plane at its own depth. Far planes barely
    move, the near ridge moves most; the sun is effectively at infinity. A
@@ -1888,6 +2137,15 @@ a[href]:active {
       animation: reveal-up var(--dur-drift) var(--ease-drift) both;
       animation-timeline: view();
       animation-range: entry 2% cover 18%;
+    }
+    /* Slab entrances ride the same vocabulary — the room's surface rises
+       as it enters; nothing clips its content. The advert tiles share the
+       one light ambient. */
+    .slab,
+    .ad-tile {
+      animation: reveal-up var(--dur-drift) var(--ease-drift) both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 30%;
     }
     /* Item-level waterfall: siblings rise in sequence, not as one slab. The
        stagger is a longer cover range per child, not a delay — it still
@@ -6203,12 +6461,205 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   white-space:normal;
   text-align:left;
 }
-.sample-row button svg {
+.sample-row .taste-button svg {
   flex-shrink:0;
   transition:transform 160ms ease;
 }
-.sample-row button:hover svg {
+.sample-row .taste-button:hover svg {
   transform:translateX(3px);
+}
+.sample-actions {
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+/* The screening room — the travellers' adverts paired with the entry
+   stage: the featured frame is the stage's second column (the "who"
+   beside the ask) and the rail of the three tiles reads beneath the pair,
+   centred. The rail's clips stay muted loops and move only while ≥40% of
+   one is on screen — the IntersectionObserver's call, never a timer;
+   reduced motion keeps the posters. */
+.adverts {
+  max-width:720px;
+  margin:32px auto 0;
+  color:var(--m-text);
+  text-align:center;
+  min-width:0;
+}
+.adverts > h2 {
+  font-family:var(--font-display);
+  font-size:clamp(1.7rem,4vw,2.4rem);
+  font-weight:550;
+  line-height:1.15;
+  margin:8px 0 28px;
+}
+.ad-feature {
+  position:relative;
+  aspect-ratio:9/16;
+  height:clamp(420px,62dvh,640px);
+  max-width:100%;
+  margin:0 auto;
+  border-radius:var(--radius-lg);
+  overflow:hidden;
+  border:1px solid var(--m-border);
+  background:var(--m-ink-solid);
+}
+.ad-feature video {
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+/* The house ghost button, rung to a circle over the frame. While the clip
+   plays it steps back — the words are the frame's — and returns on hover
+   or focus so pause is always reachable. */
+.ad-play {
+  position:absolute;
+  inset:0;
+  margin:auto;
+  width:72px;
+  height:72px;
+  min-height:72px;
+  padding:0;
+  border-radius:50%;
+  border-color:color-mix(in srgb, var(--m-text) 55%, transparent);
+  background:color-mix(in srgb, var(--color-ink) 45%, transparent);
+  color:var(--m-text);
+  transition:opacity var(--duration-fast) var(--ease-smooth-out), filter var(--duration-fast) var(--ease-smooth-out);
+}
+.ad-feature[data-playing] .ad-play { opacity:0; }
+.ad-feature[data-playing]:hover .ad-play,
+.ad-play:focus-visible { opacity:1; }
+.ad-name {
+  position:absolute;
+  left:12px;
+  bottom:12px;
+  font-family:var(--font-mono2);
+  font-size:13px;
+  font-weight:500;
+  letter-spacing:0.08em;
+  text-transform:uppercase;
+  color:var(--m-text);
+  background:color-mix(in srgb, var(--color-ink) 55%, transparent);
+  border:1px solid var(--m-border);
+  border-radius:999px;
+  padding:4px 10px;
+}
+.ad-rail {
+  display:flex;
+  justify-content:center;
+  gap:14px;
+  margin-top:20px;
+}
+.ad-tile {
+  position:relative;
+  width:clamp(120px,14vw,170px);
+  aspect-ratio:9/16;
+  border-radius:var(--radius-lg);
+  overflow:hidden;
+}
+.ad-tile--on { box-shadow:0 0 0 2px var(--color-terracotta); }
+.ad-tile-btn {
+  display:block;
+  width:100%;
+  height:100%;
+  padding:0;
+  border:none;
+  background:none;
+  font:inherit;
+  cursor:pointer;
+}
+/* The tile clips its contents, so the focus ring draws inside. */
+.ad-tile-btn:focus-visible {
+  outline:none;
+  box-shadow:inset 0 0 0 2px var(--color-focus);
+}
+.ad-clip {
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.ad-tile-name {
+  position:absolute;
+  left:8px;
+  bottom:8px;
+  font-family:var(--font-mono2);
+  font-size:13px;
+  font-weight:500;
+  letter-spacing:0.08em;
+  text-transform:uppercase;
+  color:var(--m-text);
+  text-shadow:0 1px 6px var(--color-ink);
+}
+/* The one-line speaker — same small circle on a tile and beside a journey
+   row's CTA. Pressed inverts like the ghost pill's chosen state. */
+.ad-voice,
+.sample-voice {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:0;
+  border-radius:50%;
+  border:1px solid color-mix(in srgb, var(--m-text) 40%, transparent);
+  background:color-mix(in srgb, var(--color-ink) 45%, transparent);
+  color:var(--m-text);
+  cursor:pointer;
+  transition:filter var(--duration-fast) var(--ease-smooth-out);
+}
+.ad-voice:hover:not([aria-pressed="true"]),
+.sample-voice:hover:not([aria-pressed="true"]) { filter:brightness(1.25); }
+.ad-voice[aria-pressed="true"],
+.sample-voice[aria-pressed="true"] {
+  background:var(--m-text);
+  border-color:var(--m-text);
+  color:var(--m-bg);
+}
+.ad-voice:focus-visible,
+.sample-voice:focus-visible {
+  outline:2px solid var(--color-focus);
+  outline-offset:2px;
+}
+.ad-voice {
+  position:absolute;
+  right:8px;
+  bottom:8px;
+  width:40px;
+  height:40px;
+  min-height:40px;
+}
+.sample-voice {
+  width:44px;
+  height:44px;
+  flex-shrink:0;
+}
+.ad-caption {
+  font-size:12px;
+  line-height:1.7;
+  color:var(--m-muted);
+  margin:14px auto 0;
+  max-width:52ch;
+}
+
+/* The advert portraits ride the rows as a fourth lane, alternating sides
+   like the references. Sofia's row keeps the text-only layout — her
+   advert was never shot. The lane only exists above 640px; below it the
+   image stands down and the row is text again. */
+@media (min-width:641px) {
+  .sample-row--img-r { grid-template-columns:44px minmax(0,1fr) 200px auto; }
+  .sample-row--img-l { grid-template-columns:44px 200px minmax(0,1fr) auto; }
+}
+.sample-ad {
+  display:block;
+  width:min(220px,100%);
+  aspect-ratio:4/5;
+  object-fit:cover;
+  border-radius:var(--radius-lg);
+  justify-self:center;
+}
+@media (max-width:640px) {
+  .sample-ad { display:none; }
 }
 .scenario {
   max-width:720px;
@@ -6373,7 +6824,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   gap:12px;
   align-items:start;
 }
- .sample-row button {
+ .sample-row .sample-actions {
   grid-column:2;
   justify-self:start;
 }
@@ -6398,7 +6849,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   grid-template-columns:18px minmax(0,1fr);
 }
 }
-@media(prefers-reduced-motion:reduce) {.sample-row button svg{transition:none;}.sample-row button:hover svg{transform:none;}}
+@media(prefers-reduced-motion:reduce) {.sample-row .taste-button svg{transition:none;}.sample-row .taste-button:hover svg{transform:none;}}
 
 .perf-event-summary {
   font-family: var(--font-mono2);
@@ -7239,6 +7690,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .stage-chip { backdrop-filter: none; }
 .stage-next {
   margin: 0;
+  font-size: 17px;
   font-size: clamp(17px, 1.6vw, 21px);
   color: var(--m-ink);
 }
@@ -7431,6 +7883,8 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 }
 /* The stage sun's anamorphic streak — a painted highlight thrown along the
    horizon behind the glass, riding the same beam colour the band uses. */
+.sky-gl .stage-sunself::before,
+.sky-gl .stage-sunself::after { display: none; }
 .stage-sunself::after {
   content: "";
   position: absolute;
@@ -8557,8 +9011,36 @@ button.sunself-wrap:focus-visible {
 }
 @media (min-width: 960px) {
   .landing-entry-stage { grid-column: 1 / -1; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 48px; align-items: start; max-width: 100%; }
+  /* The feature frame in the stage's second column: a tall vertical film,
+     centred in its lane. */
+  .landing-entry-stage .ad-feature { justify-self: center; }
+}
+/* The mechanism beside its proof — the glass instrument pairs with the
+   example day it explains, one column narrow (instrument first — the
+   read's logic), `1fr | 2fr` wide. */
+.landing-iday-pair { display: grid; grid-template-columns: 1fr; gap: 24px; margin-top: 36px; }
+.landing-iday-pair .landing-iday { margin-top: 0; }
+@media (min-width: 960px) {
+  .landing-iday-pair { grid-template-columns: minmax(0,1fr) minmax(0,2fr); gap: 48px; align-items: center; }
+  .landing-iday-pair .landing-instrument { align-self: center; }
 }
 .landing-instrument { margin: 0; display: grid; place-items: center; gap: 12px; position: relative; }
+/* the instrument throws light — a halo of dawn bleeding past the disc's
+   edge, so the medallion reads as a lamp, not an illustration */
+.landing-instrument::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 44%;
+  width: 150%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(50% 50% at 50% 50%,
+    rgba(255, 210, 150, 0.28) 0%,
+    rgba(255, 178, 116, 0.12) 44%,
+    transparent 72%);
+  pointer-events: none;
+}
 .landing-instrument-base { width: 62%; height: 0; border-top: 1px solid var(--m-border); }
 .landing-instrument-cap { display: grid; gap: 2px; text-align: center; max-width: 34ch; }
 .li-label { font-family: var(--font-mono2); font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--m-muted); }
@@ -8830,12 +9312,25 @@ button.sunself-wrap:focus-visible {
    negative space — tokens only, never a pink polygon. */
 .ld-sky {
   inset: 0 0 auto;
-  height: 88vh;
-  background: radial-gradient(
-    ellipse 72% 58% at 78% 30%,
-    color-mix(in srgb, var(--color-sun-dest) 12%, transparent),
-    transparent 72%
-  );
+  height: 92vh;
+  background:
+    /* the gold band the sun sits under — the light the whole page leans on */
+    radial-gradient(ellipse 130% 34% at 62% 88%,
+      rgba(255, 190, 110, 0.34) 0%,
+      rgba(233, 122, 78, 0.20) 38%,
+      transparent 72%),
+    /* rose lift above the band */
+    radial-gradient(ellipse 120% 46% at 58% 78%,
+      rgba(196, 96, 112, 0.20) 0%,
+      transparent 66%),
+    /* the blue falloff of the upper sky */
+    linear-gradient(180deg,
+      #070a13 0%,
+      #0b1120 34%,
+      #141a30 58%,
+      #241d2e 78%,
+      #331f28 92%,
+      #0b0e16 100%);
   transform: translateY(calc(var(--lp, 0) * -30vh));
 }
 .ld-motes {
@@ -8911,6 +9406,7 @@ button.sunself-wrap:focus-visible {
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
     .landing-iday,
+    .adverts,
     .sample-journeys,
     .everyday-rhythm {
       animation: land-rise linear both;

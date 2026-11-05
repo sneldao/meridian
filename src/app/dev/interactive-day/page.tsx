@@ -78,7 +78,7 @@ export default function DevInteractiveDay() {
   return (
     <main className="flex min-h-screen flex-col items-center gap-4 p-4">
       <p className="max-w-xl text-center text-sm text-clay-2">
-        Dev workbench — example trip (Miles, LHR → HND).
+        Dev workbench — example trip (Marcus, LHR → HND).
         Dragging and proposing are free; Apply writes to an in-memory plan only.
       </p>
       <div className="flex flex-wrap items-center justify-center gap-2">

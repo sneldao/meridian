@@ -4,6 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { coverageOf, fmtMin } from "@/domain/circadian";
 import { StageStars } from "@/components/StageStars";
 import { stageSkyFor } from "@/domain/stage-sky";
+import { FeedWorld, Room } from "@/components/FeedWorld";
+import { cssRgb } from "@/lib/meridian-sky-webgl";
+import type { RoomCtx } from "@/domain/feed-scenes";
 import { useLiveDate } from "@/lib/use-live-date";
 import {
   buildDailyNudgesForDay,
@@ -929,8 +932,136 @@ export function NudgeFeedScreen({
     departureDayIndex: trip?.departureDayIndex,
   };
 
+  // Altitudes: the feed's shared sky context. Each room's keyframe is a
+  // perturbation of the stage's modeled moment (src/domain/feed-scenes.ts),
+  // so every painted value is real state — owed, coverage, the scouts' arc.
+  const roomCtx = useMemo<RoomCtx | null>(() => {
+    if (!trip) return null;
+    const vars = stageSkyFor(trip, dawnOwedMin, liveDate) as Record<string, string>;
+    const req = Math.max(1, Math.abs(trip.requiredShiftMin));
+    const glow = sunRead?.glow ?? Math.max(0, 1 - dawnOwedMin / req);
+    return {
+      // The canvas box is filled in by FeedWorld at paint time.
+      w: 0,
+      h: 0,
+      hor: cssRgb(vars["--stage-horizon"], [0.91, 0.6, 0.44]),
+      zen: cssRgb(vars["--stage-ink-2"], [0.047, 0.07, 0.125]),
+      horH0: (parseFloat(vars["--stage-horizon-h"] ?? "26") || 26) / 100,
+      starO: parseFloat(vars["--stage-star-o"] ?? "0") || 0,
+      owedFrac: Math.min(1, Math.max(0, dawnOwedMin / req)),
+      glow,
+      scouts: [0.12, 0.2, 0.09, 0.16, 0.06].map((f) => Math.min(0.97, glow + f)),
+      // The route's day markers: locked lit, preview half-lit, nothing dark.
+      days: trip.days.map((d) => ({
+        lit: locked.has(d.label) ? 1 : preview?.get(d.label)?.plan ? 0.5 : 0,
+      })),
+      // The altimeter chip's body-clock read — the same clock the sky keys
+      // on (the render's `nowMin` rides `new Date()`, which the compiler
+      // can't preserve as a dep; liveDate is the reactive equivalent).
+      // Undefined until mounted or when the selected day isn't today, so
+      // the chip shows its index and label alone.
+      nowMin: (() => {
+        const spec =
+          trip.days[
+            Math.max(0, trip.days.findIndex((d) => d.label === selectedDayLabel))
+          ] ?? trip.days[0];
+        return liveDate && spec && todayDayIndex(trip, liveDate) === spec.dayIndex
+          ? nowMinOnDay(trip, spec.dayIndex, liveDate)
+          : undefined;
+      })(),
+    };
+  }, [trip, dawnOwedMin, liveDate, sunRead, locked, preview, selectedDayLabel]);
+
+  /* The destination panels — the arrival view rides the plan room while the
+     itinerary card stays with the next room, matching their original spots. */
+  const tastePanels = (() => {
+    const spec = arrivalView ? activeDaySpec : null;
+    const suggestion =
+      spec && tasteItinerary
+        ? tasteItinerary.suggestions.find((x) => x.dayIndex === spec!.dayIndex)
+        : undefined;
+    const resolved =
+      spec && tasteItinerary && suggestion
+        ? resolvePlaceChoice(tasteItinerary, suggestion, placeChoices?.state ?? {})
+        : undefined;
+    const interactive = !tripFinished && tapsBecomeCheckIns;
+    const writeChoice = (status: "kept" | "dismissed" | "swapped", place: DestinationPlace) => {
+      if (!spec || !tasteItinerary || !resolved || !placeChoices) return;
+      placeChoices.setChoice(spec.date, { status, place, tasteKey: tasteSelectionKey(tasteItinerary.favorites) });
+      if (placeChoices.storageAvailable) {
+        postTasteSignal(status, place);
+        recordTasteSignal(localStorage, status, place);
+      }
+    };
+    return {
+      arrival:
+        arrivalView && spec && trip ? (
+          <ArrivalDayView
+            destination={trip.destination.name}
+            date={spec.date}
+            steps={steps}
+            idea={resolved}
+            completedIds={completedIds}
+            skippedIds={skippedIds}
+            actionsReady={actionsReady}
+            interactive={interactive}
+            onDone={doneTap}
+            onSkip={skipTap}
+            onKeep={() => {
+              if (!resolved || !placeChoices) return;
+              writeChoice(resolved.status === "kept" ? "swapped" : "kept", resolved.place);
+            }}
+            onSwap={() => {
+              if (!resolved || !placeChoices || !resolved.alternatives.length) return;
+              writeChoice("swapped", resolved.alternatives[0]);
+            }}
+            onDismiss={() => {
+              if (!resolved || !placeChoices) return;
+              writeChoice("dismissed", resolved.place);
+            }}
+            onRestore={() => placeChoices?.clearChoice(spec.date)}
+            choicesReady={placeChoices?.ready ?? false}
+            storageAvailable={placeChoices?.storageAvailable ?? false}
+            planning={phase === "running"}
+            example={tasteItinerary?.planningMode === "replay"}
+            tasteFavorites={tasteItinerary?.favorites}
+            favoritesChanged={
+              !!(tasteItinerary && tasteProfile?.ready &&
+                tasteSelectionKey(tasteProfile.favorites) !== tasteSelectionKey(tasteItinerary.favorites))
+            }
+            tasteStatus={tasteItinerary?.status}
+            ideaSource={tasteItinerary?.sampleSource}
+            /* The evening idea belongs to the night of the arrival day —
+             * it is offered, never scheduled, and only lands on the day
+             * it actually describes. */
+            firstNight={
+              tasteItinerary && trip && spec && spec.dayIndex === trip.departureDayIndex + 1
+                ? tasteItinerary.firstNight
+                : undefined
+            }
+            onUpdatePlan={canFitTaste ? onStartCrewSync : undefined}
+            updateDisabled={phase === "running" || (tasteProfile ? !tasteProfile.ready : false)}
+          />
+        ) : null,
+      itinerary:
+        !(arrivalView && spec && trip) && trip && tasteItinerary ? (
+          <TasteItineraryCard
+            itinerary={tasteItinerary}
+            favorites={tasteProfile?.ready ? tasteProfile.favorites : undefined}
+            onSelectDay={onSelectDay}
+            onUpdate={canFitTaste ? onStartCrewSync : undefined}
+            planning={phase === "running" || (tasteProfile ? !tasteProfile.ready : false)}
+            choices={placeChoices?.state}
+          />
+        ) : null,
+    };
+  })();
+
   return (
     <>
+      <FeedWorld ctx={roomCtx}>
+      {/* Room: now — the same moment as the stage, one camera step down. */}
+      <Room id="now">
       <RightNowCard
         step={heroNudge ?? null}
         nowMin={nowMin}
@@ -956,18 +1087,25 @@ export function NudgeFeedScreen({
           hasPlan={hasPlan || [...(preview?.values() ?? [])].some(Boolean)}
         />
       ) : (
+        <PerformanceBrief
+          compact
+          moment={scene.moment}
+          destination={scene.destination}
+          date={scene.momentDate ?? undefined}
+          example={sampleMode === true}
+          exampleBaseline={baselineKind === "demo-default" && !wakeBand}
+          eventSource={calendarSource ?? "fixture"}
+          preview={!locked.has(currentLabel)}
+          hasPlan={hasPlan || [...(preview?.values() ?? [])].some(Boolean)}
+        />
+      )}
+      </Room>
+
+      {/* Room: day — the day as ground; the instrument screen keeps its own
+          framed sky (a monitor inside the slab, not a second horizon). */}
+      {!expandAllWhy && scene && (
+      <Room id="day">
         <div key={`${scene.city.code}:${scene.date}:${scene.moment?.eventId ?? ""}:${scene.moment?.localMin ?? ""}`}>
-          <PerformanceBrief
-            compact
-            moment={scene.moment}
-            destination={scene.destination}
-            date={scene.momentDate ?? undefined}
-            example={sampleMode === true}
-            exampleBaseline={baselineKind === "demo-default" && !wakeBand}
-            eventSource={calendarSource ?? "fixture"}
-            preview={!locked.has(currentLabel)}
-            hasPlan={hasPlan || [...(preview?.values() ?? [])].some(Boolean)}
-          />
           {canEditPlan && editStore && trip ? (
             <InteractiveDayEditor
               ctxBase={{
@@ -1015,7 +1153,12 @@ export function NudgeFeedScreen({
             </InteractiveDay>
           )}
         </div>
+      </Room>
       )}
+
+      {/* Room: next — the sun pushed toward; the hero and the day's
+          surrounding instruments ride this slab until the rail. */}
+      <Room id="next">
       {/* Split-Horizon Hero Card — the left panel is the trip's real dawn line:
           body clock against destination, with the next light window on it. */}
       <div
@@ -1544,89 +1687,7 @@ export function NudgeFeedScreen({
           example={baselineKind === "demo-default" && !wakeBand}
         />
       )}
-      {arrivalView && <DayStepper {...stepperProps} />}
-      {arrivalView && sunRead && (
-        <div className="mb-1 flex items-center justify-end gap-2 px-2">
-          <SunSelf read={sunRead} size={34} vt follow speak wake />
-        </div>
-      )}
-      {(() => {
-        const spec = arrivalView ? activeDaySpec : null;
-        const suggestion =
-          spec && tasteItinerary
-            ? tasteItinerary.suggestions.find((x) => x.dayIndex === spec!.dayIndex)
-            : undefined;
-        const resolved =
-          spec && tasteItinerary && suggestion
-            ? resolvePlaceChoice(tasteItinerary, suggestion, placeChoices?.state ?? {})
-            : undefined;
-        const interactive = !tripFinished && tapsBecomeCheckIns;
-        const writeChoice = (status: "kept" | "dismissed" | "swapped", place: DestinationPlace) => {
-          if (!spec || !tasteItinerary || !resolved || !placeChoices) return;
-          placeChoices.setChoice(spec.date, { status, place, tasteKey: tasteSelectionKey(tasteItinerary.favorites) });
-          if (placeChoices.storageAvailable) {
-            postTasteSignal(status, place);
-            recordTasteSignal(localStorage, status, place);
-          }
-        };
-        return arrivalView && spec && trip ? (
-          <ArrivalDayView
-            destination={trip.destination.name}
-            date={spec.date}
-            steps={steps}
-            idea={resolved}
-            completedIds={completedIds}
-            skippedIds={skippedIds}
-            actionsReady={actionsReady}
-            interactive={interactive}
-            onDone={doneTap}
-            onSkip={skipTap}
-            onKeep={() => {
-              if (!resolved || !placeChoices) return;
-              writeChoice(resolved.status === "kept" ? "swapped" : "kept", resolved.place);
-            }}
-            onSwap={() => {
-              if (!resolved || !placeChoices || !resolved.alternatives.length) return;
-              writeChoice("swapped", resolved.alternatives[0]);
-            }}
-            onDismiss={() => {
-              if (!resolved || !placeChoices) return;
-              writeChoice("dismissed", resolved.place);
-            }}
-            onRestore={() => placeChoices?.clearChoice(spec.date)}
-            choicesReady={placeChoices?.ready ?? false}
-            storageAvailable={placeChoices?.storageAvailable ?? false}
-            planning={phase === "running"}
-            example={tasteItinerary?.planningMode === "replay"}
-            tasteFavorites={tasteItinerary?.favorites}
-            favoritesChanged={
-              !!(tasteItinerary && tasteProfile?.ready &&
-                tasteSelectionKey(tasteProfile.favorites) !== tasteSelectionKey(tasteItinerary.favorites))
-            }
-            tasteStatus={tasteItinerary?.status}
-            ideaSource={tasteItinerary?.sampleSource}
-            /* The evening idea belongs to the night of the arrival day —
-             * it is offered, never scheduled, and only lands on the day
-             * it actually describes. */
-            firstNight={
-              tasteItinerary && trip && spec && spec.dayIndex === trip.departureDayIndex + 1
-                ? tasteItinerary.firstNight
-                : undefined
-            }
-            onUpdatePlan={canFitTaste ? onStartCrewSync : undefined}
-            updateDisabled={phase === "running" || (tasteProfile ? !tasteProfile.ready : false)}
-          />
-        ) : trip && tasteItinerary ? (
-          <TasteItineraryCard
-            itinerary={tasteItinerary}
-            favorites={tasteProfile?.ready ? tasteProfile.favorites : undefined}
-            onSelectDay={onSelectDay}
-            onUpdate={canFitTaste ? onStartCrewSync : undefined}
-            planning={phase === "running" || (tasteProfile ? !tasteProfile.ready : false)}
-            choices={placeChoices?.state}
-          />
-        ) : null;
-      })()}
+      {tastePanels.itinerary}
 
       {simple && trip && (
         <div className="rise" style={{ animationDelay: ".25s", margin: "8px 4px 0", fontSize: "12px", color: "var(--m-muted)", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
@@ -1946,6 +2007,20 @@ export function NudgeFeedScreen({
           </ul>
         </div>
       )}
+      </Room>
+
+      {/* Room: plan — descent to ground level; the rail reads full width.
+          On the arrival day its instruments ride this room instead of the
+          hidden rail. */}
+      {(!arrivalView || tastePanels.arrival) && (
+      <Room id="plan">
+      {arrivalView && <DayStepper {...stepperProps} />}
+      {arrivalView && sunRead && (
+        <div className="mb-1 flex items-center justify-end gap-2 px-2">
+          <SunSelf read={sunRead} size={34} vt follow speak wake />
+        </div>
+      )}
+      {tastePanels.arrival}
       {!arrivalView && (
       <section
         id="journey-days"
@@ -2190,10 +2265,20 @@ export function NudgeFeedScreen({
         )}
       </section>
       )}
+      </Room>
+      )}
 
-      {/* Taste discovery is enrichment, not instrument — it trails the day's
-          rail rather than splitting the action blocks from the list they
-          control. */}
+      {/* Room: discover — landed at the destination. Taste discovery is
+          enrichment, not instrument — it trails the day's rail rather than
+          splitting the action blocks from the list they control. */}
+      {((trip && destKey) || (simple && hasPlan && !tripFinished)) && (
+      <Room
+        id="discover"
+        /* The bounded mascot beat: the sun gains its face over the painted
+           disc — the same read the arrival view carries, DOM so the face
+           stays honest under every backend. */
+        mascot={sunRead ? <SunSelf read={sunRead} size={90} tone="ink" /> : undefined}
+      >
       {trip && destKey && (
         <TasteDiscovery
           key={`${trip.origin.code}-${trip.destination.code}-${trip.days.find((d) => d.dayIndex === trip.departureDayIndex)?.date ?? ""}`}
@@ -2210,7 +2295,6 @@ export function NudgeFeedScreen({
 
       {/* Simple + a saved plan: the day's steps are the thing; re-running is
           the quiet second action at the bottom of the list. */}
-      {undoToast}
       {simple && hasPlan && !tripFinished && (
         <button
           type="button"
@@ -2221,6 +2305,12 @@ export function NudgeFeedScreen({
           {phase === "running" ? `Building your plan… (${locked.size} of ${days.length} days)` : "Update my plan"}
         </button>
       )}
+      </Room>
+      )}
+      </FeedWorld>
+      {/* Fixed-position toast — outside the rooms so the stacking context
+          never clips it. */}
+      {undoToast}
     </>
   );
 }

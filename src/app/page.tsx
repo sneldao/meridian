@@ -39,10 +39,6 @@ const DeepDiveVisuals = dynamic(
 const TripSetupScreen = dynamic(
   () => import("@/components/TripSetupScreen").then((m) => m.TripSetupScreen),
 );
-const EverydayRhythm = dynamic(
-  () => import("@/components/EverydayRhythm").then((m) => m.EverydayRhythm),
-  { loading: () => null },
-);
 const TripEntryScreen = dynamic(
   () => import("@/components/TripEntryScreen").then((m) => m.TripEntryScreen),
 );
@@ -52,6 +48,7 @@ import { LandingExampleDay } from "@/components/LandingExampleDay";
 import { LandingInstrument } from "@/components/LandingInstrument";
 import { LandingDepth } from "@/components/LandingDepth";
 import { SampleJourneys } from "@/components/SampleJourneys";
+import { Adverts, AdvertsFeature, AdvertsRail } from "@/components/Adverts";
 import type { RouteGapRead } from "@/domain/route-gap";
 const AgentDrawer = dynamic(
   () => import("@/components/AgentDrawer").then((m) => m.AgentDrawer),
@@ -1771,23 +1768,33 @@ export default function Home() {
                 .{entryDraft ? " Their route is prefilled below — change anything." : ""}
               </p>
             )}
-            <div className="landing-entry-stage" id="plan">
-              <TripEntryScreen
-                initialDate={departureDate || defaultDepartureDate()}
-                onContinue={commitRoute}
-                onExploreExample={() => exploreExample()}
-                initialRoute={entryDraft}
-                onGapChange={handleVisitorGap}
-              />
-              {/* Phase 2 — the glass instrument: the traveller's meridian
-                  rendered as a refractive medallion beside the form. */}
+            <Adverts>
+              <div className="landing-entry-stage" id="plan">
+                <TripEntryScreen
+                  initialDate={departureDate || defaultDepartureDate()}
+                  onContinue={commitRoute}
+                  onExploreExample={() => exploreExample()}
+                  initialRoute={entryDraft}
+                  onGapChange={handleVisitorGap}
+                />
+                {/* The screening room's feature frame is the stage's second
+                    column — the "who" beside the ask. */}
+                <AdvertsFeature />
+              </div>
+              {/* The rail + caption read as the stage's floor, full width
+                  beneath the pair. */}
+              <AdvertsRail />
+            </Adverts>
+            {/* The mechanism beside its proof: the glass instrument pairs
+                with the example day it explains. */}
+            <div className="landing-iday-pair">
               <LandingInstrument visitor={visitorInfo} />
+              <LandingExampleDay />
             </div>
-            <LandingExampleDay />
             <SampleJourneys onChoose={(id) => exploreExample(id)} />
-            {/* The habit tracker stays after the funnel — for the visitor
-                who is still looking around. */}
-            <EverydayRhythm />
+            {/* EverydayRhythm was cut from the landing — the close lands
+                harder straight after the adverts. The component file stays
+                for its other surfaces. */}
             {/* The close — the page owes the reader an ending: the horizon
                 hairline, one line in the crew's voice, the door back up to
                 the form, and the privacy note every surface carries. */}

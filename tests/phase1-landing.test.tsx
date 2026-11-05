@@ -14,17 +14,27 @@ import { RoutePicker } from "../src/components/RoutePicker";
 const page = readFileSync(join(import.meta.dir, "..", "src", "app", "page.tsx"), "utf8");
 
 describe("the setup branch is the ink Statement", () => {
-  test("order: hero → form → example day → sample journeys → rhythm", () => {
+  test("order: hero → form+feature → rail → instrument+day → journeys", () => {
     const hero = page.indexOf("<LandingHero");
     const form = page.indexOf("<TripEntryScreen");
+    const feature = page.indexOf("<AdvertsFeature");
+    const rail = page.indexOf("<AdvertsRail");
+    const instrument = page.indexOf("<LandingInstrument");
     const example = page.indexOf("<LandingExampleDay");
     const samples = page.indexOf("<SampleJourneys");
-    const rhythm = page.indexOf("<EverydayRhythm />");
     expect(hero).toBeGreaterThan(-1);
     expect(hero).toBeLessThan(form);
-    expect(form).toBeLessThan(example);
+    // The feature frame rides inside the entry stage as its second column.
+    expect(form).toBeLessThan(feature);
+    expect(feature).toBeLessThan(rail);
+    // The instrument pairs with the example day it explains.
+    expect(rail).toBeLessThan(instrument);
+    expect(instrument).toBeLessThan(example);
     expect(example).toBeLessThan(samples);
-    expect(samples).toBeLessThan(rhythm);
+    // EverydayRhythm was cut — the close lands harder after the adverts.
+    // Neither mount nor import may return (the file itself stays).
+    expect(page).not.toContain("<EverydayRhythm");
+    expect(page).not.toContain("components/EverydayRhythm");
     expect(page).toContain('className="landing-statement"');
     expect(page).toContain('tone="ink"');
   });

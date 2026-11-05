@@ -19,7 +19,7 @@ describe("demo scenarios", () => {
   it("fixed names, non-movable post-flight event, real solver plans", () => {
     const originalFixtures = JSON.stringify({ GARMIN_BASELINE, ADHERENCE_PROFILE });
     const d = buildDemoScenario("danny", "2026-11-04");
-    expect(d.scenario.name).toBe("Danny Rivers");
+    expect(d.scenario.name).toBe("Earl Rivers");
     expect(d.event.title).toBe("Evening performance");
     expect(d.event.movable).toBe(false);
     expect(d.event.dayIndex).toBe(d.trip.departureDayIndex + 1);
