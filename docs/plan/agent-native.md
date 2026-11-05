@@ -105,27 +105,34 @@ Rules:
 
 ## 4. Build order
 
-Cheapest-first, ordered so each phase dies-testable:
+Cheapest-first, ordered so each phase dies-testable. Status: steps 1–6 shipped
+(commits `1fa732c`, `209e6a8` + step 6 batch).
 
-1. **Wake the visitor** — instrument reads the visitor's own clock before
-   any route (`sunSelfRead` off device tz + `liveDate`), plus "12 places
-   found" live feedback under the crate field.
-2. **The crew's account** — ThinkingState-style expandable trace on
-   plan-build, replaying the real domain steps (route read → light windows
-   → conflicts → crate match → places). Settles into "Planned in Ns";
-   expandable after. LoaderGrid + Surfer variant replaces the boot skeleton.
-3. **Provenance chips** — ContextCard-style chips under the plan header:
-   calendar, crate, body clock. Same disclosure law as the stamps.
-4. **Taste forward** — crate as a pick-list in the form; `placeChoices`
-   pins surface on the first day's card, not only in `discover`; session
-   behavior (swaps/skips) feeds ranking — zero new permissions, feels like
-   learning.
-5. **TaskRows AgentDrawer** — crew jobs as live status rows with real
-   failure/retry semantics.
-6. **InsightCards** — crew findings in `next`/`discover` with the shift
-   curve mini-viz and an action pill.
-7. **RecordsTable plan room** — the day table's computed columns resolve
-   staggered while the crew calculates.
+1. **Wake the visitor** ✅ — `sunSelfVisitor` lights the medallion for the
+   device clock ("Your body is on X time — it thinks it's HH:MM"); crate
+   selection answers live via `matchSampleProfileForTrip → splitSamplePlaces`
+   with an `imagined sample` provenance suffix.
+2. **The crew's account** ✅ — `CrewAccount` in the `aria-busy` region: pixel
+   loader + real elapsed, four real rows measured off the `/api/trip` payload,
+   settles "Planned in Ns", stays expandable; the traveller's clip plays
+   muted below. No fake latency — dwell is presentation pacing.
+3. **Provenance chips** ✅ — `provenanceChips` in `domain/provenance.ts`;
+   a row of mono pills under the plan header quoting the account verbatim
+   (route · body clock · light · conflicts · crate · calendar), deriving
+   only what the trip honestly knows on restore and naming each source.
+4. **Taste forward** ✅ — `dayPlacePin` (`lib/place-choices.ts`) puts the
+   resolved pin on the current day's card ("· from your crate"); kept/
+   swapped-in adjacency re-ranks `resolvePlaceChoice` alternatives per
+   session. Crate pick-list/free-text stays an open gap (chips only today).
+5. **TaskRows AgentDrawer** ✅ — `deriveCrewJobs` + `CrewJobs` Jobs tab:
+   six rows (Mara baseline, Jun science, Otto windows, Iris conflicts, Rex
+   calendar, Scout places-as-tool), Preview/Done/Failed pills from real
+   evidence only, expandable substeps, retry = real `startShift`.
+6. **InsightCards** ✅ — `insightCards` (`domain/insights.ts`) derives 0–3
+   cards (gap+curve, conflict+strip, place pin) only where the fact exists,
+   in the `next` room slab; prose → mini-viz → action pill, no autoplay.
+7. **RecordsTable plan room** — pending: day table's computed columns
+   resolve staggered while the crew calculates.
 8. **Calendar flag** — product call; the engineering exists.
 
 ## 5. Explicitly not doing

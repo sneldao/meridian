@@ -3058,6 +3058,164 @@ html[data-theme="night"] .evline-cite,
   white-space: nowrap;
 }
 
+/* InsightCards (agent-native step 6) — the crew's findings as a small
+   carousel in the `next` room's slab: "Insights {N} ‹ ›" paging one card
+   at a time, each card one prose line, one mini visual, one action pill.
+   Static by design — the autoplay-yields rule means ours never autoplays,
+   so there is no motion to stand down; reduced motion shows the same
+   settled card. */
+.insight {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--m-border);
+  border-radius: var(--radius-lg);
+  background: var(--m-card);
+}
+.insight-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.insight-count {
+  font-family: var(--font-mono2);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--m-faint);
+}
+.insight-pager {
+  display: inline-flex;
+  gap: 4px;
+}
+.insight-step {
+  font: inherit;
+  position: relative;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--m-border);
+  background: transparent;
+  color: var(--m-text);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+/* The visual 28px keeps the quiet register; the ::after ring brings the
+   tap target to the 44px floor. */
+.insight-step::after {
+  content: "";
+  position: absolute;
+  inset: -8px;
+}
+.insight-step:hover {
+  background: var(--m-card-2);
+}
+.insight-step:focus-visible {
+  outline: 2px solid var(--m-accent);
+  outline-offset: 2px;
+}
+.insight-card {
+  margin-top: 10px;
+}
+.insight-prose {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--m-text);
+}
+/* The disclosure tag — the provenance chips' vocabulary on the card when
+   the fact underneath is fixture- or preview-derived. */
+.insight-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border: 1px solid var(--m-border-2);
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--m-faint);
+  vertical-align: 1px;
+}
+.insight-curve {
+  display: block;
+  margin-top: 10px;
+}
+.insight-curve-req {
+  stroke: var(--m-border);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+.insight-curve-line {
+  fill: none;
+  stroke: var(--m-accent);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.insight-curve-dot {
+  fill: var(--m-accent);
+}
+.insight-strip {
+  display: block;
+  margin-top: 10px;
+}
+.insight-strip-base,
+.insight-strip-tick {
+  stroke: var(--m-border);
+  stroke-width: 1;
+}
+.insight-strip-win {
+  fill: var(--m-border-2);
+}
+.insight-strip-hatchline {
+  stroke: var(--m-accent);
+  stroke-width: 1.2;
+}
+.insight-strip-flag-edge {
+  fill: none;
+  stroke: var(--m-accent);
+  stroke-width: 1;
+}
+.insight-pin {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--m-muted);
+}
+.insight-pin-ic {
+  flex: none;
+  color: var(--m-faint);
+}
+.insight-action {
+  margin-top: 10px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1.5px solid var(--m-accent);
+  background: transparent;
+  color: var(--m-accent);
+  cursor: pointer;
+}
+.insight-action:hover {
+  background: var(--m-accent);
+  color: var(--m-on-accent);
+}
+.insight-action:focus-visible {
+  outline: 2px solid var(--m-accent);
+  outline-offset: 2px;
+}
+
 @media (max-width: 720px) {
   .tl {
     padding: 4px 14px 10px;

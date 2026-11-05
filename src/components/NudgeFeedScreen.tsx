@@ -33,6 +33,8 @@ import { DayCardShare } from "@/components/DayCardShare";
 import { RightNowCard } from "@/components/RightNowCard";
 import { dayPlacePin, postTasteSignal } from "@/lib/place-choices";
 import { provenanceChips } from "@/domain/provenance";
+import { insightCards } from "@/domain/insights";
+import { InsightCards } from "@/components/InsightCards";
 import type { CrewAccountRow } from "@/components/CrewAccount";
 import { recordTasteSignal } from "@/lib/taste-signals";
 import { tasteSelectionKey } from "@/domain/taste";
@@ -204,6 +206,36 @@ function DayStepper({
             )}
     </div>
   );
+}
+
+/** The crate-match card's pin (step 6): the suggestion nearest the selected
+ *  day whose resolved choice is a real offer — suggested or kept, never a
+ *  dismissed one. Module-level so the compiler can memo the call site. */
+function pickInsightPin(
+  itinerary: TasteItinerary | undefined,
+  dayIndex: number,
+  state: Parameters<typeof dayPlacePin>[2],
+) {
+  if (!itinerary) return null;
+  const suggs = [...itinerary.suggestions].sort(
+    (a, b) =>
+      Math.abs(a.dayIndex - dayIndex) - Math.abs(b.dayIndex - dayIndex) ||
+      a.dayIndex - b.dayIndex,
+  );
+  for (const s of suggs) {
+    const r = dayPlacePin(itinerary, s.dayIndex, state);
+    if (r && (r.status === "suggested" || r.status === "kept")) {
+      return {
+        placeName: r.place.name,
+        category: r.place.categories[0],
+        startMin: s.startMin,
+        endMin: s.endMin,
+        dayLabel: s.label,
+        kept: r.status === "kept",
+      };
+    }
+  }
+  return null;
 }
 
 /** Which face the day panel wears (milestone 5): an edit session when the
@@ -907,6 +939,53 @@ export function NudgeFeedScreen({
       ? resolved
       : null;
   }, [arrivalView, activeDaySpec, tasteItinerary, placeChoices?.state]);
+
+  /* Step 6 — the crate-match card's pin. The selected day first, then the
+     nearest suggestion's day — a card exists only for a pin that resolves
+     to a real offer (suggested or kept), never for a dismissed one. */
+  const insightPin = useMemo(
+    () =>
+      pickInsightPin(
+        tasteItinerary,
+        activeDaySpec?.dayIndex ?? 0,
+        placeChoices?.state ?? {},
+      ),
+    [tasteItinerary, activeDaySpec, placeChoices?.state],
+  );
+
+  /* Step 6 — the carousel's facts. `scenePlans` is the best plan set the
+     surface has (locked first, else the solver's preview); `heroMtg` is
+     the trip's marked event; the conflict scan runs the same evaluatePlan
+     call the crew's rows count. */
+  const insights = useMemo(
+    () =>
+      insightCards({
+        trip,
+        owedMin: dawnOwedMin,
+        plans: scenePlans,
+        plansArePreview: lockedDays.length === 0,
+        moment: heroMtg,
+        calendar: calendarEvents,
+        adherence: effectiveAdherence,
+        baseline,
+        pin: insightPin,
+        example: sampleMode === true,
+        pinSample: tasteItinerary?.sampleSource,
+      }),
+    [
+      trip,
+      dawnOwedMin,
+      scenePlans,
+      lockedDays.length,
+      heroMtg,
+      calendarEvents,
+      effectiveAdherence,
+      baseline,
+      insightPin,
+      sampleMode,
+      tasteItinerary?.sampleSource,
+    ],
+  );
 
   /* Step 3 — provenance chips under the stamped header. The account's
      rows are quoted when the commit left them; a URL restore derives the
@@ -1746,6 +1825,13 @@ export function NudgeFeedScreen({
           </div>
         </div>
       </div>
+
+      {/* Step 6 — the crew's findings ride the slab under the next nudge:
+          one prose line, one mini visual, one action pill per card. Every
+          number is already on this page elsewhere (the residual, the
+          preview's coverage, the gate's scan, the resolved pin); a card
+          exists only where its fact does. */}
+      <InsightCards cards={insights} onSelectDay={onSelectDay} />
 
       {/* Bet 2 — "spend your daylight here". Arrival day only, taste-ranked
           venues inside the destination. Null (no key, no places, wrong day)

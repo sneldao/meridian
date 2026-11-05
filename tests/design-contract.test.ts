@@ -61,7 +61,7 @@ const CHROME = [
     "TimezoneClocks", "PlanReview", "ArrivalPassportCard", "StageSun", "DemoBeats",
     "CrewPerformance", "LandingCrewStrip",
     "CrewAvatar", "InteractiveDay", "InteractiveDayEditor", "LandingHero",
-    "LandingDepth", "CrewJobs",
+    "LandingDepth", "CrewJobs", "InsightCards",
   ].map((n) => `src/components/${n}.tsx`),
   "src/components/ui/AgentCard.tsx",
   "src/components/ui/AgentChip.tsx",
