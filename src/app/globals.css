@@ -1739,6 +1739,22 @@ a[href]:active {
 .stage-ridge-near { bottom: -2%; height: 12%; }
 .stage-ridge-near path { fill: var(--stage-ink, #07090f); }
 
+/* Pointer depth — the hand tilts the diorama: --px/--py (depth-parallax.ts,
+   fine pointers only) drift each plane at its own depth. Far planes barely
+   move, the near ridge moves most; the sun is effectively at infinity. A
+   settle transition smooths the follow and returns rest on leave; the
+   instruments never move — they are the read, not the scene. */
+@media (prefers-reduced-motion: no-preference) {
+  .stage-stars-far, .stage-stars-mid,
+  .stage-ridge-far, .stage-ridge-near {
+    transition: transform var(--dur-settle) var(--ease-settle);
+  }
+  .stage-stars-far { transform: translate(calc(var(--px, 0) * -4px), calc(var(--py, 0) * -2px)); }
+  .stage-stars-mid { transform: translate(calc(var(--px, 0) * -8px), calc(var(--py, 0) * -4px)); }
+  .stage-ridge-far { transform: translateX(calc(var(--px, 0) * -12px)); }
+  .stage-ridge-near { transform: translateX(calc(var(--px, 0) * -20px)); }
+}
+
 /* Display headings — the crew's voice at statement size. Roman only (no
    italic display), tight tracking, and overflow-safe on narrow viewports. */
 .display-1,
@@ -7324,6 +7340,14 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 /* The rendered sun scales into the var-sized box — canvas fills it by
    .sunself-gl's own inset, the SVG face scales with the viewBox. */
 .stage-sunself .sunself { width: 100%; height: auto; }
+/* The sun sits effectively at infinity — the smallest drift of any plane
+   (kept after the rule it rides so tests pin the real block first). */
+@media (prefers-reduced-motion: no-preference) {
+  .stage-sunself {
+    transition: transform var(--dur-settle) var(--ease-settle);
+    transform: translate(calc(var(--px, 0) * -4px), calc(var(--py, 0) * -2px));
+  }
+}
 /* The stage sun's anamorphic streak — a painted highlight thrown along the
    horizon behind the glass, riding the same beam colour the band uses. */
 .stage-sunself::after {
@@ -8742,11 +8766,19 @@ button.sunself-wrap:focus-visible {
 .ld-motes circle { fill: var(--color-terracotta); }
 .ld-motes-far {
   opacity: 0.3;
-  transform: translateY(calc(var(--lp, 0) * -10vh));
+  transform: translate(
+    calc(var(--px, 0) * -5px),
+    calc(var(--lp, 0) * -10vh + var(--py, 0) * -3px)
+  );
+  transition: transform var(--dur-settle) var(--ease-settle);
 }
 .ld-motes-mid {
   opacity: 0.5;
-  transform: translateY(calc(var(--lp, 0) * -19vh));
+  transform: translate(
+    calc(var(--px, 0) * -11px),
+    calc(var(--lp, 0) * -19vh + var(--py, 0) * -6px)
+  );
+  transition: transform var(--dur-settle) var(--ease-settle);
 }
 /* The haze is the sun-dest token at a whisper of alpha along the horizon —
    atmosphere, never a light band. */
@@ -8762,7 +8794,8 @@ button.sunself-wrap:focus-visible {
     transparent
   );
   opacity: calc(0.8 - var(--lp, 0) * 0.3);
-  transform: translateY(calc(var(--lp, 0) * -12vh));
+  transform: translate(calc(var(--px, 0) * -7px), calc(var(--lp, 0) * -12vh));
+  transition: transform var(--dur-settle) var(--ease-settle);
 }
 .ld-ridge {
   left: -3%;
@@ -8771,8 +8804,10 @@ button.sunself-wrap:focus-visible {
 .ld-ridge-far {
   top: 44vh;
   height: 16vh;
-  transform: translateY(calc(var(--lp, 0) * -14vh)) scaleY(calc(1 - var(--lp, 0) * 0.22));
+  transform: translate(calc(var(--px, 0) * -14px), calc(var(--lp, 0) * -14vh))
+    scaleY(calc(1 - var(--lp, 0) * 0.22));
   transform-origin: bottom;
+  transition: transform var(--dur-settle) var(--ease-settle);
 }
 .ld-ridge-far path { fill: var(--color-ink-3, #131826); }
 .ld-ridge-far { opacity: 0.25; }

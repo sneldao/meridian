@@ -53,10 +53,41 @@ function LandingDepthArtwork() {
     write();
     window.addEventListener("scroll", write, { passive: true });
     window.addEventListener("resize", write);
+    // The visitor's hand tilts the field the same way it tilts the stage's:
+    // --px/--py drift the mote and ridge planes at their own depths — same
+    // input vocabulary as the stage's depth-parallax, one --lp clock shared.
+    const fine = window.matchMedia("(pointer: fine)");
+    let raf = 0;
+    const tilt = (e: PointerEvent) => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const doc = document.documentElement;
+        doc.style.setProperty("--px", ((e.clientX / window.innerWidth) * 2 - 1).toFixed(3));
+        doc.style.setProperty("--py", ((e.clientY / window.innerHeight) * 2 - 1).toFixed(3));
+      });
+    };
+    const rest = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        document.documentElement.style.setProperty("--px", "0");
+        document.documentElement.style.setProperty("--py", "0");
+      });
+    };
+    if (fine.matches) {
+      window.addEventListener("pointermove", tilt, { passive: true });
+      document.addEventListener("pointerleave", rest);
+    }
     return () => {
       window.removeEventListener("scroll", write);
       window.removeEventListener("resize", write);
+      cancelAnimationFrame(raf);
+      if (fine.matches) {
+        window.removeEventListener("pointermove", tilt);
+        document.removeEventListener("pointerleave", rest);
+      }
       document.documentElement.style.removeProperty("--lp");
+      document.documentElement.style.removeProperty("--px");
+      document.documentElement.style.removeProperty("--py");
     };
   }, []);
 

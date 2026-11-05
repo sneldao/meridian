@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { TimezoneClocks } from "@/components/TimezoneClocks";
 import { StageStars } from "@/components/StageStars";
 import { StageRidges } from "@/components/StageRidges";
@@ -8,6 +8,7 @@ import { SunSelf } from "@/components/SunSelf";
 import { fmtMin } from "@/domain/circadian";
 import type { TravelerNudge } from "@/domain/nudges";
 import { stageSkyFor } from "@/domain/stage-sky";
+import { useDepthParallax } from "@/lib/motion/depth-parallax";
 import { sunSelfRead } from "@/domain/sun-self";
 import { nowMinOnDay, pickNextStep, todayDayIndex } from "@/domain/today";
 import type { ActionMark } from "@/lib/trip-actions";
@@ -59,6 +60,10 @@ export function TodayStage({
   // The sky and the next line share one clock — the live date ticks so both
   // drift with the real sun without a page-level re-render.
   const liveDate = useLiveDate(30_000);
+  // The visitor's hand tilts the diorama — --px/--py drift the sky's planes
+  // at their own depths; instruments stay still, they are the read.
+  const stageRef = useRef<HTMLElement>(null);
+  useDepthParallax(stageRef);
 
   const next = useMemo(() => {
     const now = liveDate ?? new Date();
@@ -96,6 +101,7 @@ export function TodayStage({
 
   return (
     <section
+      ref={stageRef}
       className="today-stage"
       style={stageSkyFor(trip, owedMin, liveDate)}
       aria-label={`Today — ${trip.destination.name}. ${sun.line}`}
