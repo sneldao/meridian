@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
+import { Plane } from "lucide-react";
 import { coverageOf, fmtMin } from "@/domain/circadian";
 import { todayDayIndex } from "@/domain/today";
 import { resolveBaseline, buildTrip, calendarFor, GARMIN_BASELINE, ADHERENCE_PROFILE, type WakeBand } from "@/domain/fixtures";
@@ -969,7 +970,7 @@ export default function Home() {
       setStreamError(
         briefingSeen.current
           ? "The crew delivered a plan but the run never finished — anything already verified is kept. Run it again to finish."
-          : "The crew stopped responding mid-run. Anything already verified is kept — run it again when you're ready.",
+          : "The crew stopped responding mid-run. Anything already verified is kept — run it again when you’re ready.",
       );
       reset();
     }, 4000);
@@ -1359,7 +1360,7 @@ export default function Home() {
           <div className="right">
             {!isOnline && (
               <span className="offline-pill" role="status" aria-label="Offline mode">
-                ✈ Offline
+                <Plane size={11} aria-hidden="true" /> Offline
               </span>
             )}
             {/* Item 16 — Calm (the Plan rung) is "words + one number + one CTA".

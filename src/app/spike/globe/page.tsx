@@ -1,5 +1,7 @@
 "use client";
 
+import { notFound } from "next/navigation";
+
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -153,6 +155,7 @@ const OWED_STEPS = [480, 360, 240, 120, 60, 30, 15, 0];
 const FLIGHT_SECONDS = 20;
 
 export default function GlobeSpikePage() {
+  if (process.env.NODE_ENV === "production") notFound(); // internal workbench — never public
   const mounted = useSyncExternalStore(mountedStore.subscribe, mountedStore.getSnapshot, mountedStore.getServerSnapshot);
   const hasWebGL = useSyncExternalStore(webglStore.subscribe, webglStore.getSnapshot, webglStore.getServerSnapshot);
   const [forcedSvg, setForcedSvg] = useState(false);

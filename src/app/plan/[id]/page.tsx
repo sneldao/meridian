@@ -77,44 +77,32 @@ export default async function SharedPlan({ params }: { params: Promise<{ id: str
       : null;
 
   return (
-    <main style={{ minHeight: "100vh", background: "#F5EFE6", color: "#5b4d41", fontFamily: "var(--font-body)", padding: "40px 20px" }}>
-      <div style={{ maxWidth: 560, margin: "0 auto" }}>
-        <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.18em", color: "#D96B43", textTransform: "uppercase" }}>
+    <main className="share">
+      <div className="share-inner">
+        <div className="share-kicker">
           Meridian · {arrival ? "arrival receipt" : "shared plan"}
         </div>
-        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 600, letterSpacing: "-0.02em", margin: "10px 0 4px" }}>
-          {routeLabel(trip)}
-        </h1>
+        <h1 className="share-title">{routeLabel(trip)}</h1>
         {briefing?.summary && (
-          <p style={{ fontSize: 13, color: "#6a5a4a", margin: "0 0 20px" }}>{briefing.summary}</p>
+          <p className="share-summary">{briefing.summary}</p>
         )}
 
         {arrival && (
           /* The receipt: claimed vs delivered, the same projection the
              landing page reports. The band says "about", never a point. */
-          <div
-            style={{
-              background: "#1E1B18",
-              color: "#fff8ef",
-              borderRadius: 16,
-              padding: "16px 18px",
-              marginBottom: 16,
-            }}
-          >
-            <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "#e99a6f" }}>
-              Body-clock receipt
-            </div>
-            <div style={{ fontSize: 20, fontWeight: 800, marginTop: 6 }}>
+          <div className="share-dark">
+            <div className="share-dark-kicker">Body-clock receipt</div>
+            <div className="share-dark-head">
               Landed about {arrival.hoursOff.toFixed(1)}h from {trip?.destination.name ?? "destination"} time
               {arrival.lowHours !== arrival.highHours &&
                 ` (${arrival.lowHours.toFixed(1)}–${arrival.highHours.toFixed(1)}h)`}
             </div>
-            <div style={{ fontSize: 14, marginTop: 4 }}>
+            <div className="share-dark-sub">
               The plan claimed {arrival.claimedHours.toFixed(1)}h — its timing carried{" "}
               {arrival.deliveredHours.toFixed(1)}h of the {arrival.requiredHours.toFixed(1)}h shift.
             </div>
             {arrival.baselineHours > arrival.hoursOff && (
-              <div style={{ fontSize: 12, color: "#c9b8a4", marginTop: 4 }}>
+              <div className="share-dark-note">
                 Doing nothing would have left {arrival.baselineHours.toFixed(1)}h off.
               </div>
             )}
@@ -122,22 +110,12 @@ export default async function SharedPlan({ params }: { params: Promise<{ id: str
         )}
 
         {hero && hero.bodyWithoutPlanMin !== hero.bodyMin && (
-          <div
-            style={{
-              background: "#1E1B18",
-              color: "#fff8ef",
-              borderRadius: 16,
-              padding: "16px 18px",
-              marginBottom: 16,
-            }}
-          >
-            <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "#e99a6f" }}>
-              Body-clock passport
-            </div>
-            <div style={{ fontSize: 20, fontWeight: 800, marginTop: 6 }}>
+          <div className="share-dark">
+            <div className="share-dark-kicker">Body-clock passport</div>
+            <div className="share-dark-head">
               {hero.title} · {fmtMin(hero.localMin)}
             </div>
-            <div style={{ fontSize: 14, marginTop: 4 }}>
+            <div className="share-dark-sub">
               My body thinks it&apos;s {fmtMin(hero.bodyMin)} — would have been{" "}
               {fmtMin(hero.bodyWithoutPlanMin)} without the crew.
             </div>
@@ -145,14 +123,14 @@ export default async function SharedPlan({ params }: { params: Promise<{ id: str
         )}
 
         {briefing && (
-          <div style={{ background: "#fff8ef", border: "1px solid #e3d5c3", borderRadius: 16, padding: 16 }}>
+          <div className="share-card">
             {briefing.days.map((d) => (
-              <div key={d.label} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, padding: "8px 0", borderTop: "1px solid #eee3d6" }}>
+              <div key={d.label} className="share-day">
                 <b>{d.label}</b>
                 <span>{d.shiftMin} min shift · {d.interventions.length} steps</span>
               </div>
             ))}
-            <div style={{ fontSize: 12, color: "#6a5a4a", marginTop: 10 }}>
+            <div className="share-meta">
               {Math.round(Math.abs(totalShift))} min shifted · score {briefing.score.toFixed(2)} · {briefing.citations.length} papers cited
             </div>
           </div>
@@ -175,10 +153,10 @@ export default async function SharedPlan({ params }: { params: Promise<{ id: str
         {/* Recipient→sender loop: the id rides the link so Home can
             acknowledge where they came from, prefill this route, and count
             the trip they commit back against this share. */}
-        <Link href={`/?via=${id}`} style={{ display: "inline-block", marginTop: 20, background: "linear-gradient(90deg,#D96B43,#e99a6f)", color: "#fff8ef", borderRadius: 999, padding: "10px 22px", fontSize: 13, fontWeight: 800, textDecoration: "none" }}>
+        <Link href={`/?via=${id}`} className="share-cta">
           Make your own plan →
         </Link>
-        <p style={{ fontSize: 10, color: "#b7ab9d", marginTop: 16 }}>Built by the Meridian crew — agents that fly ahead of you.</p>
+        <p className="share-foot">Built by the Meridian crew — agents that fly ahead of you.</p>
       </div>
     </main>
   );

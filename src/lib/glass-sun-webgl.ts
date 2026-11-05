@@ -29,6 +29,14 @@ vec3 environment(vec2 p){
  return bgc*mix(0.75,1.9,sat(0.5-p.y))
    +tint*horizon*(0.25+0.45*core)+spec*(gx+gy)*0.045;
 }
+/* Ported from phileeppov/glass (MIT): a ray entering the slab with normal n3
+   refracts and lands on the floor — TIR-safe, with a z floor, replacing the
+   unbounded rd.xy*path march. */
+vec2 throughSlab(vec3 n3,float ior,float h){
+  vec3 t=refract(vec3(0.,0.,-1.),n3,1.0/max(ior,1.02));
+  if(t==vec3(0.)) return vec2(0.);
+  return -t.xy*(h/max(-t.z,0.05));
+}
 void main(){
  vec2 uv=(v-0.5)*2.4;
  float r=length(uv);
@@ -49,14 +57,21 @@ void main(){
  if(disc>0.0){
    vec3 n=normalize(vec3(uv,t*1.15));
    float path=2.0*t;
+   /* Faceted rim (ported concept from phileeppov/glass): near the edge the
+      dome's normal blends toward a fixed chamfer — the rim stops refracting
+      like a lens and starts reading as cut glass, with a bright joint line
+      where dome and facet meet. */
+   float facetBand=smoothstep(R-0.13,R-0.02,r)*disc;
+   n=normalize(mix(n,normalize(vec3(uv*0.55,t*1.6)),facetBand*0.85));
    // Sample the same light field at three wavelength-dependent exit points.
    vec3 refr=vec3(0.);
    for(int i=0;i<3;i++){
      float ior=1.45+disp*float(i-1);
-     vec3 rd=refract(vec3(0.,0.,-1.),n,1.0/ior);
-     vec2 exitPoint=rot(uv+rd.xy*path/max(0.35,abs(rd.z)),ang);
+     vec2 exitPoint=rot(uv+throughSlab(n,ior,path*0.5),ang);
      refr[i]=environment(exitPoint)[i];
    }
+   float joint=(1.0-smoothstep(0.0,0.012,abs(r-(R-0.075))))*disc;
+   refr+=joint*spec*0.16;
    float att=exp(-path*(0.08+rough*0.7));
    col=refr*att;
    // Fresnel: bright only right at the rim, inside the disc

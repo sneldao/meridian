@@ -133,7 +133,7 @@ export function DailyJourney({
     <div className="flex flex-col gap-4">
       {/* Atmospheric World Horizon Header */}
       <div
-        className={`relative overflow-hidden rounded-2xl border border-line bg-ink-2 shadow-lg transition-all duration-300 ${
+        className={`relative overflow-hidden rounded-2xl border border-line bg-ink-2 shadow-lg transition-[border-color,box-shadow] duration-medium ${
           viewTab === "map" || mapExpanded
             ? "h-[380px] sm:h-[440px]"
             : "h-[210px] sm:h-[240px]"
@@ -269,7 +269,7 @@ export function DailyJourney({
                     if (viewTab === "map") setViewTab("daily");
                   }}
                   aria-pressed={isSelected}
-                  className={`group flex flex-col justify-between rounded-xl border p-3 text-left transition-all ${
+                  className={`group flex flex-col justify-between rounded-xl border p-3 text-left transition-colors ${
                     isSelected
                       ? "border-paper bg-ink-3 shadow-md ring-1 ring-paper/30"
                       : plan

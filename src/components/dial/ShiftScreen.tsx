@@ -83,9 +83,6 @@ export function ShiftScreen() {
     <div className="flex flex-col gap-4">
       <div className="dial-head">
         <h3 className="dial-title">Rotating shifts</h3>
-        <span className="dial-sub">
-          A week of nights, days and days off, with one movable commitment in it.
-        </span>
       </div>
 
       <div className="dial-actions">

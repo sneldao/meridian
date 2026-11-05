@@ -1,3 +1,4 @@
+import { notFound } from "next/navigation";
 import { CrewAvatar, type CrewAvatarState } from "@/components/CrewAvatar";
 import { CREW } from "@/agents/crew";
 import type { AgentId } from "@/domain/types";
@@ -18,6 +19,7 @@ const AGENTS: AgentId[] = ["analyst", "researcher", "planner", "evaluator", "neg
 const SIZES = [24, 48, 96];
 
 export default function DevCrewAvatars() {
+  if (process.env.NODE_ENV === "production") notFound(); // internal workbench — never public
   return (
     <main className="flex min-h-screen flex-col gap-8 p-6">
       <p className="font-mono2 text-xs text-clay-2">

@@ -41,7 +41,7 @@ describe("TripEntryScreen (first use)", () => {
     for (const label of ["From airport", "To airport", "Departure date"]) {
       expect(html).toContain(`aria-label="${label}"`);
     }
-    expect(html).toContain('placeholder="City or code"');
+    expect(html).toContain('placeholder="Airport"');
     expect(html).toContain('value="2026-05-10"');
     expect(html).toContain("disabled");
     expect(html).not.toContain("Choose different");

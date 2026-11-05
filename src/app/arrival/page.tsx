@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useFilament } from "@/lib/tca/useFilament";
 import { fmtMin } from "@/domain/circadian";
 import { arrivalHeadline, arrivalLede, arrivalRead, tripDebrief } from "@/domain/arrival";
 import { arrivalPassport } from "@/domain/arrival-passport";
@@ -42,6 +43,7 @@ function defaultDepartureDate(now: Date): string {
 }
 
 export default function ArrivalPage() {
+  const headlineRef = useFilament<HTMLHeadingElement>(true);
   const [state, setState] = useState<{
     trip: Trip | null;
     planRaw: string | null;
@@ -249,7 +251,10 @@ export default function ArrivalPage() {
         <span className="arr-kicker" data-rise="2">
           {dest.name} · {fmtMin(destClock)} · day {read.daysSinceArrival + 1} in {dest.name}
         </span>
-        <h1 data-rise="3">
+        {/* Same Filament catch as the landing hero — the journey's two
+            statements share one effect. */}
+        <h1 data-rise="3" ref={headlineRef}>
+          <span data-line style={{ display: "inline-block" }}>
           {read.projection
             ? arrivalHeadline(read, dest.name)
             : !read.promise?.coverage
@@ -257,6 +262,7 @@ export default function ArrivalPage() {
               : read.promise.coverage.residualMin <= 0
                 ? "You landed fully adjusted."
                 : `You landed ${(read.promise.coverage.residualMin / 60).toFixed(1)}h off ${dest.name} time — ${Math.round(read.promise.coverage.ratio * 100)}% of the adjustment happened before you flew.`}
+          </span>
         </h1>
         {arrivalLede(read) && (
           <p className="arr-lede" data-rise="4">{arrivalLede(read)}</p>

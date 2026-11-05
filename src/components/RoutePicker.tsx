@@ -271,7 +271,7 @@ function AirportField({
           e.stopPropagation(); // keep the page's Space/Esc shortcuts out of typing
         }}
         placeholder={
-          open ? "city or code" : value || (surface === "landing" ? "City or code" : "City or airport")
+          open ? "city or code" : value || (surface === "landing" ? "Airport" : "City or airport")
         }
         aria-label={`${label} airport`}
         role="combobox"

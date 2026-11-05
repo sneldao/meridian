@@ -15,9 +15,10 @@ describe("LandingHero (Phase 1 statement, SSR)", () => {
   test("fallback headline is one h1, word-grouped, full text in aria-label", () => {
     expect(h).toContain('aria-label="Land on their clock."');
     expect((h.match(/<h1/g) ?? []).length).toBe(1);
-    // Words are wrapped so a word never breaks letter-by-letter.
-    expect(h).toContain("lh-word");
-    expect(h).toContain("lh-char");
+    // One data-line carries the sentence for the Filament effect; the
+    // accessible label stays the full text.
+    expect(h).toContain("data-line");
+    expect(h).toContain("lh-line");
     expect(h).not.toContain("Arrive better adjusted.");
   });
 

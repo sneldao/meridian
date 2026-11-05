@@ -78,19 +78,19 @@ describe("the landing form (SSR)", () => {
 describe("the headline's motion stays honest", () => {
   const css = readFileSync(join(import.meta.dir, "..", "src", "app", "globals.css"), "utf8");
 
-  test("char rise lives inside a no-preference gate, settle token, blur kept", () => {
-    // Precise gate check: the .lh-char animation declaration must sit inside
-    // a `@media (prefers-reduced-motion: no-preference)` block, not merely
-    // appear somewhere after one.
+  test("line rise lives inside a no-preference gate, settle token, blur kept", () => {
+    // The fallback intro moved from per-char spans to the Filament WebGL
+    // effect (src/lib/tca). What stays pinned: the plain-DOM intro is one
+    // line rise, gated on no-preference, on the settle token, blur kept.
     const blocks = [...css.matchAll(/@media \(prefers-reduced-motion: no-preference\) \{([\s\S]*?)\n\}/g)];
-    const charBlocks = blocks.filter((b) => b[1].includes(".landing-hero .lh-char"));
-    expect(charBlocks.length).toBe(1);
-    expect(charBlocks[0][1]).toContain("lh-char-rise");
-    expect(charBlocks[0][1]).toContain("560ms var(--ease-settle)");
-    // The animation name appears only inside that gated block.
-    const mentions = [...css.matchAll(/\.landing-hero \.lh-char/g)].length;
-    expect(mentions).toBe(1);
+    const lineBlocks = blocks.filter((b) => b[1].includes(".landing-hero .lh-line"));
+    expect(lineBlocks.length).toBe(1);
+    expect(lineBlocks[0][1]).toContain("lh-char-rise");
+    expect(lineBlocks[0][1]).toContain("560ms var(--ease-settle)");
     expect(css).toContain("blur(6px)");
+    // The Filament contract: DOM letters mask to transparent under the
+    // WebGL canvas, never removed — layout + AT keep the real text.
+    expect(css).toContain("[data-effect='filament'].is-masked [data-line]");
   });
 
   test("the retired orbit/peek machinery stays gone", () => {

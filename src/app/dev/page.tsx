@@ -1,5 +1,7 @@
 "use client";
 
+import { notFound } from "next/navigation";
+
 // Lens workbench: the recorded run, played through the shared reducer, into
 // every lens side by side. Build and screen-record lenses here with no
 // pipeline running. Not linked from the app.
@@ -44,6 +46,7 @@ const CREW_ANSWER_SPECIMEN: CrewQuestionAnswer = {
 };
 
 export default function DevLenses() {
+  if (process.env.NODE_ENV === "production") notFound(); // internal workbench — never public
   const pb = useFixturePlayback({ autoplay: false });
   const { run } = pb;
   const days = run.trip?.days ?? [];

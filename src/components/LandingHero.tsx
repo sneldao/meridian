@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Fragment } from "react";
 import { routeGapHeadline, type RouteGapRead } from "@/domain/route-gap";
+import { useFilament } from "@/lib/tca/useFilament";
 
 /* Design reset Phase 1 — the Statement hero: one line of type, the
  * visitor's own number, quiet links. The sun, the orbit, the observers
@@ -17,7 +17,6 @@ import { routeGapHeadline, type RouteGapRead } from "@/domain/route-gap";
  * trigger a per-letter show. Reduced motion meets the fallback seated. */
 
 const FALLBACK = "Land on their clock.";
-const FALLBACK_WORDS = FALLBACK.split(" ");
 
 export function LandingHero({
   visitor,
@@ -25,25 +24,20 @@ export function LandingHero({
   visitor?: { gap: RouteGapRead; covPct: number | null } | null;
 }) {
   const resolved = visitor?.gap ? routeGapHeadline(visitor.gap) : null;
+  /* codrops Filament (src/lib/tca): the fallback headline catches letter by
+     letter, ember filament to warm white — the dawn palette as an entrance,
+     the same effect the arrival payoff lands on. The resolved route
+     headline stays plain by contract: a route being typed must never
+     trigger a per-letter show. */
+  const titleRef = useFilament<HTMLHeadingElement>(!resolved);
   return (
     <div className="landing-hero">
       {resolved ? (
         <h1 className="lh-title lh-title--resolved">{resolved}</h1>
       ) : (
-        <h1 className="lh-title" aria-label={FALLBACK}>
+        <h1 className="lh-title" aria-label={FALLBACK} ref={titleRef}>
           <span aria-hidden="true">
-            {FALLBACK_WORDS.map((word, wi) => (
-              <Fragment key={wi}>
-                <span className="lh-word">
-                  {[...word].map((ch, i) => (
-                    <span key={i} className="lh-char">
-                      {ch}
-                    </span>
-                  ))}
-                </span>
-                {wi < FALLBACK_WORDS.length - 1 ? " " : null}
-              </Fragment>
-            ))}
+            <span data-line className="lh-line">{FALLBACK}</span>
           </span>
         </h1>
       )}

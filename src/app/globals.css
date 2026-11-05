@@ -53,6 +53,8 @@
   --color-cream: #f5efe6;       /* the page surface */
   --color-cream-card: var(--m-card);  /* raised cream card */
   --color-terracotta: #d96b43;  /* the accent, and time-of-day in the rail */
+  --color-ember: #e99a6f;       /* the accent's lit face on ink surfaces (--m-accent there) */
+  --color-clay-note: #c9b8a4;   /* muted note text on clay (dark) cards */
   /* State on cream. The dark set's pass/fail are tuned for ink; on cream the
      lime reads washed out and the salmon reads pink. These are the deep
      values of the same two meanings, both >= 4.5:1 on var(--m-bg). */
@@ -90,15 +92,16 @@
   --space-3xl: 7rem;
 
   /* Motion tokens: durations and easings used by components + CSS transitions. */
+  /* Legacy ramp, aliased onto the law's named vocabulary (glide/settle/
+     drift) so the generated Tailwind utilities can't drift from it. */
   --duration-micro: 80ms;
-  --duration-fast: 150ms;
-  --duration-base: 250ms;
-  --duration-medium: 350ms;
-  --duration-slow: 500ms;
+  --duration-fast: var(--dur-glide);
+  --duration-base: var(--dur-settle);
+  --duration-medium: var(--dur-settle);
+  --duration-slow: var(--dur-drift);
 
-  --ease-smooth-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-in-out: ease-in-out;
-  --ease-bounce: cubic-bezier(0.34, 1.36, 0.64, 1);
+  --ease-smooth-out: var(--ease-glide);
+  --ease-in-out: var(--ease-drift);
 
   /* Radius scale. */
   --radius-sm: 0.5rem;
@@ -7086,11 +7089,21 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   justify-content: center;
 }
 .today-stage-inner {
+  position: relative;
+  /* The stage sun sits at z-index 1 — the instruments must paint above it,
+     or a modeled position can park the disc over the CTA (characters never
+     cover words). */
+  z-index: 2;
   display: grid;
   gap: 14px;
   justify-items: center;
   text-align: center;
   width: 100%;
+}
+@media (max-width: 640px) {
+  /* On a narrow stage the centered cluster lands where the horizon sun is.
+     Anchor the instruments high so the sun keeps the lower half. */
+  .today-stage { align-items: flex-start; padding-top: clamp(48px, 11dvh, 96px); }
 }
 .stage-chip { backdrop-filter: none; }
 .stage-next {
@@ -7115,11 +7128,6 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   margin: 6px 0 0;
   font-size: 14px;
   color: var(--m-faint);
-  animation: cue-bob 2.4s var(--ease-drift) infinite;
-}
-@keyframes cue-bob {
-  0%, 100% { translate: 0 0; }
-  50% { translate: 0 5px; }
 }
 
 @supports (animation-timeline: view()) {
@@ -8416,29 +8424,15 @@ button.sunself-wrap:focus-visible {
 }
 .lh-link--quiet { color: var(--m-muted); }
 
-/* Fallback headline arrival: each character rises, fades and unblurs on
-   the stagger step — words are wrapped so a word never breaks mid-word;
-   the delay is --wo per word plus --ci per character inside it, so no
-   inline style is needed. Reduced motion leaves the headline seated. */
-.lh-word { display: inline-block; white-space: nowrap; }
-.lh-char { display: inline-block; }
+/* Fallback headline arrival: the line rises, fades and unblurs once —
+   the no-JS / no-WebGL2 intro; when the Filament effect builds it masks
+   the DOM letters and plays its own catch. Reduced motion seats it. */
 @media (prefers-reduced-motion: no-preference) {
-  .landing-hero .lh-char {
+  .landing-hero .lh-line {
+    display: inline-block;
     animation: lh-char-rise 560ms var(--ease-settle) both;
-    animation-delay: calc(var(--stagger-step) * var(--ci, 0) + var(--wo, 0ms));
   }
 }
-.lh-word:nth-of-type(2) { --wo: calc(4 * var(--stagger-step)); }
-.lh-word:nth-of-type(3) { --wo: calc(6 * var(--stagger-step)); }
-.lh-word:nth-of-type(4) { --wo: calc(11 * var(--stagger-step)); }
-.lh-word .lh-char:nth-child(1) { --ci: 0; }
-.lh-word .lh-char:nth-child(2) { --ci: 1; }
-.lh-word .lh-char:nth-child(3) { --ci: 2; }
-.lh-word .lh-char:nth-child(4) { --ci: 3; }
-.lh-word .lh-char:nth-child(5) { --ci: 4; }
-.lh-word .lh-char:nth-child(6) { --ci: 5; }
-.lh-word .lh-char:nth-child(7) { --ci: 6; }
-.lh-word .lh-char:nth-child(8) { --ci: 7; }
 @keyframes lh-char-rise {
   from { transform: translateY(0.45em); opacity: 0; filter: blur(6px); }
   to { transform: none; opacity: 1; filter: blur(0); }
@@ -8737,3 +8731,58 @@ button.sunself-wrap:focus-visible {
     }
   }
 }
+
+/* ---- shared plan card (recipient-facing /plan/[id]) --------------------
+ * The one page outsiders see — it runs on the token law like every other
+ * surface: clay dark cards, terracotta kicker, mono for measurements, no
+ * text under the 12px body floor, no interactive text under 13px. */
+.share { min-height: 100dvh; padding: clamp(24px, 5vw, 48px) 20px; }
+.share-inner { max-width: 560px; margin: 0 auto; }
+.share-kicker {
+  font-size: var(--text-2xs); font-weight: 700; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--color-terracotta);
+}
+.share-title {
+  font-family: var(--font-display); font-size: var(--text-2xl); font-weight: 600;
+  letter-spacing: -0.02em; margin: 10px 0 4px; color: var(--m-ink);
+}
+.share-summary { font-size: var(--text-sm); color: var(--m-muted); margin: 0 0 20px; }
+.share-dark {
+  background: var(--color-clay); color: var(--m-card);
+  border-radius: 16px; padding: 16px 18px; margin-bottom: 16px;
+}
+.share-dark-kicker {
+  font-size: var(--text-2xs); font-weight: 700; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--color-ember);
+}
+.share-dark-head { font-size: var(--text-lg); font-weight: 700; margin-top: 6px; }
+.share-dark-sub { font-size: var(--text-sm); margin-top: 4px; }
+.share-dark-note { font-size: var(--text-xs); color: var(--color-clay-note); margin-top: 4px; }
+.share-card {
+  background: var(--m-card); border: 1px solid var(--m-border);
+  border-radius: 16px; padding: 16px;
+}
+.share-day {
+  display: flex; justify-content: space-between; gap: 12px;
+  font-size: var(--text-sm); padding: 8px 0;
+  border-top: 1px solid var(--m-border-2);
+}
+.share-day:first-child { border-top: 0; }
+.share-day span { font-family: var(--font-mono2); color: var(--m-muted); font-size: var(--text-xs); }
+.share-meta { font-size: var(--text-xs); color: var(--m-muted); margin-top: 10px; font-family: var(--font-mono2); }
+.share-cta {
+  display: inline-block; margin-top: 20px; background: var(--color-terracotta);
+  color: var(--m-on-accent); border-radius: 999px; padding: 10px 22px;
+  font-size: var(--text-sm); font-weight: 700; text-decoration: none;
+}
+.share-foot { font-size: var(--text-2xs); color: var(--m-faint); margin-top: 16px; }
+
+/* ---- codrops Filament (src/lib/tca, MIT port) --------------------------
+ * The WebGL canvas sits over the DOM text; while masked, the DOM letters
+ * keep layout + a11y and stay unseen. */
+[data-effect='filament'] { position: relative; }
+[data-effect='filament'].is-masked [data-line] { color: transparent; }
+[data-effect='filament'] .gl-text {
+  position: absolute; pointer-events: none; display: none;
+}
+[data-effect='filament'] .gl-text.is-visible { display: block; }

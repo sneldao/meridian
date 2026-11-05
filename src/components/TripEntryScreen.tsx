@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowRight } from "lucide-react";
+import { useMagnetic } from "@/lib/motion/magnetic";
 import { RoutePicker } from "@/components/RoutePicker";
 import { isValidHomeRoute, type HomeRoute } from "@/lib/home-entry";
 import { ADHERENCE_PROFILE, buildTrip, GARMIN_BASELINE } from "@/domain/fixtures";
@@ -57,6 +58,10 @@ export function TripEntryScreen({ initialDate, onContinue, onExploreExample, ini
   const [draft, setDraft] = useState<HomeRoute>(
     initialRoute && isValidHomeRoute(initialRoute) ? initialRoute : { origin: "", dest: "", date: initialDate },
   );
+  /* museum-of-motion magnetic: the primary CTA leans a few px toward the
+     pointer (hover:fine only — touch and reduced motion get the plain
+     button). */
+  const ctaRef = useMagnetic<HTMLButtonElement>({ strength: 0.22 });
   // Price disclosed at intent, read live from the contract — a stale number
   // in copy is worse than none, so the line only renders once the read lands.
   const [priceUsdc, setPriceUsdc] = useState<string | null>(null);
@@ -183,8 +188,8 @@ export function TripEntryScreen({ initialDate, onContinue, onExploreExample, ini
               </button>
             )}
           </div>
-          <button type="submit" className="entry-cta" disabled={!valid}>
-            See my trip plan <ArrowRight size={18} aria-hidden="true" />
+          <button type="submit" className="entry-cta" disabled={!valid} ref={ctaRef}>
+            <span data-magnetic-inner>See my trip plan</span> <ArrowRight size={18} aria-hidden="true" />
           </button>
           {/* Live solver preview — computed as the route resolves. It is a
               model preview of coverage, never a promise of alertness. */}

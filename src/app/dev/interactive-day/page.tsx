@@ -1,5 +1,7 @@
 "use client";
 
+import { notFound } from "next/navigation";
+
 import { useId, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { InteractiveDayEditor } from "@/components/InteractiveDayEditor";
@@ -57,6 +59,7 @@ function SegButton({
 }
 
 export default function DevInteractiveDay() {
+  if (process.env.NODE_ENV === "production") notFound(); // internal workbench — never public
   const [dayIndex, setDayIndex] = useState(demo.event.dayIndex);
   const [version, setVersion] = useState(store.read().version);
   const [mode, setMode] = useState<"settle" | "momentum" | "both">("settle");

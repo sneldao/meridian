@@ -1,5 +1,7 @@
 "use client";
 
+import { notFound } from "next/navigation";
+
 import { useRef } from "react";
 import {
   motion,
@@ -72,6 +74,7 @@ function DayCard({ label, note, progress, index }: {
 }
 
 export default function LayoutSwitchSpike() {
+  if (process.env.NODE_ENV === "production") notFound(); // internal workbench — never public
   const reduced = useReducedMotion();
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end end"] });

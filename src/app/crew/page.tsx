@@ -554,7 +554,7 @@ export default function Home() {
               {providerLabel}{providerFallback ? " · fallback" : ""}
             </span>
           )}
-          <MoreNav className="hidden items-center justify-center gap-2 rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-mist transition-all hover:border-mist hover:text-paper sm:inline-flex" />
+          <MoreNav className="hidden items-center justify-center gap-2 rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-mist transition-colors hover:border-mist hover:text-paper sm:inline-flex" />
         </div>
       </header>
 

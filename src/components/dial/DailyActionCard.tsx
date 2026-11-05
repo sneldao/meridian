@@ -17,6 +17,7 @@
 //     "checked".
 
 import { useState } from "react";
+import { Wine } from "lucide-react";
 import { getCitationsForKind, getEvidenceForKind, type EpistemicTag } from "@/domain/evidence";
 import { CITATION_CATALOGUE } from "@/domain/citations";
 import type { Citation, InterventionKind } from "@/domain/types";
@@ -141,7 +142,7 @@ export function DailyActionCard({
           aria-pressed={alcoholActive}
           onClick={onToggleAlcohol}
         >
-          {alcoholActive ? "🍷 Drinking — undo" : "🍷 I'm drinking"}
+          <><Wine size={14} aria-hidden="true" /> {alcoholActive ? "Drinking — undo" : "I’m drinking"}</>
         </button>
         <button
           type="button"

@@ -21,6 +21,7 @@ import { performanceMoment } from "@/domain/trip-performance";
 import { InteractiveDay } from "@/components/InteractiveDay";
 import { InteractiveDayEditor } from "@/components/InteractiveDayEditor";
 import { localPlanStore } from "@/lib/plan-store";
+import { useMagnetic } from "@/lib/motion/magnetic";
 import { buildDayScene } from "@/domain/day-scene";
 import { SunSelf } from "@/components/SunSelf";
 import { sunSelfRead } from "@/domain/sun-self";
@@ -347,6 +348,8 @@ export function NudgeFeedScreen({
 }: NudgeFeedScreenProps) {
   const effectiveAdherence = adherence ?? ADHERENCE_PROFILE;
   const { completedIds, skippedIds, pendingMarks, ready: actionsReady } = actions;
+  /* museum-of-motion magnetic on the run's door (hover:fine only). */
+  const planCtaRef = useMagnetic<HTMLButtonElement>({ strength: 0.22 });
   const [expandedWhyId, setExpandedWhyId] = useState<string | null>(null);
   const [showMissed, setShowMissed] = useState(false);
   const [heroWhyId, setHeroWhyId] = useState<string | null>(null);
@@ -1500,6 +1503,7 @@ export function NudgeFeedScreen({
             {!(simple && hasPlan) && (
               <button
                 type="button"
+                ref={planCtaRef}
                 className={hasPlan ? "p2" : "p1"}
                 onClick={onStartCrewSync}
                 disabled={phase === "running"}
