@@ -2489,6 +2489,28 @@ export default function Home() {
         activeAgent={run.activeAgent}
         toolCalls={run.toolCalls}
         lockedDays={run.locked.size}
+        phase={run.phase}
+        streamError={streamError}
+        /* The jobs' no-run evidence — the same solver preview, gate scan and
+           crate match the stage and the crew's account already computed. */
+        facts={trip ? {
+          trip,
+          solved: stagePreview,
+          locked: [...effectiveLocked.values()],
+          calendar: rawCalendar,
+          adherence: data?.adherence ?? ADHERENCE_PROFILE,
+          baseline,
+          favorites: tasteProfile.favorites,
+          itinerary: effectiveItinerary,
+        } : null}
+        onRetry={
+          entry?.mode === "trip" &&
+          run.phase !== "running" &&
+          tasteProfile.ready &&
+          isValidHomeRoute({ origin, dest, date: departureDate })
+            ? startShift
+            : undefined
+        }
       />}
 
       <DisclosureSheet

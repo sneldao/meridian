@@ -5,8 +5,10 @@ import { X, Sparkles } from "lucide-react";
 import { CREW } from "@/agents/crew";
 import type { AgentId, CrewEvent } from "@/domain/types";
 import { CrewFeed, type LogEntry } from "@/components/CrewFeed";
+import { CrewJobs } from "@/components/CrewJobs";
 import { Ledger } from "@/components/lenses/Ledger";
 import { AgentChip } from "@/components/ui/AgentChip";
+import { buildCrewJobFacts, deriveCrewJobs, type CrewJobFactsInput } from "@/lib/crew-jobs";
 
 interface AgentDrawerProps {
   open: boolean;
@@ -17,6 +19,16 @@ interface AgentDrawerProps {
   activeAgent?: AgentId;
   toolCalls: number;
   lockedDays: number;
+  /** The run's own phase — idle/running/done — for the jobs' status law. */
+  phase: "idle" | "running" | "done";
+  /** A dead run's own words — the failure the stream left on the page. */
+  streamError?: string | null;
+  /** Solver/gate/crate facts the page already computed (plan preview, saved
+   *  itinerary) — the jobs' evidence when no crew shift has run. */
+  facts?: CrewJobFactsInput | null;
+  /** The real retry — re-running the crew on this trip. Offered only where
+   *  a retry genuinely exists. */
+  onRetry?: () => void;
 }
 
 export function AgentDrawer({
@@ -28,12 +40,30 @@ export function AgentDrawer({
   activeAgent,
   toolCalls,
   lockedDays,
+  phase,
+  streamError,
+  facts,
+  onRetry,
 }: AgentDrawerProps) {
-  const [tab, setTab] = useState<"feed" | "ledger">("feed");
+  const [tab, setTab] = useState<"jobs" | "feed" | "ledger">("jobs");
 
   if (!open) return null;
 
   const activeCrew = activeAgent ? CREW[activeAgent] : undefined;
+
+  /* Who held the baton when the stream died: the feed's own log survives
+   * the reducer reset that cleared `events`, so the failed job can be named
+   * rather than the error left unattributed. */
+  const lastActiveAgent = [...entries].reverse().find((e) => e.kind === "agent")?.agent;
+  const { jobs, notes } = deriveCrewJobs({
+    phase,
+    events,
+    activeAgent,
+    lastActiveAgent,
+    runError: streamError,
+    facts: facts ? buildCrewJobFacts(facts) : null,
+    canRetry: !!onRetry,
+  });
 
   return (
     <div
@@ -93,6 +123,15 @@ export function AgentDrawer({
           <div className="inline-flex rounded-lg border border-line bg-ink-2 p-0.5 text-xs">
             <button
               type="button"
+              onClick={() => setTab("jobs")}
+              className={`rounded-md px-2.5 py-1 font-semibold transition-colors ${
+                tab === "jobs" ? "bg-paper text-ink" : "text-mist hover:text-paper"
+              }`}
+            >
+              Jobs
+            </button>
+            <button
+              type="button"
               onClick={() => setTab("feed")}
               className={`rounded-md px-2.5 py-1 font-semibold transition-colors ${
                 tab === "feed" ? "bg-paper text-ink" : "text-mist hover:text-paper"
@@ -114,7 +153,9 @@ export function AgentDrawer({
 
         {/* Body */}
         <div className="min-h-0 flex-1 overflow-hidden p-4">
-          {tab === "feed" ? (
+          {tab === "jobs" ? (
+            <CrewJobs jobs={jobs} notes={notes} onRetry={onRetry} />
+          ) : tab === "feed" ? (
             <CrewFeed entries={entries} running={running} />
           ) : (
             <Ledger events={events} />

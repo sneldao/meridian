@@ -61,7 +61,7 @@ const CHROME = [
     "TimezoneClocks", "PlanReview", "ArrivalPassportCard", "StageSun", "DemoBeats",
     "CrewPerformance", "LandingCrewStrip",
     "CrewAvatar", "InteractiveDay", "InteractiveDayEditor", "LandingHero",
-    "LandingDepth",
+    "LandingDepth", "CrewJobs",
   ].map((n) => `src/components/${n}.tsx`),
   "src/components/ui/AgentCard.tsx",
   "src/components/ui/AgentChip.tsx",
@@ -125,6 +125,9 @@ const MOTION_DEBT: Record<string, number> = {
   "transition: width var(--dur-settle) var(--ease-settle);": 3,
   "transition: max-height var(--dur-settle) var(--ease-settle), opacity var(--dur-glide) var(--ease-glide), padding var(--dur-settle) var(--ease-settle);": 1,
   "transition: grid-template-rows var(--dur-settle) var(--ease-settle);": 1,
+  // The TaskRows detail fold (agent-native step 5) — the same 0fr→1fr +
+  // opacity pattern the .tl-expander fold already pays for.
+  "transition: grid-template-rows var(--dur-settle) var(--ease-settle), opacity var(--dur-glide) var(--ease-glide);": 1,
   "width 0.3s ease-out": 1,
 };
 

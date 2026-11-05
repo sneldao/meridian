@@ -3616,6 +3616,59 @@ html[data-theme="night"] .skel::after {
   .crew-account-toggle svg { transition: none; }
 }
 
+/* TaskRows — the crew's jobs as live status rows in the AgentDrawer
+   (agent-native step 5). Rows enter staggered fade-up 80ms apart on drawer
+   open (nth-child delays, no JS); the detail fold is the 0fr→1fr grid +
+   opacity pattern. Transform/opacity only; reduced motion settles every row
+   instantly and snaps the fold — expand/collapse still works. */
+.crew-job-item {
+  animation: crew-fade-up 0.5s var(--ease-settle) both;
+}
+.crew-job-item:nth-child(2) { animation-delay: 0.08s; }
+.crew-job-item:nth-child(3) { animation-delay: 0.16s; }
+.crew-job-item:nth-child(4) { animation-delay: 0.24s; }
+.crew-job-item:nth-child(5) { animation-delay: 0.32s; }
+.crew-job-item:nth-child(6) { animation-delay: 0.4s; }
+.crew-job-item:nth-child(n+7) { animation-delay: 0.48s; }
+
+.crew-job-detail {
+  display: grid;
+  grid-template-rows: 0fr;
+}
+.crew-job-detail > div {
+  overflow: hidden;
+  min-height: 0;
+}
+.crew-job-detail.open {
+  grid-template-rows: 1fr;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .crew-job-detail {
+    opacity: 0;
+    transition: grid-template-rows var(--dur-settle) var(--ease-settle), opacity var(--dur-glide) var(--ease-glide);
+  }
+  .crew-job-detail.open {
+    opacity: 1;
+  }
+}
+.crew-job-chev {
+  transition: transform var(--dur-glide) var(--ease-glide);
+}
+.crew-job-chev.open {
+  transform: rotate(180deg);
+}
+@keyframes crew-job-spin {
+  to { transform: rotate(360deg); }
+}
+.crew-job-run {
+  animation: crew-job-spin 0.9s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .crew-job-item { animation: none; }
+  .crew-job-chev { transition: none; }
+  .crew-job-run { animation: none; }
+}
+
 /* Crew faces — the mood channel morphs on transform + opacity only. */
 .crew-face { transition: transform 0.35s ease, opacity 0.35s ease; }
 .crew-eyes { transition: transform 0.3s ease; }
