@@ -9,6 +9,8 @@ import type { CrewEvent } from "@/domain/types";
 import { meetingReadiness } from "@/domain/readiness";
 import { fmtMin } from "@/domain/circadian";
 import { TEAM_TRAVELLERS, teamTrip } from "@/domain/team";
+import { sunSelfRead } from "@/domain/sun-self";
+import { SunSelf } from "@/components/SunSelf";
 import { calendarWithMoves, initialRunState, reduceRun, type RunState } from "@/state/run";
 
 // The team view: a travel manager's screen. Twelve travellers run their own
@@ -85,7 +87,7 @@ export default function TeamPage() {
             ← run a shift
           </Link>
           <MoreNav className="ml-3 hidden text-xs text-mist hover:text-paper md:inline" />
-          <h1 className="mt-2 font-mono2 text-2xl font-medium tracking-[0.22em]">TEAM · 12 CREWS</h1>
+          <h1 className="display-2 mt-2 text-2xl">Twelve crews fly ahead.</h1>
           <p className="mt-1 text-xs text-mist">
             {streaming
               ? runs.size === 0
@@ -131,14 +133,35 @@ export default function TeamPage() {
                   ? { text: "READY", cls: "bg-pass/10 text-pass" }
                   : { text: r.phase === "done" ? "DONE" : "PLANNING", cls: "bg-line text-mist" };
           const pct = Math.round(r.sunProgress * 100);
+          // The traveller's own face on their card — the same sun the stage
+          // and the passport show, lit by this run's real banked shift.
+          const required = Math.abs(trip.requiredShiftMin);
+          const delivered = Math.round(required * Math.min(1, Math.max(0, r.sunProgress)));
+          const sun = sunSelfRead({
+            owedMin: required - delivered,
+            deliveredMin: delivered,
+            requiredMin: required,
+            direction: trip.direction,
+            daysLocked: r.locked.size,
+          });
+          const accent = risk
+            ? "border-l-fail"
+            : readiness.length
+              ? "border-l-pass"
+              : r.phase === "idle"
+                ? "border-l-line"
+                : "border-l-mist";
           return (
-            <Card key={t.id} className="p-4">
+            <Card key={t.id} className={`border-l-2 p-4 ${accent}`}>
               <div className="flex items-start justify-between gap-2">
-                <div>
-                  <div className="text-xs font-medium">{t.name}</div>
-                  <div className="mt-0.5 text-xs text-mist">
-                    {trip.origin.code} <span className="text-sun-dest">→</span> {trip.destination.code} ·{" "}
-                    {trip.destination.name}
+                <div className="flex min-w-0 items-start gap-2.5">
+                  <SunSelf read={sun} size={40} tone="ink" />
+                  <div className="min-w-0">
+                    <div className="text-xs font-medium">{t.name}</div>
+                    <div className="mt-0.5 text-xs text-mist">
+                      {trip.origin.code} <span className="text-sun-dest">→</span> {trip.destination.code} ·{" "}
+                      {trip.destination.name}
+                    </div>
                   </div>
                 </div>
                 <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${badge.cls}`}>{badge.text}</span>

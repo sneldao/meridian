@@ -178,9 +178,9 @@ function DayStepper({
               <div
                 aria-hidden="true"
                 onClick={() => setDayListOpen(false)}
-                style={{ position: "fixed", inset: 0, zIndex: 29 }}
+                style={{ position: "fixed", inset: 0, zIndex: "calc(var(--z-popover) - 1)" }}
               />
-              <div className="card" style={{ position: "absolute", zIndex: 30, top: "calc(100% + 4px)", left: 0, right: 0, padding: 6, display: "flex", flexDirection: "column", gap: 2 }}>
+              <div className="card" style={{ position: "absolute", zIndex: "var(--z-popover)", top: "calc(100% + 4px)", left: 0, right: 0, padding: 6, display: "flex", flexDirection: "column", gap: 2 }}>
                 {days.map((d) => (
                   <button
                     key={d.dayIndex}

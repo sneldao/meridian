@@ -32,7 +32,7 @@ export function AnchoredPopover({ anchorRef, align = "right", children }: Props)
   const style: CSSProperties = {
     position: "fixed",
     top: rect.bottom + 8,
-    zIndex: 50,
+    zIndex: "var(--z-nav)",
     ...(align === "right"
       ? { right: Math.max(8, window.innerWidth - rect.right) }
       : { left: rect.left }),

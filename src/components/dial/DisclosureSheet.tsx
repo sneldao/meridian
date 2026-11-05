@@ -90,7 +90,7 @@ export function DisclosureSheet({ open, onClose, panelClassName }: DisclosureShe
         alignItems: "center",
         justifyContent: "center",
         padding: 16,
-        zIndex: 61,
+        zIndex: "var(--z-above-sheet)",
       }}
     >
       <div

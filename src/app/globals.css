@@ -178,7 +178,7 @@ body {
   /* Halved: the beam is atmosphere for the landing, not a tint tax on the
      working surface the feed is read through. */
   background: radial-gradient(ellipse at 30% 20%, rgba(157, 184, 255, 0.07), rgba(255, 196, 107, 0.04) 45%, transparent 70%);
-  z-index: 0;
+  z-index: var(--z-flat);
   pointer-events: none;
 }
 
@@ -216,7 +216,7 @@ body {
 }
 .in {
   position: relative;
-  z-index: 1;
+  z-index: var(--z-raised);
   padding: 0 32px;
 }
 .rise {
@@ -393,7 +393,7 @@ a[href]:active {
   border-radius: 10px;
   padding: 8px;
   box-shadow: 0 14px 34px rgba(30, 27, 24, 0.18);
-  z-index: 20;
+  z-index: var(--z-menu);
 }
 .menu div,
 .menu a,
@@ -1018,7 +1018,7 @@ a[href]:active {
 .dawnIn {
   position: fixed;
   inset: 0;
-  z-index: 60;
+  z-index: var(--z-sheet);
   pointer-events: none;
   background:
     radial-gradient(120% 90% at 78% 74%, rgba(217, 107, 67, 0.55), transparent 55%),
@@ -1623,6 +1623,23 @@ a[href]:active {
   --stage-sun-x: 50%;
   --stage-origin: rgba(157, 184, 255, 0.10);
   --stage-star-o: 0.55;
+  /* The z ladder — a surface's layer is a fact you can read. Bands are
+     named, not the numbers: raise a band and every member moves together. */
+  --z-below: -1;          /* effects behind their own surface's paint */
+  --z-flat: 0;            /* layered content at surface level */
+  --z-raised: 1;          /* content above a surface's sky or depth */
+  --z-instruments: 2;     /* instruments held above the sky */
+  --z-menu: 20;           /* corner chrome */
+  --z-popover: 30;        /* anchored dropdowns above chrome */
+  --z-boot: 40;           /* the boot veil */
+  --z-nav: 50;            /* the tab bar */
+  --z-sweep: 55;          /* the dawn reveal */
+  --z-sheet-backdrop: 59;
+  --z-sheet: 60;          /* sheets and dialogs */
+  --z-above-sheet: 61;    /* the disclosure rides over a sheet */
+  --z-floating: 90;       /* floating actions */
+  --z-status: 100;        /* status pills (offline badge) */
+  --z-light: 210;         /* the light pass — topmost, aria-hidden */
   --glow-ember: 0 0 28px rgba(255, 196, 107, 0.22);
   --glow-accent: 0 12px 32px -10px rgba(217, 107, 67, 0.5);
   --shadow-stage: 0 32px 80px -32px rgba(8, 10, 18, 0.55);
@@ -1953,7 +1970,7 @@ textarea:focus-visible,
 .sheet-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 60;
+  z-index: var(--z-sheet);
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -3005,7 +3022,7 @@ html[data-theme="night"] .skel::after {
 .boot-overlay {
   position: fixed;
   inset: 0;
-  z-index: 40;
+  z-index: var(--z-boot);
   background: var(--m-bg);
   pointer-events: none;
   animation: boot-out 0.5s ease 0.15s forwards;
@@ -3103,7 +3120,7 @@ select:focus-visible {
     bottom: 24px;
     left: 50%;
     transform: translateX(-50%);
-    z-index: 90;
+    z-index: var(--z-floating);
     display: flex;
     align-items: center;
     gap: 12px;
@@ -3334,7 +3351,7 @@ select:focus-visible {
   right: 0;
   top: -6vh;
   height: 6vh;
-  z-index: 55;
+  z-index: var(--z-sweep);
   pointer-events: none;
   background: linear-gradient(
     180deg,
@@ -3647,7 +3664,7 @@ select:focus-visible {
    an underline, not a filled pill (design reset Phase 0). Transform only;
    reduced motion snaps it into place. */
 .bottom-nav { position: relative; }
-.bottom-nav > .bottom-nav-item { position: relative; z-index: 1; }
+.bottom-nav > .bottom-nav-item { position: relative; z-index: var(--z-raised); }
 .bottom-nav-pill {
   position: absolute;
   top: 0;
@@ -4000,7 +4017,7 @@ select:focus-visible {
 .light-sweep {
   position: fixed;
   inset: 0;
-  z-index: 210;
+  z-index: var(--z-light);
   pointer-events: none;
   overflow: hidden;
 }
@@ -4517,7 +4534,7 @@ html[data-theme="night"] {
 .setup {
   position: fixed;
   inset: 0;
-  z-index: 60;
+  z-index: var(--z-sheet);
   background: var(--m-bg);
   color: var(--m-text);
   overflow-y: auto;
@@ -4633,7 +4650,7 @@ html[data-theme="night"] {
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 50;
+    z-index: var(--z-nav);
     display: flex;
     justify-content: space-around;
     align-items: center;
@@ -4673,7 +4690,7 @@ html[data-theme="night"] {
 .more-sheet-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 59;
+  z-index: var(--z-sheet-backdrop);
   background: color-mix(in srgb, var(--m-ink) 30%, transparent);
 }
 .more-sheet {
@@ -4681,7 +4698,7 @@ html[data-theme="night"] {
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 60;
+  z-index: var(--z-sheet);
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -6473,7 +6490,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   top: 12px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 100;
+  z-index: var(--z-status);
   padding: 8px 14px;
   border-radius: 6px;
   background: var(--color-clay, #1e1b18);
@@ -6615,7 +6632,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   --m-accent: #e99a6f;
   color: var(--m-text);
 }
-.demo-root .stage-sun { z-index: 0; }
+.demo-root .stage-sun { z-index: var(--z-flat); }
 /* On small screens the moment-positioned sun can cross the crew and plan
    rows. On every beat after the stakes it docks in the head region at a
    reduced scale instead — the words keep the stage (round-31: characters
@@ -6639,7 +6656,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 }
 .demo-root .demo-stage, .demo-root .demo-head, .demo-root .demo-foot, .demo-root .demo-footnote {
   position: relative;
-  z-index: 1;
+  z-index: var(--z-raised);
 }
 
 /* The night stage's depth — generated star planes and terrain silhouettes
@@ -6651,7 +6668,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .demo-depth {
   position: fixed;
   inset: 0;
-  z-index: 0;
+  z-index: var(--z-flat);
   overflow: hidden;
   pointer-events: none;
 }
@@ -7114,7 +7131,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   /* The stage sun sits at z-index 1 — the instruments must paint above it,
      or a modeled position can park the disc over the CTA (characters never
      cover words). */
-  z-index: 2;
+  z-index: var(--z-instruments);
   display: grid;
   gap: 14px;
   justify-items: center;
@@ -7286,7 +7303,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   /* sit on the horizon band: half-risen, where a sun belongs — the offset
      tracks --stage-sun-size so the centre stays 8px above the horizon. */
   bottom: calc(var(--stage-horizon-h, 26%) - var(--stage-sun-size) / 2 + 8px);
-  z-index: 1;
+  z-index: var(--z-raised);
   pointer-events: none;
 }
 /* The stage sun's anamorphic streak — a painted highlight thrown along the
@@ -7296,7 +7313,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   position: absolute;
   left: 50%;
   top: 50%;
-  z-index: -1;
+  z-index: var(--z-below);
   width: 340%;
   height: 30%;
   transform: translate(-50%, -50%);
@@ -7335,7 +7352,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   min-width: 96px;
   aspect-ratio: 1;
   translate: -50% -50%;
-  z-index: 1;
+  z-index: var(--z-raised);
   pointer-events: none;
 }
 .stage-sun-disc {
@@ -8111,7 +8128,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   border-style: solid;
   border-width: 2px;
   font-weight: 500;
-  z-index: 2;
+  z-index: var(--z-instruments);
   touch-action: none;
   cursor: grab;
   transition: --w-l var(--dur-glide) var(--ease-glide);
@@ -8680,7 +8697,7 @@ button.sunself-wrap:focus-visible {
 .landing-depth {
   position: fixed;
   inset: 0;
-  z-index: -1;
+  z-index: var(--z-below);
   overflow: hidden;
   pointer-events: none;
 }

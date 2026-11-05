@@ -225,6 +225,9 @@ function AirportField({
   const cityId = useId();
   const current = findAirport(value);
   const results = useMemo(() => searchAirports(query, 8), [query]);
+  // The list opens for matches — and stays open, honestly, when a real
+  // query matched nothing, so "no airport" is an answer, not a vanishing.
+  const showList = open && (results.length > 0 || query.trim() !== "");
 
   useEffect(() => {
     const close = (e: MouseEvent) => {
@@ -275,8 +278,8 @@ function AirportField({
         }
         aria-label={`${label} airport`}
         role="combobox"
-        aria-expanded={open && results.length > 0}
-        aria-controls={open && results.length > 0 ? listId : undefined}
+        aria-expanded={showList}
+        aria-controls={showList ? listId : undefined}
         aria-activedescendant={open && results.length > 0 && results[hi] ? `${listId}-opt-${hi}` : undefined}
         aria-autocomplete="list"
         aria-describedby={surface === "landing" && current ? cityId : undefined}
@@ -291,13 +294,22 @@ function AirportField({
           {current?.name ?? "\u00A0"}
         </span>
       )}
-      {open && results.length > 0 && (
+      {showList && (
         <ul
           role="listbox"
           id={listId}
           className="rp-listbox absolute top-full left-0 z-50 mt-2 w-72 overflow-hidden rounded-xl border border-line bg-ink-2 shadow-xl"
         >
-          {results.map((a, i) => (
+          {results.length === 0 ? (
+            <li
+              role="option"
+              aria-disabled="true"
+              aria-selected={false}
+              className="cursor-default px-3 py-2 text-xs text-mist normal-case"
+            >
+              No airport matches &#8220;{query.trim()}&#8221; — try a city or a code.
+            </li>
+          ) : results.map((a, i) => (
             <li
               key={a.code}
               id={`${listId}-opt-${i}`}
