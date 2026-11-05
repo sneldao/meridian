@@ -48,3 +48,7 @@ artifacts/design-review/
 
 # Local prod-capture script for the external qloo entry (videos land outside this repo).
 capture.mjs
+
+# One-off review/measure scratch scripts — evidence of a session, not source.
+*.tmp.mjs
+.tmp-*.mjs

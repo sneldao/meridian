@@ -460,13 +460,27 @@ sub-13px declarations remain outside the stage), and the cream-flow ink
 outliers (performance brief, ask card) that whiplash the scroll — both named
 in 3b.2/3b.1 territory. Baselines dispatched at exit.
 
+Follow-through landed the same day, on the landing itself (the surface every
+visitor meets before the stage): the floor widened to the nav labels, the
+privacy line and the everyday chips/streak, and the entry eyebrow came up to
+13px — the law this sheet keeps, applied to the door. Two invented claims
+were struck from the everyday rhythm (a sleep-midpoint drift the app never
+measures; a streak emoji in place of a count it can prove), and the landing's
+scroll reveals became a rise that never fades — a faded section is invisible
+in a full-page capture, in print, and on the frame already on screen, so
+`land-rise` rides translate alone. The destinations, unreachable from a
+wide-screen landing with no tab bar, moved into its menu; the tab bar itself
+steps aside on the door, where a highlighted "Today" would be a claim the
+page cannot make. Diego's crate now carries its Qloo entity ids so the live
+lookup, once keyed, resolves the very favourites the story shows.
+
 #### 3b.1 Today joins the stage
 
 - `NudgeFeedScreen.tsx` (2209 lines) and `TodayStage.tsx`: default theme
   becomes night; `auto` keeps flipping to cream *only* when the destination
   sun is up (`src/domain/theme.ts` unchanged — it is the one place where
   cream is a meaning). Cards → hairline cells on `--color-ink-2`.
-- `BottomNav.tsx`: 56px, ink, three labels in 12px mono uppercase, active =
+- `BottomNav.tsx`: 56px, ink, three labels in 13px mono uppercase, active =
   2px `--color-sun-dest` top rule.
 
 #### 3b.2 `/history`, `/review`, `/outcome`, `/shift`, `/team`

@@ -237,6 +237,12 @@ body {
   font: inherit;
   padding: 0;
   cursor: pointer;
+  /* The wordmark is a button (it scrolls to the guide) — it needs a
+     finger-sized target, not a 30px line of type. The padding is taken
+     back out below so the header's rhythm does not move. */
+  min-height: 44px;
+  padding-block: 9px;
+  margin-block: -9px;
 }
 .brand b {
   font-size: 16px;
@@ -2811,8 +2817,11 @@ html[data-theme="night"] {
   --m-card-2: #171d2e;
   --m-border: #26304a;
   --m-border-2: #1c2436;
-  /* 3.3→4.9:1 on the night background: the old faint vanished at 11px. */
-  --m-faint: #75809a;
+  /* 3.3→4.9:1 on the night background: the old faint vanished at 11px.
+     Raised again to #7c88a4 — on the ink *card* (#121726) the old value
+     measured 4.51:1, a hair over the 4.5 floor with no margin; this one
+     measures 5.03:1 on the card and 5.43:1 on the ink ground. */
+  --m-faint: #7c88a4;
   --m-text: #F5EFE6;
   --m-ink: #F5EFE6;
   --m-muted: #a89a8c;
@@ -4620,7 +4629,9 @@ html[data-theme="night"] {
     gap: 3px;
     padding: 6px 4px;
     border-radius: 6px;
-    font-size: 11px;
+    /* 11px was under the 13px readability floor — the nav labels are
+       informative text, not chrome. */
+    font-size: 13px;
     font-weight: 500;
     color: var(--m-muted);
     text-decoration: none;
@@ -4961,7 +4972,9 @@ html[data-theme="night"] .more-sheet-item:hover { background: var(--color-ink-3,
 }
 .entry-intro { min-width: 0; }
 .entry-eyebrow {
-  font-size: 11px;
+  /* The floor is 13px for anything informative — the eyebrow is a
+     label, not decoration; 12px was one step short of the law. */
+  font-size: 13px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   font-weight: 500;
@@ -5226,7 +5239,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   outline-offset: 2px;
 }
 .entry-privacy {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--m-muted);
   margin: var(--space-sm) 0 0;
 }
@@ -6486,22 +6499,31 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   margin: 6px 0;
 }
 
+/* The everyday anchors are a landing section, not a widget dropped onto
+   the page: the same section rhythm as the sample journeys above it — a
+   hairline rule, a display heading, quiet chips. The card chrome it used
+   to carry (a boxed panel on a field of ink) made it read as a different
+   app entirely. */
 .everyday-rhythm {
-  padding: 16px;
-  margin: 12px 0;
-  border-radius: 10px;
-  background: var(--m-card, #fff);
-  border: 1px solid var(--m-border, #ddd);
+  margin-top: 32px;
+  padding-top: 32px;
+  border-top: 1px solid var(--m-border);
 }
-.everyday-title { font-size: 16px; font-weight: 500; margin: 0 0 4px; }
-.everyday-sub { font-size: 12px; color: var(--m-muted); margin: 0 0 12px; }
+.everyday-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.7rem, 4vw, 2.4rem);
+  font-weight: 550;
+  line-height: 1.15;
+  margin: 8px 0 10px;
+}
+.everyday-sub { font-size: 14px; color: var(--m-muted); margin: 0 0 16px; }
 .everyday-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .everyday-chip {
   padding: 8px 12px;
   border-radius: 6px;
-  border: 1px solid var(--m-border, #ddd);
+  border: 1px solid var(--m-border);
   background: transparent;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
 }
@@ -6509,8 +6531,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 
 .recovery-list { margin: 6px 0 0; padding-left: 18px; font-size: 12px; line-height: 1.5; }
 
-.everyday-streak { margin: 8px 0 0; font-size: 12px; font-weight: 500; }
-.everyday-summary { margin: 6px 0 0; font-size: 12px; color: var(--m-muted); }
+.everyday-streak { margin: 12px 0 0; font-size: 13px; font-weight: 500; }
 
 .constraint-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
 .constraint-chip {
@@ -7143,9 +7164,14 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
       animation-range: exit 0dvh exit 90dvh;
     }
     /* The sections below rise as they arrive — the same cadence vocabulary
-       the feed uses, one register up. */
+       the feed uses, one register up. They RISE rather than fade: a section
+       is content, and a scroll-driven fade leaves it invisible until the
+       traveller scrolls to it — which shows up as a blank band in a
+       full-page capture, in print, and on the block that is already on
+       screen when the page loads. The rise moves it into place; the words
+       are readable the whole time. */
     .today-flow > * {
-      animation: rise-view linear both;
+      animation: land-rise linear both;
       animation-timeline: view();
       animation-range: entry 0% entry 42%;
     }
@@ -7158,10 +7184,6 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 @keyframes stage-hand-off {
   from { opacity: 1; transform: translateY(0); }
   to { opacity: 0; transform: translateY(-26px); }
-}
-@keyframes rise-view {
-  from { opacity: 0; transform: translateY(22px); }
-  to { opacity: 1; transform: translateY(0); }
 }
 
 /* ── The sun-self (round 23) ────────────────────────────────────────────
@@ -8167,7 +8189,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   --m-card-2: #171d2e;
   --m-border: #26304a;
   --m-border-2: #1c2436;
-  --m-faint: #75809a;
+  --m-faint: #7c88a4;
   --m-text: #F5EFE6;
   --m-ink: #F5EFE6;
   --m-muted: #a89a8c;
@@ -8382,6 +8404,15 @@ button.sunself-wrap:focus-visible {
   color: var(--m-accent);
   text-decoration: underline;
   text-underline-offset: 3px;
+  /* The links are the hero's only actions on mobile, so the tap target
+     has to be a finger, not a line of text: 44px of hit area around a
+     15px word, with the extra space taken back out of the layout so the
+     statement's rhythm is unchanged. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 12px 0;
+  margin: -12px 0;
 }
 .lh-link--quiet { color: var(--m-muted); }
 
@@ -8548,14 +8579,14 @@ button.sunself-wrap:focus-visible {
   from { border-color: transparent; }
 }
 @keyframes iday-band-in {
-  from { opacity: 0.25; clip-path: inset(0 0 84% 0 round var(--radius-md)); }
-  to { opacity: 1; clip-path: inset(0 0 0 0 round var(--radius-md)); }
+  from { clip-path: inset(0 0 84% 0 round var(--radius-md)); }
+  to { clip-path: inset(0 0 0 0 round var(--radius-md)); }
 }
 @keyframes iday-bar-in {
-  from { opacity: 0; translate: 0 10px; }
+  from { translate: 0 10px; }
 }
 @keyframes iday-wake-in {
-  from { opacity: 0; translate: 0 12px; }
+  from { translate: 0 12px; }
 }
 
 .iday-jump {
@@ -8647,13 +8678,24 @@ button.sunself-wrap:focus-visible {
 
 /* Sections arrive as they enter — the design language's reveal pattern,
    gated on the capability and the preference like every other scroll
-   reveal in the file. Without either, content simply stands. */
+   reveal in the file. Without either, content simply stands.
+
+   The landing's arrival is a RISE, not a fade: the words below the fold
+   are content, and a scroll-driven fade leaves them invisible until the
+   traveller scrolls to them — which shows up as a dead band in any
+   full-page capture, in print, and on the frame that is already on
+   screen when the page loads. `land-rise` moves the section into place
+   and never takes it out of the reading. */
+@keyframes land-rise {
+  from { translate: 0 24px; }
+  to { translate: 0 0; }
+}
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
     .landing-iday,
     .sample-journeys,
     .everyday-rhythm {
-      animation: rise-view linear both;
+      animation: land-rise linear both;
       animation-timeline: view();
       animation-range: entry 0% entry 38%;
     }

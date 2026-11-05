@@ -296,8 +296,10 @@ describe("motion language · round 20 — today opens as a stage", () => {
   it("the recede and the hand-off ride transform + opacity only", () => {
     const recede = block("@keyframes stage-recede");
     const handOff = block("@keyframes stage-hand-off");
-    const riseView = block("@keyframes rise-view");
-    for (const kf of [recede, handOff, riseView]) {
+    // The section reveal used to ride rise-view here; its successor
+    // land-rise is pinned one register stricter — transform only, never
+    // opacity — by the "never taken out of the reading" test below.
+    for (const kf of [recede, handOff]) {
       expect(kf).toMatch(/opacity/);
       expect(kf).toMatch(/transform|translate/);
       expect(kf).not.toContain("box-shadow");
@@ -313,7 +315,7 @@ describe("motion language · round 20 — today opens as a stage", () => {
 
   it("the sections below rise on arrival, guarded like the feed cadence", () => {
     const rule = block(".today-flow > *");
-    expect(rule).toContain("rise-view");
+    expect(rule).toContain("land-rise");
     expect(rule).toContain("animation-timeline: view()");
     const ruleIdx = css.indexOf(".today-flow > *");
     const supportsIdx = css.lastIndexOf("@supports (animation-timeline: view())", ruleIdx);
@@ -321,6 +323,37 @@ describe("motion language · round 20 — today opens as a stage", () => {
     expect(
       css.slice(supportsIdx, ruleIdx).includes("@media (prefers-reduced-motion: no-preference)"),
     ).toBe(true);
+  });
+
+  it("a scrolled section is never taken out of the reading", () => {
+    // The rise moves a section into place; it never fades it away. A
+    // scroll-driven fade leaves the words invisible until the traveller
+    // scrolls to them — a blank band in a full-page capture, in print,
+    // and on the block already on screen when the page loads.
+    const kf = block("@keyframes land-rise");
+    expect(kf).toMatch(/translate|transform/);
+    expect(kf).not.toMatch(/opacity/);
+    expect(kf).not.toContain("filter");
+    // Every scroll-driven reveal on the landing and the flow uses it — read
+    // from the animation's side: each land-rise rule's selector list must
+    // name the section (rules may group selectors across lines, so matching
+    // `${s} {` from the section's side misses them).
+    const selectorLists: string[] = [];
+    let from = 0;
+    while (true) {
+      const i = css.indexOf("land-rise", from);
+      if (i < 0) break;
+      const open = css.lastIndexOf("{", i);
+      const prevClose = css.lastIndexOf("}", open);
+      selectorLists.push(css.slice(prevClose + 1, open));
+      from = i + 1;
+    }
+    for (const s of [".landing-iday", ".sample-journeys", ".everyday-rhythm", ".today-flow > *"]) {
+      expect(
+        selectorLists.some((list) => list.includes(s)),
+        `${s} must rise, not fade`,
+      ).toBe(true);
+    }
   });
 
   it("the stage lives in its own component with a one-style budget for the sky", () => {

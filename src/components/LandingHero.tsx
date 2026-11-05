@@ -58,7 +58,13 @@ export function LandingHero({
         <a href="#trip-entry" className="lh-link lh-link--start">
           Start with your trip
         </a>
-        <Link href="/demo" className="lh-link lh-link--quiet" transitionTypes={["nav-forward"]}>
+        {/* The example day below this hero is Diego's dispatch, and the
+            crate at the door is his — so the demo the link opens is his
+            too. /demo's own default stays the Tokyo story it was cut
+            around (and the one its social card describes); the landing
+            does not have to send a visitor to a different traveller's
+            story than the one it just showed them. */}
+        <Link href="/demo?s=diego" className="lh-link lh-link--quiet" transitionTypes={["nav-forward"]}>
           Watch the example
         </Link>
       </p>

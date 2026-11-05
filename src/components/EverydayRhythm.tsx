@@ -42,9 +42,9 @@ export function EverydayRhythm() {
     { key: "caffeine", label: "Caffeine curfew" },
     { key: "winddown", label: "Evening wind-down" },
   ];
-  const isSunday = new Date().getDay() === 0;
   return (
     <div className="everyday-rhythm" role="region" aria-label="Everyday rhythm">
+      <p className="entry-eyebrow">Before you fly</p>
       <h3 className="everyday-title">Everyday rhythm</h3>
       <p className="everyday-sub">Three anchors for a steady body clock.</p>
       <div className="everyday-chips">
@@ -60,9 +60,14 @@ export function EverydayRhythm() {
           </button>
         ))}
       </div>
-      {streak > 0 && <p className="everyday-streak">🔥 {streak}-day streak</p>}
-      {isSunday && streak > 0 && (
-        <p className="everyday-summary">Zero social jetlag this week — your sleep midpoint drifted by only minutes.</p>
+      {/* The streak is the one number here the app can actually back: it
+          counts the days where all three anchors were marked. The old line
+          also claimed a sleep-midpoint drift the app never measures — a
+          number invented, which the trust rule forbids. */}
+      {streak > 0 && (
+        <p className="everyday-streak">
+          {streak} {streak === 1 ? "day" : "days"} in a row with all three anchors.
+        </p>
       )}
     </div>
   );

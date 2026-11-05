@@ -24,7 +24,9 @@ describe("LandingHero (Phase 1 statement, SSR)", () => {
   test("one quiet anchor to the form and one to the demo — no second CTA button", () => {
     expect(h).toContain('href="#trip-entry"');
     expect(h).toContain("Start with your trip");
-    expect(h).toContain('href="/demo"');
+    // The landing tells Diego's story — crate, dispatch, example day — so
+    // its demo link opens his. /demo's own default stays the Tokyo story.
+    expect(h).toContain('href="/demo?s=diego"');
     expect(h).toContain("Watch the example");
     expect(h).not.toContain("landing-tease-cta");
     expect(h).not.toContain("<button");

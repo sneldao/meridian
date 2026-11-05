@@ -26,6 +26,7 @@ import { NudgeFeedScreen } from "@/components/NudgeFeedScreen";
 import { BodyClockDetails } from "@/components/dial/BodyClockDetails";
 import { DisclosureSheet } from "@/components/dial/DisclosureSheet";
 import { BottomNav } from "@/components/BottomNav";
+import { PLACE_GROUPS } from "@/components/MoreSheet";
 import dynamic from "next/dynamic";
 const RoutePicker = dynamic(
   () => import("@/components/RoutePicker").then((m) => m.RoutePicker),
@@ -1396,7 +1397,47 @@ export default function Home() {
             {/* Destinations live in one place — the More sheet, reachable
                 from the tab bar on every page. The menu's job is this trip:
                 working the plan, the view, the share, the settings. */}
-            <p className="menu-label">This trip</p>
+            {/* The landing is the door in front of those places, and on a
+                wide screen there is no tab bar to carry them — so the
+                landing's own menu does. Without this the destinations were
+                unreachable from the one surface every visitor meets. */}
+            {entry?.mode === "setup" && (
+              <>
+                <p className="menu-label">More places</p>
+                {PLACE_GROUPS.map((g) => (
+                  <div key={g.label}>
+                    <p className="menu-label">{g.label}</p>
+                    {g.places.map((pl) => (
+                      <Link
+                        key={pl.href}
+                        href={pl.href}
+                        className="m"
+                        role="menuitem"
+                        transitionTypes={["nav-forward"]}
+                        onClick={() => setMenuOpenedAt(null)}
+                      >
+                        {pl.label}
+                      </Link>
+                    ))}
+                  </div>
+                ))}
+                {/* Trips was a tab on the app surfaces; the landing has no
+                    tab bar, so the menu keeps the way back to it. */}
+                <Link
+                  href="/history"
+                  className="m"
+                  role="menuitem"
+                  transitionTypes={["nav-forward"]}
+                  onClick={() => setMenuOpenedAt(null)}
+                >
+                  Your trips
+                </Link>
+              </>
+            )}
+            {/* The landing has no trip yet, so it does not claim "This trip"
+                over a menu of trip actions. The label says what the rows
+                actually are. */}
+            <p className="menu-label">{entry?.mode === "setup" ? "This app" : "This trip"}</p>
             {/* Real buttons, not focusable divs: as divs these were in the tab
                 order but Enter and Space did nothing, because a div has no
                 activation behaviour. The <Link> siblings above are real
@@ -2263,7 +2304,12 @@ export default function Home() {
         onClose={() => morph(() => setDisclosureOpen(false))}
         panelClassName="vt-morph-disclosure"
       />
-      <BottomNav />
+      {/* The tab bar is the *app's* navigation — Today, Trips, More. The
+          landing is none of those: it is the door in front of them, and a
+          visitor standing at it has no trip yet, so a highlighted "Today"
+          would be a claim the page cannot make. On this surface the corner
+          Menu is the single door instead. */}
+      {entry?.mode !== "setup" && <BottomNav />}
     </div>
   );
 }
