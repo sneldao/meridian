@@ -508,6 +508,7 @@ a[href]:active {
 }
 
 .arr {
+  position: relative;
   min-height: 100vh;
   color: #e8eaf2;
   font-family: var(--font-body);
@@ -1621,6 +1622,7 @@ a[href]:active {
   --stage-ember-line: rgba(255, 214, 150, 0.55);
   --stage-sun-x: 50%;
   --stage-origin: rgba(157, 184, 255, 0.10);
+  --stage-star-o: 0.55;
   --glow-ember: 0 0 28px rgba(255, 196, 107, 0.22);
   --glow-accent: 0 12px 32px -10px rgba(217, 107, 67, 0.5);
   --shadow-stage: 0 32px 80px -32px rgba(8, 10, 18, 0.55);
@@ -1655,6 +1657,11 @@ a[href]:active {
   inherits: true;
   initial-value: rgba(157, 184, 255, 0.10);
 }
+@property --stage-star-o {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0.55;
+}
 @property --stage-ink-2 {
   syntax: "<color>";
   inherits: true;
@@ -1664,6 +1671,7 @@ a[href]:active {
 @media (prefers-reduced-motion: no-preference) {
   .hero, .clock-stage, .arr, .demo-root {
     transition: --stage-horizon-h 320ms var(--ease-settle), --stage-horizon 320ms var(--ease-settle),
+      --stage-star-o 320ms var(--ease-settle),
       --stage-horizon-floor 320ms var(--ease-settle), --stage-origin 320ms var(--ease-settle),
       --stage-ink-2 320ms var(--ease-settle);
   }
@@ -1689,6 +1697,15 @@ a[href]:active {
     linear-gradient(180deg, var(--stage-ink) 0%, var(--stage-ink-2) 100%);
 }
 .hero .hl .bg.term { --stage-sun-x: 68%; }
+
+/* The stage's star plane — a deterministic field (StageStars / starPlane,
+   the demo's own technique) whose opacity rides --stage-star-o: the body
+   sun's altitude, not a painted night. Static, behind every instrument. */
+.stage-stars { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.stage-stars-svg { position: absolute; top: -3%; left: -4%; width: 108%; height: 62%; }
+.stage-stars-svg circle { fill: var(--color-paper); }
+.stage-stars-far { opacity: calc(var(--stage-star-o, 0.55) * 0.45); }
+.stage-stars-mid { opacity: calc(var(--stage-star-o, 0.55) * 0.85); }
 
 /* Display headings — the crew's voice at statement size. Roman only (no
    italic display), tight tracking, and overflow-safe on narrow viewports. */
@@ -3732,6 +3749,7 @@ select:focus-visible {
    rewrites. */
 .hero,
 .clock-stage {
+  position: relative;
   --m-bg: #0b0e16;
   --m-card: rgba(255, 255, 255, 0.05);
   --m-card-2: rgba(255, 255, 255, 0.08);
@@ -7082,6 +7100,9 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
      desync it from the rendered sun. */
   --stage-sun-size: 140px;
   border-radius: 10px;
+  /* clips the sun's streak (stage-sunself::after) and the star plane at the
+     stage's rounded edge — the sky ends where the stage does. */
+  overflow: hidden;
   padding: 26px 20px 18px;
   min-height: 340px;
   display: flex;
@@ -7266,6 +7287,21 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
      tracks --stage-sun-size so the centre stays 8px above the horizon. */
   bottom: calc(var(--stage-horizon-h, 26%) - var(--stage-sun-size) / 2 + 8px);
   z-index: 1;
+  pointer-events: none;
+}
+/* The stage sun's anamorphic streak — a painted highlight thrown along the
+   horizon behind the glass, riding the same beam colour the band uses. */
+.stage-sunself::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: -1;
+  width: 340%;
+  height: 30%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(50% 50% at 50% 50%, var(--stage-horizon) 0%, transparent 70%);
+  opacity: 0.85;
   pointer-events: none;
 }
 .entry-sunself { margin: 0 0 14px; width: fit-content; }

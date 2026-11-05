@@ -16,6 +16,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { coverageOf, fmtMin } from "@/domain/circadian";
+import { StageStars } from "@/components/StageStars";
 import { stageSkyFor } from "@/domain/stage-sky";
 import { useLiveDate } from "@/lib/use-live-date";
 import { type MascotTone } from "@/domain/mascot";
@@ -482,6 +483,7 @@ export function MeridianDailyScreen({
           surface (docs/DESIGN.md · Clock view). The action and the dial share the
           band; the day switcher stays chrome above it. */}
       <div className="clock-stage" style={stageSkyFor(trip, stageOwedMin, trip ? liveDate : null)}>
+      <StageStars seed={`clock-${trip?.destination.name ?? "meridian"}`} />
       <div className="clock-stage-action">
       <DailyActionCard
         action={action}

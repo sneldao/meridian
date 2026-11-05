@@ -114,7 +114,7 @@ describe("stageSkyFor", () => {
   });
 
   test("STAGE_SKY_VARS is the emitted key set — imperative and React writers agree", () => {
-    expect(STAGE_SKY_VARS.length).toBe(5);
+    expect(STAGE_SKY_VARS.length).toBe(6);
     expect([...STAGE_SKY_VARS].sort()).toEqual(
       Object.keys(stageSkyVars(stageSky(0, 0, -540))).sort(),
     );

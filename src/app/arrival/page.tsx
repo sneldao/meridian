@@ -7,6 +7,7 @@ import { fmtMin } from "@/domain/circadian";
 import { arrivalHeadline, arrivalLede, arrivalRead, tripDebrief } from "@/domain/arrival";
 import { arrivalPassport } from "@/domain/arrival-passport";
 import { sunSelfRead } from "@/domain/sun-self";
+import { StageStars } from "@/components/StageStars";
 import { ArrivalPassportCard } from "@/components/ArrivalPassportCard";
 import { stageSkyFor } from "@/domain/stage-sky";
 import { INTERVENTION_LABELS } from "@/lib/intervention-icons";
@@ -226,6 +227,7 @@ export default function ArrivalPage() {
   if (!read.arrived) {
     return (
       <main className="arr" style={stageVars}>
+        <StageStars seed={`arr-${dest.name}`} />
         <div className="arr-in">
           <span className="arr-kicker">Not yet</span>
           <h1>You&apos;re still on {dayPlace(trip, trip.departureDayIndex).city} time.</h1>
@@ -244,6 +246,7 @@ export default function ArrivalPage() {
 
   return (
     <main className="arr" style={stageVars}>
+      <StageStars seed={`arr-${dest.name}`} />
       <div className="arr-in">
         {/* The hero's dawn disc lands here — the same object, carried across
             the route by the view transition (shared element "dawn"). */}

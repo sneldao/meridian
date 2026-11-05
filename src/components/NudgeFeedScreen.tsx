@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { coverageOf, fmtMin } from "@/domain/circadian";
+import { StageStars } from "@/components/StageStars";
 import { stageSkyFor } from "@/domain/stage-sky";
 import { useLiveDate } from "@/lib/use-live-date";
 import {
@@ -1027,6 +1028,9 @@ export function NudgeFeedScreen({
           ...(panelMounted ? {} : stageSkyFor(trip, dawnOwedMin, trip ? liveDate : null)),
         }}
       >
+        {/* the modeled darkness behind the hero — same stars the stage and
+            arrival hang, riding --stage-star-o with the rest of the sky */}
+        <StageStars seed={`hero-${trip?.destination.name ?? "meridian"}`} />
         {panelMounted && (
           <HeroDawnPanel
             trip={trip}

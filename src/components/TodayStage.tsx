@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { TimezoneClocks } from "@/components/TimezoneClocks";
+import { StageStars } from "@/components/StageStars";
 import { SunSelf } from "@/components/SunSelf";
 import { fmtMin } from "@/domain/circadian";
 import type { TravelerNudge } from "@/domain/nudges";
@@ -98,6 +99,9 @@ export function TodayStage({
       style={stageSkyFor(trip, owedMin, liveDate)}
       aria-label={`Today — ${trip.destination.name}. ${sun.line}`}
     >
+      {/* the modeled darkness — the same star field the demo hangs, fading
+          as the body sun climbs (stage-sky's starFade via --stage-star-o) */}
+      <StageStars seed={`stage-${trip.destination.name}`} />
       {/* the traveller's meridian, on the horizon where the sun belongs —
           size mirrors --stage-sun-size in globals.css (pinned in tests) */}
       <div className="stage-sunself">

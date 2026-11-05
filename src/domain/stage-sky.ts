@@ -42,6 +42,8 @@ export interface StageSky {
   /** rgba of origin blue #9db8ff; alpha ∝ shift still owed. */
   origin: string;
   bodyAltDeg: number;
+  /** 0..1 star-plane opacity from starFade — the model's darkness made visible. */
+  stars: number;
 }
 
 /** The custom properties a stage writes, in emission order — shared by
@@ -52,6 +54,7 @@ export const STAGE_SKY_VARS = [
   "--stage-horizon-floor",
   "--stage-ink-2",
   "--stage-origin",
+  "--stage-star-o",
 ] as const;
 
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
@@ -94,6 +97,7 @@ export function stageSky(bodyAltDeg: number, owedMin: number, requiredShiftMin: 
     zenith: `rgb(${zenithCh[0]}, ${zenithCh[1]}, ${zenithCh[2]})`,
     origin: `rgba(157, 184, 255, ${(0.22 * owedRatio).toFixed(3)})`,
     bodyAltDeg,
+    stars: starFade(bodyAltDeg),
   };
 }
 
@@ -112,6 +116,7 @@ export function stageSkyVars(sky: StageSky): CSSProperties {
     [STAGE_SKY_VARS[2]]: sky.horizonFloor,
     [STAGE_SKY_VARS[3]]: sky.zenith,
     [STAGE_SKY_VARS[4]]: sky.origin,
+    [STAGE_SKY_VARS[5]]: sky.stars.toFixed(3),
   } as Record<string, string> as CSSProperties;
 }
 
