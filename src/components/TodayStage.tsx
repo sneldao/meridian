@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { TimezoneClocks } from "@/components/TimezoneClocks";
 import { StageStars } from "@/components/StageStars";
+import { StageRidges } from "@/components/StageRidges";
 import { SunSelf } from "@/components/SunSelf";
 import { fmtMin } from "@/domain/circadian";
 import type { TravelerNudge } from "@/domain/nudges";
@@ -105,8 +106,13 @@ export function TodayStage({
       {/* the traveller's meridian, on the horizon where the sun belongs —
           size mirrors --stage-sun-size in globals.css (pinned in tests) */}
       <div className="stage-sunself">
-        <SunSelf read={sun} size={140} tone="ink" pulseKey={lastDone?.at ?? null} />
+        {/* 240px backing so the glass reads sharp at any display size —
+            --stage-sun-size (clamp) owns the box it scales into. */}
+        <SunSelf read={sun} size={240} tone="ink" pulseKey={lastDone?.at ?? null} />
       </div>
+      {/* the ground the sun rises over — far ridge clips the disc's lower
+          sliver so it reads as land, not a floating gradient */}
+      <StageRidges seed={`ridge-${trip.destination.name}`} />
       <div className="today-stage-inner">
         <button
           type="button"

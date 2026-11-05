@@ -164,15 +164,15 @@ describe("the stage answers the first viewport", () => {
 
   test("one custom property sizes the sun, and the JSX keeps it in lockstep", () => {
     const stage = blockAfter(".today-stage {").replace(/\s+/g, " ");
-    expect(stage).toContain("--stage-sun-size: 140px;");
-    // Single-sized on purpose: the var only moves the horizon offset, so a
-    // media query shrinking it would desync placement from <SunSelf size>.
+    expect(stage).toContain("--stage-sun-size: clamp(140px, 15vw, 220px);");
+    // The var is the display box; the JSX renders a 240px backing that
+    // scales into it, so placement and pixels can never desync.
     expect(css).not.toContain("--stage-sun-size: 110px");
     // The horizon offset tracks the size so the centre stays put.
     const sunself = blockAfter(".stage-sunself").replace(/\s+/g, " ");
     expect(sunself).toContain("var(--stage-sun-size) / 2");
-    // And the component renders the same 140 the CSS declares.
-    expect(stageSrc).toContain("size={140}");
+    // And the component renders the 240 backing the CSS scales.
+    expect(stageSrc).toContain("size={240}");
     expect(stageSrc).not.toContain("size={64}");
   });
 

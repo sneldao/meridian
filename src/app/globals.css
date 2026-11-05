@@ -1724,6 +1724,21 @@ a[href]:active {
 .stage-stars-far { opacity: calc(var(--stage-star-o, 0.55) * 0.45); }
 .stage-stars-mid { opacity: calc(var(--stage-star-o, 0.55) * 0.85); }
 
+/* The stage's terrain — ridgePath silhouettes (the demo's own grammar),
+   seeded per destination. The far ridge tops out just under the horizon
+   line so the sun reads as rising behind land; its edge catches the beam
+   colour itself. The near ridge is a darker mass holding the floor. */
+.stage-ridges { position: absolute; inset: 0; pointer-events: none; z-index: var(--z-raised); }
+.stage-ridge { position: absolute; left: -2%; width: 104%; }
+.stage-ridge-far {
+  bottom: calc(var(--stage-horizon-h, 26%) * 0.42);
+  height: calc(var(--stage-horizon-h, 26%) * 0.62);
+  filter: drop-shadow(0 -2px 5px var(--stage-horizon));
+}
+.stage-ridge-far path { fill: var(--stage-ink-2, #0c1220); }
+.stage-ridge-near { bottom: -2%; height: 12%; }
+.stage-ridge-near path { fill: var(--stage-ink, #07090f); }
+
 /* Display headings — the crew's voice at statement size. Roman only (no
    italic display), tight tracking, and overflow-safe on narrow viewports. */
 .display-1,
@@ -7111,11 +7126,10 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   --m-faint: #6b7590;
   --m-border: rgba(255, 255, 255, 0.12);
   --m-accent: #e99a6f;
-  /* One number sizes the sun on the horizon; the JSX <SunSelf size> mirror
-     stays in lockstep (pinned by tests/stage-css.test.ts). Kept single-sized:
-     the var only moves the horizon offset, so a second mobile value would
-     desync it from the rendered sun. */
-  --stage-sun-size: 140px;
+  /* The sun's display size — clamped with the viewport so the glass reads
+     on wide stages (the JSX renders a 240px backing and scales into this
+     box; pinned by tests/stage-css.test.ts). */
+  --stage-sun-size: clamp(140px, 15vw, 220px);
   border-radius: 10px;
   /* clips the sun's streak (stage-sunself::after) and the star plane at the
      stage's rounded edge — the sky ends where the stage does. */
@@ -7300,12 +7314,16 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .stage-sunself {
   position: absolute;
   left: 18px;
+  width: var(--stage-sun-size);
   /* sit on the horizon band: half-risen, where a sun belongs — the offset
      tracks --stage-sun-size so the centre stays 8px above the horizon. */
   bottom: calc(var(--stage-horizon-h, 26%) - var(--stage-sun-size) / 2 + 8px);
   z-index: var(--z-raised);
   pointer-events: none;
 }
+/* The rendered sun scales into the var-sized box — canvas fills it by
+   .sunself-gl's own inset, the SVG face scales with the viewBox. */
+.stage-sunself .sunself { width: 100%; height: auto; }
 /* The stage sun's anamorphic streak — a painted highlight thrown along the
    horizon behind the glass, riding the same beam colour the band uses. */
 .stage-sunself::after {
