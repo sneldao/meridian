@@ -139,6 +139,39 @@ Cheapest-first, ordered so each phase dies-testable. Status: steps 1–6 shipped
    caught 3 rows + 1 shimmer, zero DOM mutations after settle).
 8. **Calendar flag** — product call; the engineering exists.
 
+## 4a. The addressability layer (field feedback, round 56)
+
+Steps 1–7 made the crew *legible*; judges still can't *talk back*. The next
+arc makes every surface answerable — bounded per-specialist asks, not a
+general chat box (§5 stands).
+
+**Architecture** — a question router:
+
+- **Deterministic lane (the novel part, primary)** — intent parsing resolves
+  factual/numeric/what-if questions to the solver: "why 07:00?" composes a
+  sentence from real state ("the last seek-light window before your 21:40
+  wind-down — computed against the 6h shift"); "what if I land Friday?" runs
+  the solver against the shifted input and returns an inline delta card
+  ("+1.5h better arrival, one fewer day"). Answers are always true — they're
+  built from the same numbers the UI shows, so replay mode demos fully and
+  nothing can hallucinate.
+- **LLM lane (secondary)** — genuinely open questions route to the existing
+  provider chain (`src/agents/providers.ts`: `AGENT_PROVIDER` primary, Claude
+  fallback) grounded with the trip state as context. Same provenance law:
+  every spoken answer names which signal it computed from.
+- **Routing is the demo** — one "Ask the crew" field; the question lands on
+  the responsible specialist ("that's Otto's job"), his avatar lights, the
+  answer streams into his lane — proving the crew is architecture, not
+  five avatars.
+
+**Surfaces** — agent names become askable wherever they appear (Jobs rows,
+insight cards, nudge cards, feed-pins); the answer streams into the existing
+expandable detail — the specialist answers in his lane.
+
+**Order**: deterministic Q&A first (zero deps, biggest novelty-per-cost,
+fully honest in replay) → per-surface addressability → LLM open questions
+(provider plumbing exists; grounding + provenance-on-speech still to build).
+
 ## 5. Explicitly not doing
 
 - **No fake latency.** The trace replays real compute steps with real

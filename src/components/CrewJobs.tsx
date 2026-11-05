@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Check, ChevronDown, Circle, CircleDashed, Loader2, MapPin, RotateCcw, X } from "lucide-react";
+import { Check, ChevronDown, Circle, CircleDashed, CornerDownLeft, Loader2, MapPin, RotateCcw, X } from "lucide-react";
 import { CrewAvatar, type CrewAvatarState } from "@/components/CrewAvatar";
 import type { CrewJob } from "@/lib/crew-jobs";
+import type { CrewAnswer } from "@/domain/crew-answer";
 
 /* TaskRows (docs/plan/agent-native.md step 5): the crew's jobs as live
  * status rows in the AgentDrawer — "{status icon} {job label} {count/pill}"
@@ -74,13 +75,22 @@ export function CrewJobs({
   jobs,
   notes,
   onRetry,
+  onAsk,
 }: {
   jobs: CrewJob[];
   /** Errors the log could not attribute to one job — named plainly. */
   notes: string[];
   onRetry?: () => void;
+  /** The deterministic ask lane (agent-native §4a) — crewAnswer bound to
+   *  the drawer's facts; the row passes itself so the answer can land on
+   *  the right specialist. Absent → no ask field. */
+  onAsk?: (question: string, job: CrewJob) => CrewAnswer;
 }) {
   const [open, setOpen] = useState<Set<string>>(new Set());
+  /* Asked answers are ephemeral per-mount state — they land as extra
+   * detail lines in the row's fold and are never logged anywhere. */
+  const [asked, setAsked] = useState<Record<string, CrewAnswer[]>>({});
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
   const toggle = (id: string) =>
     setOpen((prev) => {
       const next = new Set(prev);
@@ -158,7 +168,7 @@ export function CrewJobs({
               <div className={`crew-job-detail${isOpen ? " open" : ""}`} inert={!isOpen}>
                 <div>
                   <ul className="crew-job-steps px-1.5 pb-1 pt-1.5 font-mono2 text-2xs leading-relaxed">
-                    {job.steps.length === 0 && (
+                    {job.steps.length === 0 && (asked[job.id] ?? []).length === 0 && (
                       <li className="text-dim">
                         <span className="mr-1.5 text-dim">├─</span>nothing recorded yet
                       </li>
@@ -174,7 +184,55 @@ export function CrewJobs({
                         {s.text}
                       </li>
                     ))}
+                    {/* §4a — asked answers append as detail lines in the
+                        row's own fold; the specialist answers in his lane. */}
+                    {(asked[job.id] ?? []).map((a, i) => (
+                      <li key={`ask-${i}`} className="crew-answer text-paper">
+                        <span className="mr-1.5 text-dim">├─</span>
+                        {a.owner !== job.owner ? `${a.owner}: ` : ""}
+                        {a.answer}
+                        {(a.detail ?? []).map((d, j) => (
+                          <span key={j} className="block pl-4 text-mist">{d}</span>
+                        ))}
+                        <span className="text-dim"> · {a.provenance}</span>
+                      </li>
+                    ))}
                   </ul>
+                  {onAsk && (
+                    <form
+                      className="mx-1.5 mb-1.5 flex items-center gap-1.5"
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        const q = (drafts[job.id] ?? "").trim();
+                        if (!q) return;
+                        const a = onAsk(q, job);
+                        setAsked((prev) => ({
+                          ...prev,
+                          [job.id]: [...(prev[job.id] ?? []), a],
+                        }));
+                        setDrafts((prev) => ({ ...prev, [job.id]: "" }));
+                      }}
+                    >
+                      <input
+                        type="text"
+                        value={drafts[job.id] ?? ""}
+                        onChange={(e) =>
+                          setDrafts((prev) => ({ ...prev, [job.id]: e.target.value }))
+                        }
+                        placeholder={`Ask ${job.owner}`}
+                        aria-label={`Ask ${job.owner}`}
+                        className="min-w-0 flex-1 rounded-md border border-line bg-ink-2 px-2 py-1 font-mono2 text-2xs text-paper placeholder:text-dim"
+                      />
+                      <button
+                        type="submit"
+                        aria-label={`Ask ${job.owner} — send`}
+                        disabled={!(drafts[job.id] ?? "").trim()}
+                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-line bg-ink-2 text-dim transition-colors hover:text-paper disabled:opacity-40"
+                      >
+                        <CornerDownLeft size={11} aria-hidden="true" />
+                      </button>
+                    </form>
+                  )}
                 </div>
               </div>
             </li>

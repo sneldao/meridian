@@ -169,7 +169,7 @@ export function buildCrewJobFacts(input: CrewJobFactsInput): CrewJobFacts {
   return facts;
 }
 
-function placeProvenance(it: TasteItinerary): string {
+export function placeProvenance(it: TasteItinerary): string {
   if (it.sampleSource === "imagined") return "imagined sample — not a live lookup";
   if (it.sampleSource === "recorded") return "recorded Qloo sample — not a live lookup";
   return "Qloo place lookup";

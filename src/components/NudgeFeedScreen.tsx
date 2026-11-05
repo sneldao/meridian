@@ -32,9 +32,12 @@ import { sunSelfRead } from "@/domain/sun-self";
 import { DayCardShare } from "@/components/DayCardShare";
 import { RightNowCard } from "@/components/RightNowCard";
 import { dayPlacePin, postTasteSignal } from "@/lib/place-choices";
+import { placeProvenance } from "@/lib/crew-jobs";
 import { provenanceChips } from "@/domain/provenance";
 import { insightCards } from "@/domain/insights";
 import { InsightCards } from "@/components/InsightCards";
+import { crewAnswer, type CrewFacts } from "@/domain/crew-answer";
+import { CrewAsk } from "@/components/CrewAsk";
 import type { CrewAccountRow } from "@/components/CrewAccount";
 import { recordTasteSignal } from "@/lib/taste-signals";
 import { tasteSelectionKey } from "@/domain/taste";
@@ -1106,6 +1109,95 @@ export function NudgeFeedScreen({
       </ul>
     ) : null;
 
+  /* §4a — the addressability layer. One deterministic lane every surface
+     asks through: the facts are the same set the insight cards already
+     consume (trip, owed, the best plan set, the gate's scan inputs, the
+     crate count, the calendar tally) plus the attached context — a bare
+     "why" answers for the card it sits on. Answers are composed from real
+     state, never logged. */
+  const askFacts = useMemo<CrewFacts>(
+    () => ({
+      trip,
+      owedMin: dawnOwedMin,
+      plans: scenePlans,
+      plansArePreview: lockedDays.length === 0,
+      activeDaySpec,
+      calendar: calendarEvents,
+      adherence: effectiveAdherence,
+      baseline,
+      moment: heroMtg
+        ? {
+            title: heroMtg.title,
+            localMin: heroMtg.localMin,
+            bodyMin: heroMtg.bodyMin,
+            dayLabel: heroMtg.dayLabel,
+          }
+        : null,
+      baselineFacts: baseline
+        ? {
+            chronotype: baseline.chronotype,
+            bedMin: baseline.avgBedtimeMin,
+            wakeMin: baseline.avgWakeMin,
+            sleepMin: baseline.avgSleepMin,
+          }
+        : null,
+      places: tasteItinerary
+        ? {
+            matched:
+              tasteItinerary.suggestions.length +
+              (tasteItinerary.firstNight ? 1 : 0),
+            provenance: placeProvenance(tasteItinerary),
+          }
+        : null,
+      citations: citations.length,
+      moves: moves.length,
+    }),
+    [
+      trip,
+      dawnOwedMin,
+      scenePlans,
+      lockedDays.length,
+      activeDaySpec,
+      calendarEvents,
+      effectiveAdherence,
+      baseline,
+      heroMtg,
+      tasteItinerary,
+      citations.length,
+      moves.length,
+    ],
+  );
+
+  /** The now-room's ask field — the judge-visible surface, first control
+   *  under the provenance chips. A bare "why" here answers for the card
+   *  the room is showing: the next step. */
+  const askCrewField = trip ? (
+    <CrewAsk
+      label="Ask the crew"
+      placeholder="Ask the crew — type a question"
+      onAsk={(q) =>
+        crewAnswer(q, {
+          ...askFacts,
+          context: heroNudge
+            ? {
+                about: `your next step — ${fmtMin(heroNudge.startMin)} ${heroNudge.title}`,
+                detail: heroNudge.whyItHelps,
+                owner: "Otto",
+                agent: "planner",
+                provenance: "the step's own reason",
+              }
+            : null,
+        })
+      }
+    />
+  ) : null;
+  const provChildren = (
+    <>
+      {provRow}
+      {askCrewField}
+    </>
+  );
+
     const shareCard = scene && (
     <DayCardShare
       scene={scene}
@@ -1304,7 +1396,7 @@ export function NudgeFeedScreen({
           preview={locked.size === 0}
           hasPlan={hasPlan || [...(preview?.values() ?? [])].some(Boolean)}
         >
-          {provRow}
+          {provChildren}
         </PerformanceBrief>
       ) : (
         <PerformanceBrief
@@ -1318,7 +1410,7 @@ export function NudgeFeedScreen({
           preview={!locked.has(currentLabel)}
           hasPlan={hasPlan || [...(preview?.values() ?? [])].some(Boolean)}
         >
-          {provRow}
+          {provChildren}
         </PerformanceBrief>
       )}
       </Room>
@@ -1653,6 +1745,25 @@ export function NudgeFeedScreen({
                     <div className="drawer rise">
                       <b>Why this helps</b>
                       <p>{heroNudge.whyItHelps}</p>
+                      {/* §4a — the card is askable once its why is open: a
+                          bare "why" auto-answers for this nudge, times and
+                          what-ifs run the deterministic lane. */}
+                      <CrewAsk
+                        label="Ask Otto"
+                        placeholder="why is it at that time?"
+                        onAsk={(q) =>
+                          crewAnswer(q, {
+                            ...askFacts,
+                            context: {
+                              about: `the ${fmtMin(heroNudge.startMin)} ${heroNudge.title} step`,
+                              detail: heroNudge.whyItHelps,
+                              owner: "Otto",
+                              agent: "planner",
+                              provenance: "the step's own reason",
+                            },
+                          })
+                        }
+                      />
                     </div>
                   ) : (
                     <button

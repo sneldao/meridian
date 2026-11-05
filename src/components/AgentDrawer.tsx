@@ -8,7 +8,10 @@ import { CrewFeed, type LogEntry } from "@/components/CrewFeed";
 import { CrewJobs } from "@/components/CrewJobs";
 import { Ledger } from "@/components/lenses/Ledger";
 import { AgentChip } from "@/components/ui/AgentChip";
-import { buildCrewJobFacts, deriveCrewJobs, type CrewJobFactsInput } from "@/lib/crew-jobs";
+import { buildCrewJobFacts, deriveCrewJobs, type CrewJob, type CrewJobFactsInput } from "@/lib/crew-jobs";
+import { coverageOf } from "@/domain/circadian";
+import { ADHERENCE_PROFILE } from "@/domain/fixtures";
+import { crewAnswer, type CrewFacts } from "@/domain/crew-answer";
 
 interface AgentDrawerProps {
   open: boolean;
@@ -55,15 +58,55 @@ export function AgentDrawer({
    * the reducer reset that cleared `events`, so the failed job can be named
    * rather than the error left unattributed. */
   const lastActiveAgent = [...entries].reverse().find((e) => e.kind === "agent")?.agent;
+  const jobFacts = facts ? buildCrewJobFacts(facts) : null;
   const { jobs, notes } = deriveCrewJobs({
     phase,
     events,
     activeAgent,
     lastActiveAgent,
     runError: streamError,
-    facts: facts ? buildCrewJobFacts(facts) : null,
+    facts: jobFacts,
     canRetry: !!onRetry,
   });
+
+  /* §4a — the jobs rows are askable. The deterministic lane reads the same
+   * facts the rows were built from (locked plan first, else the solver
+   * preview); the row passes itself so the answer lands on the right
+   * specialist and a bare "why" quotes the row's own subject. */
+  const onAsk = (question: string, job: CrewJob) => {
+    const solvedPlans = [...(facts?.solved?.values() ?? [])].flatMap((s) =>
+      s ? [s.plan] : [],
+    );
+    const locked = facts?.locked ?? [];
+    const plans = locked.length ? locked : solvedPlans;
+    const askFacts: CrewFacts = {
+      trip: facts?.trip ?? null,
+      owedMin:
+        facts?.trip && plans.length
+          ? coverageOf(facts.trip, plans).residualMin
+          : facts?.trip
+            ? Math.abs(facts.trip.requiredShiftMin)
+            : 0,
+      plans,
+      plansArePreview: locked.length === 0,
+      activeDaySpec: facts?.trip?.days[0] ?? null,
+      calendar: facts?.calendar ?? [],
+      adherence: facts?.adherence ?? ADHERENCE_PROFILE,
+      baseline: facts?.baseline,
+      baselineFacts: jobFacts?.baseline ?? null,
+      places: jobFacts?.places ?? null,
+      citations: events.filter((e) => e.type === "citation").length,
+      moves: events.filter((e) => e.type === "calendar_move").length,
+      context: {
+        about: `${job.owner}'s job — ${job.job}`,
+        detail: job.steps[0]?.text ?? `currently ${job.status}`,
+        owner: job.owner,
+        agent: job.agent,
+        provenance: "the job row",
+      },
+    };
+    return crewAnswer(question, askFacts);
+  };
 
   return (
     <div
@@ -154,7 +197,7 @@ export function AgentDrawer({
         {/* Body */}
         <div className="min-h-0 flex-1 overflow-hidden p-4">
           {tab === "jobs" ? (
-            <CrewJobs jobs={jobs} notes={notes} onRetry={onRetry} />
+            <CrewJobs jobs={jobs} notes={notes} onRetry={onRetry} onAsk={onAsk} />
           ) : tab === "feed" ? (
             <CrewFeed entries={entries} running={running} />
           ) : (

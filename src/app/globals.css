@@ -3898,6 +3898,96 @@ html[data-theme="night"] .skel::after {
   .crew-job-run { animation: none; }
 }
 
+/* The ask lane (agent-native §4a) — one bounded question field wherever the
+   crew's names appear: under the nudge card's expanded Why?, inside each
+   jobs row's detail fold, and as the now-room's "Ask the crew" field. The
+   answer's only motion is the crew's own fade-up on mount; reduced motion
+   prints it instantly. Token-styled — the field sits on cream surfaces, the
+   jobs-row variant is Tailwind-classed inside the ink drawer. */
+.crew-ask {
+  margin-top: var(--space-xs);
+}
+.crew-ask-form {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+.crew-ask-input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--m-border);
+  border-radius: var(--radius-lg);
+  background: var(--m-card);
+  color: var(--m-text);
+  padding: 7px 12px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.crew-ask-input::placeholder {
+  color: var(--m-faint);
+}
+.crew-ask-go {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid var(--m-border);
+  background: var(--m-card);
+  color: var(--m-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.crew-ask-go:hover:not(:disabled) {
+  border-color: var(--m-accent);
+  color: var(--m-accent);
+}
+.crew-ask-go:disabled {
+  opacity: var(--opacity-40);
+  cursor: default;
+}
+.crew-answers {
+  list-style: none;
+  margin: var(--space-2xs) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+}
+.crew-answer {
+  animation: crew-fade-up 0.3s var(--ease-settle) both;
+}
+.crew-answer-owner {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono2);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--m-muted);
+}
+.crew-answer-line {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--m-text);
+  line-height: 1.5;
+}
+.crew-answer-detail {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--m-muted);
+  line-height: 1.5;
+}
+.crew-answer-prov {
+  margin-left: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .crew-answer { animation: none; }
+}
+
 /* Crew faces — the mood channel morphs on transform + opacity only. */
 .crew-face { transition: transform 0.35s ease, opacity 0.35s ease; }
 .crew-eyes { transition: transform 0.3s ease; }
