@@ -11,7 +11,13 @@ import { previewPlan, type SolvedDay } from "@/domain/solver";
 import { routeGapLine, routeGapRead, type RouteGapRead } from "@/domain/route-gap";
 import { coverageOf, fmtMin } from "@/domain/circadian";
 import { paymentsConfigured, readPrice } from "@/lib/escrow";
-import { SAMPLE_TASTE_CRATES, sampleTasteProfile } from "@/lib/sample-taste";
+import { findAirport } from "@/domain/airports";
+import {
+  SAMPLE_TASTE_CRATES,
+  matchSampleProfileForTrip,
+  sampleTasteProfile,
+  splitSamplePlaces,
+} from "@/lib/sample-taste";
 import { writeTripTaste } from "@/lib/use-trip-taste";
 import { TASTE_TYPES } from "@/domain/taste";
 import type { CityCode, Trip } from "@/domain/types";
@@ -71,6 +77,27 @@ export function TripEntryScreen({ initialDate, onContinue, onExploreExample, ini
   // in. Unselected by default; it is a garnish, never a gate.
   const [crateKey, setCrateKey] = useState<string | null>(null);
   const selectedCrate = crateKey ? sampleTasteProfile(crateKey) : null;
+  /* The crate's live payoff — personalisation you can see. The count runs
+   * the same resolution the trip will run (loadTasteContext →
+   * matchSampleProfileForTrip → splitSamplePlaces), so a destination that
+   * lands in the crate's city gets the real pool size; anywhere else, the
+   * honest line is that places resolve when the route lands. Never a
+   * fabricated number. */
+  const crateLine = useMemo(() => {
+    if (!selectedCrate) return null;
+    const n = selectedCrate.favorites.length;
+    const entities = `${n} ${n === 1 ? "entity" : "entities"} in your crate`;
+    const destName = findAirport(draft.dest)?.name;
+    const matched = destName ? matchSampleProfileForTrip(destName, selectedCrate.favorites) : null;
+    if (matched) {
+      const { daytime } = splitSamplePlaces(matched.places);
+      if (daytime.length) {
+        const kind = matched.source === "imagined" ? "imagined sample" : "recorded sample";
+        return `${entities} · ${daytime.length} ${daytime.length === 1 ? "place" : "places"} matched near ${destName} · ${kind}`;
+      }
+    }
+    return `${entities} — places resolve when the route lands`;
+  }, [selectedCrate, draft.dest]);
   useEffect(() => {
     if (!paymentsConfigured()) return;
     let on = true;
@@ -161,6 +188,11 @@ export function TripEntryScreen({ initialDate, onContinue, onExploreExample, ini
                 </button>
               ))}
             </div>
+            {crateLine && (
+              <p className="entry-crate-count" aria-live="polite">
+                {crateLine}
+              </p>
+            )}
             {selectedCrate && (
               <p className="entry-crate-note">
                 {selectedCrate.favorites

@@ -31,7 +31,9 @@ import { SunSelf } from "@/components/SunSelf";
 import { sunSelfRead } from "@/domain/sun-self";
 import { DayCardShare } from "@/components/DayCardShare";
 import { RightNowCard } from "@/components/RightNowCard";
-import { postTasteSignal, resolvePlaceChoice } from "@/lib/place-choices";
+import { dayPlacePin, postTasteSignal } from "@/lib/place-choices";
+import { provenanceChips } from "@/domain/provenance";
+import type { CrewAccountRow } from "@/components/CrewAccount";
 import { recordTasteSignal } from "@/lib/taste-signals";
 import { tasteSelectionKey } from "@/domain/taste";
 import type { DestinationPlace } from "@/domain/taste";
@@ -72,7 +74,7 @@ import { friendlyDayLabel } from "@/lib/day-label";
 import type { DaySpec } from "@/domain/types";
 import { isTripFinished } from "@/lib/trip-status";
 import type { TripActions } from "@/lib/use-trip-actions";
-import { Bell, BellRing } from "lucide-react";
+import { Bell, BellRing, MapPin } from "lucide-react";
 import { CAT_ICON, DaySkyStrip } from "@/components/DaySkyStrip";
 import { VoiceControls } from "@/components/VoiceControls";
 import { useUndoToast } from "@/components/UndoToast";
@@ -296,6 +298,11 @@ export interface NudgeFeedScreenProps {
   placeChoices?: PlaceChoices;
   calendarSource?: "google" | "fixture";
   sampleMode?: boolean;
+  /** The crew's account left by the commit that built this plan — the
+   *  provenance chips quote its rows when present. Null on a URL restore,
+   *  where the row derives only what the trip itself can prove and omits
+   *  the rest (agent-native step 3). */
+  crewAccount?: { rows: CrewAccountRow[] } | null;
 }
 
 /** Nudge category → the intervention kind a did/skip mark refers to.
@@ -349,6 +356,7 @@ export function NudgeFeedScreen({
   placeChoices,
   calendarSource,
   sampleMode,
+  crewAccount,
 }: NudgeFeedScreenProps) {
   const effectiveAdherence = adherence ?? ADHERENCE_PROFILE;
   const { completedIds, skippedIds, pendingMarks, ready: actionsReady } = actions;
@@ -877,14 +885,64 @@ export function NudgeFeedScreen({
     activeDaySpec.dayIndex > trip.departureDayIndex && locked.has(activeDaySpec.label);
   const activeSceneIdea = useMemo(() => {
     const spec = arrivalView ? activeDaySpec : null;
-    const sug =
-      spec && tasteItinerary
-        ? tasteItinerary.suggestions.find((x) => x.dayIndex === spec.dayIndex)
-        : undefined;
-    return spec && tasteItinerary && sug
-      ? resolvePlaceChoice(tasteItinerary, sug, placeChoices?.state ?? {})
+    return spec && tasteItinerary
+      ? (dayPlacePin(tasteItinerary, spec.dayIndex, placeChoices?.state ?? {}) ?? undefined)
       : undefined;
   }, [arrivalView, activeDaySpec, tasteItinerary, placeChoices?.state]);
+
+  /* Step 4 — the pin travels with the day. Whatever `resolvePlaceChoice`
+     returns for the active spec is surfaced on the day's nudge card, so
+     the crate's pick no longer lives only in the itinerary/arrival views.
+     Gated off arrivalView only because that view already rows the same
+     idea with its keep/swap controls — two pins on one day would read as
+     two facts. */
+  const dayPin = useMemo(() => {
+    if (arrivalView || !activeDaySpec || !tasteItinerary) return null;
+    const resolved = dayPlacePin(
+      tasteItinerary,
+      activeDaySpec.dayIndex,
+      placeChoices?.state ?? {},
+    );
+    return resolved && (resolved.status === "suggested" || resolved.status === "kept")
+      ? resolved
+      : null;
+  }, [arrivalView, activeDaySpec, tasteItinerary, placeChoices?.state]);
+
+  /* Step 3 — provenance chips under the stamped header. The account's
+     rows are quoted when the commit left them; a URL restore derives the
+     route facts from the trip and the crate from whatever taste state
+     actually exists — the row names what IS known and drops the rest. */
+  const provChips = useMemo(
+    () =>
+      provenanceChips({
+        trip,
+        accountRows: crewAccount?.rows ?? null,
+        calendarCount: calendarEvents.length,
+        calendarSource,
+        crate: crewAccount
+          ? null
+          : tasteItinerary
+            ? {
+                entities: tasteItinerary.favorites.length,
+                places: tasteItinerary.suggestions.length,
+              }
+            : tasteProfile?.ready
+              ? { entities: tasteProfile.favorites.length }
+              : null,
+      }),
+    [trip, crewAccount, calendarEvents.length, calendarSource, tasteItinerary, tasteProfile],
+  );
+  const provRow =
+    provChips.length > 0 ? (
+      <ul className="prov-chips" aria-label="Signals the plan used">
+        {provChips.map((c) => (
+          <li key={c.source} className="prov-chip">
+            <span className="prov-chip-src">{c.source}</span>
+            {c.detail}
+          </li>
+        ))}
+      </ul>
+    ) : null;
 
     const shareCard = scene && (
     <DayCardShare
@@ -976,13 +1034,9 @@ export function NudgeFeedScreen({
      itinerary card stays with the next room, matching their original spots. */
   const tastePanels = (() => {
     const spec = arrivalView ? activeDaySpec : null;
-    const suggestion =
-      spec && tasteItinerary
-        ? tasteItinerary.suggestions.find((x) => x.dayIndex === spec!.dayIndex)
-        : undefined;
     const resolved =
-      spec && tasteItinerary && suggestion
-        ? resolvePlaceChoice(tasteItinerary, suggestion, placeChoices?.state ?? {})
+      spec && tasteItinerary
+        ? (dayPlacePin(tasteItinerary, spec.dayIndex, placeChoices?.state ?? {}) ?? undefined)
         : undefined;
     const interactive = !tripFinished && tapsBecomeCheckIns;
     const writeChoice = (status: "kept" | "dismissed" | "swapped", place: DestinationPlace) => {
@@ -1085,7 +1139,9 @@ export function NudgeFeedScreen({
           eventSource={calendarSource ?? "fixture"}
           preview={locked.size === 0}
           hasPlan={hasPlan || [...(preview?.values() ?? [])].some(Boolean)}
-        />
+        >
+          {provRow}
+        </PerformanceBrief>
       ) : (
         <PerformanceBrief
           compact
@@ -1097,7 +1153,9 @@ export function NudgeFeedScreen({
           eventSource={calendarSource ?? "fixture"}
           preview={!locked.has(currentLabel)}
           hasPlan={hasPlan || [...(preview?.values() ?? [])].some(Boolean)}
-        />
+        >
+          {provRow}
+        </PerformanceBrief>
       )}
       </Room>
 
@@ -1605,6 +1663,20 @@ export function NudgeFeedScreen({
                 Nice work. Stick to tonight&apos;s bedtime and you&apos;re on track.
               </p>
             </>
+          )}
+
+          {/* Step 4 — the pinned place rides the day's card, not only the
+              itinerary. One quiet line: the resolved place and where it
+              came from. The tag never claims a live lookup — "your crate"
+              is the favorites the traveller actually packed. */}
+          {dayPin && (
+            <p className="feed-pin">
+              <MapPin size={13} className="feed-pin-ic" aria-hidden="true" />
+              <span className="feed-pin-name">{dayPin.place.name}</span>
+              <span className="feed-pin-tag">
+                from your crate{dayPin.status === "kept" ? " · kept" : ""}
+              </span>
+            </p>
           )}
 
           {/* No meter on a preview — "0 of 5 done" over invented steps is a

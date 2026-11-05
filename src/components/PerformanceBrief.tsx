@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { HeroMeeting } from "@/domain/hero";
 import { fmtMin } from "@/domain/circadian";
 import { Stamp } from "@/components/ui/Stamp";
@@ -14,9 +15,13 @@ export interface PerformanceBriefProps {
   exampleBaseline?: boolean;
   hasPlan?: boolean;
   compact?: boolean;
+  /** Rendered beneath the title line — the provenance chips row slots here
+   *  so the signals the plan used sit inside the stamped card they
+   *  describe (agent-native step 3). */
+  children?: ReactNode;
 }
 
-export function PerformanceBrief({ moment, destination, date, example, preview, eventSource, exampleBaseline, hasPlan = true, compact }: PerformanceBriefProps) {
+export function PerformanceBrief({ moment, destination, date, example, preview, eventSource, exampleBaseline, hasPlan = true, compact, children }: PerformanceBriefProps) {
   const risk = moment?.status === "risk";
   const fictionalSleep = exampleBaseline || example;
   const parsedDate = date ? new Date(`${date}T00:00:00Z`) : null;
@@ -36,6 +41,7 @@ export function PerformanceBrief({ moment, destination, date, example, preview, 
       <p className="entry-eyebrow">{example ? "A fictional moment that matters" : "The moment that matters"}</p>
       {stamp && <Stamp kind={stamp} className="perf-stamp" />}
       <h2 id="perf-brief-heading">{moment ? moment.title : "Show up for what matters."}</h2>
+      {children}
       {sources.length > 0 && (
         <p className="perf-source">Sample data: {sources.join(" · ")} — not your measurements.</p>
       )}

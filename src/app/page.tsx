@@ -4,11 +4,11 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Plane } from "lucide-react";
-import { coverageOf, fmtMin } from "@/domain/circadian";
+import { coverageOf, evaluatePlan, fmtMin } from "@/domain/circadian";
 import { todayDayIndex } from "@/domain/today";
 import { resolveBaseline, buildTrip, calendarFor, GARMIN_BASELINE, ADHERENCE_PROFILE, type WakeBand } from "@/domain/fixtures";
 import { buildDailyNudgesForDay, getFlightRecommendations } from "@/domain/nudges";
-import { previewPlan } from "@/domain/solver";
+import { previewPlan, type SolvedDay } from "@/domain/solver";
 import { summarizeCheckIn } from "@/domain/adherence";
 import type {
   AdherenceProfile,
@@ -49,12 +49,13 @@ import { LandingInstrument } from "@/components/LandingInstrument";
 import { LandingDepth } from "@/components/LandingDepth";
 import { SampleJourneys } from "@/components/SampleJourneys";
 import { Adverts, AdvertsFeature, AdvertsRail } from "@/components/Adverts";
-import type { RouteGapRead } from "@/domain/route-gap";
+import { routeGapRead, type RouteGapRead } from "@/domain/route-gap";
 const AgentDrawer = dynamic(
   () => import("@/components/AgentDrawer").then((m) => m.AgentDrawer),
 );
 import { RunAnnouncer } from "@/components/RunAnnouncer";
 import { Stamp } from "@/components/ui/Stamp";
+import { CrewAccount, type CrewAccountRow } from "@/components/CrewAccount";
 import { CrewTrace } from "@/components/CrewTrace";
 import { CalendarApprovalCard } from "@/components/CalendarApprovalCard";
 import { CrewQuestionCard } from "@/components/CrewQuestionCard";
@@ -78,7 +79,7 @@ import { funnelKey, recordFunnel } from "@/lib/funnel";
 import { useLightSweep } from "@/components/LightSweep";
 import { safeStorageGet } from "@/lib/local-data";
 import { useTripActions } from "@/lib/use-trip-actions";
-import { useTripTaste } from "@/lib/use-trip-taste";
+import { readTasteProfile, readTripTaste, useTripTaste } from "@/lib/use-trip-taste";
 import { usePlaceChoices } from "@/lib/use-place-choices";
 import { readTasteSignals } from "@/lib/taste-signals";
 import { shareTripContext } from "@/lib/share-trip";
@@ -86,6 +87,7 @@ import { shareLink } from "@/lib/share-client";
 import { ScenarioExperience } from "@/components/ScenarioExperience";
 import type { DemoScenarioId } from "@/domain/demo-scenarios";
 import { isTasteItinerary, itineraryMatchesTrip, type TasteItinerary } from "@/domain/taste";
+import { matchSampleProfileForTrip, splitSamplePlaces } from "@/lib/sample-taste";
 import { JourneySteps } from "@/components/JourneySteps";
 import { PlanReview } from "@/components/PlanReview";
 import { TodayStage } from "@/components/TodayStage";
@@ -213,6 +215,19 @@ export default function Home() {
   const [tripResolved, setTripResolved] = useState(false);
   const [tripFetchError, setTripFetchError] = useState(false);
   const [fetchNonce, setFetchNonce] = useState(0);
+  /* The crew's account — the expandable trace that replaces the bare boot
+   * skeleton between a commit and the feed (agent-native step 2). Rows are
+   * facts the real domain functions produced; `elapsedMs` is measured wall
+   * time from the commit, never the presentation dwell. `accountReleased`
+   * is the feed handoff: held until the rows have visibly landed. */
+  const [crewAccount, setCrewAccount] = useState<{
+    startedAt: number;
+    elapsedMs: number | null;
+    rows: CrewAccountRow[];
+    done: boolean;
+  } | null>(null);
+  const [accountReleased, setAccountReleased] = useState(true);
+  const releaseAccount = useCallback(() => setAccountReleased(true), []);
   const [selectedDayLabel, setSelectedDayLabel] = useState<string>("D-1");
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [briefingDismissed, setBriefingDismissed] = useState(false);
@@ -417,6 +432,108 @@ export default function Home() {
         setTripResolved(true);
         setTripFetchError(false);
         setData(d);
+        /* The crew's account closes on the real payload: the same trip,
+           calendar and baseline the plan build runs against, pushed through
+           the same functions — the solver's own chain for the light windows,
+           the gate's conflict scan, the crate matcher the run will call.
+           The elapsed is measured at the moment the last fact exists; the
+           rows' on-screen pacing below is presentation, never this number. */
+        const accountRows: CrewAccountRow[] = [];
+        if (d?.trip) {
+          const base = resolveBaseline(wakeBand, d.baseline ?? GARMIN_BASELINE);
+          const adherence = d.adherence ?? ADHERENCE_PROFILE;
+          const calendar = d.calendar ?? [];
+          try {
+            const solved = previewPlan({ trip: d.trip, calendar, adherence, baseline: base });
+            const solvedDays = [...solved.values()]
+              .filter((s): s is SolvedDay => !!s)
+              .map((s) => s.plan);
+            const lightCount = solvedDays.reduce(
+              (n, p) => n + p.interventions.filter((iv) => iv.kind === "light_exposure").length,
+              0,
+            );
+            const lightDays = solvedDays.filter((p) =>
+              p.interventions.some((iv) => iv.kind === "light_exposure"),
+            ).length;
+            accountRows.push({
+              id: "light",
+              label: "Computed light windows",
+              secondary: lightCount
+                ? `${lightCount} across ${lightDays} ${lightDays === 1 ? "day" : "days"}`
+                : "none placed",
+            });
+            const verdict = evaluatePlan({
+              trip: d.trip,
+              days: solvedDays,
+              calendar,
+              adherence,
+              baseline: base,
+            });
+            const flagged =
+              verdict.violations.filter((v) => v.code === "CALENDAR_CONFLICT").length +
+              verdict.notes.filter((n) => n.includes("overlaps movable")).length;
+            accountRows.push({
+              id: "conflicts",
+              label: "Checked for conflicts",
+              secondary: flagged ? `${flagged} flagged` : "none",
+            });
+          } catch {
+            accountRows.push({
+              id: "light",
+              label: "Computed light windows",
+              secondary: "the solver could not place this route",
+            });
+            accountRows.push({
+              id: "conflicts",
+              label: "Checked for conflicts",
+              secondary: "the scan needs the crew",
+            });
+          }
+          try {
+            const scope = `${origin}-${dest}-${departureDate}`;
+            let favorites = readTripTaste(localStorage, scope);
+            if (!favorites.length) favorites = readTasteProfile(localStorage);
+            if (!favorites.length) {
+              accountRows.push({ id: "crate", label: "Matched your crate", secondary: "no crate packed" });
+            } else {
+              const entities = `${favorites.length} ${favorites.length === 1 ? "entity" : "entities"}`;
+              const matched = matchSampleProfileForTrip(d.trip.destination.name, favorites);
+              if (matched) {
+                const { daytime, evening } = splitSamplePlaces(matched.places);
+                /* The evening list re-includes daytime venues as fallbacks
+                   (splitSamplePlaces' own ordering), so count the distinct
+                   places the crate actually matched — never a double count. */
+                const places = new Set(
+                  [...daytime, ...evening].map((p) => p.id ?? p.name),
+                ).size;
+                accountRows.push({
+                  id: "crate",
+                  label: "Matched your crate",
+                  secondary: `${entities} · ${places} ${places === 1 ? "place" : "places"}`,
+                });
+              } else {
+                accountRows.push({
+                  id: "crate",
+                  label: "Matched your crate",
+                  secondary: `${entities} · places resolve with the crew`,
+                });
+              }
+            }
+          } catch {
+            accountRows.push({ id: "crate", label: "Matched your crate", secondary: "no crate packed" });
+          }
+        }
+        const accountDoneAt = performance.now();
+        setCrewAccount((prev) =>
+          prev && !prev.done
+            ? {
+                ...prev,
+                rows: [...prev.rows, ...accountRows],
+                done: true,
+                elapsedMs: accountDoneAt - prev.startedAt,
+              }
+            : prev,
+        );
         // Open on the day that is actually today; fall back to the first
         // pre-flight day when the trip doesn't span today.
         const label = d?.trip ? pickHomeDayLabel(d.trip) : null;
@@ -1001,6 +1118,8 @@ export default function Home() {
     setData(null);
     setTripResolved(false);
     setTripFetchError(false);
+    setCrewAccount(null);
+    setAccountReleased(true);
     setStreamError(null);
     setRestoredLocked(null);
     setRestoredCitations([]);
@@ -1020,7 +1139,27 @@ export default function Home() {
     (route: HomeRoute) => {
       if (!isValidHomeRoute(route)) return;
       recordFunnel("entry", funnelKey(route.origin, route.dest, route.date));
+      /* The crew's account opens here: the clock starts at the commit, the
+         first row is the route read the gap functions already do, and the
+         rest lands when /api/trip returns the payload the plan builds on. */
+      const accountStart = performance.now();
       resetTripView();
+      const gap = routeGapRead(route);
+      setCrewAccount({
+        startedAt: accountStart,
+        elapsedMs: null,
+        done: false,
+        rows: [
+          {
+            id: "route",
+            label: "Read the route",
+            secondary: gap
+              ? `${(gap.gapMin / 60).toFixed(1).replace(/\.0$/, "")}h ${gap.direction}bound`
+              : "route unread",
+          },
+        ],
+      });
+      setAccountReleased(false);
       setOrigin(route.origin);
       setDest(route.dest);
       setDepartureDate(route.date);
@@ -1340,6 +1479,13 @@ export default function Home() {
     const iOS = /iP(hone|ad|od)/.test(navigator.userAgent);
     return Boolean(install.installEvt) || iOS;
   })();
+
+  /* The feed handoff: while the crew's account is on screen it holds the
+   *  plan-build boot state until every row has visibly landed — the facts
+   *  are already done; the hold is the rows' ~450ms cadence. A fetch error
+   *  releases it immediately so the error surface can speak. */
+  const accountHold =
+    crewAccount !== null && !accountReleased && !tripFetchError;
 
   return (
     <div className={entry === null || entry.mode === "setup" ? "root landing-ink" : "root"}>
@@ -1820,7 +1966,7 @@ export default function Home() {
             }}
             onBack={openEntry}
           />
-        ) : trip ? (
+        ) : trip && !accountHold ? (
           <>
             {entry.mode === "trip" && tripFetchError && (
               <div className="run-error" role="alert">
@@ -2073,6 +2219,10 @@ export default function Home() {
                 placeChoices={tasteScope ? placeChoices : undefined}
                 calendarSource={data?.calendarSource ?? "fixture"}
                 sampleMode={entry.mode === "example"}
+                /* The account survives the feed handoff so the provenance
+                   chips can quote its rows; a URL restore never ran one,
+                   and the row then derives only what the trip can prove. */
+                crewAccount={crewAccount}
                 planEdit={trip ? {
                   onPlansChanged: (plans) => {
                     setRestoredLocked(new Map(plans.map((d) => [d.label, d])));
@@ -2145,15 +2295,33 @@ export default function Home() {
             )}
             </div>
           </>
-        ) : !tripResolved ? (
-          <div ref={setupRef} aria-busy="true" aria-label="Loading your plan" style={{ padding: "24px 0" }}>
+        ) : !tripResolved || accountHold ? (
+          <div
+            ref={setupRef}
+            aria-busy="true"
+            aria-label="Loading your plan"
+            className={crewAccount ? "boot" : undefined}
+            style={crewAccount ? undefined : { padding: "24px 0" }}
+          >
             <span className="sr-only">Loading your plan…</span>
-            <div className="skel" style={{ width: "60%", height: 44, borderRadius: 999 }} />
-            <div className="skel card" style={{ marginTop: 18, padding: 20 }}>
-              <div className="skel" style={{ width: "40%", height: 14, borderRadius: 6 }} />
-              <div className="skel" style={{ width: "80%", height: 20, borderRadius: 6, marginTop: 12 }} />
-              <div className="skel" style={{ width: "65%", height: 14, borderRadius: 6, marginTop: 8 }} />
-            </div>
+            {crewAccount ? (
+              <CrewAccount
+                rows={crewAccount.rows}
+                done={crewAccount.done}
+                startedAt={crewAccount.startedAt}
+                elapsedMs={crewAccount.elapsedMs}
+                onSettled={releaseAccount}
+              />
+            ) : (
+              <>
+                <div className="skel" style={{ width: "60%", height: 44, borderRadius: 999 }} />
+                <div className="skel card" style={{ marginTop: 18, padding: 20 }}>
+                  <div className="skel" style={{ width: "40%", height: 14, borderRadius: 6 }} />
+                  <div className="skel" style={{ width: "80%", height: 20, borderRadius: 6, marginTop: 12 }} />
+                  <div className="skel" style={{ width: "65%", height: 14, borderRadius: 6, marginTop: 8 }} />
+                </div>
+              </>
+            )}
           </div>
         ) : tripFetchError ? (
           <div ref={setupRef} className="run-error" role="alert" style={{ marginTop: 18 }}>

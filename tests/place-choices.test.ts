@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { parsePlaceChoices, resolvePlaceChoice, type PlaceChoiceState } from "../src/lib/place-choices";
+import { dayPlacePin, parsePlaceChoices, resolvePlaceChoice, type PlaceChoiceState } from "../src/lib/place-choices";
 import { placeKey, tasteSelectionKey, type DestinationPlace, type TasteItinerary } from "../src/domain/taste";
 
 const P = (name: string, id?: string): DestinationPlace => ({ name, categories: ["cafe"], ...(id ? { id } : {}) });
@@ -171,6 +171,64 @@ describe("sequential swap allocation", () => {
     expect(r.status).toBe("unavailable");
     expect(r.unavailableReason).toBe("missing");
     expect(r.savedPlace?.id).toBe("zz");
+  });
+});
+
+describe("the pin and the session ranking (agent-native step 4)", () => {
+  it("dayPlacePin resolves the day's suggestion — the pin lands on today", () => {
+    const i = itin([P("Alpha", "a"), P("Beta", "b"), P("Gamma", "c")]);
+    const pin = dayPlacePin(i, 4, {});
+    expect(pin?.status).toBe("suggested");
+    expect(pin?.place.name).toBe("Alpha");
+    // A kept choice on that date surfaces as kept — the pin is the
+    // resolved choice, not the raw suggestion.
+    const st: PlaceChoiceState = {
+      "2026-05-12": { status: "kept", place: i.suggestions[1].place, tasteKey: key },
+    };
+    expect(dayPlacePin(i, 5, st)?.status).toBe("kept");
+    // A day the itinerary has no idea for pins nothing — never fabricated.
+    expect(dayPlacePin(i, 0, {})).toBeNull();
+    expect(dayPlacePin(i, 99, {})).toBeNull();
+  });
+
+  it("alternatives prefer adjacency to what the traveller kept", () => {
+    const ps = [
+      { name: "Alpha", categories: ["cafe"], id: "a" },
+      { name: "Beta", categories: ["museum"], id: "b" },
+      { name: "Gamma", categories: ["cafe"], id: "c" },
+      { name: "Delta", categories: ["museum"], id: "d" },
+    ] as DestinationPlace[];
+    const t = itin(ps);
+    // Before any choice: pool order — Qloo's own ranking.
+    const cold = resolvePlaceChoice(t, sugOf(t), {});
+    expect(cold.alternatives.map((p) => p.id)).toEqual(["c", "d"]);
+    // Keeping the museum-flavoured Beta on D+2 pulls the other museum
+    // ahead of the next cafe in D+1's alternatives — the session's own
+    // signal, not a new data model.
+    const st: PlaceChoiceState = {
+      "2026-05-12": { status: "kept", place: ps[1], tasteKey: key },
+    };
+    const warm = resolvePlaceChoice(t, sugOf(t), st);
+    expect(warm.alternatives.map((p) => p.id)).toEqual(["d", "c"]);
+  });
+
+  it("adjacency is a stable re-rank — ties keep the taste ranking", () => {
+    const ps = [
+      { name: "Alpha", categories: ["cafe"], id: "a" },
+      { name: "Beta", categories: ["cafe"], id: "b" },
+      { name: "Gamma", categories: ["cafe"], id: "c" },
+      { name: "Delta", categories: ["cafe"], id: "d" },
+    ] as DestinationPlace[];
+    const t = itin(ps);
+    const st: PlaceChoiceState = {
+      "2026-05-12": { status: "kept", place: ps[1], tasteKey: key },
+    };
+    expect(resolvePlaceChoice(t, sugOf(t), st).alternatives.map((p) => p.id)).toEqual(["c", "d"]);
+    // Dismissed places teach nothing — they are excluded from adjacency.
+    const dismissed: PlaceChoiceState = {
+      "2026-05-12": { status: "dismissed", place: ps[1], tasteKey: key },
+    };
+    expect(resolvePlaceChoice(t, sugOf(t), dismissed).alternatives.map((p) => p.id)).toEqual(["c", "d"]);
   });
 });
 

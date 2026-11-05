@@ -126,7 +126,10 @@ export function sunSelfLidForDebt(owedMin: number): number {
 }
 
 /** No route yet — the empty-state face. Asleep, not sad: a traveller
- *  without a trip owes nothing. */
+ *  without a trip owes nothing. Kept for the surfaces that genuinely have
+ *  nobody standing in front of them (CrewFeed's dozing state, the
+ *  lookbook's sleeping window); the landing instrument now reads the
+ *  visitor's own clock instead — see `sunSelfVisitor`. */
 export function sunSelfSleeping(): SunSelfRead {
   return {
     lid: 1,
@@ -136,6 +139,23 @@ export function sunSelfSleeping(): SunSelfRead {
     rayCount: SUNSELF_RAY_COUNT,
     mood: "sleeping",
     line: "No route yet — the sun rises when the trip does.",
+  };
+}
+
+/** The visitor read — no route yet, but a person is standing here. The
+ *  face is the home face, honestly: eyes open, meridian fully lit — a body
+ *  on its own clock carries no shift. The line is the one signal we
+ *  already hold without asking: their timezone and their minute. */
+export function sunSelfVisitor(cityLabel: string, timeLabel: string): SunSelfRead {
+  const city = cityLabel.trim() || "local";
+  return {
+    lid: 0,
+    glow: 1,
+    tiltDeg: 0,
+    raysLit: SUNSELF_RAY_COUNT,
+    rayCount: SUNSELF_RAY_COUNT,
+    mood: "adjusted",
+    line: `Your body is on ${city} time — it thinks it's ${timeLabel}.`,
   };
 }
 

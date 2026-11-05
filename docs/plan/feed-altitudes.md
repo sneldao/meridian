@@ -280,7 +280,9 @@ already exist as film. `public/ads/` carries the trimmed stills + clips
 (~9MB total, lazy). The cast's file names are the truth — diego/earl/marcus —
 so the personas took them: Diego Vidal, **Marcus** Mercer, **Earl** Rivers
 (the scenario ids `miles`/`danny` stay opaque keys; Sofia keeps a text row —
-her advert was never shot). Composition: the feature frame pairs with the
+her advert was never shot. When stills exist: drop `sofia.webp` in
+`public/ads/` matching the 800px 4:5 crop and set `sofia: "sofia"` in
+`SAMPLE_AD` — a one-line manifest change; a voice toggle needs a line). Composition: the feature frame pairs with the
 trip form inside `.landing-entry-stage` (the who beside the ask), the tile
 rail + caption runs beneath as the stage's floor, and `LandingInstrument`
 pairs with `LandingExampleDay` (the mechanism beside its proof). Tiles are

@@ -998,6 +998,46 @@ a[href]:active {
   padding: 2px 6px;
   vertical-align: middle;
 }
+
+/* Provenance chips (agent-native step 3) — ContextCard-style pills under
+   the plan header: one wrapping row naming every signal the plan used.
+   Mono at the stamp's floor, --m-faint so the row is read as metadata,
+   never a second headline. The source tag carries the weight so the
+   detail can stay quiet. */
+.prov-chips {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.prov-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  max-width: 100%;
+  padding: 3px 10px;
+  border: 1px solid var(--m-border-2);
+  border-radius: 999px;
+  font-family: var(--font-mono2);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.5;
+  color: var(--m-faint);
+  overflow-wrap: anywhere;
+}
+.prov-chip-src {
+  flex: none;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--m-muted);
+}
+.prov-chip-src::after {
+  content: ":";
+}
 .evchip {
   display: inline-flex;
   align-items: center;
@@ -2988,6 +3028,36 @@ html[data-theme="night"] .evline-cite,
   color: #9db8ff;
 }
 
+/* The pinned place on the day's nudge card (agent-native step 4): the
+   crate's pick travels with the day, one quiet line with the same
+   provenance-tag honesty the itinerary card carries. */
+.feed-pin {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--m-muted);
+}
+.feed-pin-ic {
+  flex: none;
+  color: var(--m-faint);
+}
+.feed-pin-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.feed-pin-tag {
+  flex: none;
+  margin-left: 2px;
+  padding: 1px 8px;
+  border: 1px solid var(--m-border-2);
+  border-radius: 999px;
+  font-size: 11px;
+  color: var(--m-faint);
+  white-space: nowrap;
+}
+
 @media (max-width: 720px) {
   .tl {
     padding: 4px 14px 10px;
@@ -3385,6 +3455,165 @@ html[data-theme="night"] .skel::after {
   .boot-crew-name { animation: none; opacity: 1; }
   .boot-terminator { animation: none; transform: none; opacity: 0.6; }
   .boot-overlay { animation: none; opacity: 0; }
+}
+
+/* The crew's account — the expandable trace inside the plan-build boot
+   state (agent-native step 2). Every row is a fact a real function
+   produced upstream; the only motion here is the rows' ~450ms cadence,
+   the loader's wavefront and the title's shimmer — transform + opacity,
+   stood down under reduced motion. */
+.crew-account {
+  width: min(460px, 100%);
+  margin: 0 auto;
+  background: var(--m-card);
+  border: 1px solid var(--m-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-sm);
+  text-align: left;
+}
+.crew-account-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+.crew-account-glyph {
+  display: inline-flex;
+  color: var(--m-accent);
+  flex: none;
+}
+.crew-account-title {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--m-text);
+}
+/* The shimmer is a gradient panel sweeping the label on transform — the
+   same trick .skel::after plays, never a repainting background-position. */
+.crew-account-title.is-working {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+}
+.crew-account-title.is-working::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, var(--m-tag), transparent);
+  transform: translateX(-100%);
+  animation: crew-account-shimmer 1.6s var(--ease-drift) infinite;
+  pointer-events: none;
+}
+@keyframes crew-account-shimmer {
+  to { transform: translateX(100%); }
+}
+/* LoaderGrid — the 3×3 Drive wavefront. Cells pulse on opacity + scale;
+   the chevron shape is the per-cell animationDelay (col+|row-1|)*90ms,
+   set inline like .boot-crew-name's stagger. */
+.crew-loader {
+  display: inline-grid;
+  grid-template-columns: repeat(3, 4px);
+  gap: 2px;
+  flex: none;
+}
+.crew-loader-cell {
+  width: 4px;
+  height: 4px;
+  border-radius: 1px;
+  background: var(--m-accent);
+  opacity: 0.25;
+  animation: pixel-on 650ms var(--ease-drift) infinite;
+}
+@keyframes pixel-on {
+  0%, 100% { opacity: 0.25; transform: scale(0.85); }
+  40% { opacity: 1; transform: none; }
+}
+.crew-account-elapsed {
+  flex: none;
+  font-family: var(--font-mono2);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-xs);
+  color: var(--m-muted);
+}
+.crew-account-toggle {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  margin: -8px -8px -8px 0;
+  border: 0;
+  background: transparent;
+  color: var(--m-muted);
+  cursor: pointer;
+}
+.crew-account-toggle:hover {
+  color: var(--m-text);
+}
+.crew-account-toggle svg {
+  transition: transform var(--dur-glide) var(--ease-glide);
+}
+.crew-account-toggle[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+.crew-account-body {
+  padding-top: var(--space-2xs);
+}
+.crew-account-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.crew-account-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2xs);
+  font-size: var(--text-sm);
+  color: var(--m-text);
+  animation: crew-fade-up 0.6s var(--ease-settle) both;
+}
+@keyframes crew-fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+.crew-account-check {
+  align-self: center;
+  color: var(--m-faint);
+  flex: none;
+}
+.crew-account-label {
+  min-width: 0;
+}
+.crew-account-secondary {
+  margin-left: auto;
+  flex: none;
+  font-family: var(--font-mono2);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-xs);
+  color: var(--m-muted);
+  white-space: nowrap;
+}
+/* The Surfer variant — the featured traveller's clip under the trace,
+   muted so the wait becomes watching. */
+.crew-account-surfer {
+  display: block;
+  width: 200px;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--m-border-2);
+  margin-top: var(--space-sm);
+}
+@media (prefers-reduced-motion: reduce) {
+  .crew-account-row { animation: none; }
+  .crew-loader-cell { animation: none; opacity: 0.25; }
+  .crew-account-title.is-working::after { animation: none; }
+  .crew-account-toggle svg { transition: none; }
 }
 
 /* Crew faces — the mood channel morphs on transform + opacity only. */
@@ -5590,6 +5819,16 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   font-size: 13px;
   line-height: 1.5;
   color: var(--m-muted);
+  margin: 8px 0 0;
+}
+/* The crate's live payoff — a real count from the same resolution the
+   trip runs, quiet mono so it reads as telemetry, not ad copy. */
+.entry-crate-count {
+  font-family: var(--font-mono2);
+  font-size: 12px;
+  line-height: 1.5;
+  letter-spacing: 0.04em;
+  color: var(--m-faint);
   margin: 8px 0 0;
 }
 .entry-crate-route {

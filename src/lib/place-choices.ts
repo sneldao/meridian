@@ -86,6 +86,19 @@ export function postTasteSignal(
 
 const choicesKey = (scope: string) => `meridian:place-choices:${scope}`;
 
+/** The day's pinned idea — `resolvePlaceChoice` on whatever suggestion the
+ *  itinerary gives that dayIndex, null when it has none. The feed pins it
+ *  on the day card itself (agent-native step 4), so the match+resolve
+ *  chain lives here exactly once. */
+export function dayPlacePin(
+  itinerary: TasteItinerary,
+  dayIndex: number,
+  state: PlaceChoiceState,
+): ResolvedPlaceChoice | null {
+  const suggestion = itinerary.suggestions.find((s) => s.dayIndex === dayIndex);
+  return suggestion ? resolvePlaceChoice(itinerary, suggestion, state) : null;
+}
+
 export function readPlaceChoices(storage: Pick<Storage, "getItem">, scope: string): PlaceChoiceState {
   return parsePlaceChoices(storage.getItem(choicesKey(scope)));
 }
@@ -186,12 +199,31 @@ export function resolvePlaceChoice(
     ordered.filter((s) => s.date !== suggestion.date).map((s) => placeKey(s.place)),
   );
   const currentIndex = pool.findIndex((p) => placeKey(p) === placeKey(resolved.place));
+  /* Session ranking (agent-native step 4): alternatives adjacent to what
+   * the traveller already kept or swapped in — a shared category — list
+   * first, so the next offer learns from this session's picks. The pool's
+   * own order (the taste ranking) survives inside each adjacency tier:
+   * a stable sort, never a reshuffle. */
+  const liked = new Set<string>();
+  for (const c of Object.values(state)) {
+    if (c.tasteKey !== key || (c.status !== "kept" && c.status !== "swapped")) continue;
+    for (const cat of c.place.categories) {
+      const n = cat.trim().toLowerCase();
+      if (n) liked.add(n);
+    }
+  }
+  const adjacency = (p: DestinationPlace) =>
+    liked.size
+      ? p.categories.filter((cat) => liked.has(cat.trim().toLowerCase())).length
+      : 0;
   return {
     ...resolved,
-    alternatives: pool.filter((p, index) =>
-      placeKey(p) !== placeKey(resolved.place) &&
-      !reservedElsewhere.has(placeKey(p)) &&
-      !originalsElsewhere.has(placeKey(p)) &&
-      (choice?.status !== "swapped" || index > currentIndex)),
+    alternatives: pool
+      .filter((p, index) =>
+        placeKey(p) !== placeKey(resolved.place) &&
+        !reservedElsewhere.has(placeKey(p)) &&
+        !originalsElsewhere.has(placeKey(p)) &&
+        (choice?.status !== "swapped" || index > currentIndex))
+      .sort((a, b) => adjacency(b) - adjacency(a)),
   };
 }
