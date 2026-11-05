@@ -4,6 +4,7 @@ import { useMemo, useRef } from "react";
 import { TimezoneClocks } from "@/components/TimezoneClocks";
 import { StageStars } from "@/components/StageStars";
 import { StageRidges } from "@/components/StageRidges";
+import { StageArc } from "@/components/StageArc";
 import { SunSelf } from "@/components/SunSelf";
 import { fmtMin } from "@/domain/circadian";
 import type { TravelerNudge } from "@/domain/nudges";
@@ -119,6 +120,9 @@ export function TodayStage({
       {/* the ground the sun rises over — far ridge clips the disc's lower
           sliver so it reads as land, not a floating gradient */}
       <StageRidges seed={`ridge-${trip.destination.name}`} />
+      {/* the route itself on the horizon — origin → terminator →
+          destination, the body clock's marker riding its coverage */}
+      {liveDate && <StageArc trip={trip} coverage={sun.glow} date={liveDate} />}
       <div className="today-stage-inner">
         <button
           type="button"

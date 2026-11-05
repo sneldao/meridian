@@ -671,6 +671,18 @@ a[href]:active {
   backdrop-filter: blur(18px) saturate(1.3);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 12px 32px -20px rgba(8, 10, 18, 0.6);
 }
+/* Paper, not glass — a whisper of monochrome grain over the whole card so
+   it reads as a document under the hand, the same feTurbulence technique
+   the landing's depth field uses. */
+.arr-passport-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0.35;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+}
 .arr-passport-eyebrow {
   display: block;
   font-family: var(--font-mono2);
@@ -1739,6 +1751,28 @@ a[href]:active {
 .stage-ridge-near { bottom: -2%; height: 12%; }
 .stage-ridge-near path { fill: var(--stage-ink, #07090f); }
 
+/* The route on the horizon (StageArc): the great-circle the globe draws,
+   flattened onto the band. Endpoint dots are home and destination, the
+   tick is the real terminator crossing, the ember marker is the body
+   clock's coverage — the same read the sun and the chip carry in words. */
+.stage-arc {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--stage-horizon-h, 26%) + 6%);
+  width: min(560px, 58%);
+  height: 56px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  opacity: 0.9;
+}
+.stage-arc-path { stroke: var(--stage-ember-line); stroke-width: 0.5; opacity: 0.7; }
+.stage-arc-end { fill: var(--m-muted); }
+.stage-arc-term { stroke: var(--m-faint); stroke-width: 0.4; }
+.stage-arc-sun {
+  fill: var(--m-accent);
+  filter: drop-shadow(0 0 2px var(--m-accent));
+}
+
 /* Pointer depth — the hand tilts the diorama: --px/--py (depth-parallax.ts,
    fine pointers only) drift each plane at its own depth. Far planes barely
    move, the near ridge moves most; the sun is effectively at infinity. A
@@ -1753,6 +1787,34 @@ a[href]:active {
   .stage-stars-mid { transform: translate(calc(var(--px, 0) * -8px), calc(var(--py, 0) * -4px)); }
   .stage-ridge-far { transform: translateX(calc(var(--px, 0) * -12px)); }
   .stage-ridge-near { transform: translateX(calc(var(--px, 0) * -20px)); }
+}
+
+/* The departure board — a Solari roll (src/components/Solari.tsx). Each
+   cell is a clip; the outgoing flap rolls up, the incoming rolls in.
+   Only moves when the data does; transform-only. */
+.solari { display: inline-flex; }
+.solari-cell {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+}
+.solari-old {
+  position: absolute;
+  inset: 0;
+  transform: translateY(0);
+}
+.solari-new { display: inline-block; transform: translateY(0); }
+@media (prefers-reduced-motion: no-preference) {
+  .solari-old { animation: solari-out 160ms var(--ease-glide) both; }
+  .solari-new { animation: solari-in 220ms var(--ease-settle) both; }
+}
+@keyframes solari-out {
+  to { transform: translateY(-108%); }
+}
+@keyframes solari-in {
+  from { transform: translateY(108%); }
+  to { transform: translateY(0); }
 }
 
 /* Display headings — the crew's voice at statement size. Roman only (no

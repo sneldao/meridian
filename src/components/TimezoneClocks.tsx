@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Solari } from "@/components/Solari";
 import { fmtMin } from "@/domain/circadian";
 import type { City } from "@/domain/types";
 
@@ -46,17 +47,17 @@ export function TimezoneClocks({
     <div className="tz-clocks-bar" role="region" aria-label="Home, destination and body-clock times">
       <div className="tz-clock-item">
         <span className="tz-clock-label">{origin.name} (Home)</span>
-        <strong className="tz-clock-time">{clockAt(origin.utcOffsetMin, now)}</strong>
+        <strong className="tz-clock-time"><Solari value={clockAt(origin.utcOffsetMin, now)} /></strong>
       </div>
       <div className="tz-clock-divider" aria-hidden="true">→</div>
       <div className="tz-clock-item">
         <span className="tz-clock-label">{destination.name}</span>
-        <strong className="tz-clock-time">{clockAt(destination.utcOffsetMin, now)}</strong>
+        <strong className="tz-clock-time"><Solari value={clockAt(destination.utcOffsetMin, now)} /></strong>
       </div>
       {bodyShiftMin !== undefined && (
         <div className="tz-clock-item tz-clock-body">
           <span className="tz-clock-label">Body (est.)</span>
-          <strong className="tz-clock-time">~{clockAt(origin.utcOffsetMin + bodyShiftMin, now)}</strong>
+          <strong className="tz-clock-time"><Solari value={`~${clockAt(origin.utcOffsetMin + bodyShiftMin, now)}`} /></strong>
         </div>
       )}
       <div className="tz-clock-diff">
