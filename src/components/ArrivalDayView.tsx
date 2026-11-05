@@ -42,6 +42,11 @@ export interface ArrivalDayViewProps {
   onUpdatePlan?: () => void;
   updateDisabled?: boolean;
   eyebrow?: string;
+  /** RecordsTable resolve (agent-native step 7): while a number, row i's
+   *  computed cells land only once i < tick and row `tick` carries the
+   *  lone "Calculating…" shimmer; the time column — the row's identity —
+   *  is present from t=0. Null/absent → the settled table. */
+  resolveTick?: number | null;
 }
 
 const dayFmt = new Intl.DateTimeFormat("en", { month: "short", day: "numeric", timeZone: "UTC" });
@@ -51,7 +56,10 @@ export function ArrivalDayView(props: ArrivalDayViewProps) {
     destination, date, steps, idea, completedIds, skippedIds, actionsReady, interactive,
     onDone, onSkip, onKeep, onSwap, onDismiss, onRestore, choicesReady, storageAvailable, planning, example,
     tasteFavorites, favoritesChanged, tasteStatus, onUpdatePlan, updateDisabled, ideaSource, firstNight,
+    resolveTick,
   } = props;
+  /* The staggered resolve's mask: a number while it runs, settled after. */
+  const resolving = resolveTick != null;
   const snapshot = tasteFavorites ?? [];
   const reduced = useReducedMotion();
   const scope = useId();
@@ -104,8 +112,12 @@ export function ArrivalDayView(props: ArrivalDayViewProps) {
       )}
 
       <DaySkyStrip steps={steps} resolvedIds={resolvedIds} label={`Arrival in ${destination}`} />
-      <ol className="arrival-day-rows">
-        {rows.map((row) => {
+      <ol className={`arrival-day-rows${resolving ? " resolving" : ""}`}>
+        {rows.map((row, rowIdx) => {
+          /* Step 7 — row `rowIdx`'s computed cells land when the tick
+             passes it; the row at the tick carries the lone shimmer. */
+          const rowResolved = resolving && rowIdx < resolveTick;
+          const rowPending = resolving && rowIdx === resolveTick;
           if (row.kind === "idea" && active) {
             const kept = active.status === "kept";
             return (
@@ -113,10 +125,18 @@ export function ArrivalDayView(props: ArrivalDayViewProps) {
                 key="place-idea"
                 className="arrival-day-row arrival-day-idea"
                 data-kept={kept}
+                data-resolved={rowResolved ? "" : undefined}
+                data-pending={rowPending ? "" : undefined}
+                inert={resolving && rowIdx >= resolveTick ? true : undefined}
                 layout={reduced ? false : "position"}
                 initial={false}
                 transition={reduced ? { duration: 0 } : springCalendar}
               >
+                {rowPending && (
+                  <span className="resolve-calc" aria-hidden="true">
+                    Calculating…
+                  </span>
+                )}
                 <span className="arrival-day-time" aria-label={`${fmtMin(active.suggestion.startMin)} to ${fmtMin(active.suggestion.endMin)}`}>
                   <span>{fmtMin(active.suggestion.startMin)}</span>
                   <span>to</span>
@@ -173,7 +193,19 @@ export function ArrivalDayView(props: ArrivalDayViewProps) {
           const isSkip = skippedIds.has(step.id);
           const StepIcon = CAT_ICON[step.category];
           return (
-            <li key={step.id} className="arrival-day-row" data-cat={step.category}>
+            <li
+              key={step.id}
+              className="arrival-day-row"
+              data-cat={step.category}
+              data-resolved={rowResolved ? "" : undefined}
+              data-pending={rowPending ? "" : undefined}
+              inert={resolving && rowIdx >= resolveTick ? true : undefined}
+            >
+              {rowPending && (
+                <span className="resolve-calc" aria-hidden="true">
+                  Calculating…
+                </span>
+              )}
               <span className="arrival-day-time" aria-label={`${fmtMin(step.startMin)} to ${fmtMin(step.endMin)}`}>
                 <span>{fmtMin(step.startMin)}</span>
                 <span>to</span>

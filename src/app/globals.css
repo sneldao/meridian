@@ -2954,6 +2954,77 @@ textarea:focus-visible,
   color: var(--m-faint);
 }
 
+/* RecordsTable resolve — the day table draws its columns (agent-native
+   step 7, docs/plan/agent-native.md). On the first paint after a commit,
+   each row's gutter (the check, the date column — the row's identity) is
+   present from t=0 while its computed cells resolve one staggered beat
+   each, ~110ms apart. The stagger is a mask on rows that are already
+   real; nothing is computed or fetched here. Opacity/transform only —
+   the rail's scroll-timeline `tl-enter` owns the row box itself, and the
+   swipe gesture owns its inline transform, so the mask animates the row's
+   children (`.tl-time`, `.tl-body`) and never the row. Reduced motion
+   never mounts the mask (the JS gate stands down first); the media query
+   below is the belt for a mid-run OS change. */
+.resolving .tl-row > .tl-time,
+.resolving .tl-row > .tl-body,
+.resolving .arrival-day-row > .arrival-day-step,
+.resolving .arrival-day-row > .arrival-day-idea-body {
+  opacity: 0;
+}
+.resolving .tl-row[data-resolved] > .tl-time,
+.resolving .tl-row[data-resolved] > .tl-body,
+.resolving .arrival-day-row[data-resolved] > .arrival-day-step,
+.resolving .arrival-day-row[data-resolved] > .arrival-day-idea-body {
+  animation: day-resolve var(--dur-settle) var(--ease-settle) both;
+}
+@keyframes day-resolve {
+  from { opacity: 0; transform: translateY(7px); }
+  to { opacity: 1; transform: none; }
+}
+/* The one CalcCell: the next unresolved row's cell pulses "Calculating…"
+   for its beat before the values land — one at a time, never a shimmer
+   wall. Absolutely positioned so it adds no grid cell of its own. */
+.resolve-calc {
+  position: absolute;
+  z-index: 1;
+  font-family: var(--font-mono2);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  color: var(--m-faint);
+  pointer-events: none;
+  animation: resolve-calc-pulse 0.9s var(--ease-drift) infinite;
+}
+.tl-row > .resolve-calc {
+  left: 34px; /* the 22px check + 12px gap — the first computed cell */
+  top: 12px;
+}
+.arrival-day-row > .resolve-calc {
+  left: 96px; /* the 80px time gutter + 16px gap — the body cell */
+  top: 22px;
+}
+@media (max-width: 480px) {
+  .arrival-day-row > .resolve-calc {
+    left: 68px; /* 56px gutter + 12px gap */
+  }
+}
+@keyframes resolve-calc-pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.85; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .resolving .tl-row > .tl-time,
+  .resolving .tl-row > .tl-body,
+  .resolving .arrival-day-row > .arrival-day-step,
+  .resolving .arrival-day-row > .arrival-day-idea-body {
+    opacity: 1;
+    animation: none;
+  }
+  .resolve-calc {
+    display: none;
+  }
+}
+
 /* Instrument band — the day's working surfaces (stepper, checks, rail)
    grow toward the frame: ≈960px inside .reading on desktop, capped by
    --hero-out so smaller viewports only ever reach the frame edge. Prose
@@ -6574,6 +6645,8 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   padding: 0;
 }
 .arrival-day-row {
+  /* Anchors the resolve's CalcCell shimmer (agent-native step 7). */
+  position: relative;
   display: grid;
   grid-template-columns: 80px minmax(0, 1fr);
   gap: 16px;

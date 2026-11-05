@@ -333,8 +333,15 @@ export interface NudgeFeedScreenProps {
   /** The crew's account left by the commit that built this plan — the
    *  provenance chips quote its rows when present. Null on a URL restore,
    *  where the row derives only what the trip itself can prove and omits
-   *  the rest (agent-native step 3). */
-  crewAccount?: { rows: CrewAccountRow[] } | null;
+   *  the rest (agent-native step 3). `startedAt` keys the day table's
+   *  one-shot resolve (step 7). */
+  crewAccount?: { rows: CrewAccountRow[]; startedAt?: number } | null;
+  /** True only on the first feed mount after a commit — the account exists
+   *  and every row has landed (`crewAccount != null && crewAccount.done` at
+   *  the page). Gates the day table's staggered resolve: the calculation
+   *  made visible once, then the table is ordinary DOM. URL-restored trips
+   *  never set it — their table renders settled (agent-native step 7). */
+  freshPlan?: boolean;
 }
 
 /** Nudge category → the intervention kind a did/skip mark refers to.
@@ -346,6 +353,21 @@ const CATEGORY_KIND: Partial<Record<NudgeCategory, InterventionKind>> = {
   nutrition: "caffeine_cutoff",
   sleep: "sleep_window",
 };
+
+/* Step 7 — the RecordsTable law on the plan room's day table
+   (docs/plan/agent-native.md): computed columns resolve row-by-row, and
+   the calculation is made visible. Presentation pacing only — every value
+   the mask reveals was already real before it ran. ~110ms is the
+   reference's resolve cadence; the lead clears the section's own `.4s`
+   rise so the stagger reads inside a settled frame. */
+const RESOLVE_LEAD_MS = 340;
+const RESOLVE_ROW_MS = 110;
+const RESOLVE_TAIL_MS = 240;
+/* Accounts whose stagger already ran (keyed on `crewAccount.startedAt` —
+   unique per commit). A remount — the Now ⇄ The plan switch, another
+   room's remount — must not replay; a new commit's new startedAt earns a
+   new run. Module scope is deliberate: the record outlives the feed. */
+const RESOLVE_PLAYED = new Set<number>();
 
 export function NudgeFeedScreen({
   externalMark,
@@ -389,6 +411,7 @@ export function NudgeFeedScreen({
   calendarSource,
   sampleMode,
   crewAccount,
+  freshPlan,
 }: NudgeFeedScreenProps) {
   const effectiveAdherence = adherence ?? ADHERENCE_PROFILE;
   const { completedIds, skippedIds, pendingMarks, ready: actionsReady } = actions;
@@ -922,6 +945,66 @@ export function NudgeFeedScreen({
       : undefined;
   }, [arrivalView, activeDaySpec, tasteItinerary, placeChoices?.state]);
 
+  /* Step 7 — the day table draws its columns. A plan fresh from a commit
+     doesn't appear fully formed: the rows' computed cells (window times,
+     flag chips, the "why" drawer) resolve one staggered beat each while
+     every row's gutter (the check, the date column — its identity) is
+     already there. Decided once at mount: `freshPlan` is the account's
+     own gate, the played-set kills replays on remount, reduced motion
+     never mounts the mask — the settled table is its only state. */
+  const planResolveKey =
+    freshPlan && crewAccount?.startedAt != null ? crewAccount.startedAt : null;
+  const [resolving, setResolving] = useState(
+    () =>
+      planResolveKey != null &&
+      !RESOLVE_PLAYED.has(planResolveKey) &&
+      !(
+        typeof window !== "undefined" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      ),
+  );
+  const [resolveTick, setResolveTick] = useState(0);
+  /* Recorded in an effect, not the initializer — the mount itself is the
+     run, and StrictMode's double init must not burn the account's one shot. */
+  useEffect(() => {
+    if (planResolveKey != null) RESOLVE_PLAYED.add(planResolveKey);
+  }, [planResolveKey]);
+  /* An OS motion change mid-run stands the mask down instantly. */
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const settle = () => {
+      if (mq.matches) setResolving(false);
+    };
+    mq.addEventListener("change", settle);
+    return () => mq.removeEventListener("change", settle);
+  }, []);
+  /* Rows the stagger owes: the rail's steps, or the arrival view's steps
+     plus its place-idea row when one is live (suggested or kept — the
+     same `active` the view computes). */
+  const resolveRowCount = arrivalView
+    ? steps.length +
+      (activeSceneIdea &&
+      (activeSceneIdea.status === "suggested" ||
+        activeSceneIdea.status === "kept")
+        ? 1
+        : 0)
+    : steps.length;
+  /* A timeout chain, not an interval — mounted only while `resolving`
+     lives and self-clearing: lead, then one row per beat, a short tail so
+     the last fade lands, done. No timer is left running after it. */
+  useEffect(() => {
+    if (!resolving) return;
+    if (resolveTick >= resolveRowCount) {
+      const t = setTimeout(() => setResolving(false), RESOLVE_TAIL_MS);
+      return () => clearTimeout(t);
+    }
+    const t = setTimeout(
+      () => setResolveTick((n) => n + 1),
+      resolveTick === 0 ? RESOLVE_LEAD_MS : RESOLVE_ROW_MS,
+    );
+    return () => clearTimeout(t);
+  }, [resolving, resolveTick, resolveRowCount]);
+
   /* Step 4 — the pin travels with the day. Whatever `resolvePlaceChoice`
      returns for the active spec is surfaced on the day's nudge card, so
      the crate's pick no longer lives only in the itinerary/arrival views.
@@ -1164,6 +1247,8 @@ export function NudgeFeedScreen({
             }
             tasteStatus={tasteItinerary?.status}
             ideaSource={tasteItinerary?.sampleSource}
+            /* Step 7 — the same staggered resolve the rail gets. */
+            resolveTick={resolving ? resolveTick : null}
             /* The evening idea belongs to the night of the arrival day —
              * it is offered, never scheduled, and only lands on the day
              * it actually describes. */
@@ -2182,7 +2267,7 @@ export function NudgeFeedScreen({
       {!arrivalView && (
       <section
         id="journey-days"
-        className={`tl rise wide${previewMode ? " preview" : ""}`}
+        className={`tl rise wide${previewMode ? " preview" : ""}${resolving ? " resolving" : ""}`}
         style={{ animationDelay: ".4s" }}
         aria-label={`${currentDayName} — steps`}
         onTouchStart={(e) => {
@@ -2223,11 +2308,20 @@ export function NudgeFeedScreen({
           // a new clock.
           const prevCity = stepIdx > 0 ? cityFor(steps[stepIdx - 1].dayIndex) : null;
           const cityChanged = city !== prevCity;
+          /* Step 7 — while `resolving` runs, row `stepIdx`'s computed cells
+             land when the tick passes it; the one at the tick carries the
+             lone "Calculating…" shimmer for its beat. */
+          const rowPending = resolving && stepIdx === resolveTick;
           return (
             <div
               key={step.id}
               className={`tl-row${isDone ? " done" : ""}${isSkip ? " skipped" : ""}`}
               data-cat={step.category}
+              data-resolved={resolving && stepIdx < resolveTick ? "" : undefined}
+              data-pending={rowPending ? "" : undefined}
+              /* An invisible row is a row that can't be tapped, tabbed or
+                 swiped — inert until its cells land. */
+              inert={resolving && stepIdx >= resolveTick ? true : undefined}
               style={
                 swipe?.id === step.id
                   ? {
@@ -2280,6 +2374,11 @@ export function NudgeFeedScreen({
               >
                 {isDone ? "✓" : ""}
               </button>
+              {rowPending && (
+                <span className="resolve-calc" aria-hidden="true">
+                  Calculating…
+                </span>
+              )}
               <div className="tl-time">
                 <b>
                   {fmtMin(step.startMin)}–{fmtMin(step.endMin)}

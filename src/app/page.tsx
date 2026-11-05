@@ -2223,6 +2223,9 @@ export default function Home() {
                    chips can quote its rows; a URL restore never ran one,
                    and the row then derives only what the trip can prove. */
                 crewAccount={crewAccount}
+                /* Step 7 — the day table's one-shot staggered resolve:
+                   true only on the first feed mount after a commit. */
+                freshPlan={crewAccount != null && crewAccount.done}
                 planEdit={trip ? {
                   onPlansChanged: (plans) => {
                     setRestoredLocked(new Map(plans.map((d) => [d.label, d])));

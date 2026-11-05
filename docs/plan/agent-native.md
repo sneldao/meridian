@@ -131,8 +131,12 @@ Cheapest-first, ordered so each phase dies-testable. Status: steps 1–6 shipped
 6. **InsightCards** ✅ — `insightCards` (`domain/insights.ts`) derives 0–3
    cards (gap+curve, conflict+strip, place pin) only where the fact exists,
    in the `next` room slab; prose → mini-viz → action pill, no autoplay.
-7. **RecordsTable plan room** — pending: day table's computed columns
-   resolve staggered while the crew calculates.
+7. **RecordsTable plan room** ✅ — `freshPlan` (from a settled
+   `crewAccount`) gates a one-shot staggered resolve: day-row identities
+   present from t=0, computed cells resolve ~110ms/row with a lone
+   `Calculating…` shimmer pending, then the table is ordinary DOM —
+   restore/no-commit/RM all render settled (verified live: mid-resolve
+   caught 3 rows + 1 shimmer, zero DOM mutations after settle).
 8. **Calendar flag** — product call; the engineering exists.
 
 ## 5. Explicitly not doing
