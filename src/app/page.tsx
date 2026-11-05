@@ -1767,7 +1767,7 @@ export default function Home() {
                 .{entryDraft ? " Their route is prefilled below — change anything." : ""}
               </p>
             )}
-            <div className="landing-entry-stage">
+            <div className="landing-entry-stage" id="plan">
               <TripEntryScreen
                 initialDate={departureDate || defaultDepartureDate()}
                 onContinue={commitRoute}
@@ -1784,6 +1784,18 @@ export default function Home() {
             {/* The habit tracker stays after the funnel — for the visitor
                 who is still looking around. */}
             <EverydayRhythm />
+            {/* The close — the page owes the reader an ending: the horizon
+                hairline, one line in the crew's voice, the door back up to
+                the form, and the privacy note every surface carries. */}
+            <footer className="landing-close">
+              <p className="landing-close-line">
+                The sun will be here when you&apos;re ready.
+              </p>
+              <div className="landing-close-links">
+                <a className="landing-close-cta" href="#plan">Plan my trip</a>
+                <Link className="underline" href="/privacy">Privacy &amp; support</Link>
+              </div>
+            </footer>
           </div>
         ) : entry.mode === "example" && entry.scenarioId ? (
           <ScenarioExperience
