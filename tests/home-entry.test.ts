@@ -67,16 +67,16 @@ describe("resolveHomeEntry", () => {
     });
   });
 
-  test("a saved route restores the trip, whatever today's date is", () => {
+  test("a saved route returns to the door, prefilled — never dumped in results", () => {
     const res = resolveHomeEntry(empty, JSON.stringify(route), null);
-    expect(res.mode).toBe("trip");
+    expect(res.mode).toBe("setup");
     expect(res.route).toEqual(route);
   });
 
-  test("a legacy saved trip still restores (backcompat)", () => {
+  test("a legacy saved trip returns to the door too (backcompat)", () => {
     const trip = buildTrip("SFO", "SIN", "2026-06-01");
     const res = resolveHomeEntry(empty, null, JSON.stringify(trip));
-    expect(res.mode).toBe("trip");
+    expect(res.mode).toBe("setup");
     expect(res.route?.origin).toBe("SFO");
     expect(res.route?.dest).toBe("SIN");
   });

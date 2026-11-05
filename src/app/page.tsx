@@ -466,6 +466,10 @@ export default function Home() {
             read("meridian:lastTrip"),
           );
           setEntry(resolved);
+          if (resolved.mode === "setup" && resolved.route) {
+            // The door keeps their trip ready — the form opens prefilled.
+            setEntryDraft(resolved.route);
+          }
           if (resolved.mode === "trip" && resolved.route) {
             setOrigin(resolved.route.origin);
             setDest(resolved.route.dest);

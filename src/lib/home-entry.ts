@@ -99,9 +99,12 @@ export function resolveHomeEntry(
       clockOpen,
     };
   }
+  // The door law: a stored route returns to the door, not the results —
+  // the same surface a cold visit sees, with the saved trip prefilled and
+  // one tap away. Deep links (?view=clock) still go straight through.
   const active = readHomeRoute(activeRaw);
-  if (active) return { mode: "trip", route: active, clockOpen };
+  if (active) return { mode: clockOpen ? "trip" : "setup", route: active, clockOpen };
   const legacy = routeFromTrip(lastTripRaw);
-  if (legacy) return { mode: "trip", route: legacy, clockOpen };
+  if (legacy) return { mode: clockOpen ? "trip" : "setup", route: legacy, clockOpen };
   return { mode: "setup", route: null, clockOpen };
 }
