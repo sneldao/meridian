@@ -53,6 +53,9 @@ export interface CrewAnswer {
   detail?: string[];
   /** Which signal computed this — quoted in the UI like the chips. */
   provenance: string;
+  /** True only on the one honest fallback — the marker the LLM lane keys
+   *  on: a genuinely open question, not an intent that resolved. */
+  isFallback?: true;
 }
 
 export interface CrewFacts {
@@ -145,6 +148,7 @@ function fallback(): CrewAnswer {
     agent: "planner",
     answer: FALLBACK,
     provenance: "intent parser · no solver run",
+    isFallback: true,
   };
 }
 
@@ -669,7 +673,9 @@ export function crewAnswer(question: string, facts: CrewFacts): CrewAnswer {
   // --- why -----------------------------------------------------------------
   if (/^why\b/.test(q)) {
     const rest = q.replace(/^why\s*/, "");
-    if (!rest || /^(this|it|that|is (this|it|that)|'s it)\??$/.test(rest)) {
+    /* A bare "why" can carry one pointing word — "why this place?" on the
+       feed-pin binds to the pin's context exactly like "why?" does. */
+    if (!rest || /^(?:(?:is\s+)?(?:this|it|that)(?:\s+[a-z]+)?|'s it)\??$/.test(rest)) {
       const c = facts.context;
       if (c) {
         return {

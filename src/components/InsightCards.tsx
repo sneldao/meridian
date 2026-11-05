@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { MapPin } from "lucide-react";
 import type { InsightCardModel, InsightViz } from "@/domain/insights";
+import type { CrewAnswer } from "@/domain/crew-answer";
+import type { AgentId } from "@/domain/types";
+import { CrewAsk } from "@/components/CrewAsk";
 
 /* InsightCards (docs/plan/agent-native.md step 6) — a small carousel of
  * crew findings in the `next` room's slab: "Insights {N} ‹ ›" paging one
@@ -162,12 +165,106 @@ function CardViz({ viz }: { viz: InsightViz }) {
   );
 }
 
+/** The ask field's wiring for one card (§4a step 2): the surface binds the
+ *  card's own finding as router context — a bare "why" quotes the prose the
+ *  card already shows — and hands over the CrewFacts JSON the LLM lane
+ *  grounds on. */
+export interface InsightAskFor {
+  label: string;
+  owner?: string;
+  agent?: AgentId | null;
+  facts?: unknown;
+  onAsk: (question: string) => CrewAnswer;
+}
+
+/** One card of the carousel — keyed by card id at the call site, so its
+ *  ask fold resets when the page turns. The named agent in the prose is
+ *  the button ("Iris flagged…" → Iris); a card whose owner isn't named
+ *  (the gap read) gets a small "Ask {owner}" chip under the action. */
+function InsightCard({
+  card,
+  onSelectDay,
+  ask,
+  live,
+}: {
+  card: InsightCardModel;
+  onSelectDay?: (label: string) => void;
+  ask?: InsightAskFor | null;
+  live?: boolean;
+}) {
+  const [askOpen, setAskOpen] = useState(false);
+  const name = card.agent?.owner;
+  const nameAt = ask && name ? card.prose.indexOf(name) : -1;
+  const toggle = () => setAskOpen((v) => !v);
+  return (
+    <>
+      <p className="insight-prose">
+        {nameAt >= 0 ? (
+          <>
+            {card.prose.slice(0, nameAt)}
+            <button
+              type="button"
+              className="insight-agent"
+              aria-expanded={askOpen}
+              onClick={toggle}
+            >
+              {name}
+            </button>
+            {card.prose.slice(nameAt + name!.length)}
+          </>
+        ) : (
+          card.prose
+        )}
+        {card.tag ? <span className="insight-tag">{card.tag}</span> : null}
+      </p>
+      <CardViz viz={card.viz} />
+      {card.action && onSelectDay && (
+        <button
+          type="button"
+          className="insight-action"
+          onClick={() => onSelectDay(card.action!.dayLabel)}
+        >
+          {card.action.label}
+        </button>
+      )}
+      {ask && nameAt < 0 && (
+        <button
+          type="button"
+          className="insight-ask"
+          aria-expanded={askOpen}
+          onClick={toggle}
+        >
+          Ask {ask.owner ?? "the crew"}
+        </button>
+      )}
+      {ask && askOpen && (
+        <CrewAsk
+          label={ask.label}
+          placeholder="why?"
+          owner={ask.owner}
+          agent={ask.agent}
+          live={live}
+          facts={ask.facts}
+          onAsk={ask.onAsk}
+        />
+      )}
+    </>
+  );
+}
+
 export function InsightCards({
   cards,
   onSelectDay,
+  askFor,
+  live,
 }: {
   cards: InsightCardModel[];
   onSelectDay?: (label: string) => void;
+  /** §4a — per-card ask wiring. Absent → the names stay plain text and no
+   *  card opens a field (presentational default). */
+  askFor?: (card: InsightCardModel) => InsightAskFor | null;
+  /** The open-question lane — forwarded to each card's CrewAsk. */
+  live?: boolean;
 }) {
   const [i, setI] = useState(0);
   if (!cards.length) return null;
@@ -200,20 +297,12 @@ export function InsightCards({
         )}
       </div>
       <div className="insight-card" key={card.id} aria-live="polite">
-        <p className="insight-prose">
-          {card.prose}
-          {card.tag ? <span className="insight-tag">{card.tag}</span> : null}
-        </p>
-        <CardViz viz={card.viz} />
-        {card.action && onSelectDay && (
-          <button
-            type="button"
-            className="insight-action"
-            onClick={() => onSelectDay(card.action!.dayLabel)}
-          >
-            {card.action.label}
-          </button>
-        )}
+        <InsightCard
+          card={card}
+          onSelectDay={onSelectDay}
+          ask={card.agent ? askFor?.(card) : null}
+          live={live}
+        />
       </div>
     </section>
   );

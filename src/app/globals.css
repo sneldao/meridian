@@ -3984,6 +3984,75 @@ html[data-theme="night"] .skel::after {
 .crew-answer-prov {
   margin-left: 2px;
 }
+/* The pending "…" while the open-question lane is in flight — same fade-up
+   as a landed answer, muted so it reads as waiting, not said. */
+.crew-answer-pending .crew-answer-line {
+  color: var(--m-muted);
+}
+
+/* §4a step 2 — the crew's names are askable wherever a surface prints
+   them. On an insight card the name in the prose is the button: a quiet
+   underline that takes the accent on hover, nothing else. A card whose
+   owner isn't named in the prose gets the same affordance as a small chip
+   under the action. The feed-pin's "Ask Scout" is the pin tag's shape as
+   a button. Colour and border only — nothing here moves layout. */
+.insight-agent {
+  font: inherit;
+  padding: 0;
+  border: none;
+  border-bottom: 1px solid var(--m-border-2);
+  border-radius: 0;
+  background: none;
+  color: var(--m-text);
+  font-weight: 600;
+  cursor: pointer;
+}
+.insight-agent:hover {
+  color: var(--m-accent);
+  border-bottom-color: var(--m-accent);
+}
+.insight-ask {
+  display: inline-block;
+  margin-top: 8px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--m-border-2);
+  background: transparent;
+  color: var(--m-muted);
+  cursor: pointer;
+}
+.insight-ask:hover {
+  border-color: var(--m-accent);
+  color: var(--m-accent);
+}
+.feed-pin-ask {
+  flex: none;
+  margin-left: 2px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--m-border-2);
+  background: transparent;
+  color: var(--m-faint);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.feed-pin-ask:hover {
+  border-color: var(--m-accent);
+  color: var(--m-accent);
+}
+.insight-agent:focus-visible,
+.insight-ask:focus-visible,
+.feed-pin-ask:focus-visible {
+  outline: 2px solid var(--m-accent);
+  outline-offset: 2px;
+}
 @media (prefers-reduced-motion: reduce) {
   .crew-answer { animation: none; }
 }

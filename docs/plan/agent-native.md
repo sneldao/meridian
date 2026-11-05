@@ -168,9 +168,12 @@ general chat box (§5 stands).
 insight cards, nudge cards, feed-pins); the answer streams into the existing
 expandable detail — the specialist answers in his lane.
 
-**Order**: deterministic Q&A first (zero deps, biggest novelty-per-cost,
-fully honest in replay) → per-surface addressability → LLM open questions
-(provider plumbing exists; grounding + provenance-on-speech still to build).
+**Order** (all shipped): deterministic Q&A (`crewAnswer` + `CrewAsk` on the
+now-room, nudge Why? drawers, Jobs rows — commit `4fed0b4`) → per-surface
+addressability (named agents on InsightCards are ask-buttons, feed-pin gains
+"Ask Scout") → LLM lane (`POST /api/crew-ask` grounding the provider chain,
+503-under-replay → deterministic fallback; live call verified through the
+featherless→nebius retry).
 
 ## 5. Explicitly not doing
 

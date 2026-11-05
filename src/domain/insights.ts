@@ -9,6 +9,7 @@ import { bodyClockMin } from "./readiness";
 import type { HeroMeeting } from "./hero";
 import type {
   AdherenceProfile,
+  AgentId,
   CalendarEvent,
   DayPlan,
   EvalResult,
@@ -70,6 +71,10 @@ export interface InsightCardModel {
   /** The disclosure tag for fixture/preview facts — the chips' vocabulary,
    *  not a new hedge. */
   tag?: string;
+  /** §4a — the specialist the finding belongs to. When the prose already
+   *  names him ("Iris flagged…") the name becomes the ask button; the gap
+   *  card names nobody, so it gets a small "Ask Otto" chip instead. */
+  agent?: { owner: string; agent: AgentId | null };
 }
 
 export interface InsightFacts {
@@ -231,6 +236,8 @@ export function insightCards(facts: InsightFacts): InsightCardModel[] {
         ? { label: "See the day", dayLabel: facts.moment.dayLabel }
         : undefined,
       tag,
+      // The gap read is the planner's math — Otto's ask lane.
+      agent: { owner: "Otto", agent: "planner" },
     });
   }
 
@@ -308,6 +315,7 @@ export function insightCards(facts: InsightFacts): InsightCardModel[] {
           },
           action: { label: "See the day", dayLabel: flagDay.label },
           tag,
+          agent: { owner: "Iris", agent: "evaluator" },
         });
       }
     }
@@ -328,6 +336,7 @@ export function insightCards(facts: InsightFacts): InsightCardModel[] {
       },
       action: { label: "See this day", dayLabel: facts.pin.dayLabel },
       tag: facts.pinSample ? "Example schedule" : undefined,
+      agent: { owner: "Scout", agent: null },
     });
   }
 

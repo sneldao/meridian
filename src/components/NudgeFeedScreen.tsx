@@ -34,9 +34,13 @@ import { RightNowCard } from "@/components/RightNowCard";
 import { dayPlacePin, postTasteSignal } from "@/lib/place-choices";
 import { placeProvenance } from "@/lib/crew-jobs";
 import { provenanceChips } from "@/domain/provenance";
-import { insightCards } from "@/domain/insights";
+import { insightCards, type InsightCardModel } from "@/domain/insights";
 import { InsightCards } from "@/components/InsightCards";
-import { crewAnswer, type CrewFacts } from "@/domain/crew-answer";
+import {
+  crewAnswer,
+  type CrewAnswerContext,
+  type CrewFacts,
+} from "@/domain/crew-answer";
 import { CrewAsk } from "@/components/CrewAsk";
 import type { CrewAccountRow } from "@/components/CrewAccount";
 import { recordTasteSignal } from "@/lib/taste-signals";
@@ -85,6 +89,7 @@ import { VoiceControls } from "@/components/VoiceControls";
 import { useUndoToast } from "@/components/UndoToast";
 import type {
   AdherenceProfile,
+  AgentId,
   BaselineKind,
   CalendarEvent,
   CalendarMove,
@@ -240,6 +245,14 @@ function pickInsightPin(
   }
   return null;
 }
+
+/* §4a — what a bare "why" on an insight card points at: the finding the
+ *  card already states in prose. */
+const INSIGHT_ASK_ABOUT: Record<InsightCardModel["id"], string> = {
+  gap: "the body-clock gap card",
+  conflict: "the conflict flag card",
+  place: "the crate match card",
+};
 
 /** Which face the day panel wears (milestone 5): an edit session when the
  *  page can accept proposals (a saved locked plan, real trip — not the
@@ -451,6 +464,10 @@ export function NudgeFeedScreen({
   }, []);
   const [swipe, setSwipe] = useState<{ id: string; dx: number } | null>(null);
   const swipeRef = useRef<{ id: string; x0: number; y0: number; vert: boolean } | null>(null);
+  /* §4a — the feed-pin's ask fold, keyed on the suggestion's date so a day
+   *  change closes the field rather than leave it answering for a pin that
+   *  has moved on. */
+  const [pinAskFor, setPinAskFor] = useState<string | null>(null);
 
   // Item 11 — while the numbers are the sample persona's, steps are a preview
   // rather than commitments. `isPreview` is B's contract (domain/preview.ts):
@@ -1168,6 +1185,48 @@ export function NudgeFeedScreen({
     ],
   );
 
+  /* §4a — the two nudge-side ask fields share the step's own reason as
+     their bare-"why" context; `about` names the field's framing. The same
+     facts JSON is the LLM lane's grounding when an open question falls
+     through the intents. */
+  const heroAskContext = (about: string): CrewAnswerContext | null =>
+    heroNudge
+      ? {
+          about,
+          detail: heroNudge.whyItHelps,
+          owner: "Otto",
+          agent: "planner" as AgentId | null,
+          provenance: "the step's own reason",
+        }
+      : null;
+  const nowAskFacts: CrewFacts = {
+    ...askFacts,
+    context: heroAskContext(
+      heroNudge
+        ? `your next step — ${fmtMin(heroNudge.startMin)} ${heroNudge.title}`
+        : "the card on screen",
+    ),
+  };
+
+  /* §4a — the pin's ask binds the suggestion's own fields (category, its
+     window on the labelled day, the itinerary's provenance) so "why this
+     place?" answers from what Scout actually matched — nothing else. */
+  const pinAskFacts = useMemo<CrewFacts | null>(() => {
+    if (!dayPin || !tasteItinerary) return null;
+    const s = dayPin.suggestion;
+    const cat = dayPin.place.categories[0];
+    return {
+      ...askFacts,
+      context: {
+        about: `${dayPin.place.name} — the crate's pick`,
+        detail: `${cat ? `${cat}, ` : ""}inside your ${fmtMin(s.startMin)}–${fmtMin(s.endMin)} window on ${s.label} — ${placeProvenance(tasteItinerary)}`,
+        owner: "Scout",
+        agent: null,
+        provenance: "your crate",
+      },
+    };
+  }, [dayPin, tasteItinerary, askFacts]);
+
   /** The now-room's ask field — the judge-visible surface, first control
    *  under the provenance chips. A bare "why" here answers for the card
    *  the room is showing: the next step. */
@@ -1175,20 +1234,11 @@ export function NudgeFeedScreen({
     <CrewAsk
       label="Ask the crew"
       placeholder="Ask the crew — type a question"
-      onAsk={(q) =>
-        crewAnswer(q, {
-          ...askFacts,
-          context: heroNudge
-            ? {
-                about: `your next step — ${fmtMin(heroNudge.startMin)} ${heroNudge.title}`,
-                detail: heroNudge.whyItHelps,
-                owner: "Otto",
-                agent: "planner",
-                provenance: "the step's own reason",
-              }
-            : null,
-        })
-      }
+      live
+      owner="Otto"
+      agent="planner"
+      facts={nowAskFacts}
+      onAsk={(q) => crewAnswer(q, nowAskFacts)}
     />
   ) : null;
   const provChildren = (
@@ -1751,16 +1801,21 @@ export function NudgeFeedScreen({
                       <CrewAsk
                         label="Ask Otto"
                         placeholder="why is it at that time?"
+                        live
+                        owner="Otto"
+                        agent="planner"
+                        facts={{
+                          ...askFacts,
+                          context: heroAskContext(
+                            `the ${fmtMin(heroNudge.startMin)} ${heroNudge.title} step`,
+                          ),
+                        }}
                         onAsk={(q) =>
                           crewAnswer(q, {
                             ...askFacts,
-                            context: {
-                              about: `the ${fmtMin(heroNudge.startMin)} ${heroNudge.title} step`,
-                              detail: heroNudge.whyItHelps,
-                              owner: "Otto",
-                              agent: "planner",
-                              provenance: "the step's own reason",
-                            },
+                            context: heroAskContext(
+                              `the ${fmtMin(heroNudge.startMin)} ${heroNudge.title} step`,
+                            ),
                           })
                         }
                       />
@@ -1945,13 +2000,41 @@ export function NudgeFeedScreen({
               came from. The tag never claims a live lookup — "your crate"
               is the favorites the traveller actually packed. */}
           {dayPin && (
+            <>
             <p className="feed-pin">
               <MapPin size={13} className="feed-pin-ic" aria-hidden="true" />
               <span className="feed-pin-name">{dayPin.place.name}</span>
               <span className="feed-pin-tag">
                 from your crate{dayPin.status === "kept" ? " · kept" : ""}
               </span>
+              {/* §4a — the pin is askable: the fold binds the suggestion's
+                  own fields so "why this place?" answers from what Scout
+                  actually matched. */}
+              <button
+                type="button"
+                className="feed-pin-ask"
+                aria-expanded={pinAskFor === dayPin.suggestion.date}
+                onClick={() =>
+                  setPinAskFor((v) =>
+                    v === dayPin.suggestion.date ? null : dayPin.suggestion.date,
+                  )
+                }
+              >
+                Ask Scout
+              </button>
             </p>
+            {pinAskFor === dayPin.suggestion.date && pinAskFacts && (
+              <CrewAsk
+                label="Ask Scout"
+                placeholder="why this place?"
+                live
+                owner="Scout"
+                agent={null}
+                facts={pinAskFacts}
+                onAsk={(q) => crewAnswer(q, pinAskFacts)}
+              />
+            )}
+            </>
           )}
 
           {/* No meter on a preview — "0 of 5 done" over invented steps is a
@@ -2027,7 +2110,32 @@ export function NudgeFeedScreen({
           number is already on this page elsewhere (the residual, the
           preview's coverage, the gate's scan, the resolved pin); a card
           exists only where its fact does. */}
-      <InsightCards cards={insights} onSelectDay={onSelectDay} />
+      {/* §4a — the crew's names on the cards are askable: "Iris flagged…"
+          makes Iris a button that opens her field under the card, the
+          card's own prose bound as the bare-"why" context. */}
+      <InsightCards
+        cards={insights}
+        onSelectDay={onSelectDay}
+        live
+        askFor={(card) => {
+          if (!card.agent) return null;
+          const context: CrewAnswerContext = {
+            about: INSIGHT_ASK_ABOUT[card.id],
+            detail: card.prose,
+            owner: card.agent.owner,
+            agent: card.agent.agent,
+            provenance: "the insight card",
+          };
+          const facts: CrewFacts = { ...askFacts, context };
+          return {
+            label: `Ask ${card.agent.owner}`,
+            owner: card.agent.owner,
+            agent: card.agent.agent,
+            facts,
+            onAsk: (q: string) => crewAnswer(q, facts),
+          };
+        }}
+      />
 
       {/* Bet 2 — "spend your daylight here". Arrival day only, taste-ranked
           venues inside the destination. Null (no key, no places, wrong day)

@@ -44,3 +44,4 @@ export function tooMany(retryAfterSec: number): Response {
 
 export const RL_RUNS = Number(process.env.MERIDIAN_RL_RUNS ?? 10); // full crew runs / IP / hour
 export const RL_MCP = Number(process.env.MERIDIAN_RL_MCP ?? 30); // mcp calls / IP / hour
+export const RL_ASK = Number(process.env.MERIDIAN_RL_ASK ?? 60); // open-question LLM asks / IP / hour
