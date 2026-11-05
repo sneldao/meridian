@@ -2789,9 +2789,9 @@ html[data-theme="night"] .evline-cite,
 }
 .tz-clock-time {
   font-family: var(--m-font-mono, monospace);
-  font-weight: 500;
-  font-size: 15px;
-  color: var(--m-text);
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--m-ink);
 }
 .tz-clock-divider {
   color: var(--m-muted);
@@ -7203,6 +7203,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   --m-muted: #8b93a7;
   --m-faint: #6b7590;
   --m-border: rgba(255, 255, 255, 0.12);
+  --m-ink: #f4f0e8;
   --m-accent: #e99a6f;
   /* The sun's display size — clamped with the viewport so the glass reads
      on wide stages (the JSX renders a 240px backing and scales into this
@@ -7238,8 +7239,8 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .stage-chip { backdrop-filter: none; }
 .stage-next {
   margin: 0;
-  font-size: 17px;
-  color: var(--m-text);
+  font-size: clamp(17px, 1.6vw, 21px);
+  color: var(--m-ink);
 }
 .stage-next-kicker {
   font-size: 13px;
@@ -7409,6 +7410,24 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
     transition: transform var(--dur-settle) var(--ease-settle);
     transform: translate(calc(var(--px, 0) * -4px), calc(var(--py, 0) * -2px));
   }
+}
+/* The sun's luminosity — a soft halo behind the glass so it reads as a
+   light source, not a sticker. Painted, not rendered: a radial bleed of
+   the beam colour, layered so the bloom fades before the disc's edge. */
+.stage-sunself::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: -1;
+  width: 260%;
+  height: 260%;
+  transform: translate(-50%, -50%);
+  background:
+    radial-gradient(50% 50% at 50% 50%, var(--stage-horizon) 0%, transparent 62%),
+    radial-gradient(30% 30% at 50% 50%, rgba(255, 226, 170, 0.5) 0%, transparent 70%);
+  opacity: 0.9;
+  pointer-events: none;
 }
 /* The stage sun's anamorphic streak — a painted highlight thrown along the
    horizon behind the glass, riding the same beam colour the band uses. */
