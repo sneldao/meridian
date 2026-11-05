@@ -107,6 +107,7 @@ export function ScenarioExperience({ id, departureDate, onChooseScenario, onMake
     return buildTasteItinerary(demo.trip, demo.plans, demo.calendar, {
       favorites: profile.favorites,
       status: daytime.length ? "ready" : "no-matches",
+      tier: profile.source,
       places: daytime,
       ...(evening.length ? { eveningPlaces: evening } : {}),
       sampleSource: profile.source,

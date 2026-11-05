@@ -54,6 +54,17 @@ export interface TasteContext {
   places: DestinationPlace[];
   /** Evening-window ideas (dining/venues) — never fitted, just offered. */
   eveningPlaces?: DestinationPlace[];
+  /** Which rung of the resolver ladder answered — a live Qloo lookup, a
+   *  recorded or imagined bundled sample, or nothing. `sampleSource`
+   *  already carries the two sample tiers; the field makes the ladder
+   *  explicit so surfaces name the tier instead of re-deriving it. */
+  tier: "live" | "recorded" | "imagined" | "unavailable";
+  /** Set when the live rung was reachable (a Qloo key exists) but failed
+   *  before a lower rung answered — surfaces can say "recorded · live
+   *  lookup unavailable" instead of letting the fallback read as a
+   *  deliberate demo. Absent on a keyless run: nothing fell, the ladder
+   *  simply started lower. */
+  liveUnavailable?: boolean;
   /** Present when remembered taste (kept/dismissed history) shaped the read. */
   memory?: { kept: number; suppressed: number; keptIds?: string[] };
   /** Present when the places came from a bundled sample profile instead of
@@ -86,6 +97,12 @@ export interface TasteItinerary {
   /** Carried from the context when the picks came from a bundled sample
    *  profile, so the card names the provenance instead of claiming Qloo. */
   sampleSource?: "recorded" | "imagined";
+  /** The ladder rung that answered, carried from the context. Optional on
+   *  the wire so itineraries stored before the ladder still validate. */
+  tier?: "live" | "recorded" | "imagined" | "unavailable";
+  /** Set when the live lookup was tried and failed before a lower rung
+   *  answered — the provenance line names the fall, not just the tier. */
+  liveUnavailable?: boolean;
 }
 /** Wire shape for the local-first marks param: kept ids to boost,
  *  dismissed places to suppress. Same semantics as the graph's history. */
@@ -182,6 +199,8 @@ export function isTasteItinerary(value: unknown): value is TasteItinerary {
   }
   if (o.firstNight !== undefined && !isDestinationPlace(o.firstNight)) return false;
   if (o.sampleSource !== undefined && o.sampleSource !== "recorded" && o.sampleSource !== "imagined") return false;
+  if (o.tier !== undefined && !["live", "recorded", "imagined", "unavailable"].includes(o.tier as string)) return false;
+  if (o.liveUnavailable !== undefined && typeof o.liveUnavailable !== "boolean") return false;
   if (o.crewNote !== undefined && (typeof o.crewNote !== "string" || o.crewNote.length > 400)) return false;
   if (o.status === "ready" && o.suggestions.length === 0) return false;
   if (o.status !== "ready" && o.suggestions.length !== 0) return false;

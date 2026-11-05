@@ -75,12 +75,15 @@ export function sampleTasteLabel(profile: SampleTasteProfile | null | undefined)
 
 /** The provenance line by source alone — for surfaces (the live Today
  *  card, the day view's idea row) that carry the mark but not the profile.
- *  Named once here so every surface says the same true thing. */
-export function sampleSourceLabel(source: SampleTasteSource): string {
+ *  Named once here so every surface says the same true thing. When the
+ *  live rung was tried and failed (`liveUnavailable`), the label names the
+ *  fall too — a recorded answer the ladder fell to, not a demo choice. */
+export function sampleSourceLabel(source: SampleTasteSource, liveUnavailable = false): string {
+  const fell = liveUnavailable ? " · live lookup unavailable" : "";
   if (source === "imagined") {
-    return "Imagined sample for this story — not a live lookup";
+    return `Imagined sample for this story${fell} — not a live lookup`;
   }
-  return `${SAMPLE_TASTE_LABEL} · not a live lookup`;
+  return `${SAMPLE_TASTE_LABEL}${fell} · not a live lookup`;
 }
 
 /** The provenance prefix for the card's signals line — Qloo when the picks

@@ -170,8 +170,11 @@ export function buildCrewJobFacts(input: CrewJobFactsInput): CrewJobFacts {
 }
 
 export function placeProvenance(it: TasteItinerary): string {
-  if (it.sampleSource === "imagined") return "imagined sample — not a live lookup";
-  if (it.sampleSource === "recorded") return "recorded Qloo sample — not a live lookup";
+  /* A live rung that failed on the way down gets named — the Scout row
+   * says the recorded sample answered *because* live was unreachable. */
+  const fell = it.liveUnavailable ? " · live lookup unavailable" : "";
+  if (it.sampleSource === "imagined") return `imagined sample${fell} — not a live lookup`;
+  if (it.sampleSource === "recorded") return `recorded Qloo sample${fell} — not a live lookup`;
   return "Qloo place lookup";
 }
 

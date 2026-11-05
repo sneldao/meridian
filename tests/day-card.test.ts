@@ -9,7 +9,7 @@ import { defaultDayCardOptions, publicDayCard, snapshotDayCard } from "../src/li
 const demo = buildDemoScenario("miles", "2026-11-04");
 const scene = buildDayScene({ ...demo, dayIndex: demo.event.dayIndex })!;
 const profile = sampleTasteProfile("luke")!;
-const itinerary = buildTasteItinerary(demo.trip, demo.plans, demo.calendar, { ...profile, status: "ready" }, "replay");
+const itinerary = buildTasteItinerary(demo.trip, demo.plans, demo.calendar, { ...profile, status: "ready", tier: profile.source }, "replay");
 const idea = resolvePlaceChoice(itinerary, itinerary.suggestions[0], {});
 const inputs = { idea, favorites: profile.favorites, eventSource: "fixture" as const, exampleBaseline: true, recordedTaste: true };
 const all = { includeSchedule: true, includeEvent: true, includeBodyTime: true, includeTaste: true };

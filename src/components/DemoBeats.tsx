@@ -105,6 +105,7 @@ function DemoBeatsInner() {
             {
               favorites: tasteProfile.favorites,
               status: daytime.length ? "ready" : "no-matches",
+              tier: tasteProfile.source,
               places: daytime,
               ...(evening.length ? { eveningPlaces: evening } : {}),
               sampleSource: tasteProfile.source,

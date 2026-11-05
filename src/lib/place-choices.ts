@@ -86,6 +86,34 @@ export function postTasteSignal(
 
 const choicesKey = (scope: string) => `meridian:place-choices:${scope}`;
 
+/** The step-4 session signal: categories of the places the traveller kept
+ *  or swapped in, normalized. Shared by the alternatives re-rank below and
+ *  the taste ladder's sample lane (`loadTasteContext`), so kept marks
+ *  order a recorded pool by the same adjacency as a session's picks. */
+export function likedCategories(places: Iterable<DestinationPlace>): Set<string> {
+  const liked = new Set<string>();
+  for (const p of places) {
+    for (const cat of p.categories) {
+      const n = cat.trim().toLowerCase();
+      if (n) liked.add(n);
+    }
+  }
+  return liked;
+}
+
+/** Step-4 ordering: places adjacent to the liked categories list first;
+ *  the pool's own order survives inside each adjacency tier — a stable
+ *  sort, never a reshuffle. */
+export function rankByAdjacency(
+  pool: DestinationPlace[],
+  liked: ReadonlySet<string>,
+): DestinationPlace[] {
+  if (!liked.size) return pool;
+  const adjacency = (p: DestinationPlace) =>
+    p.categories.filter((cat) => liked.has(cat.trim().toLowerCase())).length;
+  return [...pool].sort((a, b) => adjacency(b) - adjacency(a));
+}
+
 /** The day's pinned idea — `resolvePlaceChoice` on whatever suggestion the
  *  itinerary gives that dayIndex, null when it has none. The feed pins it
  *  on the day card itself (agent-native step 4), so the match+resolve
@@ -203,27 +231,22 @@ export function resolvePlaceChoice(
    * the traveller already kept or swapped in — a shared category — list
    * first, so the next offer learns from this session's picks. The pool's
    * own order (the taste ranking) survives inside each adjacency tier:
-   * a stable sort, never a reshuffle. */
-  const liked = new Set<string>();
-  for (const c of Object.values(state)) {
-    if (c.tasteKey !== key || (c.status !== "kept" && c.status !== "swapped")) continue;
-    for (const cat of c.place.categories) {
-      const n = cat.trim().toLowerCase();
-      if (n) liked.add(n);
-    }
-  }
-  const adjacency = (p: DestinationPlace) =>
-    liked.size
-      ? p.categories.filter((cat) => liked.has(cat.trim().toLowerCase())).length
-      : 0;
+   * a stable sort, never a reshuffle. The same ordering ranks the sample
+   * lane of the taste ladder via rankByAdjacency. */
+  const liked = likedCategories(
+    Object.values(state)
+      .filter((c) => c.tasteKey === key && (c.status === "kept" || c.status === "swapped"))
+      .map((c) => c.place),
+  );
   return {
     ...resolved,
-    alternatives: pool
-      .filter((p, index) =>
+    alternatives: rankByAdjacency(
+      pool.filter((p, index) =>
         placeKey(p) !== placeKey(resolved.place) &&
         !reservedElsewhere.has(placeKey(p)) &&
         !originalsElsewhere.has(placeKey(p)) &&
-        (choice?.status !== "swapped" || index > currentIndex))
-      .sort((a, b) => adjacency(b) - adjacency(a)),
+        (choice?.status !== "swapped" || index > currentIndex)),
+      liked,
+    ),
   };
 }

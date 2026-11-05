@@ -175,6 +175,33 @@ addressability (named agents on InsightCards are ask-buttons, feed-pin gains
 503-under-replay → deterministic fallback; live call verified through the
 featherless→nebius retry).
 
+## 4b. The taste resolver — from a boolean gate to a ladder
+
+Today `loadTasteContext` hangs on one `qlooEnabled()` check: live lookup OR
+bundled sample match OR `unavailable`. Three gaps follow: a live failure
+dead-ends instead of falling back to the recorded pool; memory (kept/
+dismissed shaping) only applies with the key; and "recorded" is a demo tier
+when it's really a cache.
+
+**Ladder** — `cache → live → recorded → imagined → unavailable`, one
+resolver, each tier carrying freshness/provenance. Live failure falls down
+the ladder instead of dead-ending. **Write-through** — live results refresh
+the recorded bundle for `(destination, interests-hash)`; the demo path gets
+fresher over time and Qloo outages degrade to stamped-but-recent answers.
+**Memory on every lane** — kept/dismissed + session swaps shape the sample
+pool the same way they shape live results (replay mode learns too).
+Later: a bundled top-N entity catalog enables offline free-text favorites;
+FalkorDB could hold entity→place affinity neighborhoods so "your kind of
+Tokyo" becomes a graph walk — explainable, fast, keyless.
+**Product** — one `live · recorded · imagined` badge component everywhere;
+badges are interactive ("what is this?" / "Live since 09:14 · refresh");
+with a key, divergence markers ("new since the capture") make the live
+upgrade visible proof.
+
+Order: ladder + live-failure fallback (a real bug-class fix) → memory on
+the sample path → interactive badges → write-through cache → entity catalog
+→ graph materialization.
+
 ## 5. Explicitly not doing
 
 - **No fake latency.** The trace replays real compute steps with real

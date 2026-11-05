@@ -45,6 +45,7 @@ const places: DestinationPlace[] = [
 const ctx = (over: Partial<TasteContext> = {}): TasteContext => ({
   favorites,
   status: "ready",
+  tier: "live",
   places,
   ...over,
 });

@@ -20,6 +20,8 @@ export function buildTasteItinerary(
     ...(context.memory ? { memory: context.memory } : {}),
     ...(context.eveningPlaces?.length ? { firstNight: context.eveningPlaces[0] } : {}),
     ...(context.sampleSource ? { sampleSource: context.sampleSource } : {}),
+    tier: context.tier,
+    ...(context.liveUnavailable ? { liveUnavailable: true } : {}),
   };
   if (context.status !== "ready") return { ...base, status: context.status };
   const suggestions: TasteItinerary["suggestions"] = [];

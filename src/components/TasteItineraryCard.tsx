@@ -50,7 +50,7 @@ export function TasteItineraryCard({
         {itinerary.status === "unavailable"
           ? "Place discovery unavailable"
           : itinerary.sampleSource
-            ? sampleSourceLabel(itinerary.sampleSource)
+            ? sampleSourceLabel(itinerary.sampleSource, itinerary.liveUnavailable)
             : itinerary.planningMode === "replay"
               ? "Example schedule · Qloo place ideas"
               : "Qloo-ranked ideas, fitted around your plan"}
