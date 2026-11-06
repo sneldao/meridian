@@ -1166,6 +1166,11 @@ export function NudgeFeedScreen({
             provenance: placeProvenance(tasteItinerary),
           }
         : null,
+      /* §4b — the packed crate, so a bound "why this place?" can resolve
+       * the bundled taste map's chain. */
+      favorites:
+        tasteItinerary?.favorites ??
+        (tasteProfile?.ready ? tasteProfile.favorites : undefined),
       citations: citations.length,
       moves: moves.length,
     }),
@@ -1180,6 +1185,7 @@ export function NudgeFeedScreen({
       baseline,
       heroMtg,
       tasteItinerary,
+      tasteProfile,
       citations.length,
       moves.length,
     ],
@@ -1223,6 +1229,9 @@ export function NudgeFeedScreen({
         owner: "Scout",
         agent: null,
         provenance: "your crate",
+        /* §4b — binds the pin's place so "why this place?" can answer
+         * with the bundled taste map's chain. */
+        placeName: dayPin.place.name,
       },
     };
   }, [dayPin, tasteItinerary, askFacts]);
@@ -2125,6 +2134,9 @@ export function NudgeFeedScreen({
             owner: card.agent.owner,
             agent: card.agent.agent,
             provenance: "the insight card",
+            /* §4b — the crate-match card binds the pinned place too, so
+             * its bare "why" gets the same chain the pin's does. */
+            placeName: card.id === "place" ? dayPin?.place.name : undefined,
           };
           const facts: CrewFacts = { ...askFacts, context };
           return {

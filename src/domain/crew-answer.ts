@@ -7,6 +7,12 @@ import {
 import { buildTrip } from "./fixtures";
 import { insightFlagCount } from "./insights";
 import { previewPlan } from "./solver";
+import type { TasteEntity } from "./taste";
+import {
+  TASTE_MAP_LABEL,
+  chainsForDestination,
+  tasteChainFor,
+} from "@/lib/taste-graph";
 import type {
   AdherenceProfile,
   AgentId,
@@ -41,6 +47,9 @@ export interface CrewAnswerContext {
   agent: AgentId | null;
   /** Where the detail came from, when the surface can name it. */
   provenance?: string;
+  /** The pinned/suggested place the context binds — lets "why this
+   *  place?" answer with the bundled taste map's real chain. */
+  placeName?: string;
 }
 
 export interface CrewAnswer {
@@ -88,6 +97,9 @@ export interface CrewFacts {
     sleepMin?: number;
   } | null;
   places?: { matched: number; provenance: string } | null;
+  /** The crate the trip packed — the favorites the bundled taste map
+   *  resolves chains against. */
+  favorites?: TasteEntity[];
   citations?: number;
   moves?: number;
 }
@@ -149,6 +161,36 @@ function fallback(): CrewAnswer {
     answer: FALLBACK,
     provenance: "intent parser · no solver run",
     isFallback: true,
+  };
+}
+
+/* The attached-context answer — a bare "why" (or "why this place?")
+ * quotes the card it sits on. When the card binds a place and the bundled
+ * taste map holds a chain that lands on it, the chain leads: the real
+ * `entity → via` hops, then the card's own words underneath. The map is
+ * authored edges, so the line names itself `taste map · bundled` — never
+ * "graph", never a live lookup. No chain, no prepend — the card's answer
+ * stands exactly as before. */
+function contextAnswer(facts: CrewFacts, c: CrewAnswerContext): CrewAnswer {
+  const chain =
+    c.placeName && facts.favorites?.length
+      ? tasteChainFor(c.placeName, facts.favorites)
+      : null;
+  const base = `${c.about} — ${c.detail}`;
+  if (!chain) {
+    return {
+      owner: c.owner,
+      agent: c.agent,
+      answer: base,
+      provenance: c.provenance ?? "the card it sits on",
+    };
+  }
+  return {
+    owner: c.owner,
+    agent: c.agent,
+    answer: `${chain.place} — ${chain.entity} → ${chain.via} · ${TASTE_MAP_LABEL}`,
+    detail: [base],
+    provenance: c.provenance ?? "the card it sits on",
   };
 }
 
@@ -535,12 +577,24 @@ function irisAnswer(facts: CrewFacts): CrewAnswer {
 
 function scoutAnswer(facts: CrewFacts): CrewAnswer {
   const p = facts.places;
+  /* The bundled taste map's chains for this destination — the "why this
+   *  place?" trace the scout can recite, capped at three so the answer
+   *  stays a lane detail, not a dump. Each line carries the bundled
+   *  disclosure. */
+  const chains =
+    facts.trip && facts.favorites?.length
+      ? chainsForDestination(facts.trip.destination.name, facts.favorites)
+      : [];
   return {
     owner: "Scout",
     agent: null,
     answer: p
       ? `Scout matches places to your crate — ${p.matched === 0 ? "none matched yet" : `${p.matched} ${p.matched === 1 ? "place" : "places"} matched`} — ${p.provenance}.`
       : "Scout matches places to your crate — no crate packed, so there's nothing to match.",
+    detail:
+      chains.length > 0
+        ? chains.slice(0, 3).map((c) => `${c.entity} → ${c.via} → ${c.place} · ${TASTE_MAP_LABEL}`)
+        : undefined,
     provenance: p?.provenance ?? "crate",
   };
 }
@@ -622,13 +676,7 @@ export function crewAnswer(question: string, facts: CrewFacts): CrewAnswer {
   // A trip-less surface can still answer for its attached context.
   if (!facts.trip) {
     if (/^why\b/.test(q) && facts.context) {
-      const c = facts.context;
-      return {
-        owner: c.owner,
-        agent: c.agent,
-        answer: `${c.about} — ${c.detail}`,
-        provenance: c.provenance ?? "the card it sits on",
-      };
+      return contextAnswer(facts, facts.context);
     }
     return noTrip();
   }
@@ -677,14 +725,7 @@ export function crewAnswer(question: string, facts: CrewFacts): CrewAnswer {
        feed-pin binds to the pin's context exactly like "why?" does. */
     if (!rest || /^(?:(?:is\s+)?(?:this|it|that)(?:\s+[a-z]+)?|'s it)\??$/.test(rest)) {
       const c = facts.context;
-      if (c) {
-        return {
-          owner: c.owner,
-          agent: c.agent,
-          answer: `${c.about} — ${c.detail}`,
-          provenance: c.provenance ?? "the card it sits on",
-        };
-      }
+      if (c) return contextAnswer(facts, c);
       return fallback();
     }
     const t = parseTime(rest);
@@ -696,15 +737,7 @@ export function crewAnswer(question: string, facts: CrewFacts): CrewAnswer {
     }
     const routed = route(rest, facts);
     if (routed) return routed;
-    if (facts.context) {
-      const c = facts.context;
-      return {
-        owner: c.owner,
-        agent: c.agent,
-        answer: `${c.about} — ${c.detail}`,
-        provenance: c.provenance ?? "the card it sits on",
-      };
-    }
+    if (facts.context) return contextAnswer(facts, facts.context);
     return fallback();
   }
 

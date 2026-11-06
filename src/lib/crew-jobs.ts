@@ -1,6 +1,7 @@
 import { evaluatePlan, fmtMin, passes } from "@/domain/circadian";
 import type { SolvedDay } from "@/domain/solver";
 import { matchSampleProfileForTrip, splitSamplePlaces } from "@/lib/sample-taste";
+import { tasteChainFor } from "@/lib/taste-graph";
 import { cachedAnswerLabel } from "@/lib/taste-tier";
 import type { TasteEntity, TasteItinerary } from "@/domain/taste";
 import type {
@@ -684,11 +685,18 @@ export function deriveCrewJobs(args: CrewJobsArgs): CrewJobsResult {
       const it = itinerary;
       const matched = it.suggestions.length + (it.firstNight ? 1 : 0);
       for (const s of it.suggestions) {
+        /* §4b — the bundled taste map names which favorite this place
+         * matched, when a chain exists: one `· via {entity}` suffix,
+         * never a rewrite. */
+        const via = tasteChainFor(s.place.name, it.favorites)?.entity;
         steps.push({
-          text: `${s.place.name} — ${s.label} ${fmtMin(s.startMin)}–${fmtMin(s.endMin)}`,
+          text: `${s.place.name} — ${s.label} ${fmtMin(s.startMin)}–${fmtMin(s.endMin)}${via ? ` · via ${via}` : ""}`,
         });
       }
-      if (it.firstNight) steps.push({ text: `first night — ${it.firstNight.name}` });
+      if (it.firstNight) {
+        const via = tasteChainFor(it.firstNight.name, it.favorites)?.entity;
+        steps.push({ text: `first night — ${it.firstNight.name}${via ? ` · via ${via}` : ""}` });
+      }
       if (it.alternatives?.length)
         steps.push({ text: `${it.alternatives.length} alternates held`, tone: "note" });
       steps.push({ text: placeProvenance(it), tone: "note" });
