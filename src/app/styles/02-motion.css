@@ -559,6 +559,18 @@ a[href]:active {
   line-height: 1.35;
   opacity: 0.85;
 }
+/* On /arrival the passport rises first (beat 10) and the stamp slams down a
+   beat later — the payoff of the reveal. Backwards fill so the stamp is
+   simply absent until its cue, then rests back on its base rotation;
+   transform + opacity only, and under reduced motion it just sits stamped. */
+@media (prefers-reduced-motion: no-preference) {
+  .arr-in .arr-passport-stamp { animation: arr-stamp-slam 560ms var(--ease-drift) 2050ms backwards; }
+}
+@keyframes arr-stamp-slam {
+  0% { opacity: 0; transform: scale(1.28) rotate(-8deg); }
+  55% { opacity: 1; transform: scale(0.96) rotate(-8deg); }
+  100% { opacity: 1; transform: scale(1) rotate(-8deg); }
+}
 .arr-passport-stat {
   margin-top: 22px;
   font-family: var(--font-mono2);

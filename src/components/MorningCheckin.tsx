@@ -44,12 +44,25 @@ export function buildMorningCheckIn(note: string, now = Date.now()): { checkins:
   return { checkins: btoa(JSON.stringify([{ ...checkIn, at: now }])), startDay: 2 };
 }
 
+/** The beat after "Check in now": proof the note landed, before the panel
+ *  closes and the crew takes its minute. Split out so tests can render it. */
+export function CheckInSent() {
+  return (
+    <div role="status" className="mt-3 rounded-lg border border-line bg-ink px-2.5 py-2">
+      <p className="font-voice text-base leading-snug text-paper">Sent — the crew&apos;s on it.</p>
+      <p className="mt-1 text-xs leading-relaxed text-mist">Replanning around what actually happened. Give them about a minute.</p>
+    </div>
+  );
+}
+
 export function MorningCheckin({ phase, lockedCount, totalDays, sessionStartedAt, onCheckIn }: Props) {
   const [open, setOpen] = useState(false);
+  const [sent, setSent] = useState(false);
   const [note, setNote] = useState("");
   const [time, setTime] = useState(DEFAULT_TIME);
   const [now, setNow] = useState(() => Date.now());
   const ref = useRef<HTMLDivElement | null>(null);
+  const sentTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -57,6 +70,11 @@ export function MorningCheckin({ phase, lockedCount, totalDays, sessionStartedAt
     };
     window.addEventListener("mousedown", handler);
     return () => window.removeEventListener("mousedown", handler);
+  }, []);
+
+  // The sent beat cleans up after itself when the panel unmounts mid-beat.
+  useEffect(() => () => {
+    if (sentTimer.current) clearTimeout(sentTimer.current);
   }, []);
 
   // Tick while the panel's open so "on the job" reads live, not stale.
@@ -122,16 +140,25 @@ export function MorningCheckin({ phase, lockedCount, totalDays, sessionStartedAt
               className="mt-1 w-full rounded-lg border border-line bg-ink px-2.5 py-1.5 text-xs text-paper focus:border-mist"
             />
 
-            <button
-              onClick={() => {
-                onCheckIn(buildMorningCheckIn(note));
-                setOpen(false);
-                setNote("");
-              }}
-              className="mt-3 w-full rounded-lg border border-paper bg-paper px-3 py-2 text-xs font-medium text-ink transition-colors hover:bg-white"
-            >
-              Check in now
-            </button>
+            {sent ? (
+              <CheckInSent />
+            ) : (
+              <button
+                onClick={() => {
+                  onCheckIn(buildMorningCheckIn(note));
+                  setSent(true);
+                  setNote("");
+                  if (sentTimer.current) clearTimeout(sentTimer.current);
+                  sentTimer.current = setTimeout(() => {
+                    setSent(false);
+                    setOpen(false);
+                  }, 1400);
+                }}
+                className="mt-3 w-full rounded-lg border border-paper bg-paper px-3 py-2 text-xs font-medium text-ink transition-colors hover:bg-white"
+              >
+                Check in now
+              </button>
+            )}
           </Card>
         </AnchoredPopover>
       )}

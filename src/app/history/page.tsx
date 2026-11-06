@@ -35,6 +35,23 @@ interface HistEntry {
   fallback?: boolean;
 }
 
+/** The before-anything state: an open sky, not an empty table — and the one
+ *  next step that fills it. Exported so tests can render it on its own. */
+export function HistoryEmpty() {
+  return (
+    <div className="hist-empty">
+      <p className="hist-empty-line">No trips yet — the sky is clear.</p>
+      <p className="hist-empty-sub">
+        Plans you make land here — each one keeping its plan, its gate score,
+        and its arrival report.
+      </p>
+      <Link href="/" className="hist-empty-cta">
+        Plan your first trip
+      </Link>
+    </div>
+  );
+}
+
 export default function HistoryPage() {
   const [items, setItems] = useState<HistEntry[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -131,9 +148,7 @@ export default function HistoryPage() {
         return on reload. See <Link href="/privacy" className="underline">Privacy &amp; support</Link>.
       </p>
 
-      {items.length === 0 && (
-        <p className="text-sm text-clay-2">No trips yet. Plans you make will show up here — each one keeps its plan, its gate score, and its arrival report.</p>
-      )}
+      {items.length === 0 && <HistoryEmpty />}
 
       {/* The deck (docs/DESIGN.md · Motion language): journeys stack and pin —
           scrolling riffls through trips instead of walking a table. Plain
