@@ -40,6 +40,13 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
     so a failure there is a real regression rather than a missing local
     FalkorDB or provider key.
   - Run tests and checks inside the container with `docker compose -f docker-compose.base44.yml exec -T web bun run test` and `docker compose -f docker-compose.base44.yml exec -T web bun run typecheck`.
+  - Stub globals only via `tests/stub-global.ts` (`stubGlobal` /
+    `withStubbedGlobal`). Plain `globalThis.x = …` throws when an earlier
+    file left the name readonly-configurable — order-dependent, took CI
+    down once.
+  - A seeded `meridian:activeTrip` resolves to the setup door, not the
+    journey view (the door law). For trip-mode rendering drive explicit
+    params: `/?origin=LHR&dest=SIN&date=<future>`.
 
 ## Beta invariants
 
