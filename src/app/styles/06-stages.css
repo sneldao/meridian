@@ -827,7 +827,8 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.04em;
-  padding: 2px 8px;
+  /* 2px padding made a 20.5px-tall target — under WCAG 2.2's 24px floor. */
+  padding: 5px 8px;
   border: 1px solid var(--m-border-2);
   border-radius: 999px;
   background: transparent;
@@ -853,7 +854,7 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   font: inherit;
   font-size: 12px;
   line-height: 1.5;
-  padding: 2px 4px;
+  padding: 4px 4px;
   border: none;
   background: transparent;
   color: var(--m-muted);
@@ -2184,6 +2185,9 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 }
 .demo-skip {
   margin-left: auto;
+  /* An underlined 11px word in the demo's header — 16.5px tall with no
+     padding. 4px of vertical padding is invisible and makes it 24.5. */
+  padding: 4px 0;
   background: none;
   border: none;
   font: inherit;
@@ -2397,6 +2401,39 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   padding: 6px 4px;
 }
 .demo-nav:disabled { color: var(--m-faint); cursor: default; }
+/* The film's footer controls — Previous / Next sit 31.5 tall with 6px of
+   padding, and one of them is a <Link>. 44 for a finger, centred explicitly. */
+@media (pointer: coarse) {
+  .demo-nav {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+  /* Small pills inside compact rows — the taste badge, its refresh, the
+     offline toggle — get the ring treatment for the same reason: 44px of box
+     would not fit the composition, 44px of hit area fits under it. */
+  .tier-badge-btn,
+  .tier-badge-refresh,
+  .offline-toggle { position: relative; }
+  .tier-badge-btn::after,
+  .tier-badge-refresh::after,
+  .offline-toggle::after {
+    content: "";
+    position: absolute;
+    inset: -10px;
+  }
+  /* The nine-pixel pagination dots are the smallest target in the app. The
+     dot keeps its size — it is part of the film's composition — and the hit
+     area is a ring. The row gap grows by the same amount, so neighbouring
+     rings tile with a hairline of overlap instead of covering each other. */
+  .demo-dot { position: relative; }
+  .demo-dot::after {
+    content: "";
+    position: absolute;
+    inset: -17.5px;
+  }
+  .demo-dots { gap: 34px; }
+}
 .demo-nav-cta { color: var(--m-accent); }
 .demo-dots { display: flex; gap: 8px; }
 .demo-dot {

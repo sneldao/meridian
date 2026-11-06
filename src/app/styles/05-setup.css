@@ -32,6 +32,12 @@
   cursor: pointer;
 }
 .setup-back:disabled { opacity: .3; cursor: default; }
+/* The setup flow's only way back out of a scene, at 34×34 — a square a thumb
+   hits often and a mouse hits once. 44 on a finger, still `flex: none`, so the
+   header row grows by 10px rather than pushing the title around. */
+@media (pointer: coarse) {
+  .setup-back { width: 44px; height: 44px; }
+}
 .setup-progress {
   flex: 1;
   height: 4px;
@@ -73,7 +79,17 @@
 /* The sleep dial: the answer to the first question, given on the same
    picture the rest of the app uses. */
 .sleep-dial { display: flex; flex-direction: column; align-items: center; gap: 10px; }
-.sleep-dial-svg { width: min(280px, 78vw); height: auto; touch-action: none; cursor: pointer; }
+/* The dial is 78vw of a scrolling scene. `touch-action: none` on a mid-page
+   box is the bug the design law's Rule 2 corollary names — on a phone it
+   swallows the scroll across a whole screen-width band. So a finger keeps
+   `pan-y`: a tap still sets the nearest handle (pointerdown needs no drag) and
+   a sideways drag still turns the dial, while an up/down swipe scrolls the
+   scene the way the thumb expects. A mouse has no scroll to protect, so it
+   keeps the full lock. */
+.sleep-dial-svg { width: min(280px, 78vw); height: auto; touch-action: pan-y; cursor: pointer; }
+@media (hover: hover) and (pointer: fine) {
+  .sleep-dial-svg { touch-action: none; }
+}
 .sleep-dial-ring { fill: none; stroke: var(--m-border); stroke-width: 1; }
 .sleep-dial-tick { stroke: var(--m-border); stroke-width: 1; }
 .sleep-dial-tick-major { stroke: var(--m-muted); stroke-width: 1.5; }
@@ -127,7 +143,11 @@
     justify-content: space-around;
     align-items: center;
     gap: 4px;
-    padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
+    /* `max()` rather than addition on the sides: in landscape the notch takes
+       a fixed 44px, and padding plus inset would double it. */
+    padding: 8px max(10px, env(safe-area-inset-right, 0px))
+      calc(8px + env(safe-area-inset-bottom, 0px))
+      max(10px, env(safe-area-inset-left, 0px));
     background: var(--m-card);
     border-top: 1px solid var(--m-border);
   }
@@ -156,8 +176,10 @@
   /* The More tab lights on the back-room surfaces — the traveller is on a
      page the three tabs don't name, and the bar should say so. */
   .bottom-nav-item[data-on] { color: var(--m-accent); }
-  /* Room for the bar, so the last thing on the page is never under it. */
-  .root { padding-bottom: 78px; }
+  /* Room for the bar, so the last thing on the page is never under it — and
+     the bar itself grows by the home-indicator inset, so the gap has to grow
+     with it or the last card slides back under the bar on a notched phone. */
+  .root { padding-bottom: calc(78px + env(safe-area-inset-bottom, 0px)); }
 }
 
 /* The shared "More" sheet: a bottom sheet on the phone (above the tab bar),
@@ -178,7 +200,9 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0px));
+  padding: 12px max(12px, env(safe-area-inset-right, 0px))
+    calc(12px + env(safe-area-inset-bottom, 0px))
+    max(12px, env(safe-area-inset-left, 0px));
   background: var(--m-card);
   border-top: 1px solid var(--m-border);
   border-radius: 10px 10px 0 0;

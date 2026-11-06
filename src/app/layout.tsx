@@ -34,6 +34,12 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#D96B43",
+  // The manifest ships `display: standalone`, so on an installed phone the app
+  // paints under the status bar and the home indicator — but only if the
+  // viewport claims the full screen. Without `cover`, every `env(safe-area-*`
+  // inset reads 0 and the tab bar's safe-area padding never applies, leaving
+  // the bar sitting on the home indicator.
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

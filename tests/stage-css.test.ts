@@ -201,3 +201,143 @@ describe("the stage answers the first viewport", () => {
     expect(stageSrc).toContain("stage-start");
   });
 });
+
+/* The phone chrome on an installed app: the manifest says `standalone`, so
+ * the document paints under the status bar and the home indicator. These pin
+ * the three things that keep it usable there — insets that actually exist,
+ * room for the tab bar once it grows by the inset, and a finger never being
+ * handed a control iOS would zoom into or a box that swallows the scroll. */
+describe("phone chrome keeps clear of the device", () => {
+  const layoutSrc = readFileSync(
+    join(import.meta.dir, "..", "src", "app", "layout.tsx"),
+    "utf8",
+  );
+
+  test("the viewport claims the full screen, or the insets all read zero", () => {
+    expect(layoutSrc).toContain('viewportFit: "cover"');
+  });
+
+  test("the tab bar pays the home-indicator inset, on the bottom and the sides", () => {
+    const nav = (css.match(/\.bottom-nav \{\s*position: fixed;[\s\S]*?\}/)?.[0] ?? "").replace(/\s+/g, " ");
+    expect(nav).toContain("calc(8px + env(safe-area-inset-bottom, 0px))");
+    expect(nav).toContain("env(safe-area-inset-left, 0px)");
+    expect(nav).toContain("env(safe-area-inset-right, 0px)");
+  });
+
+  test("the page reserves the bar's real height, inset included", () => {
+    expect(css).toContain(".root { padding-bottom: calc(78px + env(safe-area-inset-bottom, 0px)); }");
+  });
+
+  test("the More sheet sits inside the same margins", () => {
+    const sheet = (css.match(/\.more-sheet \{\s*position: fixed;[\s\S]*?\}/)?.[0] ?? "").replace(/\s+/g, " ");
+    expect(sheet).toContain("calc(12px + env(safe-area-inset-bottom, 0px))");
+    expect(sheet).toContain("env(safe-area-inset-left, 0px)");
+  });
+
+  test("no control under 16px is offered to a finger", () => {
+    expect(css).toMatch(/@media \(pointer: coarse\) \{\s*input:not\(\[type="checkbox"\]\)[\s\S]*?font-size: 16px;/);
+    // Boxes keep their size; only type is re-scaled.
+    expect(css).toContain('input:not([type="checkbox"]):not([type="radio"]):not([type="range"])');
+  });
+
+  test("landscape does not inflate the type under the thumb", () => {
+    expect(css).toContain("-webkit-text-size-adjust: 100%;");
+    expect(css).toContain("text-size-adjust: 100%;");
+  });
+
+  test("the sleep dial leaves the scroll to the finger and the turn to a mouse", () => {
+    const base = (css.match(/\.sleep-dial-svg \{[^}]*\}/)?.[0] ?? "").replace(/\s+/g, " ");
+    expect(base).toContain("touch-action: pan-y");
+    expect(css).toMatch(/@media \(hover: hover\) and \(pointer: fine\) \{\s*\.sleep-dial-svg \{ touch-action: none; \}\s*\}/);
+  });
+});
+
+/* A tap target audit, pinned. WCAG 2.2 AA asks 24×24 of every control; the
+ * app's own idiom is 44. These were the controls under the 24px floor — all
+ * of them 11px words with 0–3px of padding — plus the feed's two primary taps
+ * and the CTAs, which sat 2–14px under 44 for a finger. */
+describe("touch targets", () => {
+  /** The box height a single-line control's own declarations produce. */
+  const box = (needle: string) => {
+    const block = blockAfter(needle);
+    const font = Number(/font-size:\s*([\d.]+)px/.exec(block)?.[1] ?? 16);
+    const lead = Number(/line-height:\s*([\d.]+)/.exec(block)?.[1] ?? 1.5);
+    const raw = /padding:\s*([^;]+);/.exec(block)?.[1].trim() ?? "0";
+    const pad = raw.split(/\s+/).map((v) => Number(/([\d.]+)px/.exec(v)?.[1] ?? 0));
+    const [top, bottom] = pad.length >= 3 ? [pad[0], pad[2]] : [pad[0] ?? 0, pad[0] ?? 0];
+    return Math.round((font * lead + top + bottom) * 10) / 10;
+  };
+
+  test("no small control sits under the 24px floor", () => {
+    const floors: Array<[string, number]> = [
+      [".tl-why {", 24],
+      [".insight-ask {", 24],
+      [".feed-pin-ask {\n  flex: none;", 24],
+      [".scrub-reset {", 24],
+      [".demo-skip {\n  margin-left: auto;", 24],
+      [".tier-badge-btn {", 24],
+      [".tier-badge-refresh {", 24],
+    ];
+    for (const [selector, min] of floors) {
+      const height = box(selector);
+      expect({ selector, height, cleared: height >= min }).toEqual({ selector, height, cleared: true });
+    }
+  });
+
+  test("the scrubbed reset also clears the readability floor", () => {
+    const block = blockAfter(".scrub-reset {");
+    const size = Number(/font-size:\s*([\d.]+)px/.exec(block)?.[1] ?? 0);
+    expect(size).toBeGreaterThanOrEqual(11);
+  });
+
+  test("the phone's time column can hold a full range", () => {
+    // `.tl-time b` prints `HH:MM–HH:MM` (11 glyphs) nowrap at 15px. A fixed
+    // 60px column made the range overrun into the step title; the phone rule
+    // has to leave room for the content it actually renders.
+    // The feed's own phone rule (the room variant's 96px is a different,
+    // narrower scope and appears earlier in the cascade).
+    const at = css.indexOf("grid-template-columns: 22px 104px 1fr");
+    expect(at).toBeGreaterThan(-1);
+    const cols = /grid-template-columns: 22px (\d+)px 1fr/.exec(css.slice(at));
+    expect(Number(cols![1])).toBeGreaterThanOrEqual(100);
+    // And it sits under the phone breakpoint, not the desktop rule.
+    expect(css.slice(Math.max(0, at - 700), at)).toContain("@media (max-width: 720px)");
+    expect(css).not.toContain("grid-template-columns: 22px 60px 1fr");
+  });
+
+  test("the dial, the chips and the icon buttons reach 44 for a finger", () => {
+    const blocks = (css.match(/@media \(pointer: coarse\) \{[\s\S]*?\n\}/g) ?? []).join("\n");
+    const rules = blocks.split("}").map((r) => r.replace(/\s+/g, " "));
+    const at44 = (selector: string) => rules.some((r) => r.includes(selector) && r.includes("44px"));
+    for (const selector of [
+      ".dial-btn",
+      ".dac-done",
+      ".chip",
+      ".arr-btn",
+      ".day",
+      ".setup-back",
+      ".crew-ask-go",
+      ".demo-nav",
+      ".hist-empty-cta",
+    ]) {
+      expect({ selector, at44: at44(selector) }).toEqual({ selector, at44: true });
+    }
+    // The small words and pills in tight rows keep their size and gain a
+    // ring instead: 26.5px box + 10px inset each side clears 44.
+    for (const ring of [".insight-ask", ".feed-pin-ask", ".tl-why", ".tier-badge-btn", ".tier-badge-refresh", ".offline-toggle"]) {
+      expect({ ring, hasRing: rules.some((r) => r.includes(`${ring}::after`) && r.includes("inset: -10px")) }).toEqual({ ring, hasRing: true });
+      expect({ ring, positioned: rules.some((r) => r.includes("position: relative") && r.includes(ring)) }).toEqual({ ring, positioned: true });
+    }
+    // The 9px pagination dot keeps its size and gains a ring instead.
+    expect(blocks).toContain("inset: -17.5px");
+    expect(blocks).toContain(".demo-dots { gap: 34px; }");
+  });
+
+  test("a finger gets 44 on the feed's two taps and the primary CTAs", () => {
+    const block = (css.match(/@media \(pointer: coarse\) \{\s*\.tl-done[\s\S]*?padding-block: 13px;[\s\S]*?\}/)?.[0] ?? "").replace(/\s+/g, " ");
+    expect(block).toContain(".tl-done, .tl-skip { min-height: 44px; }");
+    expect(block).toContain(".p1, .p2 { padding-block: 13px; }");
+    // 12px type at 1.5 leading + 13px of padding on both sides is exactly 44.
+    expect(12 * 1.5 + 13 * 2).toBe(44);
+  });
+});

@@ -1211,6 +1211,21 @@ a[href]:active {
   outline: 2px solid #D96B43;
   outline-offset: 2px;
 }
+/* The pill vocabulary — chips, the arrival button, the day strip — is sized
+   for a cursor: 34px chips, a 41px day cell, a 41px arrival button. On a
+   finger they all take the app's own 44px floor. `inline-flex` is part of it:
+   half of these classes land on an <a> or <Link>, where min-height alone
+   would only pad the box under the text. Desktop density is unchanged. */
+@media (pointer: coarse) {
+  .chip,
+  .arr-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+  }
+  .day { min-height: 44px; }
+}
 .cat {
   display: flex;
   align-items: center;

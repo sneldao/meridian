@@ -199,6 +199,19 @@ html[data-theme="night"] {
 }
 .dac-done[aria-pressed="true"] { background: var(--dial-body); border-color: var(--dial-body); color: #fff; }
 .dac-done:focus-visible { outline: 2px solid var(--m-accent); outline-offset: 2px; }
+/* The dial's action row is the one place a thumb does everything: 6px of
+   padding made `.dial-btn` 28.5 tall and `.dac-done` 34. Both take 44 on a
+   finger. `.dial-btn` also lands on <Link> in two screens, so the centering
+   has to be explicit or the label rides the top of the taller box. */
+@media (pointer: coarse) {
+  .dial-btn,
+  .dac-done { min-height: 44px; }
+  .dial-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
 .dac-evidence {
   font-size: 11px;
   line-height: 1.45;

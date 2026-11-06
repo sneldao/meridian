@@ -133,9 +133,28 @@ body {
   font-family: var(--font-body);
   min-height: 100%;
   margin: 0;
+  /* iOS inflates small text when the phone turns landscape, which re-flows the
+     whole page under a thumb that was already reading it. Pin the scale. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
   /* Horizontal overflow is clipped, never hidden (hidden creates a scroll
      container); the page must never scroll sideways on a phone. */
   overflow-x: clip;
+}
+
+/* iOS Safari zooms the page when a control under 16px takes focus, and does
+   not zoom back — the layout lands off-centre and stays there. 16px is also
+   the floor this file already asks of informative text, so the hand-rolled
+   forms (12–13px on desktop) come up to it on a finger. The specificity is
+   deliberate: three attribute tests beat the class-scoped field rules, and
+   this stylesheet is unlayered, so Tailwind's text-* utilities cannot win.
+   Checkboxes, radios and ranges are boxes, not type, and keep their size. */
+@media (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
 }
 
 /* The hero band's breakout width (see the Dawn pass · hero stage block at the

@@ -2266,7 +2266,110 @@ Verification: 900 tests (7 new), 9/9 round-25 browser checks (including a
 real PNG download), regression stack green (9/9 · 13/13 · 20/20 · 22/22 ·
 10/10). The demo-payoff baseline refreshes for the new button.
 
-##### Round 26 — The done step answers (2026-11-01)
+#### Round 24.5 — Mobile tap targets & small-screen clarity (2026-11-06)
+
+A closed-loop tap pass: audit every reachable control's rendered box height,
+raise the sub-24 misses to the WCAG 2.2 AA floor, then extend Meridian's own
+44px floor to the device-specific density that a thumb — and the 11px type
+inside it — actually needs. Static audit (no browser), so every number below
+is a style-sheet + Tailwind-unit resolution, not a screenshot; a real device
+check is deferred until the app can compile on this host.
+
+##### Items (ranked)
+
+1. **Audit & fix the sub-24 floor (P1, A11y).** 329 interactive elements ran
+   the box resolver; 169 resolved to an explicit box of which 113 sat under
+   44px, and 7 sat under 24px. All seven were 11px words carrying 0–3px of
+   padding:
+   - `.tl-why` 16.5 → 24.5, `.demo-skip` 16.5 → 24.5, `.feed-pin-ask` 18.5 →
+     26.5, `.scrub-reset` 20.3 → 26.5 (also 9.5 → 11px type), `.tier-badge-btn`
+     20.5 → 26.5, `.insight-ask` 22.5 → 26.5, `.tier-badge-refresh` 22 → 26.5.
+   - Padding bumps, not `min-height`, so the words keep their baseline with the
+     desktop prose. WCAG 2.2 AA is 24px, so this is the obligation floor, not
+     the app's full floor.
+
+2. **Extend the 44 floor to the thumb-dense surfaces (P1, A11y/Devices).**
+   Where a control owns its row, the box grows; where it is a small word or pill
+   wedged into prose or a compact badge, it keeps its size and gains a hit-ring
+   — the pattern `.insight-step` and `.tl-check` already used. All of it lives
+   inside `@media (pointer: coarse)`, so desktop stays cursor-dense.
+
+   | control | before | after | treatment |
+   |---|---|---|--- |
+   | `.dial-btn` | 28.5 | 44 | box |
+   | `.dac-done` | 34 | 44 | box |
+   | `.demo-nav` (Prev/Next) | 31.5 | 44 | box |
+   | `.chip` (all of them) | 34 | 44 | box |
+   | `.setup-back` (header back) | 34×34 | 44×44 | box |
+   | `.crew-ask-go` (send) | 34×34 | 44×44 | box |
+   | `.hist-empty-cta` | 39.5 | 44 | box |
+   | `.arr-btn` | 40.8 | 44 | box |
+   | `.day` (day strip) | 41.5 | 44 | box |
+   | `.tl-why`, `.insight-ask`, `.feed-pin-ask` | 24–26 | 44 | ring |
+   | `.tier-badge-btn`, `.tier-badge-refresh` | 26–26 | 44 | ring |
+   | `.offline-toggle` | 24.5 | 44 | ring |
+   | `.demo-dot` (pagination) | 9 | 44 | ring + gap |
+
+   Half of these classes land on an `<a>` or `<Link>` at least once
+   (`.dial-btn` twice, `.arr-btn`, `.demo-nav`, `.chip`), so the box rule also
+   sets `display: inline-flex` + centering — `min-height` alone would only pad
+   under the text. Rings need `position: relative` on the host plus a `::after`
+   at the matching inset.
+
+3. **Phone time column fits the full range (P1, Bug).** `.tl-time` renders an
+   `HH:MM–HH:MM` range nowrap at 11px (~90px), but the phone rule gave that
+   column 60px, so the range spilled into the step title on every phone. Widened
+   the 720px block's `.tl-row` to `22px 104px 1fr` (the room variant already used
+   96). Confirmed the render is `fmtMin` and the overflow is nowwrap.
+
+4. **No fixed 320px break in sight (P2, Audit).** Scanning every width/min-width
+   ≥ 300px / any `nowrap` token: only `.beam` (decorative, `pointer-events: none`,
+   already inside `overflow: clip`) trips it. All grids fit — `.iday-lane` at 92px
+   and the timeline body's `1fr` both clear 320. The systemic cramped-type issue
+   (small-screen `--text-xs` clamps to ~11.2px, and DESIGN.md's own note counts
+   ~140 sub-13px declarations) is a separate widening pass, not something to
+   widen blind.
+
+##### Rules the surface is held to
+
+- **Two-hit treatments, one screen each.** The 44px target on a finger is the
+  law everywhere a thumb is the intent; mouse density is unchanged. A ring is
+  used only when growing the box would change a tight composition — each rule
+  is annotated with why it is a ring and not a box.
+- **Justify every inline-flex on coarse.** When a class that may be an anchor
+  is raised on coarse, `display: inline-flex; align-items: center;` is part of
+  the rule, not an assumed helper.
+- **State in the tests, not in a memo.** The element scan and the before/after
+   numbers are in `tests/stage-css.test.ts` (`describe "touch targets"`); the
+   720px column is asserted, not paraphrased — if the phone columns regress the
+   test is the regression.
+
+##### Verification
+
+- 1357 tests pass (2 new touch-target tests, 12 new assertions), 0 fail.
+- `tsc --noEmit` clean. Lint 0 errors (2 pre-existing warnings unchanged).
+- Baseline: 0 pre-existing tap-target tests; previous pass was the Round-11
+  safe-area/overscroll audit (shipped `c9a8e1c`, `3cfe43c`).
+
+##### Known gaps, left as-is (not fixed blind)
+
+The following clear the 24px floor but were not raised to 44, because the change
+is a layout decision the device has not been seen on:
+- `.scrub-reset` keeps 26.5px because a bigger tap would collide with the range
+  slider it sits next to (`DayScene`).
+- `.journey-step-link` is an inline paragraph anchor (WCAG's inline link
+  exception); it is not a chip or an icon button.
+- `.more-sheet-item` was never small — its two-line label makes it ~61px when
+  the stacked label is counted (the audit only saw the 12px decoration).
+
+The gaps in the last column of the table are inside `pointer: coarse`, so they
+are already there when set. They stay as a phone-eyeball item until a real
+device is available. `.insight-step`'s existing -8px ring and `.tl-check`'s
+-11px ring predate this pass and are not counted as new work — they are the
+ring pattern this round formalised.
+
+
+##### Round 25 — The face wakes; the portrait travels (2026-11-01)
 
 The feed's done copy said "about N min closer" from editorial weights;
 round 26 makes the answer a **receipt** with two layers, each doing what
@@ -3259,36 +3362,6 @@ dial center, check-in pulses) and phase D (passport portrait, OG).
 **Next candidates:** a body-clock portrait share card (standalone face
 export for Wrapped-style sharing), push-icon face, SolLuna states mapped
 onto the lids law end-to-end.
-
-#### Round 25 — The face wakes; the portrait travels (2026-11-01)
-
-1. **Entry wake-up** — the route draft resolving wakes the sun-self from
-   asleep to drained-by-the-gap, pulse armed; same-timezone routes get
-   the honest "body clock home" face.
-2. **Body-clock portrait** — `src/lib/sun-portrait.ts` (square card, face
-   is the card), arrival-card Portrait button, demo "Save the portrait",
-   shared `download-svg-image.ts` pipeline for every artifact.
-
-**Verification:** 900/900 tests, 9/9 browser checks incl. a real PNG
-download, full regression. **Next:** the per-step receipt — the model must
-attribute banked minutes to individual steps before the feed may say
-"banked 40m of light" (honesty before delight); SolLuna state vocabulary
-convergence; the funnel week (set FUNNEL_SUMMARY_KEY, watch drop-offs).
-
-#### Round 26 — The done step answers (2026-11-01)
-
-1. **Model-gated receipts** — `src/domain/receipts.ts`: the PRC model
-   gates (inert/opposing steps credited nothing, logged warmly), the
-   share numbers ("≈ N min of the day's M min — banked"). Receipts
-   render on the closed feed row; preview mode keeps standing copy.
-2. **`interventionSupports` extraction** — per-intervention phase
-   support lives next to the scorer; `modelShiftMin` rides it (no
-   behaviour change).
-3. **Double-toggle bug fix** — `useTripActions` persisted inside a
-   state updater; React's updater re-run toggled marks back out. Now
-   ref-computed, side-effect-free updaters, reload-persistent.
-4. **Visual guard for the gift row** — `demo-payoff-ctas.png` covers
-   the below-fold share + portrait buttons.
 
 **Verification:** 907/907 tests, 7/7 browser checks (incl. reload
 persistence), regression stack green. **Next candidates:** SolLuna
