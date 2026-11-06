@@ -48,6 +48,16 @@ Its executable form is the provenance label, not a comment: the hero reads
 `HeroDawnPanel.tsx`). A round-3 follow-on that was listed as an open trust gap
 for sixteen days while it sat shipped — see Part 3.
 
+*Corollary (2026-11-06).* The rule reads on empty lists too. A day with
+nothing scheduled, a day whose windows closed with steps still unmarked, and a
+day whose steps were all passed on are three different answers — and none of
+them is "all complete". `RightNowCard` claims completion only when
+`completedCount` reaches `totalSteps`; the other two report their own count and
+say what happened (`4 missed of 4`, `0 of 3 done`, "Every window has closed" /
+"Nothing left for today"). Collapsing them prints no invented number and is
+still a false measurement, so the states are pinned in
+`tests/right-now-card.test.tsx`.
+
 #### Rule 2 — Every visual read also exists as words
 
 The globe is not the source of truth. The caption beneath it is. Interaction is

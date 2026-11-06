@@ -399,10 +399,17 @@ src/components/  LightSweep (the mode-switch light pass: two staggered
                  More; the plan is a view of Today and the payoff lives on
                  its trip, so neither gets a tab; directional
                  `nav-forward`/`nav-back` transitions by
-                 tab order; hidden above 480px, where the app is a document),
+                 tab order; the 2px rule takes a third seat over More on
+                 the back-room paths (`navRuleIndex` — 0 Today, 1 Trips,
+                 2 More, null where no seat claims the page), so the bar
+                 still says where you are; hidden above 480px, where the
+                 app is a document),
                  MoreSheet + MoreNav (the More tab's sheet — the grouped
                  places links for /crew, /shift, /team; `aria-current`
-                 on the tab when any of those paths matches),
+                 on the tab when any of those paths matches, and
+                 `aria-current="page"` on the sheet row for the place you
+                 are already standing on, whose note reads "you're here"
+                 rather than offering you the page you are on),
                  ArrivalPassportCard (the arrival payoff's closing beat —
                  the stamped record in live type, exported from its SVG
                  twin; download PNG/SVG, copy text, native share, nothing

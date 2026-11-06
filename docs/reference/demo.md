@@ -91,7 +91,9 @@ per day and may need tuning.
   Post-flight days are planned after landing. `?depth=guided` adds the
   deep-dive visuals; `/crew` is the operator rung (lens shell + crew feed
   + eval verdict cards). On a phone the tab bar is two links —
-  **Today / Trips** — plus a More sheet for the back rooms.
+  **Today / Trips** — plus a More sheet for the back rooms; the 2px rule
+  slides under More on those pages, and the sheet marks the place you are
+  already standing on ("you're here") instead of offering it back to you.
 - `/` → **"How my body clock is adjusting"** — the read-only explanation
   below Today, once the crew (or a restored plan) has locked days: the
   24-hour dial, the projection with its uncertainty band and the do-nothing
