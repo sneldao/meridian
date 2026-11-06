@@ -21,6 +21,16 @@ const TABS = [
  *  they're on Today. */
 const MORE_PATHS = ["/crew", "/shift", "/team", "/arrival", "/outcome", "/review"];
 
+/** Which seat the sliding rule takes for a path: 0 Today, 1 Trips, 2 More for
+ *  the back-room pages — where the traveller most needs to be told which tab
+ *  they are standing on — and null when no tab claims it, so the rule hides
+ *  rather than pointing at something that isn't the page. */
+export function navRuleIndex(pathname: string): number | null {
+  const seat = TABS.findIndex((t) => t.active(pathname));
+  if (seat >= 0) return seat;
+  return MORE_PATHS.some((p) => pathname.startsWith(p)) ? 2 : null;
+}
+
 export function BottomNav() {
   const pathname = usePathname();
   // The sheet is open *at the path it was opened on*: a place link navigates
@@ -31,15 +41,16 @@ export function BottomNav() {
   const moreOpen = moreOpenedAt !== null && moreOpenedAt === pathname;
   const morph = useMorphTransition();
   const currentIdx = TABS.findIndex((t) => t.active(pathname));
-  const onMorePage = MORE_PATHS.some((p) => pathname.startsWith(p));
+  const ruleIdx = navRuleIndex(pathname);
+  const onMorePage = ruleIdx === 2;
   return (
     <>
       <nav className="bottom-nav" aria-label="Sections">
         <span
           className="bottom-nav-pill"
           aria-hidden="true"
-          data-idx={currentIdx >= 0 ? currentIdx : undefined}
-          data-hidden={currentIdx < 0 || undefined}
+          data-idx={ruleIdx ?? undefined}
+          data-hidden={ruleIdx === null || undefined}
         />
         {TABS.map(({ href, label, Icon, active }, i) => (
           <Link

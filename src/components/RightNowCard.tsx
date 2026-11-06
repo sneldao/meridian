@@ -18,6 +18,8 @@ export interface RightNowCardProps {
   onSkip?: () => void;
   totalSteps?: number;
   completedCount?: number;
+  /** Steps whose window closed without a mark — still open to a late tick. */
+  missedCount?: number;
 }
 
 export function RightNowCard({
@@ -31,6 +33,7 @@ export function RightNowCard({
   onSkip,
   totalSteps = 0,
   completedCount = 0,
+  missedCount = 0,
 }: RightNowCardProps) {
   /* The hero slot hands off the moment a step is marked — `pickNextStep`
    * skips resolved ids — so the card would swap away before its done pulse
@@ -59,7 +62,9 @@ export function RightNowCard({
       <div className="right-now-card" role="region" aria-label={`Previewing ${selectedDayLabel}`}>
         <div className="right-now-head">
           <span className="right-now-badge">PLANNING AHEAD</span>
-          <span className="right-now-time">{totalSteps} planned interventions</span>
+          <span className="right-now-time">
+            {totalSteps > 0 ? `${totalSteps} planned interventions` : "nothing planned yet"}
+          </span>
         </div>
         <h4 className="right-now-title">Viewing {selectedDayLabel}</h4>
         <p className="right-now-desc">
@@ -69,7 +74,33 @@ export function RightNowCard({
     );
   }
 
-  if (!step || (totalSteps > 0 && completedCount >= totalSteps)) {
+  /* A day with nothing on it is not a finished day. Both used to land in the
+   * "all complete" branch, so a day the plan never covered answered `0 of 0
+   * done` — the interface inventing an achievement out of an empty list. The
+   * trust rule runs the other way: nothing scheduled is reported as nothing
+   * scheduled. */
+  if (!step && totalSteps === 0) {
+    return (
+      <div className="right-now-card" role="region" aria-label="Nothing scheduled today">
+        <div className="right-now-head">
+          <span className="right-now-badge">TODAY</span>
+          <span className="right-now-time">nothing scheduled</span>
+        </div>
+        <h4 className="right-now-title">No steps for this day</h4>
+        <p className="right-now-desc">
+          The plan has no light, sleep or nutrition windows here. A day with
+          nothing scheduled is a rest day, not a missed one.
+        </p>
+      </div>
+    );
+  }
+
+  /* `!step` is three different days, and one of them was being told it was
+   * finished. All done is the only state that earns "complete"; a day whose
+   * windows closed with steps still unmarked, and a day whose steps were
+   * passed on, each get their own sentence and their own count. Nothing here
+   * scolds — the missed rows are already listed in the feed below this card. */
+  if (totalSteps > 0 && completedCount >= totalSteps) {
     return (
       <div className="right-now-card" role="region" aria-label="Today's progress">
         <div className="right-now-head">
@@ -79,6 +110,35 @@ export function RightNowCard({
         <h4 className="right-now-title">All steps complete for today</h4>
         <p className="right-now-desc">
           You have completed all scheduled interventions for today. Rest and protect your sleep window to help your body clock adapt.
+        </p>
+      </div>
+    );
+  }
+
+  if (!step) {
+    const passed = Math.max(0, totalSteps - completedCount - missedCount);
+    const missed = missedCount > 0;
+    return (
+      <div
+        className="right-now-card"
+        role="region"
+        aria-label={missed ? "Every window has closed" : "Nothing left for today"}
+      >
+        <div className="right-now-head">
+          <span className="right-now-badge">TODAY</span>
+          <span className="right-now-time">
+            {missed
+              ? `${missedCount} missed of ${totalSteps}`
+              : `${completedCount} of ${totalSteps} done`}
+          </span>
+        </div>
+        <h4 className="right-now-title">
+          {missed ? "Every window has closed" : "Nothing left for today"}
+        </h4>
+        <p className="right-now-desc">
+          {missed
+            ? `${missedCount} step${missedCount === 1 ? "" : "s"} went by unmarked${passed > 0 ? `, ${passed} passed on` : ""}. Nothing is lost — the plan builds from what you actually did, and tomorrow starts from there.`
+            : `${passed === 1 ? "You passed on the window offered today" : `You passed on all ${passed} windows today`}. That is a logged choice, not a gap — tomorrow picks up from here.`}
         </p>
       </div>
     );

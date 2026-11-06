@@ -2558,6 +2558,11 @@ select:focus-visible {
 .bottom-nav-pill[data-hidden] { opacity: 0; }
 .bottom-nav-pill[data-idx="0"] { --pill-idx: 0; }
 .bottom-nav-pill[data-idx="1"] { --pill-idx: 1; }
+/* The third seat: the bar already sizes the rule for three items, and a
+   back-room page (/crew, /shift, /team, /arrival, /outcome, /review) is
+   exactly where the traveller most needs to be told which tab they are
+   standing on. It lands 4px off the right edge — the same inset as the left. */
+.bottom-nav-pill[data-idx="2"] { --pill-idx: 2; }
 @media (prefers-reduced-motion: no-preference) {
   .bottom-nav-pill {
     transition: transform var(--dur-drift) var(--ease-spring), opacity var(--dur-glide) var(--ease-glide);

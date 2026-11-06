@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { DisclosureBody } from "@/components/dial/DisclosureSheet";
 import { useMorphTransition } from "@/lib/use-morph-transition";
@@ -43,6 +44,10 @@ export function MoreSheet({ open, onClose }: { open: boolean; onClose: () => voi
 function MoreSheetDialog({ onClose }: { onClose: () => void }) {
   const [disclosure, setDisclosure] = useState(false);
   const morph = useMorphTransition();
+  /* The sheet is also a map, and a map that offers the square you are standing
+     on as a destination reads as broken. The current place keeps its row — the
+     layout must not move under a thumb — and says so instead. */
+  const pathname = usePathname();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -85,18 +90,22 @@ function MoreSheetDialog({ onClose }: { onClose: () => void }) {
               {PLACE_GROUPS.map((g) => (
                 <div key={g.label}>
                   <p className="more-sheet-label">{g.label}</p>
-                  {g.places.map((p) => (
-                    <Link
-                      key={p.href}
-                      href={p.href}
-                      transitionTypes={["nav-forward"]}
-                      data-place={p.href.slice(1)}
-                      className="more-sheet-item"
-                    >
-                      <span>{p.label}</span>
-                      <small>{p.note}</small>
-                    </Link>
-                  ))}
+                  {g.places.map((p) => {
+                    const here = pathname === p.href || pathname.startsWith(`${p.href}/`);
+                    return (
+                      <Link
+                        key={p.href}
+                        href={p.href}
+                        transitionTypes={["nav-forward"]}
+                        data-place={p.href.slice(1)}
+                        aria-current={here ? "page" : undefined}
+                        className="more-sheet-item"
+                      >
+                        <span>{p.label}</span>
+                        <small>{here ? "you're here" : p.note}</small>
+                      </Link>
+                    );
+                  })}
                 </div>
               ))}
             </nav>

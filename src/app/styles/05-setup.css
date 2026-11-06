@@ -148,6 +148,10 @@
   }
   .bottom-nav-item[aria-current="page"] { color: var(--m-accent); }
   .bottom-nav-item:focus-visible { outline: 2px solid var(--m-accent); outline-offset: 2px; }
+  /* The press receipt: every other control in the app answers a touch, and the
+     tab bar is the one tourists hit most. A 1px settle with no transition, so
+     it lands on the frame the finger does — a tween here would read as lag. */
+  .bottom-nav-item:active { transform: translateY(1px); }
   button.bottom-nav-item { border: 0; background: none; font-family: inherit; cursor: pointer; }
   /* The More tab lights on the back-room surfaces — the traveller is on a
      page the three tabs don't name, and the bar should say so. */

@@ -1443,6 +1443,7 @@ export function NudgeFeedScreen({
         onSkip={heroNudge ? () => skipTap(heroNudge) : undefined}
         totalSteps={totalSteps}
         completedCount={completedCount}
+        missedCount={missedNudges.length}
       />
       {expandAllWhy || !scene ? (
         <PerformanceBrief

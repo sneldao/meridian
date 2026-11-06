@@ -9,7 +9,7 @@ mock.module("next/navigation", () => ({
 afterAll(() => mock.restore());
 
 const { TripEntryScreen } = await import("../src/components/TripEntryScreen");
-const { BottomNav } = await import("../src/components/BottomNav");
+const { BottomNav, navRuleIndex } = await import("../src/components/BottomNav");
 const { BodyClockDetails } = await import("../src/components/dial/BodyClockDetails");
 const { CrewQuestionCard } = await import("../src/components/CrewQuestionCard");
 const { Ledger } = await import("../src/components/lenses/Ledger");
@@ -67,6 +67,19 @@ describe("BottomNav", () => {
     expect((html.match(/<button/g) ?? []).length).toBe(1);
     expect(html).toContain('aria-label="More"');
     expect(html).not.toContain('href="/review"');
+  });
+
+  test("the sliding rule keeps a seat for More, and hides where no tab claims the page", () => {
+    // The rule's width is built for three seats, so a back-room page puts it
+    // under More instead of dropping the position cue on the floor.
+    expect(navRuleIndex("/")).toBe(0);
+    expect(navRuleIndex("/history/abc")).toBe(1);
+    for (const p of ["/crew", "/shift", "/team", "/arrival", "/outcome", "/review"]) {
+      expect(navRuleIndex(p)).toBe(2);
+    }
+    // /privacy is reachable but belongs to no seat — the rule hides rather
+    // than pointing at a tab that isn't where you are.
+    expect(navRuleIndex("/privacy")).toBeNull();
   });
 
   test("no Clock tab and no view-state controls", () => {
