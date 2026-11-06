@@ -1,0 +1,188 @@
+/* Hallmark · genre: atmospheric · macrostructure: Statement (landing) /
+ *            Workbench (app) / Statement (/arrival) · design-system: docs/DESIGN.md
+ *            designed-as-app · tone: cinematic-dawn · anchor hue: ember-warm
+ *            theme: Dawn Ember (tuned custom) · display: Fraunces Variable
+ *            body: Inter Variable · mono: JetBrains Mono Variable
+ */
+
+@theme {
+  /* design-vision.md §8: display serif for the crew's voice, precise mono for
+     readouts, and nothing below 12px. `font-voice` / `font-mono2` are the two
+     voices; body copy uses the default sans. */
+  --font-display: "Fraunces Variable", ui-serif, "Iowan Old Style", Georgia, serif;
+  --font-voice: "Fraunces Variable", ui-serif, "Iowan Old Style", Georgia, serif;
+  --font-body: "Inter Variable", system-ui, -apple-system, sans-serif;
+  --font-sans: "Inter Variable", system-ui, -apple-system, sans-serif;
+  --font-mono2: "JetBrains Mono Variable", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* One colour, one meaning.
+     Pass and fail are *state*: design-vision.md §8 reserves them, so they are
+     never reused for a button, an agent or the sun. Paper is the action
+     colour — the one thing to press is white. Amber belongs to the destination
+     and its sun; home blue to the origin; progress cyan to work in flight. */
+  --color-ink: #07090f;
+  --color-ink-2: #0c1018;
+  --color-ink-3: #131826;
+  --color-line: #1e2637;
+  --color-mist: #8b93a7;
+  --color-paper: #e8eaf2;
+  --color-pass: #b8e356;
+  --color-fail: #ff7a7a;
+  --color-progress: #7adfff;
+  --color-sun-home: #9db8ff;
+  --color-sun-dest: #ffc46b;
+  /* Two more named things, kept out of the state colours: the ghost
+     terminator is the body clock's own day/night line; sleep lavender is the
+     target sleep window on the board. */
+  --color-ghost: #ffd98a;
+  --color-sleep: #b8a8ff;
+  --color-dim: #4a5470;
+
+  /* The cream scale — the app's primary surface (html/body are var(--m-bg)).
+     These are the tokens to reach for on any cream background.
+     The ink/paper set above belongs to the *dark* islands — .arr, Card,
+     the crew nav pills — where `text-paper` is correct. Reaching for
+     `text-paper` on bare cream renders near-white on cream and vanishes,
+     which is how TRIP HISTORY and HANDOFF REVIEW lost their headings.
+     Text on cream is `clay`; the dark set stays for dark panels. */
+  --color-clay: #1e1b18;        /* primary text on cream — body ink */
+  --color-clay-2: var(--m-muted);      /* secondary text on cream */
+  --color-clay-3: var(--m-faint);      /* tertiary / spent, e.g. a done row */
+  --color-clay-line: var(--m-border-2);   /* hairline on cream */
+  --color-cream: #f5efe6;       /* the page surface */
+  --color-cream-card: var(--m-card);  /* raised cream card */
+  --color-terracotta: #d96b43;  /* the accent, and time-of-day in the rail */
+  --color-ember: #e99a6f;       /* the accent's lit face on ink surfaces (--m-accent there) */
+  --color-clay-note: #c9b8a4;   /* muted note text on clay (dark) cards */
+  /* State on cream. The dark set's pass/fail are tuned for ink; on cream the
+     lime reads washed out and the salmon reads pink. These are the deep
+     values of the same two meanings, both >= 4.5:1 on var(--m-bg). */
+  --color-clay-pass: #2a6f4e;
+  --color-clay-fail: #b23a2e;
+
+  /* Typography: a fluid ramp so the UI breathes across viewports. */
+  /* 12px is the declared body floor (docs/DESIGN.md), so the smallest step on the
+     ramp tops out at 0.75rem — 10px labels were the first thing a tired
+     traveller couldn't read. */
+  --text-2xs: clamp(0.7rem, 0.8vw, 0.75rem);
+  --text-xs: clamp(0.7rem, 0.85vw, 0.8rem);
+  --text-sm: clamp(0.8rem, 1vw, 0.9rem);
+  --text-base: clamp(0.9rem, 1.1vw, 1rem);
+  --text-lg: clamp(1.05rem, 1.5vw, 1.25rem);
+  --text-xl: clamp(1.25rem, 2vw, 1.5rem);
+  --text-2xl: clamp(1.5rem, 2.8vw, 2rem);
+  --text-3xl: clamp(1.75rem, 3.6vw, 2.5rem);
+  /* Dawn pass — display scale for the cinematic statement moments (docs/DESIGN.md).
+     Hero headlines ≤7 words sit at --text-display; longer statements cap at
+     --text-display-s so copy length, not viewport, decides the ceiling. */
+  --text-display: clamp(2.6rem, 6vw, 5rem);
+  --text-display-s: clamp(2rem, 4vw, 3.25rem);
+  --text-4xl: clamp(1.9rem, 4vw, 2.75rem);
+
+  /* 4-point named spacing scale (docs/DESIGN.md). */
+  --space-3xs: 0.25rem;
+  --space-2xs: 0.5rem;
+  --space-xs: 0.75rem;
+  --space-sm: 1rem;
+  --space-md: 1.5rem;
+  --space-lg: 2rem;
+  --space-xl: 3rem;
+  --space-2xl: 4.5rem;
+  --space-3xl: 7rem;
+
+  /* Motion tokens: durations and easings used by components + CSS transitions. */
+  /* Legacy ramp, aliased onto the law's named vocabulary (glide/settle/
+     drift) so the generated Tailwind utilities can't drift from it. */
+  --duration-micro: 80ms;
+  --duration-fast: var(--dur-glide);
+  --duration-base: var(--dur-settle);
+  --duration-medium: var(--dur-settle);
+  --duration-slow: var(--dur-drift);
+
+  --ease-smooth-out: var(--ease-glide);
+  --ease-in-out: var(--ease-drift);
+
+  /* Radius scale. */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+
+  /* Opacity ramp: use these fractions instead of ad-hoc magic numbers. */
+  --opacity-5: 0.05;
+  --opacity-10: 0.10;
+  --opacity-20: 0.20;
+  --opacity-40: 0.40;
+  --opacity-60: 0.60;
+  --opacity-80: 0.80;
+
+  /* Focus ring colour. */
+  --color-focus: var(--color-paper);
+}
+
+html,
+body {
+  /* A soft vertical ground rather than a flat field. The reference build does
+     this and it is worth stealing: the surface stops being a colour you can
+     see edges against, so the cards read as floating rather than stacked. */
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--m-bg) 100%, white 4%) 0%, var(--m-bg) 42%, color-mix(in srgb, var(--m-bg) 100%, black 3%) 100%);
+  background-attachment: fixed;
+  color: var(--m-ink);
+  font-family: var(--font-body);
+  min-height: 100%;
+  margin: 0;
+  /* Horizontal overflow is clipped, never hidden (hidden creates a scroll
+     container); the page must never scroll sideways on a phone. */
+  overflow-x: clip;
+}
+
+/* The hero band's breakout width (see the Dawn pass · hero stage block at the
+   end of this file): how far a full-frame element inside .reading must reach
+   to touch .root's frame edge. */
+:root {
+  --hero-out: max(0px, min(178px, (100vw - 64px - 720px) / 2));
+}
+
+/* Sunlit Horizon Bento design system & behavior contract.
+   The measure is a desktop one: the hero is a two-column grid that already
+   collapses below 720px, so the column's only job on desktop is to not
+   strangle it. The old 868×1543 was a phone-artboard export — it made the
+   landing read as a mobile site on laptops while /crew (full viewport) felt
+   right, and travellers noticed. Below the measure the root is 100% wide,
+   so phones are exactly where they were. */
+.root {
+  width: 100%;
+  max-width: 1140px;
+  margin: 0 auto;
+  position: relative;
+  background: var(--m-bg);
+  color: var(--m-ink);
+  font-family: var(--font-body);
+  padding: 0 0 56px;
+  /* clip, not hidden: hidden would make .root a scroll container and steal
+     every scroll-driven timeline inside it (the stage recede, the deck).
+     The clip edge is pushed a full viewport out so the full-bleed
+     .feed-world escapes the 1140px measure to the real frame edge —
+     anything wider than the viewport is still caught by html's
+     overflow-x:clip. */
+  overflow: clip;
+  overflow-clip-margin: 100vw;
+}
+/* The travelling shade that used to cross this tint was removed in Phase 0
+   of the design reset — a 60s loop nobody could see. The static tint stays:
+   it is atmosphere for the landing, not motion. */
+.beam {
+  position: absolute;
+  left: -200px;
+  top: -120px;
+  width: 1100px;
+  height: 900px;
+  /* Halved: the beam is atmosphere for the landing, not a tint tax on the
+     working surface the feed is read through. */
+  background: radial-gradient(ellipse at 30% 20%, rgba(157, 184, 255, 0.07), rgba(255, 196, 107, 0.04) 45%, transparent 70%);
+  z-index: var(--z-flat);
+  pointer-events: none;
+}
+

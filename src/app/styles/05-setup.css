@@ -1,0 +1,416 @@
+/* --- The setup (Phase 2): scenes, not a form -------------------------------
+   A full-bleed sequence of scenes, one question each. The setup is a
+   sequence because a form is a wall and a sequence is a path: the traveller
+   can see how far in they are, step back, and never face two questions at
+   once. */
+.setup {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-sheet);
+  background: var(--m-bg);
+  color: var(--m-text);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.setup-inner {
+  max-width: 520px;
+  margin: 0 auto;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 20px 18px 32px;
+}
+.setup-bar { display: flex; align-items: center; gap: 12px; }
+.setup-back {
+  width: 34px; height: 34px; flex: none;
+  border-radius: 6px;
+  border: 1px solid var(--m-border);
+  background: var(--m-card);
+  color: var(--m-text);
+  font-size: 15px;
+  cursor: pointer;
+}
+.setup-back:disabled { opacity: .3; cursor: default; }
+.setup-progress {
+  flex: 1;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--m-border);
+  overflow: hidden;
+}
+.setup-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--m-accent);
+  transition: width var(--dur-settle) var(--ease-settle);
+}
+.setup-count {
+  font-family: var(--font-mono2, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 11px;
+  color: var(--m-muted);
+  min-width: 28px;
+  text-align: right;
+}
+.setup-scene { display: flex; flex-direction: column; gap: 14px; }
+.setup-title {
+  font-family: var(--font-voice);
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--m-ink);
+  margin: 0;
+}
+.setup-lede { font-size: 13px; line-height: 1.5; color: var(--m-muted); margin: 0; }
+.setup-choices { display: flex; flex-wrap: wrap; gap: 8px; }
+.setup-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.setup-list label { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: var(--m-text); }
+.setup-mascot { margin-top: 4px; }
+.setup-foot { margin-top: auto; display: flex; justify-content: flex-end; }
+.setup-handoff { display: flex; flex-direction: column; gap: 14px; align-items: flex-start; }
+.setup-handoff-arc .dial-body-arc { stroke: var(--m-accent); stroke-width: 4; stroke-linecap: round; }
+
+/* The sleep dial: the answer to the first question, given on the same
+   picture the rest of the app uses. */
+.sleep-dial { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.sleep-dial-svg { width: min(280px, 78vw); height: auto; touch-action: none; cursor: pointer; }
+.sleep-dial-ring { fill: none; stroke: var(--m-border); stroke-width: 1; }
+.sleep-dial-tick { stroke: var(--m-border); stroke-width: 1; }
+.sleep-dial-tick-major { stroke: var(--m-muted); stroke-width: 1.5; }
+.sleep-dial-label { fill: var(--m-muted); font-size: 9px; font-weight: 600; }
+.sleep-dial-arc {
+  fill: none;
+  stroke: var(--dial-sleep);
+  stroke-width: 12;
+  stroke-linecap: round;
+  opacity: .9;
+}
+.sleep-dial-handle {
+  fill: var(--m-bg);
+  stroke: var(--dial-sleep);
+  stroke-width: 3;
+  cursor: grab;
+}
+.sleep-dial-handle.is-focused { fill: var(--dial-sleep); }
+.sleep-dial-handle:focus-visible { outline: 2px solid var(--m-accent); outline-offset: 3px; }
+.sleep-dial-readout { font-size: 14px; color: var(--m-text); margin: 0; text-align: center; }
+.sleep-dial-readout strong { font-family: var(--font-mono2, ui-monospace, SFMono-Regular, Menlo, monospace); color: var(--m-ink); }
+.sleep-dial-insight {
+  font-family: var(--font-voice);
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--m-muted);
+  margin: 0;
+  text-align: center;
+  max-width: 42ch;
+}
+
+/* --- The phone's tab bar --------------------------------------------------
+   Below the phone width the app is a thing you use, not a page you read:
+   the corner menu is out of thumb reach, so the three most-used surfaces get
+   a tab bar. Above the width it is hidden, and the document stands. */
+.bottom-nav { display: none; }
+/* The in-page view toggle is redundant on the phone — the tab bar carries
+   the view there, and two controls for one choice is one too many. */
+@media (max-width: 768px) {
+  .view-toggle { display: none; }
+}
+
+@media (max-width: 768px) {
+  .bottom-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: var(--z-nav);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
+    background: var(--m-card);
+    border-top: 1px solid var(--m-border);
+  }
+  .bottom-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 6px 4px;
+    border-radius: 6px;
+    /* 11px was under the 13px readability floor — the nav labels are
+       informative text, not chrome. */
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--m-muted);
+    text-decoration: none;
+  }
+  .bottom-nav-item[aria-current="page"] { color: var(--m-accent); }
+  .bottom-nav-item:focus-visible { outline: 2px solid var(--m-accent); outline-offset: 2px; }
+  button.bottom-nav-item { border: 0; background: none; font-family: inherit; cursor: pointer; }
+  /* The More tab lights on the back-room surfaces — the traveller is on a
+     page the three tabs don't name, and the bar should say so. */
+  .bottom-nav-item[data-on] { color: var(--m-accent); }
+  /* Room for the bar, so the last thing on the page is never under it. */
+  .root { padding-bottom: 78px; }
+}
+
+/* The shared "More" sheet: a bottom sheet on the phone (above the tab bar),
+   a floating panel near the header trigger on wider screens. z-60 keeps it
+   under the disclosure sheet (z-61) so that sheet can layer over it. */
+.more-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-sheet-backdrop);
+  background: color-mix(in srgb, var(--m-ink) 30%, transparent);
+}
+.more-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--z-sheet);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0px));
+  background: var(--m-card);
+  border-top: 1px solid var(--m-border);
+  border-radius: 10px 10px 0 0;
+}
+@media (min-width: 768px) {
+  .more-sheet {
+    left: auto;
+    right: 24px;
+    bottom: auto;
+    top: 64px;
+    width: 280px;
+    border: 1px solid var(--m-border);
+    border-radius: 10px;
+    box-shadow: 0 14px 34px rgba(30, 27, 24, 0.18);
+  }
+}
+/* The undo toast drops in with a springy overshoot, the way a drop lands and
+   settles, so each new message reads as a fresh object. Transform and opacity
+   only. */
+@media (prefers-reduced-motion: no-preference) {
+  .undo-toast.toast-in { animation: undo-toast-drop var(--dur-settle) var(--ease-spring) both; }
+}
+@keyframes undo-toast-drop {
+  from { transform: translate(-50%, 18px) scale(0.92); opacity: 0; }
+  to { transform: translate(-50%, 0) scale(1); opacity: 1; }
+}
+
+/* The sheet rises out of the tab bar on a soft spring, the way a drop of
+   liquid settles, instead of appearing whole. Transform only. */
+@media (prefers-reduced-motion: no-preference) {
+  .more-sheet { animation: more-sheet-rise var(--dur-settle) var(--ease-spring) both; }
+}
+@keyframes more-sheet-rise {
+  from { transform: translateY(24px) scale(0.98); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+.more-sheet-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 12px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--m-ink);
+  text-decoration: none;
+  text-align: left;
+  cursor: pointer;
+}
+.more-sheet-item small {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--m-muted);
+}
+.more-sheet-item:hover { background: #efe2d0; }
+.more-sheet-item:focus-visible { outline: 2px solid #D96B43; outline-offset: 2px; }
+.more-sheet-note {
+  margin: 0;
+  padding: 8px 12px 4px;
+  font-size: 11px;
+  color: var(--m-muted);
+}
+.more-sheet-label {
+  margin: 8px 0 0;
+  padding: 6px 12px 2px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--m-muted);
+}
+.more-sheet nav > div:first-child .more-sheet-label {
+  margin-top: 0;
+  padding-top: 2px;
+}
+
+/* The morning-after moment on Today: the trip is over, so the payoff finds
+   the traveller instead of waiting behind a menu. A card, not a banner —
+   the accent edge is the one invitation on the surface. */
+.landed-card {
+  display: block;
+  margin: 0 0 16px;
+  padding: 14px 16px;
+  background: var(--m-card);
+  border: 1px solid var(--m-border);
+  border-left: 3px solid var(--m-accent);
+  border-radius: 12px;
+  text-decoration: none;
+  color: var(--m-ink);
+  transition: box-shadow var(--dur-glide) var(--ease-glide);
+}
+.landed-card:hover {
+  box-shadow: 0 6px 18px rgba(30, 27, 24, 0.12);
+}
+.landed-card-title {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+}
+.landed-card-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--m-muted);
+}
+/* The Now / The plan switch sits where the feed begins. */
+.plan-switch {
+  margin: 0 0 14px;
+}
+html[data-theme="night"] .more-sheet-item:hover { background: var(--color-ink-3, #2b2825); }
+
+/* The two evidence grades, as chips — the grade and the field evidence are
+   two different questions, and one should be readable without the other. */
+.dac-grades { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.dac-grade {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: .02em;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--m-card-2);
+  border: 1px solid var(--m-border);
+  color: var(--m-muted);
+}
+
+/* The welcome-back moment: what you already told us, one line, and a single
+   way to continue. The pills show which steps are done, so "partway there" is
+   a picture rather than a claim. */
+.setup-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.setup-pill {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--m-border);
+  background: var(--m-card-2);
+  color: var(--m-faint);
+}
+.setup-pill.is-done { color: var(--m-ink); border-color: var(--m-border); background: var(--m-card); }
+.setup-reset { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+
+/* The day switcher: a label and the gap it leaves. The reference build does
+   this and it is the right idea — a row of labels says which day is which, a
+   row of gaps says where the trip is going. */
+.dial-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-width: 52px;
+  padding: 6px 8px;
+  line-height: 1.15;
+}
+.dial-day-label { font-size: 11px; font-weight: 500; }
+.dial-day-gap {
+  font-family: var(--font-mono2, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--m-faint);
+}
+.dial-btn[aria-pressed="true"] .dial-day-gap { color: inherit; }
+
+/* The days scroll sideways: a row that wraps is a row you have to read twice. */
+.dial-days {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.dial-days::-webkit-scrollbar { display: none; }
+
+/* The day row never wraps: the days scroll inside it. */
+.dial-days-row { flex-wrap: nowrap; align-items: center; }
+
+/* --- The centred reading column -------------------------------------------
+   The reference build is a single centred column and a stack of calm
+   surfaces, and the difference is not decoration: when a card is 1100px wide
+   and holds three words, the eye has to travel a long way to read them, and
+   the page reads as a document to be decoded rather than a thing to be used.
+
+   So the *reading* content is capped and centred, and only the media (the
+   globe, the dial) is allowed to be as wide as the frame. The two-column
+   hero is untouched: the globe still has its side, and the collapse-to-one
+   case is the one that was stretching. */
+.reading {
+  max-width: 720px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* With the globe collapsed, the content is the whole card — and it must not
+   stretch to the width of the frame to hold three words. */
+.hero.slim { grid-template-columns: 1fr; }
+.hero.slim .hr-col { max-width: 720px; margin: 0 auto; width: 100%; }
+
+/* The journey spine stays visible on the phone — collapsed to dots: done
+   and later steps become points on the line, and only the step the
+   traveller is standing on keeps its word. */
+@media (max-width: 480px) {
+  .secondary-action { display: block; }
+  .journey {
+    align-items: center;
+    gap: 10px;
+    margin: 4px 0 0;
+  }
+  .journey-step {
+    font-size: 0;
+    line-height: 0;
+  }
+  .journey-step::before {
+    content: "";
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: currentColor;
+  }
+  .journey-step-link {
+    padding: 6px 2px;
+  }
+  .journey-check {
+    display: none;
+  }
+  .journey-step.now {
+    font-size: 11px;
+    line-height: 1.4;
+  }
+  .journey-step.now::before {
+    content: none;
+  }
+}
+

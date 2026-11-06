@@ -8,6 +8,7 @@ import { BottomNav } from "@/components/BottomNav";
 import { PageHeader } from "@/components/PageHeader";
 import { INTERVENTION_LABELS } from "@/lib/intervention-icons";
 import { funnelKey, recordFunnel } from "@/lib/funnel";
+import { safeStorageSet } from "@/lib/local-data";
 
 interface Outcome {
   savedAt: string;
@@ -63,7 +64,10 @@ export default function OutcomePage() {
     try {
       const prev = JSON.parse(localStorage.getItem("meridian:outcomes") || "[]");
       prev.unshift(o);
-      localStorage.setItem("meridian:outcomes", JSON.stringify(prev.slice(0, 50)));
+      safeStorageSet(
+        () => localStorage.setItem("meridian:outcomes", JSON.stringify(prev.slice(0, 50))),
+        "outcomes",
+      );
     } catch {}
     // Structure the free text into a CheckIn that later runs can fold into
     // the adherence profile (morning-shift replan).
@@ -80,7 +84,10 @@ export default function OutcomePage() {
       }
       const prevCi = JSON.parse(localStorage.getItem("meridian:checkins") || "[]");
       prevCi.unshift(data.checkIn);
-      localStorage.setItem("meridian:checkins", JSON.stringify(prevCi.slice(0, 100)));
+      safeStorageSet(
+        () => localStorage.setItem("meridian:checkins", JSON.stringify(prevCi.slice(0, 100))),
+        "checkins",
+      );
       setSaved("crew");
     } catch {
       setSaved("local");

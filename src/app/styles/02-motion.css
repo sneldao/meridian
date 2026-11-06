@@ -1,0 +1,1992 @@
+/* --- Motion: three named levels --------------------------------------------
+   The reference build has a motion *vocabulary* — snappy, gentle, lazy — and
+   the same three everywhere, so the app feels like one thing moving in one
+   way. Ours had thirty-two ad-hoc durations. These are the three levels, and
+   the rule is that a surface picks one and stays with it:
+     · glide — a state change the traveller caused (hover, press, colour)
+     · settle — a panel arriving or leaving (a sheet, an expansion)
+     · drift — something arriving on its own (a run starting, a number
+       counting) */
+:root {
+  --ease-glide: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-settle: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-drift: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur-glide: 180ms;
+  --dur-settle: 320ms;
+  --dur-drift: 700ms;
+  /* Delight tokens: an overshooting spring for presses and pulls, and the
+     stagger step for character and card arrivals. Used only inside the
+     motion gate below. */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-spring: 420ms;
+  --stagger-step: 22ms;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes dash {
+  from { stroke-dashoffset: 400; }
+  to { stroke-dashoffset: 0; }
+}
+.in {
+  position: relative;
+  z-index: var(--z-raised);
+  padding: 0 32px;
+}
+.rise {
+  animation: rise var(--dur-drift) var(--ease-drift) both;
+}
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 0 18px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font: inherit;
+  padding: 0;
+  cursor: pointer;
+  /* The wordmark is a button (it scrolls to the guide) — it needs a
+     finger-sized target, not a 30px line of type. The padding is taken
+     back out below so the header's rhythm does not move. */
+  min-height: 44px;
+  padding-block: 9px;
+  margin-block: -9px;
+}
+.brand b {
+  font-size: 16px;
+  letter-spacing: 0.28em;
+  font-weight: 800;
+}
+.brand span {
+  font-size: 12px;
+  color: var(--m-muted);
+}
+.pill {
+  display: inline-flex;
+  gap: 2px;
+  background: var(--m-card);
+  border: 1px solid var(--m-border);
+  border-radius: 6px;
+  padding: 4px;
+}
+.pill button {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  border: 0;
+  background: none;
+  padding: 7px 14px;
+  border-radius: 6px;
+  color: var(--m-muted);
+  cursor: pointer;
+  transition: color var(--dur-glide) var(--ease-glide), background 0.2s;
+}
+.pill a {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 7px 14px;
+  border-radius: 6px;
+  color: var(--m-muted);
+  cursor: pointer;
+  transition: color var(--dur-glide) var(--ease-glide), background 0.2s;
+  text-decoration: none;
+}
+.pill a.on,
+.pill button.on {
+  background: var(--m-ink);
+  color: var(--m-bg);
+}
+.pill a:hover,
+.pill button:hover {
+  color: #D96B43;
+}
+.pill a.on:hover {
+  color: var(--m-bg);
+}
+.journey {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 8px 4px 0;
+  padding: 0;
+  font-size: 11px;
+  font-weight: 500;
+}
+.journey-step {
+  color: var(--m-muted);
+}
+.journey-step.now {
+  color: #D96B43;
+}
+.journey-step.later {
+  opacity: 0.55;
+}
+.journey-check {
+  margin-right: 3px;
+  color: var(--m-text);
+}
+.btn {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid var(--m-border);
+  background: var(--m-card);
+  color: var(--m-ink);
+  border-radius: 6px;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: background var(--dur-glide) var(--ease-glide), box-shadow 0.2s;
+}
+.btn:hover {
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(30, 27, 24, 0.12);
+}
+.btn:active {
+  background: #f0e4d3;
+}
+.btn:focus-visible {
+  outline: 2px solid #D96B43;
+  outline-offset: 2px;
+}
+/* Round 52 — a press must be answered, everywhere, structurally. Measured with
+ * real pointer input over each control's own box, ambient loops frozen: before
+ * this block 18 of 21 controls on `/`, 16 of 24 on `/crew` and 11 of 11 on
+ * `/demo` changed by nothing at all while held; after it, only the disabled
+ * ones do. They had hover (Tailwind `hover:`, plain `:hover`), which is the
+ * answer a mouse gets and a finger never does. The house component `.ui-btn`
+ * already answered, so the gap was never a missing idiom, it was an opt-in one:
+ * every surface that hand-rolls a button lost it. This makes the answer the
+ * floor instead of the component. Press feedback is caused, not ambient, so
+ * Rule 3's channel gate does not speak to it. */
+button:active:not(:disabled),
+[role="button"]:active:not(:disabled),
+summary:active {
+  /* A scale alone fails small targets: 0.97 on a 28px icon button moves its
+     edge 0.4px, which measured as no change at all. And the floor cannot carry
+     a scale in any case — `scale` makes a containing block, so a button that
+     is `static` would suddenly re-home an absolutely positioned child only
+     while it is held. The dip answers at any size and moves no layout.
+     Buttons are large, so a shallow dip reads; text links need a deeper one
+     because glyph coverage is sparse. */
+  opacity: 0.86;
+  transition: opacity var(--dur-glide) var(--ease-glide);
+}
+/* Links navigate, so they answer too — but a letter-spaced wordmark or a prose
+   link must not shift, so theirs is a dip, not a scale. */
+a[href]:active {
+  opacity: 0.62;
+  transition: opacity var(--dur-glide) var(--ease-glide);
+}
+/* On a 9px dot the dim touches 64 pixels at 14% — arithmetic, not taste — so the
+   readable part is the outline moving: the beat dots press outward as well. */
+.demo-dot:active:not(:disabled) {
+  scale: 1.4;
+}
+.right {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.menu {
+  position: absolute;
+  right: 32px;
+  top: 66px;
+  width: 240px;
+  background: var(--m-bg);
+  border: 1px solid var(--m-border);
+  border-radius: 10px;
+  padding: 8px;
+  box-shadow: 0 14px 34px rgba(30, 27, 24, 0.18);
+  z-index: var(--z-menu);
+}
+.menu div,
+.menu a,
+.menu button {
+  display: block;
+  font: inherit;
+  font-size: 12px;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  color: var(--m-ink);
+  cursor: pointer;
+  transition: background var(--dur-glide) var(--ease-glide);
+  text-align: left;
+  text-decoration: none;
+}
+.menu div:hover,
+.menu a:hover,
+.menu button:hover {
+  background: #efe2d0;
+}
+.menu div.m,
+.menu a.m,
+.menu button.m {
+  color: var(--m-muted);
+}
+/* Group eyebrows inside the menu — <p>, so the div/a/button item rules
+   (hover background included) don't reach them. */
+.menu p.menu-label {
+  margin: 6px 0 0;
+  padding: 8px 10px 3px;
+  border-top: 1px solid var(--m-border-2);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--m-muted);
+}
+.menu p.menu-label:first-child {
+  margin: 0;
+  padding-top: 2px;
+  border-top: 0;
+}
+/* A crew run that died mid-stream. Deliberately not an `.evchip`-shaped thing:
+   this is a report about the app, not a finding about the traveller's day. */
+.run-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 11px 13px;
+  border: 1px solid #e0b9a8;
+  border-left: 3px solid #b04523;
+  border-radius: 10px;
+  background: var(--m-card);
+  color: #7a3a1c;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.run-error span {
+  flex: 1 1 auto;
+}
+.run-error button {
+  flex: none;
+  padding: 0 2px;
+  border: none;
+  background: none;
+  color: #b04523;
+  font: inherit;
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+}
+.run-error button:hover {
+  color: #7a3a1c;
+}
+
+/* The route error boundary (src/app/error.tsx). Same surface as the landing
+   card so a crash reads as part of the product, not a browser error page. */
+/* The arrival surface — item 7, the payoff for "Land at 100%". Warmer and
+   calmer than Today, because there is nothing to do here: this is the screen
+   you land on when there is nothing left to do. Dark ink for the same reason
+   `/crew` is dark — it is the after-hours surface. */
+/* The trip-complete card on Today, in the hero's right column — the same
+   invitation as the arrival surface, one step earlier in the journey. */
+.arrival-nudge {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 16px;
+  border: 1px solid var(--m-border);
+  border-left: 3px solid #D96B43;
+  border-radius: 10px;
+  background: var(--m-card);
+}
+.arrival-nudge h2 {
+  font-size: 20px;
+}
+.arrival-nudge-btns {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.arrival-nudge-btns a {
+  text-decoration: none;
+}
+.arrival-nudge-btns .p2 {
+  display: inline-block;
+}
+
+.arr {
+  position: relative;
+  min-height: 100vh;
+  color: #e8eaf2;
+  font-family: var(--font-body);
+}
+.arr-in {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 72px 28px 64px;
+  animation: page-fade 260ms var(--ease-drift) both;
+}
+.arr-kicker {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #ffc46b;
+}
+.arr h1 {
+  margin: 14px 0 0;
+  font-size: 27px;
+  line-height: 1.25;
+  font-weight: 600;
+  color: #f6f2ec;
+  max-width: 30ch;
+}
+.arr-lede {
+  margin: 14px 0 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #9aa3b5;
+  max-width: 56ch;
+}
+.arr-loading {
+  font-size: 13px;
+  color: #8b93a7;
+}
+.arr-grid {
+  /* One column. A grid of five small cells reads as a dashboard to be decoded;
+     a short list of facts reads as a sentence about your trip. The landing is
+     a payoff, not a status page. */
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  margin: 26px 0 8px;
+}
+@media (min-width: 900px) {
+  .arr-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+/* A second `.arr-grid` follows the section label, so reset its top margin. */
+.arr-grid + .arr-section-label {
+  margin-top: 28px;
+}
+.arr-section-label {
+  display: block;
+  margin: 22px 0 0;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #8b93a7;
+}
+.arr-cell {
+  padding: 14px 15px;
+  border: 1px solid #1e2637;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+}
+/* The "what actually happened" cells — the traveller's own account, not the
+   crew's promise. A cooler tint and a thinner border separates them from the
+   promise above so the page reads in two passes. */
+.arr-cell.account {
+  border-color: #2a3346;
+  background: rgba(255, 255, 255, 0.015);
+}
+.arr-cell.account em {
+  color: #c8d1e3;
+}
+.arr-cell em {
+  display: block;
+  font-style: normal;
+  font-size: 25px;
+  font-weight: 800;
+  color: #ffd98a;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+.arr-cell span {
+  display: block;
+  margin-top: 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #8b93a7;
+}
+.arr-cell small {
+  display: block;
+  margin-top: 5px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: #6f7789;
+}
+.arr-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 22px;
+}
+.arr-btn {
+  display: inline-block;
+  padding: 11px 20px;
+  border: 1px solid #ffd98a;
+  border-radius: 999px;
+  background: #ffd98a;
+  color: #1a1408;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background var(--dur-glide) var(--ease-glide), color var(--dur-glide) var(--ease-glide);
+}
+.arr-btn:hover {
+  background: #fff0c2;
+  border-color: #fff0c2;
+}
+.arr-btn.ghost {
+  background: transparent;
+  color: #ffd98a;
+}
+.arr-btn.ghost:hover {
+  background: rgba(255, 217, 138, 0.12);
+}
+.arr-btn:focus-visible {
+  outline: 2px solid #ffd98a;
+  outline-offset: 3px;
+}
+.arr-foot {
+  margin: 34px 0 0;
+  font-size: 11px;
+  line-height: 1.6;
+  color: #6f7789;
+}
+
+/* ── The arrival passport · the payoff's artifact ──────────────────────
+   The trip's record, stamped. Same glass as the promise/account cells, but
+   the dashed gold frame reads as a document, not a dashboard tile. The
+   export twin lives in src/lib/arrival-passport-svg.ts. */
+.arr-passport {
+  margin-top: 14px;
+}
+.arr-passport-card {
+  position: relative;
+  padding: 30px 32px 24px;
+  border-radius: 10px;
+  border: 1px dashed rgba(255, 217, 138, 0.45);
+  background:
+    radial-gradient(120% 90% at 50% 108%, rgba(255, 217, 138, 0.14), transparent 60%),
+    rgba(255, 255, 255, 0.05);
+  -webkit-backdrop-filter: blur(18px) saturate(1.3);
+  backdrop-filter: blur(18px) saturate(1.3);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 12px 32px -20px rgba(8, 10, 18, 0.6);
+}
+/* Paper, not glass — a whisper of monochrome grain over the whole card so
+   it reads as a document under the hand, the same feTurbulence technique
+   the landing's depth field uses. */
+.arr-passport-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0.35;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+}
+.arr-passport-eyebrow {
+  display: block;
+  font-family: var(--font-mono2);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: #ffd98a;
+}
+.arr-passport-route {
+  margin-top: 12px;
+  max-width: calc(100% - 150px);
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 560;
+  font-variation-settings: "opsz" 72, "SOFT" 0, "WONK" 1;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+  color: #f4f0e8;
+  text-wrap: balance;
+}
+.arr-passport-date {
+  margin-top: 6px;
+  font-family: var(--font-mono2);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #8b93a7;
+}
+.arr-passport-stamp {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  transform: rotate(-8deg);
+  text-align: center;
+  padding: 10px 14px 8px;
+  border: 2.5px solid currentColor;
+  border-radius: 10px;
+  opacity: 0.92;
+}
+.arr-passport-stamp.adjusted { color: #ffd98a; }
+.arr-passport-stamp.almost { color: #f4f0e8; }
+.arr-passport-stamp.owed { color: #ff7a7a; }
+.arr-passport-stamp-word {
+  display: block;
+  font-family: var(--font-mono2);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-indent: 0.28em;
+}
+.arr-passport-stamp-detail {
+  display: block;
+  margin-top: 4px;
+  max-width: 150px;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  line-height: 1.35;
+  opacity: 0.85;
+}
+.arr-passport-stat {
+  margin-top: 22px;
+  font-family: var(--font-mono2);
+  font-size: 52px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: #ffd98a;
+}
+.arr-passport-label {
+  margin-top: 8px;
+  font-family: var(--font-mono2);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #f4f0e8;
+}
+.arr-passport-sub {
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #8b93a7;
+}
+.arr-passport-rule {
+  margin: 20px 0 12px;
+  border-top: 1px solid rgba(255, 217, 138, 0.28);
+}
+.arr-passport-marks-k {
+  font-family: var(--font-mono2);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #8b93a7;
+}
+.arr-passport-marks {
+  margin-top: 6px;
+  font-size: 15px;
+  color: #f4f0e8;
+}
+.arr-passport-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-top: 22px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.arr-passport-foot span {
+  font-family: var(--font-mono2);
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #6f7789;
+}
+.arr-passport-foot em {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 15px;
+  color: #b99a5e;
+}
+.arr-passport-status {
+  margin: 12px 2px 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #8b93a7;
+}
+@media (max-width: 560px) {
+  .arr-passport-card { padding: 24px 20px 20px; }
+  .arr-passport-route { max-width: none; font-size: 22px; }
+  .arr-passport-stamp {
+    position: static;
+    display: inline-block;
+    margin-top: 14px;
+    transform: rotate(-4deg);
+  }
+  .arr-passport-stat { font-size: 44px; }
+}
+
+
+
+.errpage {
+  position: relative;
+  min-height: 100vh;
+  background: #f5efe6;
+  overflow: hidden;
+}
+.errcard {
+  max-width: 460px;
+  margin: 0 auto;
+  padding: 72px 32px 48px;
+}
+.errcard h1 {
+  font-size: 27px;
+  font-weight: 600;
+  line-height: 1.15;
+  margin: 10px 0 12px;
+  color: #1e1b18;
+}
+.errcard p.s {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--m-text);
+  margin: 0 0 22px;
+}
+.errbtns {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.errbtns .p1 {
+  cursor: pointer;
+}
+.errbtns .p2 {
+  display: inline-block;
+  text-decoration: none;
+}
+.errdigest {
+  margin: 22px 0 0;
+  font-size: 11px;
+  color: var(--m-muted);
+}
+.errdigest code {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+/* The one question (vision Rule 1). Sits directly under the demo tag that
+   admits the numbers are invented — same honesty, next step forward. Warm
+   rather than cautionary: this is an invitation, not a warning. */
+.ask {
+  margin: 0;
+  padding: 12px 13px;
+  border: 1px solid var(--m-border);
+  border-radius: 12px;
+  background: var(--m-card);
+}
+.ask p {
+  margin: 0 0 10px;
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: #3d332b;
+}
+.ask p span {
+  font-weight: 500;
+  color: var(--m-muted);
+}
+.ask-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.ask .ask-title {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--m-text);
+}
+.ask-foot {
+  margin: 8px 0 0;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--m-muted);
+}
+.ask-chip {
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 7px 13px;
+  border: 1px solid var(--m-border);
+  border-radius: 6px;
+  background: var(--m-card);
+  color: var(--m-text);
+  cursor: pointer;
+  transition: background var(--dur-glide) var(--ease-glide), border-color var(--dur-glide) var(--ease-glide), color var(--dur-glide) var(--ease-glide);
+}
+.ask-chip:hover {
+  background: #D96B43;
+  border-color: #D96B43;
+  color: var(--m-on-accent);
+}
+.ask-chip:focus-visible {
+  outline: 2px solid #D96B43;
+  outline-offset: 2px;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 0;
+  background: var(--m-card);
+  border: 1px solid var(--m-border);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 24px 50px -20px rgba(8, 10, 18, 0.45);
+}
+.hl {
+  position: relative;
+  padding: 26px;
+  min-height: 540px;
+  min-width: 0;
+  color: #F5EFE6;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.hl .bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.hl .sc {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(30, 27, 24, 0.35), rgba(30, 27, 24, 0.78));
+}
+/* The ghost-terminator hero: the crew surface's ink + terminator gold living
+   inside the sunlit card — the brand's day/night line as the hero visual. */
+.hl .bg.term {
+  background:
+    radial-gradient(120% 90% at 78% 74%, rgba(217, 107, 67, 0.55), transparent 55%),
+    linear-gradient(180deg, #0b0e16 0%, #10141f 46%, #241a1c 66%, #3a2118 82%, #D96B43 120%);
+}
+
+/* Evidence chips — the crew's gate output as badges, not prose. */
+.evrow { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+/* The provenance stamp — one mark per surface instead of a sentence of
+   hedging (design reset Phase 0). Mono uppercase at the readability floor;
+   colour comes from the muted token, never a new hue. */
+.perf-stamp { float: right; margin: 0 0 4px 8px; }
+.perf-source { margin: 0; font-size: 13px; color: var(--m-muted); }
+.stamp {
+  display: inline-block;
+  font-family: var(--font-mono2);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  color: var(--m-muted);
+  border: 1px solid var(--m-border);
+  border-radius: 6px;
+  padding: 2px 6px;
+  vertical-align: middle;
+}
+
+/* Provenance chips (agent-native step 3) — ContextCard-style pills under
+   the plan header: one wrapping row naming every signal the plan used.
+   Mono at the stamp's floor, --m-faint so the row is read as metadata,
+   never a second headline. The source tag carries the weight so the
+   detail can stay quiet. */
+.prov-chips {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.prov-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  max-width: 100%;
+  padding: 3px 10px;
+  border: 1px solid var(--m-border-2);
+  border-radius: 999px;
+  font-family: var(--font-mono2);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.5;
+  color: var(--m-faint);
+  overflow-wrap: anywhere;
+}
+.prov-chip-src {
+  flex: none;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--m-muted);
+}
+.prov-chip-src::after {
+  content: ":";
+}
+.evchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  background: rgba(217, 107, 67, 0.1);
+  color: #a35a35;
+  border: 1px solid rgba(217, 107, 67, 0.25);
+}
+.evchip.pass { background: rgba(140, 160, 90, 0.14); color: #5a7030; border-color: rgba(140, 160, 90, 0.3); }
+.evchip.warn { background: rgba(217, 107, 67, 0.16); color: #b04523; border-color: rgba(217, 107, 67, 0.4); }
+.evchip.cite { background: rgba(157, 184, 255, 0.16); color: #4a6492; border-color: rgba(157, 184, 255, 0.4); }
+.evchip.mem  { background: rgba(184, 168, 255, 0.16); color: #6a5a9c; border-color: rgba(184, 168, 255, 0.4); }
+
+/* Day-chip terminator glyph — a 7px day/night line bisecting a circle, the
+   brand's motif riding inside every day button. */
+.day::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, #241a1c 0 50%, var(--color-ghost) 50% 100%);
+  vertical-align: 1px;
+}
+
+/* Dawn-crossing into /crew: the hero's terminator horizon expands to fill
+   the screen, then resolves to the ink surface — the same dawn seen from
+   inside the mission. Pure CSS, one-shot on mount. */
+.dawnIn {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-sheet);
+  pointer-events: none;
+  background:
+    radial-gradient(120% 90% at 78% 74%, rgba(217, 107, 67, 0.55), transparent 55%),
+    linear-gradient(180deg, #0b0e16 0%, #10141f 46%, #241a1c 66%, #3a2118 82%, #D96B43 120%);
+  animation: dawnIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.dawnIn::after {
+  /* the line itself — a hair of ghost gold crossing the frame at the horizon */
+  content: "";
+  position: absolute;
+  left: -5%;
+  right: -5%;
+  top: 63%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--color-ghost) 30%, var(--color-ghost) 70%, transparent);
+  filter: drop-shadow(0 0 8px rgba(255, 217, 138, 0.7));
+  animation: tlineSweep 0.9s ease-out both;
+}
+@keyframes tlineSweep {
+  from { transform: translateY(24px); opacity: 0; }
+  35% { opacity: 1; }
+  to { transform: translateY(-6px); opacity: 0.9; }
+}
+@keyframes dawnIn {
+  from { opacity: 1; }
+  40% { opacity: 1; }
+  to { opacity: 0; }
+}
+.hl > *:not(.bg):not(.sc) {
+  position: relative;
+}
+.route {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #f3c9a8;
+}
+.city {
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1.1;
+  margin-top: 8px;
+}
+.stats {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+.stat {
+  background: rgba(245, 239, 230, 0.16);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(245, 239, 230, 0.3);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.stat em {
+  display: block;
+  font-style: normal;
+  font-size: 20px;
+  font-weight: 600;
+}
+.arc {
+  width: 100%;
+  height: 110px;
+}
+.arc path {
+  stroke-dasharray: 400;
+  animation: dash 2.2s 0.3s ease-out both;
+}
+.flt {
+  background: rgba(245, 239, 230, 0.16);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(245, 239, 230, 0.3);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.flt b {
+  font-size: 13px;
+  letter-spacing: 0.06em;
+}
+.acts {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.acts .btn {
+  background: rgba(245, 239, 230, 0.92);
+  border: none;
+}
+/* The card's right half: the demo-fixture tag over the day's next step. */
+.hr-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.hr-col .demo-tag {
+  margin: 0;
+}
+.hr {
+  padding: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1 1 auto;
+}
+/* Inside the hero the CTA follows the step it belongs to. The global .cta
+   pins to its container's bottom edge, which on a card stretched to match the
+   globe left a void halfway down the column. */
+.hr .cta {
+  margin-top: 2px;
+}
+.mini {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #D96B43;
+}
+.badge {
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
+  background: #D96B43;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tw {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  background: #f6dccb;
+  color: #a8431e;
+  border-radius: 6px;
+  padding: 6px 12px;
+}
+.hr h2 {
+  font-size: 24px;
+  line-height: 1.15;
+  font-weight: 600;
+}
+.hr p.s {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--m-text);
+}
+.drawer {
+  background: var(--m-card-2);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.drawer b {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #2A6F4E;
+  font-weight: 600;
+}
+.drawer p {
+  font-size: 12px;
+  color: var(--m-text);
+  margin-top: 4px;
+  line-height: 1.45;
+}
+.bar {
+  height: 8px;
+  background: #e8d9c4;
+  border-radius: 99px;
+  overflow: hidden;
+}
+.bar i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #D96B43, #e99a6f);
+  border-radius: 99px;
+  transition: width var(--dur-settle) var(--ease-settle);
+}
+.cta {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+  flex-wrap: wrap;
+}
+.p1 {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  background: #D96B43;
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background var(--dur-glide) var(--ease-glide), box-shadow 0.2s;
+}
+.p1:hover {
+  background: #c45a34;
+  box-shadow: 0 8px 18px rgba(217, 107, 67, 0.4);
+}
+.p1:active {
+  background: #a8431e;
+}
+.p1:focus-visible {
+  outline: 2px solid var(--m-ink);
+  outline-offset: 2px;
+}
+.p2 {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  background: transparent;
+  color: var(--m-ink);
+  border: 1.5px solid var(--m-ink);
+  border-radius: 6px;
+  padding: 11px 14px;
+  cursor: pointer;
+  transition: background var(--dur-glide) var(--ease-glide), color 0.2s;
+}
+.p2:hover {
+  background: var(--m-ink);
+  color: var(--m-bg);
+}
+.p2:focus-visible {
+  outline: 2px solid #D96B43;
+  outline-offset: 2px;
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.days {
+  margin-top: 22px;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+}
+.day {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 11px 0;
+  flex: 1 1 0;
+  max-width: 150px;
+  text-align: center;
+  border-radius: 10px;
+  background: var(--m-card);
+  border: 1px solid var(--m-border);
+  color: var(--m-text);
+  cursor: pointer;
+  transition: background var(--dur-glide) var(--ease-glide), color var(--dur-glide) var(--ease-glide), box-shadow var(--dur-glide) var(--ease-glide);
+}
+.day:hover {
+  box-shadow: 0 6px 14px rgba(30, 27, 24, 0.1);
+}
+.day.on {
+  background: #D96B43;
+  color: #fff;
+  border-color: #D96B43;
+  box-shadow: 0 10px 22px -8px rgba(217, 107, 67, 0.7);
+}
+.day:focus-visible {
+  outline: 2px solid var(--m-ink);
+  outline-offset: 2px;
+}
+.chip {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 8px 14px;
+  border-radius: 6px;
+  background: transparent;
+  border: 1.5px solid #d8c6ae;
+  color: var(--m-text);
+  cursor: pointer;
+  transition: background var(--dur-glide) var(--ease-glide), color 0.2s;
+}
+.chip:hover {
+  border-color: #D96B43;
+  color: #D96B43;
+}
+.chip.on {
+  background: var(--m-ink);
+  color: var(--m-bg);
+  border-color: var(--m-ink);
+}
+.chip:focus-visible {
+  outline: 2px solid #D96B43;
+  outline-offset: 2px;
+}
+.cat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #D96B43;
+}
+.cat.g {
+  color: #2A6F4E;
+}
+.meter {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.meter .t {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--m-ink);
+}
+.bar.g i {
+  background: linear-gradient(90deg, #2A6F4E, #62a583);
+}
+.bar.d i {
+  background: linear-gradient(90deg, #5a4636, var(--m-ink));
+}
+.tk {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.chk {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+.chk input {
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 8px;
+  border: 2px solid #D96B43;
+  background: transparent;
+  cursor: pointer;
+  transition: background var(--dur-glide) var(--ease-glide);
+  display: grid;
+  place-items: center;
+}
+.chk input:checked {
+  background: #D96B43;
+}
+.chk input:checked::after {
+  content: "";
+  width: 9px;
+  height: 5px;
+  border-left: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+  transform: rotate(-45deg) translate(1px, -1px);
+}
+.chk input:focus-visible {
+  outline: 2px solid var(--m-ink);
+  outline-offset: 2px;
+}
+.sheet {
+  margin-top: 22px;
+  background: var(--m-ink);
+  color: var(--m-bg);
+  border-radius: 10px;
+  padding: 26px;
+  box-shadow: 0 30px 60px -24px rgba(30, 27, 24, 0.7);
+}
+.sheet h2 {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.sheet .sub {
+  font-size: 12px;
+  color: #c4b19a;
+}
+.hand {
+  width: 46px;
+  height: 5px;
+  border-radius: 9px;
+  background: #5a4636;
+  margin: 0 auto 18px;
+}
+.fl {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  margin-top: 16px;
+}
+.sheet-title {
+  margin: 0 0 10px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #F5EFE6;
+}
+.fo {
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  border-radius: 10px;
+  padding: 14px;
+  background: #2b2621;
+  border: 1px solid #3d342c;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+  transition: background var(--dur-glide) var(--ease-glide), border-color 0.2s, transform 0.2s;
+}
+.fo.best {
+  background: #D96B43;
+  border-color: #D96B43;
+  color: #fff;
+}
+.fo small {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+.fo b {
+  font-size: 15px;
+}
+.fo span {
+  font-size: 12px;
+  opacity: 0.9;
+}
+.two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 16px;
+}
+.card {
+  background: var(--m-card);
+  border: 1px solid var(--m-border);
+  border-radius: 10px;
+  padding: 20px;
+}
+.card h3 {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.f {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+.f label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--m-muted);
+}
+/* Route rows are buttons (a11y: div-onClick can't take keyboard focus).
+   Reset button chrome so they read as fields, not CTAs. */
+button.f {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+  border-radius: 8px;
+}
+button.f:focus-visible {
+  outline: 2px solid var(--m-accent, #d96b43);
+  outline-offset: 2px;
+}
+.f-route .f-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--m-muted);
+}
+.f-route .f-value {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--m-ink);
+}
+/* Full-bleed primitive: escape a centered measure to the frame edge without
+   hand-computed negative margins at each call site. */
+.bleed {
+  margin-inline: calc(50% - 50vw);
+  padding-inline: max(16px, calc(50vw - 570px));
+}
+/* Token-backed helper text: replaces hardcoded #4a7a5c / #b04523 / #8b93a7
+   in JSX so cream/ink themes can't drift. */
+.src-line { font-size: 11px; color: var(--m-muted); }
+.src-line--ok { color: var(--color-clay-pass, #2a6f4e); }
+.src-line--err { color: var(--color-clay-fail, #b23a2e); }
+.f div,
+/* Trip-entry fields lift on a soft spring when focused, like a drop that has
+   been touched, and settle back when left. Transform only. */
+@media (prefers-reduced-motion: no-preference) {
+  .f input,
+  .f select {
+    transition: transform var(--dur-glide) var(--ease-spring);
+  }
+  .f input:focus,
+  .f select:focus { transform: translateY(-2px); }
+}
+.f input,
+.f select {
+  background: var(--m-card-2);
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--m-ink);
+  width: 100%;
+}
+.m3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+.m3 div {
+  background: var(--m-card-2);
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 11px;
+  color: var(--m-text);
+}
+.m3 b {
+  display: block;
+  font-size: 15px;
+  color: var(--m-ink);
+  margin-top: 2px;
+}
+.ex {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+@media (max-width: 720px) {
+  .in {
+    padding: 0 16px;
+  }
+  .hero {
+    grid-template-columns: 1fr;
+  }
+  /* Stacked, the question and the next step come first — the globe is the
+     illustration, not the job. */
+  .hr-col {
+    order: -1;
+  }
+  /* The tags and the ask sit outside .hr's padding — on a phone they would
+     otherwise touch the card's edges. */
+  .hr-col > .demo-tag,
+  .hr-col > .ask {
+    margin-left: 18px;
+    margin-right: 18px;
+  }
+  /* Stacked, the fixed panel height stops earning its keep — and the scrubber's
+     three-column lane wants the full card width. */
+  .hl {
+    min-height: 0;
+    padding: 18px;
+  }
+  .hl-stats {
+    margin-top: 16px;
+  }
+  .hr {
+    padding: 18px;
+  }
+  .fl {
+    grid-template-columns: 1fr;
+  }
+  .two {
+    grid-template-columns: 1fr;
+  }
+  /* Eight day pills cannot fit a phone, and the old `width: calc(20% - 7px)`
+     floor of 56px each pushed the row ~150px past the viewport, where
+     `.root`'s overflow:hidden silently ate the last days. Make it a strip you
+     swipe instead of a row that loses two buttons. */
+  .days {
+    overflow-x: auto;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding-bottom: 2px;
+  }
+  .days::-webkit-scrollbar {
+    display: none;
+  }
+  .day {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 92px;
+    font-size: 12px;
+  }
+}
+
+.font-mono2 {
+  font-family: var(--font-mono2);
+}
+
+/* ── Dawn pass · stage + elevation tokens (docs/DESIGN.md) ─────────────────────
+   Cinematic stage grammar: the dawn gradient is one named thing, glows are
+   ember-warm and rare, and display headings get Fraunces at display sizes.
+   These sit outside @theme because they are used via var() in plain CSS. */
+:root {
+  --stage-dawn:
+    radial-gradient(120% 90% at 78% 74%, rgba(255, 196, 107, 0.30), transparent 55%),
+    linear-gradient(180deg, #07090f 0%, #0c1220 50%, #131a2e 100%);
+  --stage-night: linear-gradient(180deg, #07090f 0%, #0c1220 100%);
+  /* The modeled sky: zenith pinned to blue-black ink, the horizon band and the
+     origin-blue residue driven per-element by the body clock's sun altitude
+     (stageSkyFor sets these inline; these are the static defaults). */
+  --stage-ink: #07090f;
+  --stage-ink-2: #0c1220;
+  --stage-horizon: rgba(255, 196, 107, 0.26);
+  --stage-horizon-h: 26%;
+  --stage-horizon-floor: rgba(199, 131, 42, 0.10);
+  --stage-ember-line: rgba(255, 214, 150, 0.55);
+  --stage-sun-x: 50%;
+  --stage-origin: rgba(157, 184, 255, 0.10);
+  --stage-star-o: 0.55;
+  /* The z ladder — a surface's layer is a fact you can read. Bands are
+     named, not the numbers: raise a band and every member moves together. */
+  --z-below: -1;          /* effects behind their own surface's paint */
+  --z-flat: 0;            /* layered content at surface level */
+  --z-raised: 1;          /* content above a surface's sky or depth */
+  --z-instruments: 2;     /* instruments held above the sky */
+  --z-menu: 20;           /* corner chrome */
+  --z-popover: 30;        /* anchored dropdowns above chrome */
+  --z-boot: 40;           /* the boot veil */
+  --z-nav: 50;            /* the tab bar */
+  --z-sweep: 55;          /* the dawn reveal */
+  --z-sheet-backdrop: 59;
+  --z-sheet: 60;          /* sheets and dialogs */
+  --z-above-sheet: 61;    /* the disclosure rides over a sheet */
+  --z-floating: 90;       /* floating actions */
+  --z-status: 100;        /* status pills (offline badge) */
+  --z-light: 210;         /* the light pass — topmost, aria-hidden */
+  --glow-ember: 0 0 28px rgba(255, 196, 107, 0.22);
+  --glow-accent: 0 12px 32px -10px rgba(217, 107, 67, 0.5);
+  --shadow-stage: 0 32px 80px -32px rgba(8, 10, 18, 0.55);
+  --shadow-card: 0 18px 44px -22px rgba(120, 60, 30, 0.35);
+}
+
+/* Registered so the modeled sky can tween: the body's sun rising through the
+   trip is a transition, not a jump. Initials mirror the :root defaults above,
+   which stay as the fallback for browsers without @property. */
+@property --stage-horizon {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgba(255, 196, 107, 0.26);
+}
+@property --stage-horizon-h {
+  syntax: "<percentage>";
+  inherits: true;
+  initial-value: 26%;
+}
+@property --stage-horizon-floor {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgba(199, 131, 42, 0.10);
+}
+@property --stage-sun-x {
+  syntax: "<percentage>";
+  inherits: true;
+  initial-value: 50%;
+}
+@property --stage-origin {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: rgba(157, 184, 255, 0.10);
+}
+@property --stage-star-o {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0.55;
+}
+@property --stage-ink-2 {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #0c1220;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero, .clock-stage, .arr, .demo-root {
+    transition: --stage-horizon-h 320ms var(--ease-settle), --stage-horizon 320ms var(--ease-settle),
+      --stage-star-o 320ms var(--ease-settle),
+      --stage-horizon-floor 320ms var(--ease-settle), --stage-origin 320ms var(--ease-settle),
+      --stage-ink-2 320ms var(--ease-settle);
+  }
+}
+
+/* The modeled sky as the stage backdrop. Three layers: the body clock's
+   horizon band rising from the floor, the origin-blue ghost residue, and the
+   blue-black ink — the var()s resolve per-element from the tokens above or
+   the inline values stageSkyFor sets. */
+.hero, .clock-stage, .arr, .today-stage, .demo-root, .hero .hl .bg.term {
+  background:
+    /* the horizon line — soft, elliptical, fades out at the ends */
+    radial-gradient(ellipse 62% 2px at var(--stage-sun-x) calc(100% - var(--stage-horizon-h)),
+      var(--stage-ember-line) 0%, transparent 100%),
+    /* the bloom — the body's sun glowing up from its horizon */
+    radial-gradient(ellipse 120% calc(var(--stage-horizon-h) * 1.8) at var(--stage-sun-x) calc(100% - var(--stage-horizon-h)),
+      var(--stage-horizon) 0%, transparent 72%),
+    /* ground haze below the line */
+    linear-gradient(180deg, transparent calc(100% - var(--stage-horizon-h)), var(--stage-horizon-floor) 100%),
+    /* origin-blue residue, lowest */
+    linear-gradient(180deg, transparent 84%, var(--stage-origin) 100%),
+    /* the sky */
+    linear-gradient(180deg, var(--stage-ink) 0%, var(--stage-ink-2) 100%);
+}
+.hero .hl .bg.term { --stage-sun-x: 68%; }
+
+/* The stage's star plane — a deterministic field (StageStars / starPlane,
+   the demo's own technique) whose opacity rides --stage-star-o: the body
+   sun's altitude, not a painted night. Static, behind every instrument. */
+.stage-stars { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.stage-stars-svg { position: absolute; top: -3%; left: -4%; width: 108%; height: 62%; }
+.stage-stars-svg circle { fill: var(--color-paper); }
+.stage-stars-far { opacity: calc(var(--stage-star-o, 0.55) * 0.45); }
+.stage-stars-mid { opacity: calc(var(--stage-star-o, 0.55) * 0.85); }
+
+/* The stage's terrain — ridgePath silhouettes (the demo's own grammar),
+   seeded per destination. The far ridge tops out just under the horizon
+   line so the sun reads as rising behind land; its edge catches the beam
+   colour itself. The near ridge is a darker mass holding the floor. */
+.stage-ridges { position: absolute; inset: 0; pointer-events: none; z-index: var(--z-raised); }
+.stage-ridge { position: absolute; left: -2%; width: 104%; }
+.stage-ridge-far {
+  bottom: calc(var(--stage-horizon-h, 26%) * 0.42);
+  height: calc(var(--stage-horizon-h, 26%) * 0.62);
+  filter: drop-shadow(0 -2px 5px var(--stage-horizon));
+}
+.stage-ridge-far path { fill: var(--stage-ink-2, #0c1220); }
+.stage-ridge-near { bottom: -2%; height: 12%; }
+.stage-ridge-near path { fill: var(--stage-ink, #07090f); }
+
+/* The route on the horizon (StageArc): the great-circle the globe draws,
+   flattened onto the band. Endpoint dots are home and destination, the
+   tick is the real terminator crossing, the ember marker is the body
+   clock's coverage — the same read the sun and the chip carry in words. */
+.stage-arc {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--stage-horizon-h, 26%) + 6%);
+  width: min(560px, 58%);
+  height: 56px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  opacity: 0.9;
+}
+.stage-arc-path { stroke: var(--stage-ember-line); stroke-width: 0.5; opacity: 0.7; }
+.stage-arc-end { fill: var(--m-muted); }
+.stage-arc-term { stroke: var(--m-faint); stroke-width: 0.4; }
+.stage-arc-sun {
+  fill: var(--m-accent);
+  filter: drop-shadow(0 0 2px var(--m-accent));
+}
+
+/* The painted world (meridian-sky-webgl): one canvas behind the DOM
+   instruments. When it lives, the DOM depth layers stand down — the canvas
+   carries stars, weather, ridge, arc — and the DOM sun keeps only its face,
+   which the scene's halo now underlays. */
+.meridian-sky { position: absolute; inset: 0; width: 100%; height: 100%; }
+.sky-gl .stage-stars,
+.sky-gl .stage-ridge,
+.sky-gl .stage-arc { display: none; }
+
+/* The world continues beneath the stage — the feed's own painted sky as a
+   viewport-sticky canvas the sections float over. `isolation` keeps the
+   negative-z canvas inside the feed's stacking; sticky + the collapsing
+   margin pin it to the viewport for the whole descent without a tall
+   texture. Cards keep their translucent fills so the world bleeds through. */
+/* Full-bleed: the feed lives inside the 720px .reading column but the world
+   is the whole viewport — escape the measure, not the document. */
+.feed-world {
+  position: relative;
+  isolation: isolate;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+}
+.feed-world > .meridian-sky {
+  position: sticky;
+  top: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100dvh;
+  margin-bottom: -100dvh;
+  pointer-events: none;
+}
+/* Altitudes (docs/plan/feed-altitudes.md): the feed as rooms in one world.
+   The composition law the references use — a viewport-sized scene owns its
+   backdrop and its side; the slab is the words, the world is the rest, and
+   the two never overlap. Slabs are OPAQUE: text never sits over painted
+   detail, so there is no scrim and no frosted pane. Inside the feed the
+   surfaces read against the painted sky, so the slab carries the night
+   palette's text/border tokens whatever the page theme. */
+.feed-world {
+  --m-ink-solid: #10151f;
+  --m-text: #f5efe6;
+  --m-muted: #a89a8c;
+  --m-faint: #7c88a4;
+  --m-border: #26304a;
+  --m-border-2: #1c2436;
+  --m-card: #121726;
+  --m-card-2: #171d2e;
+  --m-tag: rgba(255, 196, 107, 0.14);
+}
+
+/* One horizon per viewport: the hero's own star plane stands down inside a
+   room — the canvas is its sky now. The hero surface itself goes opaque
+   ink so the slab, not its gradient vars, is the ground under the words. */
+.feed-world .hero .stage-stars { display: none; }
+/* The hero's breakout margins reach for the old column's frame edge; inside
+   the slab they would spill past the one surface, so it fills its slab. */
+.room .hero {
+  background: var(--m-ink-solid);
+  margin: 0;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* The room: a full-viewport grid with three lanes. The slab takes two of
+   them on its owned side (left/right) leaving the open side to the world;
+   the centre room's slab spans all three. */
+.room {
+  position: relative;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  padding-block: clamp(48px, 8dvh, 96px);
+}
+.room[data-side="left"] .slab {
+  grid-column: 1 / 3;
+  justify-self: start;
+  margin-left: clamp(24px, 8vw, 160px);
+}
+.room[data-side="right"] .slab {
+  grid-column: 2 / 4;
+  justify-self: end;
+  margin-right: clamp(24px, 8vw, 160px);
+}
+.room[data-side="center"] .slab {
+  grid-column: 1 / 4;
+  justify-self: center;
+}
+.slab {
+  box-sizing: border-box;
+  padding: clamp(18px, 2.4vw, 28px);
+  border-radius: var(--radius-lg, 18px);
+  background: var(--m-ink-solid);
+  border: 1px solid var(--m-border);
+}
+/* The slab width lives on the room (data-slab), not the slab itself — the
+   room owns the width, the slab just fills it. */
+.slab { width: min(520px, 100%); }
+.room[data-slab="slim"] .slab { width: min(520px, 100%); }
+.room[data-slab="wide"] .slab { width: min(760px, 100%); }
+.room[data-slab="full"] .slab { width: min(1200px, 100%); }
+
+/* The slab is the one surface: instruments inside it shed their own
+   translucent panels so nothing double-frames against the painted world. */
+.room .card,
+.room .tl,
+.room .cal-summary,
+.room .marks-waiting,
+.room .right-now-card,
+.room .dac,
+.room .dial {
+  background: transparent;
+  box-shadow: none;
+  border-color: transparent;
+}
+/* .wide's negative margins break out of the old column; inside a slab they
+   would spill past the one surface, so the breakout is neutralised. */
+.room .slab .wide,
+.room .slab .marks-waiting.wide,
+.room .slab .cal-summary.wide,
+.room .slab .tl.wide {
+  margin-left: 0;
+  margin-right: 0;
+}
+/* The glass surfaces the stage and passport use read as fog inside the
+   one-surface slab — the slab is already the opaque plane, so the panes
+   flatten to it. */
+.room .slab .ask,
+.room .slab .arr-passport-card {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* The settled frame: each room's own keyframe as a static CSS sky, shown
+   only when the canvas isn't live — reduced motion, no GL, context lost.
+   Ground under the horizon band, beam at the line, zenith above — same
+   colours, same horizon height, same words on the slab. */
+.room-sky {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  display: none;
+  background: linear-gradient(
+    to top,
+    var(--rs-top) 0,
+    var(--rs-top) calc(var(--rs-horH) - 10%),
+    var(--rs-hor) calc(var(--rs-horH) - 2%),
+    var(--rs-hor) calc(var(--rs-horH) + 2%),
+    var(--rs-mid) calc(var(--rs-horH) + 20%),
+    var(--rs-top) 100%
+  );
+}
+.feed-world--css .room-sky { display: block; }
+.feed-world--css > .meridian-sky { display: none; }
+
+/* The discover room's mascot — a DOM sun-self face seated over the
+   painted disc (the "who" of the arrival room). The canvas is
+   viewport-sticky and the discover keyframe holds the sun at x 0.72,
+   y 0.36 (y-up) of it, so the disc sits at a fixed viewport point while
+   the room is located: the pin is sticky at that same point inside a
+   room-filling overlay — it rides the room's top edge in, parks on the
+   disc for the read, and leaves with the room's foot. Decorative only
+   (aria-hidden, pointer-events none); it fades in on the room's own
+   progress, and on the settled CSS skies it simply stands at full
+   opacity. */
+.room-mascot { position: absolute; inset: 0; pointer-events: none; }
+.room-mascot-pin {
+  position: sticky;
+  top: calc(64dvh - 45px);   /* disc centre 0.36 y-up → 64% down the 100dvh canvas; 90px face */
+  margin-left: calc(72% - 45px);
+  width: 90px;
+  height: 90px;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+}
+/* The face rises with the room's own progress — but discover is the last
+   room, so --room-p saturates where the page ends (~0.15-0.2 for a
+   one-viewport room, more for taller). A literal var(--room-p) opacity
+   would leave the face a permanent ghost; scaling ×8 keeps the fade
+   keyed to progress and settles it inside the first eighth of the room. */
+.feed-world[data-room="discover"] .room-mascot-pin { opacity: min(1, calc(var(--room-p, 0) * 8)); }
+.feed-world--css .room-mascot-pin { opacity: 1; }
+
+/* The altimeter — one mono line riding the viewport's bottom edge through
+   the descent (sticky-bottom floats it while the feed's natural end is
+   still below the fold, then it docks at the feed's foot). The room index,
+   the room's name and the body clock are the read; redundant with the
+   slabs, so aria-hidden. */
+.alti {
+  position: sticky;
+  bottom: 12px;
+  z-index: 0;
+  margin-left: clamp(16px, 4vw, 48px);
+  width: max-content;
+  font-family: var(--font-mono2);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--m-faint);
+  pointer-events: none;
+}
+
+/* Narrow viewports collapse the lateral split the joebentaylor way: the
+   world becomes a 38dvh sticky band above a full-width slab. */
+@media (max-width: 759px) {
+  .feed-world > .meridian-sky {
+    height: 38dvh;
+    margin-bottom: -38dvh;
+  }
+  .room {
+    display: block;
+    padding-block: 0;
+    padding-top: 38dvh;
+    min-height: 100dvh;
+  }
+  .room .slab {
+    width: 100%;
+    margin: 0;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+  /* The band, not the room: the settled sky sits above the slab where the
+     sticky canvas would be. */
+  .room-sky {
+    inset: 0 0 auto 0;
+    height: 38dvh;
+  }
+  /* Same disc, shorter sky: the canvas band is 38dvh, so the mascot's
+     pin drops to the band's own sun point. */
+  .room-mascot-pin { top: calc(24.3dvh - 45px); }
+}
+
+/* The rail's mobile time column (60px at ≤720px) clips a `HH:MM–HH:MM`
+   range — the row inherits a wider slot inside the slab so the range stays
+   inside its own cell. Container-scoped; the upstream `.tl-row` is untouched. */
+@media (max-width: 720px) {
+  .room .slab .tl-row {
+    grid-template-columns: 22px 96px 1fr;
+  }
+}
+
+/* Pointer depth — the hand tilts the diorama: --px/--py (depth-parallax.ts,
+   fine pointers only) drift each plane at its own depth. Far planes barely
+   move, the near ridge moves most; the sun is effectively at infinity. A
+   settle transition smooths the follow and returns rest on leave; the
+   instruments never move — they are the read, not the scene. */
+@media (prefers-reduced-motion: no-preference) {
+  .stage-stars-far, .stage-stars-mid,
+  .stage-ridge-far, .stage-ridge-near {
+    transition: transform var(--dur-settle) var(--ease-settle);
+  }
+  .stage-stars-far { transform: translate(calc(var(--px, 0) * -4px), calc(var(--py, 0) * -2px)); }
+  .stage-stars-mid { transform: translate(calc(var(--px, 0) * -8px), calc(var(--py, 0) * -4px)); }
+  .stage-ridge-far { transform: translateX(calc(var(--px, 0) * -12px)); }
+  .stage-ridge-near { transform: translateX(calc(var(--px, 0) * -20px)); }
+}
+
+/* The departure board — a Solari roll (src/components/Solari.tsx). Each
+   cell is a clip; the outgoing flap rolls up, the incoming rolls in.
+   Only moves when the data does; transform-only. */
+.solari { display: inline-flex; }
+.solari-cell {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+}
+.solari-old {
+  position: absolute;
+  inset: 0;
+  transform: translateY(0);
+}
+.solari-new { display: inline-block; transform: translateY(0); }
+@media (prefers-reduced-motion: no-preference) {
+  .solari-old { animation: solari-out 160ms var(--ease-glide) both; }
+  .solari-new { animation: solari-in 220ms var(--ease-settle) both; }
+}
+@keyframes solari-out {
+  to { transform: translateY(-108%); }
+}
+@keyframes solari-in {
+  from { transform: translateY(108%); }
+  to { transform: translateY(0); }
+}
+
+/* Display headings — the crew's voice at statement size. Roman only (no
+   italic display), tight tracking, and overflow-safe on narrow viewports. */
+.display-1,
+.display-2 {
+  font-family: var(--font-display);
+  font-style: normal;
+  font-weight: 560;
+  letter-spacing: -0.02em;
+  line-height: 1.02;
+  overflow-wrap: anywhere;
+  min-width: 0;
+  text-wrap: balance;
+}
+.display-1 {
+  font-size: var(--text-display);
+  font-variation-settings: "opsz" 120, "SOFT" 0, "WONK" 1;
+}
+.display-2 {
+  font-size: var(--text-display-s);
+  line-height: 1.06;
+  font-variation-settings: "opsz" 72, "SOFT" 0, "WONK" 1;
+}
+/* Section eyebrows — tracked caps, stacked above the heading, never beside. */
+.eyebrow {
+  display: block;
+  font-family: var(--font-mono2);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--m-accent);
+}
+

@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "fs";
 import { join } from "path";
+import { readStylesheet } from "./css";
 
 // docs/DESIGN.md is a contract with MUSTs in it. This is the executable half of it:
 // either a rule today's code satisfies, or a measured debt frozen at today's
@@ -9,7 +10,7 @@ import { join } from "path";
 
 const root = join(import.meta.dir, "..");
 const read = (p: string) => readFileSync(join(root, p), "utf8");
-const css = read("src/app/globals.css").replace(/\/\*[\s\S]*?\*\//g, "");
+const css = readStylesheet().replace(/\/\*[\s\S]*?\*\//g, "");
 
 type Rule = { selector: string; body: string };
 
@@ -76,13 +77,13 @@ const bare = (p: string) => p.split("/").pop()!;
 // Baseline 31 Oct 2026. Lower a number when debt goes; never raise it.
 // A chrome file absent from these maps has a ceiling of zero.
 const HEX_CEILING: Record<string, number> = {
-  "src/components/NudgeFeedScreen.tsx": 18,
+  "src/components/NudgeFeedScreen.tsx": 6,
   "src/components/RoutePicker.tsx": 10,
   "src/components/DeepDiveVisuals.tsx": 8,
   "src/components/HeroDawnPanel.tsx": 7,
-  "src/components/TripSetupScreen.tsx": 3,
+  "src/components/TripSetupScreen.tsx": 0,
   "src/components/VoiceControls.tsx": 2,
-  "src/components/CalendarApprovalCard.tsx": 1,
+  "src/components/CalendarApprovalCard.tsx": 0,
   "src/app/page.tsx": 8,
 };
 
@@ -90,7 +91,7 @@ const STYLE_CEILING: Record<string, number> = {
   "src/components/PlanReview.tsx": 1,
   "src/components/NudgeFeedScreen.tsx": 72,
   "src/app/page.tsx": 44,
-  "src/components/TripSetupScreen.tsx": 18,
+  "src/components/TripSetupScreen.tsx": 16,
   "src/components/CalendarApprovalCard.tsx": 11,
   "src/components/CrewQuestionCard.tsx": 8,
   "src/components/DaySkyStrip.tsx": 4,

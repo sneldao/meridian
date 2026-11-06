@@ -2,6 +2,8 @@
 // lets us update the same feed silently on every new plan; per-surface read
 // tokens gate the webcal and assistant links. They never leave the device
 // except in their own POST bodies / query params.
+import { safeStorageSet } from "@/lib/local-data";
+
 const FEED_KEY = "meridian:feed";
 const FAIL_KEY = "meridian:feedFails";
 const STALE_KEY = "meridian:feedStale";
@@ -10,18 +12,18 @@ const STALE_KEY = "meridian:feedStale";
 const STALE_AFTER = 3;
 
 function noteFeedResult(ok: boolean) {
-  try {
+  let stale = false;
+  safeStorageSet(() => {
     const fails = ok ? 0 : Number(localStorage.getItem(FAIL_KEY) ?? 0) + 1;
     localStorage.setItem(FAIL_KEY, String(fails));
     if (fails >= STALE_AFTER) {
       localStorage.setItem(STALE_KEY, "1");
-      window.dispatchEvent(new Event("meridian:feed-stale"));
+      stale = true;
     } else {
       localStorage.removeItem(STALE_KEY);
     }
-  } catch {
-    /* storage unavailable */
-  }
+  }, "feed-stale");
+  if (stale) window.dispatchEvent(new Event("meridian:feed-stale"));
 }
 
 export type FeedSurface = "calendar" | "assistant";
@@ -44,11 +46,7 @@ export function getFeedRef(): FeedRef | null {
 }
 
 function setFeedRef(ref: FeedRef) {
-  try {
-    localStorage.setItem(FEED_KEY, JSON.stringify(ref));
-  } catch {
-    /* storage unavailable */
-  }
+  safeStorageSet(() => localStorage.setItem(FEED_KEY, JSON.stringify(ref)), "feed-ref");
 }
 
 /** The read token for a surface, or null for feeds created before tokens

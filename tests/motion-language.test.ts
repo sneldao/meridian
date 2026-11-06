@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import fs from "node:fs";
 import path from "node:path";
+import { readStylesheet } from "./css";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { crewScript, crewStateAt } from "../src/domain/crew-performance";
@@ -14,10 +15,7 @@ import { crewScript, crewStateAt } from "../src/domain/crew-performance";
  * whole language rides transform/opacity plus the paint-only allowance
  * (clip-path) — no box-shadow or filter animations creep in. */
 
-const css = fs.readFileSync(
-  path.join(import.meta.dir, "..", "src", "app", "globals.css"),
-  "utf8",
-);
+const css = readStylesheet();
 
 /** Extract one rule block by a selector fragment, following braces from
  *  the first `{` after the fragment (multi-selector rules included). */

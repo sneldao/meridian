@@ -1,8 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { readFileSync } from "fs";
-import { join } from "path";
+import { readStylesheet } from "./css";
 import { Stamp } from "@/components/ui/Stamp";
 import { LandingDepth } from "@/components/LandingDepth";
 import { SunSelf } from "@/components/SunSelf";
@@ -34,7 +33,7 @@ describe("Stamp", () => {
   test("className passes through; the CSS stays at the 13px floor", () => {
     const h = renderToStaticMarkup(createElement(Stamp, { kind: "example", className: "iday-stamp" }));
     expect(h).toContain("stamp iday-stamp");
-    const css = readFileSync(join(import.meta.dir, "..", "src", "app", "globals.css"), "utf8");
+    const css = readStylesheet();
     const stamp = css.slice(css.indexOf(".stamp {"), css.indexOf(".stamp {") + 400);
     expect(stamp).toContain("font-size: 13px");
     expect(stamp).toContain("var(--font-mono2)");

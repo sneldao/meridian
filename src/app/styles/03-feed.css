@@ -1,0 +1,3184 @@
+/* --- Scroll reveals ---------------------------------------------------------
+   Enhancement only: content is fully visible without scroll-timeline support.
+   The whole rule lives behind @supports so browsers without view() timelines
+   never see a hidden element. */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    @keyframes reveal-up {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+    .reveal {
+      animation: reveal-up var(--dur-drift) var(--ease-drift) both;
+      animation-timeline: view();
+      animation-range: entry 2% cover 18%;
+    }
+    .reveal[data-reveal="late"] {
+      animation-range: entry 2% cover 30%;
+    }
+    /* Scroll choreography across the app: the big section blocks rise as they
+       enter. Scoped to known block-level sections only — never anything
+       inside a horizontal scroller (.day pills, .dial-days), whose off-screen
+       members would render hidden. */
+    .tl,
+    .cal-summary,
+    .arr-grid,
+    .arr-section-label,
+    .card,
+    .dac,
+    .dial {
+      animation: reveal-up var(--dur-drift) var(--ease-drift) both;
+      animation-timeline: view();
+      animation-range: entry 2% cover 18%;
+    }
+    /* Slab entrances ride the same vocabulary — the room's surface rises
+       as it enters; nothing clips its content. The advert tiles share the
+       one light ambient. */
+    .slab,
+    .ad-tile {
+      animation: reveal-up var(--dur-drift) var(--ease-drift) both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 30%;
+    }
+    /* Item-level waterfall: siblings rise in sequence, not as one slab. The
+       stagger is a longer cover range per child, not a delay — it still
+       tracks scroll position rather than playing on a clock. Vertical
+       stacks only; the horizontal-scroller rule above still stands. */
+    .rise-item,
+    .journey-step {
+      /* backwards, not both: a completed fill would pin transform:none over
+         any later framer-motion `layout` morph on the same element. */
+      animation: reveal-up var(--dur-drift) var(--ease-drift) backwards;
+      animation-timeline: view();
+      animation-range: entry 2% cover 18%;
+    }
+    .rise-item:nth-child(2),
+    .journey-step:nth-child(2) { animation-range: entry 2% cover 22%; }
+    .rise-item:nth-child(3),
+    .journey-step:nth-child(3) { animation-range: entry 2% cover 26%; }
+    .rise-item:nth-child(4),
+    .journey-step:nth-child(4) { animation-range: entry 2% cover 30%; }
+    .rise-item:nth-child(n+5),
+    .journey-step:nth-child(n+5) { animation-range: entry 2% cover 34%; }
+  }
+}
+
+/* The error surface speaks in the crew's voice too. */
+.errcard h1 {
+  font-family: var(--font-display);
+  font-style: normal;
+  font-size: var(--text-3xl);
+  font-weight: 560;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  font-variation-settings: "opsz" 72, "SOFT" 0, "WONK" 1;
+}
+
+::selection {
+  background: rgba(255, 196, 107, 0.25);
+}
+
+/* Visible focus rings for every focusable element. Components can override
+   with their own focus-visible styles, but the default is never invisible. */
+*:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:not([tabindex="-1"]):focus-visible {
+  outline-color: var(--color-focus);
+}
+
+/* Kill focus outline for non-keyboard interactions when a component supplies
+   its own ring. */
+.focus-ring:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-ink), 0 0 0 4px var(--color-focus);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* thin scrollbars for the crew feed */
+.scroll-thin::-webkit-scrollbar {
+  width: 4px;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: var(--color-line);
+  border-radius: 2px;
+}
+
+/* ── lane: shell ─────────────────────────────────────────────────────────
+   Dev 3 owns this block. New classes go inside it; only Dev 3 deletes
+   obsolete classes, and only after lanes 1–2 have merged. (Task 3.2) */
+
+/* Marks numbers that came from the demo fixture rather than a measurement. */
+.demo-tag {
+  margin: 0 0 12px;
+  padding: 7px 11px;
+  border: 1px solid var(--color-line);
+  border-left: 3px solid var(--color-ghost);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-ghost) 7%, transparent);
+  color: var(--color-mist);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+/* The trip identity line above Today — replaces the old setup screen title.
+   Type on the paper surface, not a dark chip: this sits on the sunlit page, and
+   borrowing the crew lens's ink palette here read as disabled chrome. The old
+   70px top margin also pushed the card a full third of a viewport down. */
+.trip-summary {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 8px 0 16px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 13px;
+  color: #6b5b4d;
+}
+.trip-summary .route {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--m-ink);
+  letter-spacing: 0.08em;
+}
+.trip-summary .when,
+.trip-summary .shift {
+  padding: 3px 9px;
+  border-radius: 6px;
+  background: #efe3d2;
+  color: #6b5b4d;
+  font-size: 11px;
+  font-weight: 500;
+}
+.trip-summary .edit {
+  margin-left: auto;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border: 1px solid var(--m-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--m-text);
+  cursor: pointer;
+}
+.trip-summary .edit:hover {
+  border-color: #D96B43;
+  color: #D96B43;
+}
+.trip-summary .edit:focus-visible {
+  outline: 2px solid #D96B43;
+  outline-offset: 2px;
+}
+
+/* Visually hidden, still announced — used to spell out the "→" in the route. */
+/* One focus ring, everywhere, in a colour that is not the accent — so a
+   focused control is never mistaken for the primary action. */
+:focus-visible {
+  outline: 2px solid var(--m-focus, #85b1ed);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Setup as an overlay on Today rather than a screen you navigate to. */
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-sheet);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 8vh 16px 16px;
+  background: color-mix(in srgb, var(--color-ink) 70%, transparent);
+  backdrop-filter: blur(4px);
+  overflow-y: auto;
+}
+.sheet-panel {
+  position: relative;
+  width: 100%;
+  max-width: 860px;
+  padding: 22px;
+  border: 1px solid var(--color-line);
+  border-radius: 10px;
+  background: var(--color-ink-2);
+}
+.sheet-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font: inherit;
+  font-size: 22px;
+  line-height: 1;
+  padding: 4px 10px;
+  border: 1px solid var(--color-line);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-mist);
+  cursor: pointer;
+}
+.sheet-close:hover {
+  color: var(--color-paper);
+  border-color: #D96B43;
+}
+
+/* ── lane: today ─────────────────────────────────────────────────────────
+   Dev 2 owns this block. Timeline is the only Calm view (task 2.5), so the
+   day renders as one rail. Dev 3 deletes the orphaned deck / chip / view-mode
+   classes at 3.10 — nothing here depends on them. */
+
+/* The hero's left panel keeps only the terminator and honest numbers. */
+.hl-stats {
+  margin-top: auto;
+}
+
+/* P1 — the dawn panel. The map takes the slack in the card; the caption gives
+   the same read in words, so reduced motion and Guided lose nothing. */
+.hl-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.dawn-map {
+  flex: 1 1 auto;
+  align-self: center;
+  min-height: 190px;
+  width: 100%;
+  animation: dawnFade var(--duration-slow) var(--ease-smooth-out) both;
+}
+/* The graduated WebGL globe occupies the same stage slot as the SVG disc.
+   The canvas fills the flexed box; the transparent clear colour lets the
+   panel's terminator gradient show through as space. */
+.dawn-globe {
+  position: relative;
+  overflow: hidden;
+  min-height: 260px;
+}
+/* OrbitControls stamps touch-action:none on the canvas at connect, on every
+   device, even with controls disabled — which would swallow a swipe meant to
+   scroll the page. pan-y gives the vertical gesture back to the document;
+   horizontal drags still reach the pointer handlers, and mouse orbit on a
+   fine pointer is untouched by touch-action anyway. !important is what beats
+   an inline style, nothing weaker does. */
+.dawn-globe canvas {
+  touch-action: pan-y !important;
+}
+/* Drag-to-recentre only binds on a fine pointer — see the component's gesture
+   note. The cursor advertises that, and nothing else. */
+.dawn-map.grab {
+  cursor: grab;
+}
+.dawn-map.grab:active {
+  cursor: grabbing;
+}
+.dawn-map .pin {
+  cursor: pointer;
+}
+@keyframes dawnFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ── the scrubber ────────────────────────────────────────────────────────
+   Two native range inputs. Keyboard arrows, Home/End, screen-reader value
+   text and touch dragging all work because they are real form controls. */
+.scrub {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+.scrub-lane {
+  display: grid;
+  /* minmax(0, 1fr) rather than 1fr: a bare 1fr track floors at the range
+     input's intrinsic width, which together with the nowrap label can push the
+     whole hero card wider than a narrow viewport. */
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+.scrub-label {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-mist);
+  white-space: nowrap;
+}
+.scrub-val {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-paper);
+  font-variant-numeric: tabular-nums;
+  min-width: 36px;
+  text-align: right;
+}
+.scrub-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 16px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.scrub-range::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--color-line);
+}
+.scrub-range::-moz-range-track {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--color-line);
+}
+.scrub-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 13px;
+  height: 13px;
+  margin-top: -5px;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-ghost);
+  box-shadow: 0 0 8px rgba(255, 217, 138, 0.45);
+}
+.scrub-range::-moz-range-thumb {
+  width: 13px;
+  height: 13px;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-ghost);
+  box-shadow: 0 0 8px rgba(255, 217, 138, 0.45);
+}
+.scrub-range.shift::-webkit-slider-thumb {
+  background: var(--color-sun-dest);
+  box-shadow: 0 0 8px rgba(255, 196, 107, 0.4);
+}
+.scrub-range.shift::-moz-range-thumb {
+  background: var(--color-sun-dest);
+  box-shadow: 0 0 8px rgba(255, 196, 107, 0.4);
+}
+.scrub-range:focus-visible {
+  outline: 2px solid var(--color-ghost);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+.scrub-reset {
+  align-self: flex-start;
+  margin-top: 1px;
+  padding: 3px 9px;
+  border: 1px solid var(--color-line);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-mist);
+  font: inherit;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.scrub-reset:hover {
+  border-color: var(--color-ghost);
+  color: var(--color-paper);
+}
+
+.dawn-cap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+}
+/* City cells are the keyboard and touch equivalent of hovering a pin on the
+   disc, so both routes reach the same focus state. */
+.dawn-cities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.city-cell {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  padding: 5px 11px;
+  border: 1px solid var(--color-line);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-mist);
+  font: inherit;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background var(--dur-glide) var(--ease-glide), border-color var(--dur-glide) var(--ease-glide), color var(--dur-glide) var(--ease-glide);
+}
+.city-cell b {
+  font-weight: 600;
+  color: var(--color-paper);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+.city-cell i {
+  font-style: normal;
+  font-size: 8.5px;
+  letter-spacing: 0.1em;
+  opacity: 0.9;
+}
+.city-cell i.day {
+  color: var(--color-sun-dest);
+}
+.city-cell i.night {
+  color: var(--color-sun-home);
+}
+.city-cell:hover {
+  border-color: var(--color-ghost);
+}
+.city-cell.on {
+  background: rgba(255, 217, 138, 0.14);
+  border-color: var(--color-ghost);
+  color: var(--color-paper);
+}
+.city-cell:focus-visible {
+  outline: 2px solid var(--color-ghost);
+  outline-offset: 2px;
+}
+.dawn-gap {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--color-paper);
+}
+.dawn-gap b {
+  font-weight: 600;
+  white-space: nowrap;
+}
+.dawn-gap.hot b {
+  color: var(--color-ghost);
+}
+.dawn-note {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--color-mist);
+}
+
+.tl {
+  display: flex;
+  flex-direction: column;
+  margin-top: 16px;
+  padding: 10px 20px 14px;
+  border: 1px solid var(--m-border);
+  border-radius: 10px;
+  background: var(--m-card);
+}
+.cal-summary {
+  /* Three numbers the run produces before the rail: how much of the day the
+     crew could move, how much it had to keep, and how many post-flight
+     meetings already clear the sleep window. */
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 20px 0 2px;
+}
+.cal-summary-num {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 11px 13px;
+  border: 1px solid var(--m-border-2);
+  border-radius: 12px;
+  background: var(--m-card);
+}
+.cal-summary-num b {
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 1.1;
+  color: #D96B43;
+  font-variant-numeric: tabular-nums;
+}
+.cal-summary-num span {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  line-height: 1.35;
+  color: var(--m-muted);
+}
+.cal-summary-line {
+  margin: 0;
+  padding: 11px 13px;
+  border: 1px solid var(--m-border-2);
+  border-radius: 12px;
+  background: var(--m-card);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--m-text);
+}
+/* Preview honesty: example plans announce themselves on the hero and the
+   day rail dims — Done/Skip still move (dry run), but nothing reads as live. */
+.preview-pill {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 1px 7px;
+  border: 1px solid var(--m-border);
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--m-faint);
+  vertical-align: 1px;
+}
+.tl.preview .tl-row {
+  opacity: 0.55;
+}
+@media (max-width: 420px) {
+  .cal-summary {
+    gap: 7px;
+  }
+  .cal-summary-num {
+    padding: 9px 9px;
+  }
+  .cal-summary-num b {
+    font-size: 16px;
+  }
+  .cal-summary-num span {
+    font-size: 10px;
+    letter-spacing: 0.04em;
+  }
+}
+/* The step list is a *day*, not a table: a rail down the times, the steps
+   hanging off it, and no rule between every row. Rules between rows are how
+   you make a sequence read as a form; a rail is how you make it read as a
+   plan, and it is the same line the hero's terminator draws. */
+.tl-rows {
+  position: relative;
+}
+.tl-rows::before {
+  content: "";
+  position: absolute;
+  /* Through the ticks, not beside them: the tick is a point on the day, and
+     the line is the day. Beside the times it would read as a divider. */
+  left: 11px;
+  top: 14px;
+  bottom: 18px;
+  width: 1px;
+  background: var(--m-border);
+}
+.tl-row {
+  display: grid;
+  grid-template-columns: 22px 98px 1fr;
+  gap: 12px;
+  align-items: start;
+  padding: 10px 0;
+  position: relative;
+}
+.tl-row:first-of-type {
+  border-top: none;
+}
+.tl-time b {
+  display: block;
+  white-space: nowrap;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--cat, #D96B43);
+  font-variant-numeric: tabular-nums;
+}
+.tl-time span {
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--m-muted);
+}
+.tl-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--m-ink);
+  /* The title carries its calendar tag inline. Laying the row out as a
+     baseline-aligned flex line is what keeps "dinner by 19:25" and its
+     `placed` pill from running together as one word. */
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+/* The strike on a spent row belongs to the title text only — text-decoration
+   propagates to descendants and cannot be undone by them, so the tag needs
+   its own element to stay clean. */
+.tl-row.done .tl-title-text {
+  color: var(--m-faint);
+  text-decoration: line-through;
+}
+/* `movable` / `placed` — the rail carrying the solver's own vocabulary.
+   Solid chip = the crew chose this slot against your floor. Dashed outline =
+   negotiable, the crew can move it. Differentiated by border treatment
+   rather than a second hue, so it survives at a glance on cream. */
+.tl-tag {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  line-height: 1.5;
+}
+.tl-tag.placed {
+  background: var(--m-tag);
+  color: #9c4a2a;
+}
+.tl-tag.movable {
+  background: transparent;
+  border: 1px dashed #d9c9b6;
+  color: var(--m-muted);
+}
+.tl-row.done .tl-tag {
+  opacity: 0.55;
+}
+.tl-row.done .tl-time b,
+.tl-row.done .tl-time span {
+  color: var(--m-faint);
+}
+.tl-acts {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+.tl-done {
+  padding: 6px 16px;
+  border: 1px solid #D96B43;
+  border-radius: 6px;
+  background: #D96B43;
+  color: var(--m-on-accent);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+}
+.tl-done[aria-pressed="true"] {
+  border-color: #b04523;
+  background: #b04523;
+  color: var(--m-on-accent);
+}
+/* Before a plan exists the Done tap is a preview — the outline keeps it
+   secondary to "Make my plan" without reading as disabled. */
+.tl-done.alt {
+  border-color: #D96B43;
+  background: transparent;
+  color: var(--m-text);
+}
+.tl-done.alt[aria-pressed="true"] {
+  border-color: #b04523;
+  background: rgba(217, 107, 67, 0.12);
+  color: #b04523;
+}
+.tl-skip {
+  padding: 6px 14px;
+  border: 1px solid var(--m-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--m-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+}
+.tl-skip[aria-pressed="true"] {
+  border-color: #b04523;
+  background: rgba(217, 107, 67, 0.12);
+  color: #b04523;
+}
+/* Skipped is muted, not struck through — the step wasn't done, it was
+   reported as missed. Distinct from .done on purpose. */
+.tl-row.skipped .tl-title-text {
+  color: var(--m-faint);
+}
+.tl-row.skipped .tl-time b,
+.tl-row.skipped .tl-time span {
+  color: #cfc2b2;
+}
+.tl-why {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--m-muted);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.tl-drawer {
+  margin-top: 10px;
+}
+.tl-empty {
+  padding: 14px 0 4px;
+  font-size: 12px;
+  color: var(--m-muted);
+}
+/* The swipe gesture is invisible until someone guesses it — on touch the
+   rail names it once, below the last step. Keyboards and pointers never
+   see the line. */
+.tl-hint {
+  display: none;
+  margin: 2px 0 0;
+  padding-left: 34px;
+  font-size: 11px;
+  color: var(--m-faint);
+}
+@media (pointer: coarse) {
+  .tl-hint {
+    display: block;
+  }
+}
+
+/* Category hues — the rail's rhythm made visible. Each step kind keeps one
+   data colour (gold light, violet sleep, terracotta food, blue calendar,
+   pine run, slate flight), shared by the row glyph, the row's time, and the
+   sky strip above — so strip and rail read as one day seen two ways. The
+   `--cat-*` values live in the `--m-*` theme blocks below (deepened for
+   cream, the stage palette on ink). */
+.tl-row {
+  /* Uncategorised steps stay neutral: the fallback must not equal any --cat-*
+     value in the same theme, or a step with no kind claims a data colour. */
+  --cat: var(--m-faint);
+}
+[data-cat="sunlight"] { --cat: var(--cat-light); }
+[data-cat="sleep"] { --cat: var(--cat-sleep); }
+[data-cat="nutrition"] { --cat: var(--cat-food); }
+[data-cat="calendar"] { --cat: var(--cat-cal); }
+[data-cat="run"] { --cat: var(--cat-run); }
+[data-cat="flight"] { --cat: var(--cat-flight); }
+.tl-glyph {
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+  flex: none;
+  color: var(--cat, var(--m-faint));
+}
+.tl-row.done .tl-glyph,
+.tl-row.skipped .tl-glyph {
+  color: var(--m-faint);
+}
+
+/* RecordsTable resolve — the day table draws its columns (agent-native
+   step 7, docs/plan/agent-native.md). On the first paint after a commit,
+   each row's gutter (the check, the date column — the row's identity) is
+   present from t=0 while its computed cells resolve one staggered beat
+   each, ~110ms apart. The stagger is a mask on rows that are already
+   real; nothing is computed or fetched here. Opacity/transform only —
+   the rail's scroll-timeline `tl-enter` owns the row box itself, and the
+   swipe gesture owns its inline transform, so the mask animates the row's
+   children (`.tl-time`, `.tl-body`) and never the row. Reduced motion
+   never mounts the mask (the JS gate stands down first); the media query
+   below is the belt for a mid-run OS change. */
+.resolving .tl-row > .tl-time,
+.resolving .tl-row > .tl-body,
+.resolving .arrival-day-row > .arrival-day-step,
+.resolving .arrival-day-row > .arrival-day-idea-body {
+  opacity: 0;
+}
+.resolving .tl-row[data-resolved] > .tl-time,
+.resolving .tl-row[data-resolved] > .tl-body,
+.resolving .arrival-day-row[data-resolved] > .arrival-day-step,
+.resolving .arrival-day-row[data-resolved] > .arrival-day-idea-body {
+  animation: day-resolve var(--dur-settle) var(--ease-settle) both;
+}
+@keyframes day-resolve {
+  from { opacity: 0; transform: translateY(7px); }
+  to { opacity: 1; transform: none; }
+}
+/* The one CalcCell: the next unresolved row's cell pulses "Calculating…"
+   for its beat before the values land — one at a time, never a shimmer
+   wall. Absolutely positioned so it adds no grid cell of its own. */
+.resolve-calc {
+  position: absolute;
+  z-index: 1;
+  font-family: var(--font-mono2);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  color: var(--m-faint);
+  pointer-events: none;
+  animation: resolve-calc-pulse 0.9s var(--ease-drift) infinite;
+}
+.tl-row > .resolve-calc {
+  left: 34px; /* the 22px check + 12px gap — the first computed cell */
+  top: 12px;
+}
+.arrival-day-row > .resolve-calc {
+  left: 96px; /* the 80px time gutter + 16px gap — the body cell */
+  top: 22px;
+}
+@media (max-width: 480px) {
+  .arrival-day-row > .resolve-calc {
+    left: 68px; /* 56px gutter + 12px gap */
+  }
+}
+@keyframes resolve-calc-pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.85; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .resolving .tl-row > .tl-time,
+  .resolving .tl-row > .tl-body,
+  .resolving .arrival-day-row > .arrival-day-step,
+  .resolving .arrival-day-row > .arrival-day-idea-body {
+    opacity: 1;
+    animation: none;
+  }
+  .resolve-calc {
+    display: none;
+  }
+}
+
+/* Instrument band — the day's working surfaces (stepper, checks, rail)
+   grow toward the frame: ≈960px inside .reading on desktop, capped by
+   --hero-out so smaller viewports only ever reach the frame edge. Prose
+   stays in the 720px column; these surfaces are instruments, not text. */
+.wide {
+  margin-left: calc(-1 * min(120px, var(--hero-out)));
+  margin-right: calc(-1 * min(120px, var(--hero-out)));
+}
+
+/* The day seen from above — bands are windows (light, run, sleep),
+   diamonds are moments (the cutoff, a moved meeting), the caret is now. */
+.tl-sky {
+  position: relative;
+  height: 34px;
+  margin: 2px 0 10px;
+}
+.tl-sky-base {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 17px;
+  height: 1px;
+  background: var(--m-border);
+}
+.tl-sky-tick {
+  position: absolute;
+  top: 27px;
+  width: 1px;
+  height: 4px;
+  background: var(--m-border);
+}
+.tl-sky-band {
+  position: absolute;
+  top: 9px;
+  height: 16px;
+  min-width: 3px;
+  border-radius: 5px;
+}
+.tl-sky-dot {
+  position: absolute;
+  top: 12.5px;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  transform: translateX(-50%) rotate(45deg);
+}
+.tl-sky-now {
+  position: absolute;
+  top: 0;
+  width: 0;
+  height: 0;
+  transform: translateX(-50%);
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid var(--m-accent);
+}
+
+/* Provenance as one quiet line — the evidence the chips carried, without
+   the chip chrome. */
+.evline {
+  margin: 8px 0 0;
+  font-size: 11px;
+  line-height: 1.55;
+  color: var(--m-muted);
+}
+.evline-cite {
+  color: #4a6492;
+}
+html[data-theme="night"] .evline-cite,
+.hero .evline-cite,
+.clock-stage .evline-cite {
+  color: #9db8ff;
+}
+
+/* The pinned place on the day's nudge card (agent-native step 4): the
+   crate's pick travels with the day, one quiet line with the same
+   provenance-tag honesty the itinerary card carries. */
+.feed-pin {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--m-muted);
+}
+.feed-pin-ic {
+  flex: none;
+  color: var(--m-faint);
+}
+.feed-pin-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.feed-pin-tag {
+  flex: none;
+  margin-left: 2px;
+  padding: 1px 8px;
+  border: 1px solid var(--m-border-2);
+  border-radius: 999px;
+  font-size: 11px;
+  color: var(--m-faint);
+  white-space: nowrap;
+}
+
+/* InsightCards (agent-native step 6) — the crew's findings as a small
+   carousel in the `next` room's slab: "Insights {N} ‹ ›" paging one card
+   at a time, each card one prose line, one mini visual, one action pill.
+   Static by design — the autoplay-yields rule means ours never autoplays,
+   so there is no motion to stand down; reduced motion shows the same
+   settled card. */
+.insight {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--m-border);
+  border-radius: var(--radius-lg);
+  background: var(--m-card);
+}
+.insight-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.insight-count {
+  font-family: var(--font-mono2);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--m-faint);
+}
+.insight-pager {
+  display: inline-flex;
+  gap: 4px;
+}
+.insight-step {
+  font: inherit;
+  position: relative;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--m-border);
+  background: transparent;
+  color: var(--m-text);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+/* The visual 28px keeps the quiet register; the ::after ring brings the
+   tap target to the 44px floor. */
+.insight-step::after {
+  content: "";
+  position: absolute;
+  inset: -8px;
+}
+.insight-step:hover {
+  background: var(--m-card-2);
+}
+.insight-step:focus-visible {
+  outline: 2px solid var(--m-accent);
+  outline-offset: 2px;
+}
+.insight-card {
+  margin-top: 10px;
+}
+.insight-prose {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--m-text);
+}
+/* The disclosure tag — the provenance chips' vocabulary on the card when
+   the fact underneath is fixture- or preview-derived. */
+.insight-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border: 1px solid var(--m-border-2);
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--m-faint);
+  vertical-align: 1px;
+}
+.insight-curve {
+  display: block;
+  margin-top: 10px;
+}
+.insight-curve-req {
+  stroke: var(--m-border);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+.insight-curve-line {
+  fill: none;
+  stroke: var(--m-accent);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.insight-curve-dot {
+  fill: var(--m-accent);
+}
+.insight-strip {
+  display: block;
+  margin-top: 10px;
+}
+.insight-strip-base,
+.insight-strip-tick {
+  stroke: var(--m-border);
+  stroke-width: 1;
+}
+.insight-strip-win {
+  fill: var(--m-border-2);
+}
+.insight-strip-hatchline {
+  stroke: var(--m-accent);
+  stroke-width: 1.2;
+}
+.insight-strip-flag-edge {
+  fill: none;
+  stroke: var(--m-accent);
+  stroke-width: 1;
+}
+.insight-pin {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--m-muted);
+}
+.insight-pin-ic {
+  flex: none;
+  color: var(--m-faint);
+}
+.insight-action {
+  margin-top: 10px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1.5px solid var(--m-accent);
+  background: transparent;
+  color: var(--m-accent);
+  cursor: pointer;
+}
+.insight-action:hover {
+  background: var(--m-accent);
+  color: var(--m-on-accent);
+}
+.insight-action:focus-visible {
+  outline: 2px solid var(--m-accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 720px) {
+  .tl {
+    padding: 4px 14px 10px;
+  }
+  .tl-row {
+    grid-template-columns: 22px 60px 1fr;
+    gap: 10px;
+  }
+}
+
+/* R3 — calm Simple view */
+.hero.slim {
+  grid-template-columns: 1fr;
+}
+.trip-chip {
+  font: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  border: 1px solid var(--m-border);
+  border-radius: 6px;
+  background: var(--m-card);
+  color: var(--m-text);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+}
+.trip-chip-change {
+  color: #D96B43;
+  font-size: 13px;
+  font-weight: 600;
+}
+.tz-clocks-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  margin-top: 8px;
+  background: var(--m-card);
+  border: 1px solid var(--m-border);
+  border-radius: 12px;
+  font-size: 13px;
+  color: var(--m-text);
+  flex-wrap: wrap;
+}
+.tz-clock-item {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.tz-clock-label {
+  color: var(--m-muted);
+  font-size: 13px;
+}
+.tz-clock-time {
+  font-family: var(--m-font-mono, monospace);
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--m-ink);
+}
+.tz-clock-divider {
+  color: var(--m-muted);
+  opacity: 0.6;
+}
+/* The third time a disoriented traveller needs — separated so the bar
+   reads as "home → there · body · gap", not four siblings in a row. */
+.tz-clock-body {
+  padding-left: 12px;
+  border-left: 1px solid var(--m-border-2);
+}
+.tz-clock-diff {
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--m-accent);
+  background: color-mix(in srgb, var(--m-accent) 12%, transparent);
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+.today-cal-action {
+  display: inline-flex;
+  align-items: center;
+}
+.day-step {
+  font: inherit;
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  border: 1px solid var(--m-border);
+  background: var(--m-card);
+  color: var(--m-text);
+  font-size: 16px;
+  cursor: pointer;
+}
+.day-step:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.tl-check {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin-top: 2px;
+  border-radius: 6px;
+  border: 1.5px solid #D96B43;
+  background: transparent;
+  color: var(--m-on-accent);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  align-self: flex-start;
+}
+.tl-check.on {
+  background: #D96B43;
+}
+
+/* Round 4 A — 44px taps, sentence-case labels */
+.day-step {
+  width: 44px;
+  height: 44px;
+  font-size: 20px;
+}
+.tl-check {
+  position: relative;
+}
+.tl-check::after {
+  content: "";
+  position: absolute;
+  inset: -11px;
+}
+.ask-chip {
+  min-height: 44px;
+  padding: 10px 16px;
+  font-size: 13px;
+}
+.pill button,
+.pill a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+.trip-chip {
+  min-height: 44px;
+}
+.cta button,
+.tl-skip,
+.hero-actions button {
+  min-height: 44px;
+}
+.mini {
+  font-size: 12px;
+  letter-spacing: normal;
+  text-transform: none;
+}
+.tl-time span {
+  font-size: 11px;
+  letter-spacing: normal;
+  text-transform: none;
+}
+.cal-summary-num span {
+  font-size: 11px;
+  letter-spacing: normal;
+  text-transform: none;
+}
+@media (max-width: 720px) {
+  .hero .s,
+  .drawer p,
+  .ask p,
+  .demo-tag,
+  .journey-step,
+  .hr .hr-stat {
+    font-size: 14px;
+  }
+}
+
+/* Round 4 I — night mode */
+:root {
+  --m-bg: #F5EFE6;
+  --m-card: #fff8ef;
+  --m-text: #3a2e23;
+  --m-ink: #1E1B18;
+  /* Muted and faint are deepened for contrast on cream: muted 4.5→5.8:1 so
+     12px chrome reads without effort, faint 2.6→3.8:1 so even the tertiary
+     spent rows stay legible. */
+  --m-muted: #6a5a4a;
+  --m-border: #e3d5c3;
+  --m-border-2: #eee3d6;
+  --m-faint: #877663;
+  --m-card-2: #f3e9dc;
+  --m-tag: rgba(217, 107, 67, 0.12);
+  --m-accent: #D96B43;
+  --m-on-accent: #fff8ef;
+  /* Step-kind data colours, deepened for cream */
+  --cat-light: #a6741c;
+  --cat-sleep: #6e5fbb;
+  --cat-food: #b04523;
+  --cat-cal: #4a6cb4;
+  --cat-run: #4c7a5c;
+  --cat-flight: #6e6459;
+  /* The crew's own hues (crew.ts colours, as tokens — the avatar glyphs
+     paint from these, never literals). */
+  --agent-analyst: #5eead4;
+  --agent-researcher: #c792ea;
+  --agent-planner: #f472b6;
+  --agent-evaluator: #7adfff;
+  --agent-negotiator: #818cf8;
+}
+html[data-theme="night"] {
+  --m-bg: #0b0e16;
+  --m-card: #121726;
+  --m-card-2: #171d2e;
+  --m-border: #26304a;
+  --m-border-2: #1c2436;
+  /* 3.3→4.9:1 on the night background: the old faint vanished at 11px.
+     Raised again to #7c88a4 — on the ink *card* (#121726) the old value
+     measured 4.51:1, a hair over the 4.5 floor with no margin; this one
+     measures 5.03:1 on the card and 5.43:1 on the ink ground. */
+  --m-faint: #7c88a4;
+  --m-text: #F5EFE6;
+  --m-ink: #F5EFE6;
+  --m-muted: #a89a8c;
+  --m-tag: rgba(255, 196, 107, 0.14);
+  --m-accent: #D96B43;
+  --m-on-accent: #fff8ef;
+  /* Step-kind data colours, the stage palette */
+  --cat-light: #ffc46b;
+  --cat-sleep: #b8a8ff;
+  --cat-food: #e99a6f;
+  --cat-cal: #9db8ff;
+  --cat-run: #8fc7a3;
+  --cat-flight: #8b93a7;
+}
+html[data-theme="night"] body,
+html[data-theme="night"] .root:not(.demo-root) {
+  background: var(--m-bg);
+  color: var(--m-ink);
+}
+html[data-theme="night"] .pill,
+html[data-theme="night"] .trip-chip,
+html[data-theme="night"] .day-step,
+html[data-theme="night"] .ask-chip,
+html[data-theme="night"] .chip,
+html[data-theme="night"] .cal-summary-num,
+html[data-theme="night"] .hero-meeting,
+html[data-theme="night"] .sheet-panel,
+html[data-theme="night"] .card,
+html[data-theme="night"] .ask,
+html[data-theme="night"] .hr,
+html[data-theme="night"] .day,
+html[data-theme="night"] .drawer,
+html[data-theme="night"] .demo-tag {
+  background: var(--m-card);
+  border-color: var(--m-border);
+  color: var(--m-text);
+}
+html[data-theme="night"] .tl-row,
+html[data-theme="night"] .cal-summary-num,
+html[data-theme="night"] .demo-tag {
+  border-color: var(--m-border-2);
+}
+html[data-theme="night"] .tl-title,
+html[data-theme="night"] .sheet-title,
+html[data-theme="night"] h1,
+html[data-theme="night"] h2,
+html[data-theme="night"] h3 {
+  color: var(--m-ink);
+}
+html[data-theme="night"] .tl-time span,
+html[data-theme="night"] .journey-step,
+html[data-theme="night"] .journey-step.later,
+html[data-theme="night"] .ask-foot,
+html[data-theme="night"] .sub,
+html[data-theme="night"] p {
+  color: var(--m-muted);
+}
+html[data-theme="night"] .journey-step.now,
+html[data-theme="night"] .pill a:hover,
+html[data-theme="night"] .pill button:hover {
+  color: var(--m-accent);
+}
+html[data-theme="night"] .tl-tag.placed {
+  color: #e99a6f;
+}
+
+/* Swipe rows: horizontal drags, vertical scrolling untouched. */
+.tl-row {
+  touch-action: pan-y;
+}
+
+/* P1 — loading skeleton, themed */
+.skel {
+  background: var(--m-card);
+  border: 1px solid var(--m-border);
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+}
+.skel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+  animation: skel-shimmer 1.4s ease-in-out infinite;
+}
+html[data-theme="night"] .skel::after {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+}
+@keyframes skel-shimmer {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skel::after { animation: none; }
+}
+
+/* Boot — the dawn before the entry: the crew assembles, the terminator
+   sweeps the horizon. Same metaphor as the plan cards, not a skeleton. */
+.boot {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.boot-stage {
+  width: 100%;
+  max-width: 520px;
+  text-align: center;
+}
+.boot-mark {
+  margin: 0;
+  font-size: 13px;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--color-mist);
+}
+.boot-crew {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin: 12px 0 0;
+}
+.boot-crew-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-paper);
+  opacity: 0;
+  animation: boot-fade 2.8s ease forwards;
+}
+.boot-crew-name + .boot-crew-name::before {
+  content: "·";
+  margin-right: 12px;
+  font-weight: 400;
+  color: var(--color-mist);
+}
+@keyframes boot-fade {
+  to { opacity: 1; }
+}
+.boot-horizon {
+  margin-top: 28px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--m-border);
+  overflow: hidden;
+  position: relative;
+}
+.boot-terminator {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, var(--color-sun-dest), transparent);
+  transform: translateX(-100%);
+  animation: boot-sweep 1.8s ease-in-out infinite;
+}
+@keyframes boot-sweep {
+  to { transform: translateX(100%); }
+}
+/* The dawn lifts: a fixed overlay that fades out over the freshly-mounted
+ * entry — the plan was underneath all along. A short delay lets the crew
+ * names land before the lift starts. */
+.boot-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-boot);
+  background: var(--m-bg);
+  pointer-events: none;
+  animation: boot-out 0.5s ease 0.15s forwards;
+}
+@keyframes boot-out {
+  to { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .boot-crew-name { animation: none; opacity: 1; }
+  .boot-terminator { animation: none; transform: none; opacity: 0.6; }
+  .boot-overlay { animation: none; opacity: 0; }
+}
+
+/* The crew's account — the expandable trace inside the plan-build boot
+   state (agent-native step 2). Every row is a fact a real function
+   produced upstream; the only motion here is the rows' ~450ms cadence,
+   the loader's wavefront and the title's shimmer — transform + opacity,
+   stood down under reduced motion. */
+.crew-account {
+  width: min(460px, 100%);
+  margin: 0 auto;
+  background: var(--m-card);
+  border: 1px solid var(--m-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-sm);
+  text-align: left;
+}
+.crew-account-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+.crew-account-glyph {
+  display: inline-flex;
+  color: var(--m-accent);
+  flex: none;
+}
+.crew-account-title {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--m-text);
+}
+/* The shimmer is a gradient panel sweeping the label on transform — the
+   same trick .skel::after plays, never a repainting background-position. */
+.crew-account-title.is-working {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+}
+.crew-account-title.is-working::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, var(--m-tag), transparent);
+  transform: translateX(-100%);
+  animation: crew-account-shimmer 1.6s var(--ease-drift) infinite;
+  pointer-events: none;
+}
+@keyframes crew-account-shimmer {
+  to { transform: translateX(100%); }
+}
+/* LoaderGrid — the 3×3 Drive wavefront. Cells pulse on opacity + scale;
+   the chevron shape is the per-cell animationDelay (col+|row-1|)*90ms,
+   set inline like .boot-crew-name's stagger. */
+.crew-loader {
+  display: inline-grid;
+  grid-template-columns: repeat(3, 4px);
+  gap: 2px;
+  flex: none;
+}
+.crew-loader-cell {
+  width: 4px;
+  height: 4px;
+  border-radius: 1px;
+  background: var(--m-accent);
+  opacity: 0.25;
+  animation: pixel-on 650ms var(--ease-drift) infinite;
+}
+@keyframes pixel-on {
+  0%, 100% { opacity: 0.25; transform: scale(0.85); }
+  40% { opacity: 1; transform: none; }
+}
+.crew-account-elapsed {
+  flex: none;
+  font-family: var(--font-mono2);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-xs);
+  color: var(--m-muted);
+}
+.crew-account-toggle {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  margin: -8px -8px -8px 0;
+  border: 0;
+  background: transparent;
+  color: var(--m-muted);
+  cursor: pointer;
+}
+.crew-account-toggle:hover {
+  color: var(--m-text);
+}
+.crew-account-toggle svg {
+  transition: transform var(--dur-glide) var(--ease-glide);
+}
+.crew-account-toggle[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+.crew-account-body {
+  padding-top: var(--space-2xs);
+}
+.crew-account-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.crew-account-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2xs);
+  font-size: var(--text-sm);
+  color: var(--m-text);
+  animation: crew-fade-up 0.6s var(--ease-settle) both;
+}
+@keyframes crew-fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+.crew-account-check {
+  align-self: center;
+  color: var(--m-faint);
+  flex: none;
+}
+.crew-account-label {
+  min-width: 0;
+}
+.crew-account-secondary {
+  margin-left: auto;
+  flex: none;
+  font-family: var(--font-mono2);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-xs);
+  color: var(--m-muted);
+  white-space: nowrap;
+}
+/* The Surfer variant — the featured traveller's clip under the trace,
+   muted so the wait becomes watching. */
+.crew-account-surfer {
+  display: block;
+  width: 200px;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--m-border-2);
+  margin-top: var(--space-sm);
+}
+@media (prefers-reduced-motion: reduce) {
+  .crew-account-row { animation: none; }
+  .crew-loader-cell { animation: none; opacity: 0.25; }
+  .crew-account-title.is-working::after { animation: none; }
+  .crew-account-toggle svg { transition: none; }
+}
+
+/* TaskRows — the crew's jobs as live status rows in the AgentDrawer
+   (agent-native step 5). Rows enter staggered fade-up 80ms apart on drawer
+   open (nth-child delays, no JS); the detail fold is the 0fr→1fr grid +
+   opacity pattern. Transform/opacity only; reduced motion settles every row
+   instantly and snaps the fold — expand/collapse still works. */
+.crew-job-item {
+  animation: crew-fade-up 0.5s var(--ease-settle) both;
+}
+.crew-job-item:nth-child(2) { animation-delay: 0.08s; }
+.crew-job-item:nth-child(3) { animation-delay: 0.16s; }
+.crew-job-item:nth-child(4) { animation-delay: 0.24s; }
+.crew-job-item:nth-child(5) { animation-delay: 0.32s; }
+.crew-job-item:nth-child(6) { animation-delay: 0.4s; }
+.crew-job-item:nth-child(n+7) { animation-delay: 0.48s; }
+
+.crew-job-detail {
+  display: grid;
+  grid-template-rows: 0fr;
+}
+.crew-job-detail > div {
+  overflow: hidden;
+  min-height: 0;
+}
+.crew-job-detail.open {
+  grid-template-rows: 1fr;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .crew-job-detail {
+    opacity: 0;
+    transition: grid-template-rows var(--dur-settle) var(--ease-settle), opacity var(--dur-glide) var(--ease-glide);
+  }
+  .crew-job-detail.open {
+    opacity: 1;
+  }
+}
+.crew-job-chev {
+  transition: transform var(--dur-glide) var(--ease-glide);
+}
+.crew-job-chev.open {
+  transform: rotate(180deg);
+}
+@keyframes crew-job-spin {
+  to { transform: rotate(360deg); }
+}
+.crew-job-run {
+  animation: crew-job-spin 0.9s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .crew-job-item { animation: none; }
+  .crew-job-chev { transition: none; }
+  .crew-job-run { animation: none; }
+}
+
+/* The ask lane (agent-native §4a) — one bounded question field wherever the
+   crew's names appear: under the nudge card's expanded Why?, inside each
+   jobs row's detail fold, and as the now-room's "Ask the crew" field. The
+   answer's only motion is the crew's own fade-up on mount; reduced motion
+   prints it instantly. Token-styled — the field sits on cream surfaces, the
+   jobs-row variant is Tailwind-classed inside the ink drawer. */
+.crew-ask {
+  margin-top: var(--space-xs);
+}
+.crew-ask-form {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+.crew-ask-input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--m-border);
+  border-radius: var(--radius-lg);
+  background: var(--m-card);
+  color: var(--m-text);
+  padding: 7px 12px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.crew-ask-input::placeholder {
+  color: var(--m-faint);
+}
+.crew-ask-go {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid var(--m-border);
+  background: var(--m-card);
+  color: var(--m-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.crew-ask-go:hover:not(:disabled) {
+  border-color: var(--m-accent);
+  color: var(--m-accent);
+}
+.crew-ask-go:disabled {
+  opacity: var(--opacity-40);
+  cursor: default;
+}
+.crew-answers {
+  list-style: none;
+  margin: var(--space-2xs) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+}
+.crew-answer {
+  animation: crew-fade-up 0.3s var(--ease-settle) both;
+}
+.crew-answer-owner {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono2);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--m-muted);
+}
+.crew-answer-line {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--m-text);
+  line-height: 1.5;
+}
+.crew-answer-detail {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--m-muted);
+  line-height: 1.5;
+}
+.crew-answer-prov {
+  margin-left: 2px;
+}
+/* The pending "…" while the open-question lane is in flight — same fade-up
+   as a landed answer, muted so it reads as waiting, not said. */
+.crew-answer-pending .crew-answer-line {
+  color: var(--m-muted);
+}
+
+/* §4a step 2 — the crew's names are askable wherever a surface prints
+   them. On an insight card the name in the prose is the button: a quiet
+   underline that takes the accent on hover, nothing else. A card whose
+   owner isn't named in the prose gets the same affordance as a small chip
+   under the action. The feed-pin's "Ask Scout" is the pin tag's shape as
+   a button. Colour and border only — nothing here moves layout. */
+.insight-agent {
+  font: inherit;
+  padding: 0;
+  border: none;
+  border-bottom: 1px solid var(--m-border-2);
+  border-radius: 0;
+  background: none;
+  color: var(--m-text);
+  font-weight: 600;
+  cursor: pointer;
+}
+.insight-agent:hover {
+  color: var(--m-accent);
+  border-bottom-color: var(--m-accent);
+}
+.insight-ask {
+  display: inline-block;
+  margin-top: 8px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--m-border-2);
+  background: transparent;
+  color: var(--m-muted);
+  cursor: pointer;
+}
+.insight-ask:hover {
+  border-color: var(--m-accent);
+  color: var(--m-accent);
+}
+.feed-pin-ask {
+  flex: none;
+  margin-left: 2px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--m-border-2);
+  background: transparent;
+  color: var(--m-faint);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.feed-pin-ask:hover {
+  border-color: var(--m-accent);
+  color: var(--m-accent);
+}
+.insight-agent:focus-visible,
+.insight-ask:focus-visible,
+.feed-pin-ask:focus-visible {
+  outline: 2px solid var(--m-accent);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .crew-answer { animation: none; }
+}
+
+/* Crew faces — the mood channel morphs on transform + opacity only. */
+.crew-face { transition: transform 0.35s ease, opacity 0.35s ease; }
+.crew-eyes { transition: transform 0.3s ease; }
+.crew-eyes ellipse { transition: opacity 0.3s ease; }
+@media (prefers-reduced-motion: reduce) {
+  .crew-face, .crew-eyes, .crew-eyes ellipse { transition: none; }
+}
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0);
+  white-space: nowrap; border: 0;
+}
+
+/* P2f — one focus ring everywhere on Home */
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid #D96B43;
+  outline-offset: 2px;
+}
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
+  border: 1px solid var(--m-border);
+  background: var(--m-card);
+  color: var(--m-muted);
+  cursor: pointer;
+}
+.icon-btn:hover {
+  border-color: #D96B43;
+  color: #D96B43;
+}
+
+/* P3 — small moments of delight (all ≤250ms unless noted) */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes done-pop {
+    0% { transform: scale(0.85); }
+    55% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+  .tl-check.on {
+    animation: done-pop 0.22s ease-out;
+  }
+  .tl-row.done .tl-title-text {
+    color: var(--m-muted);
+    transition: color var(--dur-glide) var(--ease-glide) ease-out;
+  }
+  @keyframes nudge-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .nudge-in {
+    animation: nudge-in 0.22s ease-out;
+  }
+  @keyframes celebrate-rise {
+    from { opacity: 0.4; transform: translateY(10px) scale(0.9); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes celebrate-glow {
+    0%,100% { box-shadow: 0 0 0 0 rgba(217,107,67,0); }
+    50% { box-shadow: 0 0 24px 6px rgba(217,107,67,0.35); }
+  }
+  .celebrate .badge {
+    animation: celebrate-rise 0.35s ease-out, celebrate-glow 0.4s ease-out 0.05s;
+  }
+  @keyframes toast-in {
+    from { opacity: 0; transform: translate(-50%, 12px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+  }
+  .toast-in { animation: toast-in 0.2s ease-out; }
+  .undo-toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: var(--z-floating);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    border-radius: 10px;
+    background: var(--color-clay, #1e1b18);
+    color: var(--color-paper, #f5efe6);
+    font-size: 13px;
+    font-weight: 600;
+    box-shadow: 0 8px 28px rgba(30, 27, 24, 0.35);
+  }
+  @media (max-width: 768px) {
+    .undo-toast {
+      bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+    }
+  }
+  .undo-toast-btn {
+    background: none;
+    border: none;
+    padding: 6px 10px;
+    margin: -6px -8px -6px 0;
+    cursor: pointer;
+    color: var(--m-accent, #e99a6f);
+    font-weight: 600;
+    font-size: 13px;
+  }
+  .toast-out { opacity: 0; transform: translate(-50%, 8px); transition: opacity var(--dur-glide) var(--ease-glide), transform var(--dur-glide) var(--ease-glide); }
+  .tl-recovery-tip {
+    margin-top: 8px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--m-tag);
+    border: 1px solid var(--m-border);
+  }
+  .tl-recovery-header {
+    margin: 0;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--m-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .tl-recovery-body {
+    margin: 4px 0 0;
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--m-text);
+  }
+  .tl-recovery-note {
+    display: block;
+    margin-top: 4px;
+    font-size: 11px;
+    color: var(--m-muted);
+  }
+  .offline-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: var(--m-tag);
+    color: var(--m-muted);
+    border: 1px solid var(--m-border);
+    letter-spacing: 0.03em;
+  }
+  .circadian-pills {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    margin-bottom: 8px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .circadian-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: var(--m-tag);
+    border: 1px solid var(--m-border);
+    color: var(--m-text);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    font-family: var(--font-mono2);
+  }
+  .circadian-pill:hover {
+    background: var(--m-border);
+  }
+  .dial-cas {
+    display: inline-block;
+    margin-left: 8px;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 7px;
+    border-radius: 6px;
+    background: var(--m-tag);
+    border: 1px solid var(--m-border);
+    color: var(--m-accent);
+    vertical-align: middle;
+    font-family: var(--font-mono2);
+  }
+  .right-now-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px 16px;
+    border-radius: 10px;
+    background: var(--m-card);
+    border: 1.5px solid var(--m-border);
+    margin-bottom: 12px;
+    box-shadow: 0 4px 18px -6px rgba(12, 16, 24, 0.2);
+  }
+  .right-now-card.active-window {
+    border-color: rgba(217, 107, 67, 0.4);
+  }
+  .right-now-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .right-now-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--m-muted);
+  }
+  .right-now-badge.active {
+    color: var(--m-accent);
+  }
+  .right-now-pulse {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: var(--m-accent);
+  }
+  .right-now-title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--m-text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .right-now-time {
+    font-family: var(--font-mono2);
+    font-size: 12px;
+    color: var(--m-muted);
+  }
+  .right-now-desc {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--m-muted);
+  }
+  .right-now-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .right-now-btn {
+    font-size: 12px;
+    padding: 6px 14px;
+    min-height: 36px;
+  }
+  @keyframes check-draw {
+    from { stroke-dashoffset: 10; }
+    to { stroke-dashoffset: 0; }
+  }
+  .journey-check path {
+    stroke-dasharray: 10;
+    animation: check-draw 0.25s ease-out;
+  }
+  .tl-expander {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows var(--dur-settle) var(--ease-settle);
+  }
+  .tl-expander.open {
+    grid-template-rows: 1fr;
+  }
+  .tl-expander > div {
+    overflow: hidden;
+    min-height: 0;
+  }
+  .ask.collapsing {
+    max-height: 0;
+    opacity: 0;
+    margin: 0;
+    padding: 0 14px;
+    overflow: hidden;
+    transition: max-height var(--dur-settle) var(--ease-settle), opacity var(--dur-glide) var(--ease-glide), padding var(--dur-settle) var(--ease-settle);
+  }
+}
+.ask {
+  max-height: 400px;
+}
+
+/* ── Dawn pass · page entrance (docs/DESIGN.md · Motion) ────────────────────────
+   The terminator hairline crosses the frame once per navigation; the content
+   fades in under it. Opacity only on the wrapper — a transform here would
+   trap `position: fixed` overlays (the setup scene, the edit sheet) inside
+   the wrapper while it plays. */
+/* The fade fallback is gated at the end of this file: a view-transition
+   supporting browser animates the handoff itself, and a second fade on top
+   would muddy it. */
+@keyframes page-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.dawn-sweep {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: -6vh;
+  height: 6vh;
+  z-index: var(--z-sweep);
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgba(255, 217, 138, 0.14) 68%,
+    rgba(255, 217, 138, 0.45)
+  );
+  filter: blur(2px);
+  animation: dawn-sweep 900ms var(--ease-glide) both;
+}
+@keyframes dawn-sweep {
+  from { transform: translateY(0); opacity: 0; }
+  15% { opacity: 1; }
+  to { transform: translateY(112vh); opacity: 0; }
+}
+/* A small sun rides the sweep — the mascot carries you across the
+   threshold rather than the light passing anonymously. */
+.dawn-sweep::after {
+  content: "";
+  position: absolute;
+  left: 30%;
+  bottom: -14px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 217, 138, 0.9), rgba(217, 107, 67, 0.35) 70%, transparent);
+  filter: blur(1px);
+}
+
+/* ── Sun-self rapport (round 48) ──────────────────────────────────────────
+   The shared element that carries the sun between routes, the arrival wake,
+   the spoken line, and the face-lean channel. */
+.sunself-wrap { display: inline-flex; flex-direction: column; align-items: center; position: relative; }
+.sunself-wrap.speaks { cursor: pointer; }
+.sunself-wrap.speaks:focus-visible { outline: 1.5px solid var(--color-sun-dest); outline-offset: 4px; border-radius: 50%; }
+.sunself-vt { view-transition-name: sun-self; }
+.sunself-body { transition: transform 0.25s ease; }
+.sunself-line {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--color-mist);
+  animation: sunself-line 2.4s ease both;
+  pointer-events: none;
+}
+@keyframes sunself-line {
+  from { opacity: 0; transform: translateX(-50%) translateY(3px); }
+  18% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  80% { opacity: 1; }
+  to { opacity: 0; transform: translateX(-50%) translateY(-2px); }
+}
+.sunself.wake { animation: sunself-wake 560ms var(--ease-drift) both; }
+@keyframes sunself-wake {
+  from { opacity: 0; transform: translateY(7px) scale(0.9); }
+  to { opacity: 1; transform: none; }
+}
+/* Ambient life — the sun breathes. The disc is the only part of the glyph
+   that carries no readout (rays = locked days, halo opacity = glow), so this
+   is where an idle loop is allowed to live. */
+.sunself-disc {
+  transform-box: fill-box;
+  transform-origin: center;
+  /* Phase 2: the idle breath loop is retired — the glass is a still
+     instrument; motion is caused (pulse, ripple, follow). */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sunself.wake, .sunself-line { animation: none; }
+  .sunself-disc { animation: none; }
+  .sunself-body { transition: none; }
+}
+
+/* ── Dawn pass · the marquee hero stage (docs/DESIGN.md · Marquee Hero) ─────────
+   The hero is a stage, not a card: a full-frame ink band, the globe its
+   centerpiece, and the one thing to do rendered as the display line.
+   These rules override the Sunlit Horizon card rules earlier in the file
+   (same specificity, later position) and are scoped under `.hero` so the
+   cream surfaces elsewhere are untouched. The stage is ink in BOTH themes —
+   stages don't flip; working surfaces do. */
+.hero {
+  position: relative;
+  margin: 28px calc(-1 * (32px + var(--hero-out))) 0;
+  border: none;
+  border-radius: 0;
+  box-shadow: var(--shadow-stage);
+  /* minmax(0, …), never bare fr: the globe is image-bearing, and a bare fr
+     track floors at its intrinsic width on narrow viewports. */
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+}
+.hero .hl {
+  min-height: 620px;
+  padding: 34px;
+}
+.hero .hr {
+  padding: 34px;
+  gap: 14px;
+}
+.hero .hr-col {
+  min-width: 0;
+}
+/* The display line: the answer is the interface, so the biggest thing on the
+   stage is the thing to do next. */
+.hero .hr h2 {
+  font-family: var(--font-display);
+  font-style: normal;
+  font-size: var(--text-display-s);
+  font-weight: 560;
+  font-variation-settings: "opsz" 72, "SOFT" 0, "WONK" 1;
+  letter-spacing: -0.02em;
+  line-height: 1.02;
+  overflow-wrap: anywhere;
+  min-width: 0;
+  text-wrap: balance;
+  color: var(--color-paper);
+  margin: 4px 0 0;
+}
+.hero .hr p.s {
+  color: var(--color-mist);
+  font-size: 15px;
+  line-height: 1.55;
+  max-width: 46ch;
+}
+.hero .mini {
+  color: var(--color-ghost);
+  font-family: var(--font-mono2);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+.hero .tw {
+  font-family: var(--font-mono2);
+  font-variant-numeric: tabular-nums;
+  background: rgba(255, 196, 107, 0.12);
+  border: 1px solid rgba(255, 196, 107, 0.35);
+  color: var(--color-sun-dest);
+  border-radius: 6px;
+  letter-spacing: 0.04em;
+}
+.hero .badge {
+  background: linear-gradient(135deg, #d96b43, #e99a6f);
+  border-radius: 6px;
+  box-shadow: var(--glow-accent);
+}
+.hero .demo-tag {
+  background: rgba(255, 217, 138, 0.07);
+  border-color: var(--color-line);
+  border-left-color: var(--color-ghost);
+  color: var(--color-mist);
+}
+.hero .drawer {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--color-line);
+}
+.hero .drawer b {
+  color: var(--color-ghost);
+}
+.hero .drawer p {
+  color: var(--color-mist);
+}
+.hero .bar {
+  background: var(--color-ink-3);
+}
+.hero .p2 {
+  border-color: rgba(232, 234, 242, 0.5);
+  color: var(--color-paper);
+}
+.hero .p2:hover {
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+.hero .btn {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--color-line);
+  color: var(--color-paper);
+}
+.hero .btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: none;
+}
+.hero .icon-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--color-line);
+  color: var(--color-mist);
+}
+.hero .icon-btn:hover {
+  border-color: var(--color-ghost);
+  color: var(--color-ghost);
+}
+.hero .tl-why {
+  color: var(--color-mist);
+}
+.hero .tl-why:hover {
+  color: var(--color-paper);
+}
+.hero .tl-skip {
+  border-color: var(--color-line);
+  color: var(--color-mist);
+}
+.hero .tl-done.alt {
+  color: var(--color-paper);
+}
+.hero .arrival-nudge {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--color-line);
+  border-left-color: var(--color-terracotta);
+}
+.hero .arrival-nudge h2 {
+  color: var(--color-paper);
+}
+.hero .arrival-nudge .s {
+  color: var(--color-mist);
+}
+/* Skipped / warnings inside the stage: a warm rust that actually reads on ink. */
+.hero .hr .warn-ink {
+  color: #e99a6f;
+}
+@media (max-width: 720px) {
+  .hero {
+    margin-inline: -16px;
+  }
+  .hero .hl {
+    min-height: 0;
+    padding: 22px 18px;
+  }
+  .hero .hr {
+    padding: 24px 18px 28px;
+  }
+  .hero .hr h2 {
+    font-size: var(--text-4xl);
+  }
+}
+
+/* ── Dawn pass · shared component voice (docs/DESIGN.md · CTA voice, What pages
+   MUST share) — the wordmark, the segmented pills, the action pair, the card
+   lift and the tab bar, in one voice everywhere. */
+.brand b {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  font-variation-settings: "opsz" 48, "WONK" 1;
+}
+.brand span {
+  font-family: var(--font-mono2);
+  color: var(--m-accent);
+  letter-spacing: 0.01em;
+}
+
+/* Segmented pills — state carried by fill and a whisper of shadow; the press
+   response stays because switching a view is always the traveller's move. */
+.pill button,
+.pill a {
+  transition:
+    color var(--dur-glide) var(--ease-glide),
+    background var(--dur-glide) var(--ease-glide),
+    box-shadow var(--dur-glide) var(--ease-glide),
+    transform var(--dur-glide) var(--ease-glide);
+}
+.pill a.on,
+.pill button.on {
+  box-shadow: 0 2px 10px rgba(30, 27, 24, 0.16);
+}
+.pill button:active:not(:disabled),
+.pill a:active {
+  transform: scale(0.97);
+}
+
+/* Primary action — terracotta, ember glow, acknowledged press. */
+.p1 {
+  font-family: var(--font-body);
+  border-radius: 999px;
+  box-shadow: var(--glow-accent);
+  transition:
+    background var(--dur-glide) var(--ease-glide),
+    box-shadow var(--dur-glide) var(--ease-glide),
+    transform var(--dur-glide) var(--ease-glide);
+}
+.p1:hover {
+  background: #c45a34;
+  box-shadow: 0 16px 38px -12px rgba(217, 107, 67, 0.7);
+}
+.p1:active {
+  transform: scale(0.98);
+  background: #a8431e;
+}
+.p2 {
+  border-radius: 6px;
+}
+.p2:active {
+  transform: scale(0.98);
+}
+
+/* Card lift — surfaces float a little above the ground gradient. */
+.card {
+  border-radius: 10px;
+  box-shadow: 0 18px 44px -26px rgba(8, 10, 18, 0.45);
+}
+.tl {
+  box-shadow: 0 18px 44px -26px rgba(8, 10, 18, 0.45);
+}
+
+/* Tab bar — solid surface (no blur: phones), one quiet shadow, and the active
+   tab carries a tint so "where am I" is answerable at a glance. */
+.bottom-nav {
+  box-shadow: 0 -14px 36px -20px rgba(30, 27, 24, 0.35);
+}
+/* The active-tab marker: a 2px rule that slides between tabs on a spring —
+   an underline, not a filled pill (design reset Phase 0). Transform only;
+   reduced motion snaps it into place. */
+.bottom-nav { position: relative; }
+.bottom-nav > .bottom-nav-item { position: relative; z-index: var(--z-raised); }
+.bottom-nav-pill {
+  position: absolute;
+  top: 0;
+  left: 4px;
+  height: 2px;
+  width: calc((100% - 8px) / 3);
+  background: var(--m-accent);
+  pointer-events: none;
+  transform: translateX(calc(var(--pill-idx, 0) * 100%));
+}
+.bottom-nav-pill[data-hidden] { opacity: 0; }
+.bottom-nav-pill[data-idx="0"] { --pill-idx: 0; }
+.bottom-nav-pill[data-idx="1"] { --pill-idx: 1; }
+@media (prefers-reduced-motion: no-preference) {
+  .bottom-nav-pill {
+    transition: transform var(--dur-drift) var(--ease-spring), opacity var(--dur-glide) var(--ease-glide);
+  }
+}
+
+/* Page headings — the docs/DESIGN.md section rhythm: a display heading at page
+   scale, roman, tight tracking, overflow-safe. */
+.page-title {
+  font-family: var(--font-display);
+  font-style: normal;
+  font-size: var(--text-4xl);
+  font-weight: 560;
+  font-variation-settings: "opsz" 72, "SOFT" 0, "WONK" 1;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  color: var(--m-ink);
+  overflow-wrap: anywhere;
+  min-width: 0;
+  text-wrap: balance;
+}
+
+/* Scene and instrument titles pick up the same voice at their own sizes. */
+.setup-title {
+  font-size: var(--text-2xl);
+}
+.dac-action {
+  font-size: var(--text-xl);
+}
+
+/* ── Dawn pass · the Statement surface (/arrival, docs/DESIGN.md · Statement) ─ */
+.arr-in {
+  max-width: 780px;
+  padding: 96px 28px 88px;
+}
+.arr h1 {
+  font-family: var(--font-display);
+  font-style: normal;
+  font-size: var(--text-display-s);
+  font-weight: 560;
+  font-variation-settings: "opsz" 72, "SOFT" 0, "WONK" 1;
+  letter-spacing: -0.02em;
+  line-height: 1.04;
+  max-width: 24ch;
+  overflow-wrap: anywhere;
+  min-width: 0;
+  text-wrap: balance;
+}
+.arr-kicker {
+  font-family: var(--font-mono2);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+}
+.arr-lede {
+  font-size: 15px;
+  line-height: 1.65;
+  max-width: 58ch;
+}
+.arr-section-label {
+  font-family: var(--font-mono2);
+  letter-spacing: 0.16em;
+}
+.arr-cell em {
+  font-family: var(--font-mono2);
+  font-variant-numeric: tabular-nums;
+  font-size: 27px;
+  letter-spacing: -0.01em;
+}
+.arr-btn {
+  border-radius: 999px;
+  transition:
+    background var(--dur-glide) var(--ease-glide),
+    color var(--dur-glide) var(--ease-glide),
+    transform var(--dur-glide) var(--ease-glide);
+}
+.arr-btn:active {
+  transform: scale(0.98);
+}
+
+/* ── Dawn pass · stages flip their own palette (docs/DESIGN.md · Clock view) ────
+   Ink stages read ink in BOTH themes, so the stage scopes the same palette
+   flip the night theme does — every descendant component (dial, action card,
+   mascot) resolves var(--m-*) / var(--dial-*) to ink-appropriate values,
+   including rules that target html[data-theme="night"]: they read these
+   variables, and these win by inheritance. One block, zero component
+   rewrites. */
+.hero,
+.clock-stage {
+  position: relative;
+  --m-bg: #0b0e16;
+  --m-card: rgba(255, 255, 255, 0.05);
+  --m-card-2: rgba(255, 255, 255, 0.08);
+  --m-text: #c9d2e4;
+  --m-ink: #f4f0e8;
+  --m-muted: #8b93a7;
+  --m-border: rgba(255, 255, 255, 0.12);
+  --m-border-2: rgba(255, 255, 255, 0.07);
+  --m-faint: #6b7590;
+  --m-tag: rgba(217, 107, 67, 0.2);
+  --m-accent: #e99a6f;
+  --m-on-accent: #fff8ef;
+  --dial-target: #ffc46b;
+  --dial-ghost: #6b7590;
+  --dial-sleep: #b8a8ff;
+  --dial-body: #7adfff;
+  --dial-body-soft: rgba(122, 223, 255, 0.18);
+  --dial-committed: #ff7a7a;
+  --dial-movable: #8b93a7;
+  /* Step-kind data colours, the stage palette */
+  --cat-light: #ffc46b;
+  --cat-sleep: #b8a8ff;
+  --cat-food: #e99a6f;
+  --cat-cal: #9db8ff;
+  --cat-run: #8fc7a3;
+  --cat-flight: #8b93a7;
+}
+
+/* Glass on ink — surfaces floating on the modeled sky blur it instead of
+   painting over it. Scoped to the three stages so cards on cream surfaces
+   keep their warm ground. */
+.hero .hl-stats .stat,
+.hero .city-cell,
+.hero .hr-col .ask,
+.clock-stage .dac,
+.arr .arr-cell {
+  background: rgba(255, 255, 255, 0.06);
+  -webkit-backdrop-filter: blur(18px) saturate(1.3);
+  backdrop-filter: blur(18px) saturate(1.3);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 12px 32px -20px rgba(8, 10, 18, 0.6);
+}
+
+/* ── Dawn pass · the clock stage ─────────────────────────────────────────
+   The hero's sibling band: the one action and the 24-hour dial on one ink
+   stage. Same breakout, same dawn floor glow, display type on the action. */
+.clock-stage {
+  position: relative;
+  margin: 24px calc(-1 * (32px + var(--hero-out))) 0;
+  box-shadow: var(--shadow-stage);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: 30px;
+  align-items: center;
+  padding: 36px;
+}
+.clock-stage-action {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+/* The action card is the glass panel; the dial floats free on the ink. */
+.clock-stage .dac {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+.clock-stage .dial {
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+/* The display line — the same voice and scale as the hero's step title. */
+.clock-stage .dac-action {
+  font-family: var(--font-display);
+  font-style: normal;
+  font-size: var(--text-display-s);
+  font-weight: 560;
+  font-variation-settings: "opsz" 72, "SOFT" 0, "WONK" 1;
+  letter-spacing: -0.02em;
+  line-height: 1.02;
+  overflow-wrap: anywhere;
+  min-width: 0;
+  text-wrap: balance;
+}
+.clock-stage .dac-time {
+  color: var(--color-ghost);
+  letter-spacing: 0.02em;
+}
+
+/* ── Dawn pass · view transitions ────────────────────────────────────────
+   Continuity instead of page swaps. Typed navigations (Link's
+   transitionTypes) wipe like light — the dawn reveal, declared below under
+   the motion language. Untyped navigations — browser back included — stay
+   on the platform crossfade. An earlier draft of this section addressed
+   `::view-transition-old(.nav-forward)`; that selector matches nothing, so
+   the rules were dead and have been replaced by the typed selectors. */
+::view-transition {
+  pointer-events: none;
+}
+
+/* Shared element: the dawn the hero counts down to is the same object on the
+   arrival payoff, so it morphs between screens instead of being replaced. */
+.hero .dawn-globe,
+.hero .dawn-map {
+  view-transition-name: dawn;
+}
+.arr-dawn {
+  width: 78px;
+  height: 78px;
+  border-radius: 50%;
+  margin-bottom: 22px;
+  view-transition-name: dawn;
+  background:
+    radial-gradient(120% 120% at 32% 28%, rgba(255, 217, 138, 0.95), rgba(217, 107, 67, 0.9) 45%, #2a1a14 78%);
+  box-shadow:
+    0 0 44px rgba(255, 196, 107, 0.32),
+    inset 0 0 20px rgba(255, 217, 138, 0.4);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+}
+
+/* Only where the View Transitions API is absent does the page fade run. */
+@supports not (view-transition-name: none) {
+  .page-enter {
+    animation: page-fade 260ms var(--ease-drift) both;
+  }
+}
+
+/* ── Arrival choreography · the page reads in two passes ────────────────
+   The promise lands first; the account follows after a beat; the passport
+   closes. Transform + opacity only (the design contract's paint rule), and
+   only for travellers who haven't asked for reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .arr-in [data-rise] {
+    opacity: 0;
+    animation: rise 640ms var(--ease-drift) forwards;
+  }
+  /* Beats are assigned by name in the JSX (data-rise), not by child index —
+     conditional blocks (the lede, the debrief) can vanish without the
+     account crashing into the promise's beat. */
+  .arr-in [data-rise="2"] { animation-delay: 90ms; }    /* kicker */
+  .arr-in [data-rise="3"] { animation-delay: 180ms; }   /* headline */
+  .arr-in [data-rise="4"] { animation-delay: 300ms; }   /* lede */
+  .arr-in [data-rise="5"] { animation-delay: 440ms; }   /* the promise */
+  .arr-in [data-rise="6"] { animation-delay: 880ms; }   /* the beat — account */
+  .arr-in [data-rise="7"] { animation-delay: 980ms; }
+  .arr-in [data-rise="8"] { animation-delay: 1100ms; }  /* actions */
+  .arr-in [data-rise="9"] { animation-delay: 1240ms; }  /* debrief */
+  .arr-in [data-rise="10"] { animation-delay: 1520ms; } /* the passport */
+  .arr-in [data-rise="11"] { animation-delay: 1600ms; } /* footer */
+}
+
+/* ── Motion language · round 16 (docs/DESIGN.md) ──────────────────────────
+   Light moves, things morph, nothing slides up from nowhere. */
+
+/* 1 · Surface morphs — the trigger grows into its panel. The name lives on
+   the trigger while the panel is closed and moves to the panel while it is
+   open (the classes are assigned conditionally in React), so a pair never
+   holds two named elements at once. */
+.vt-morph-more { view-transition-name: morph-more; }
+.vt-morph-settings { view-transition-name: morph-settings; }
+.vt-morph-trip { view-transition-name: morph-trip; }
+.vt-morph-voice { view-transition-name: morph-voice; }
+/* Round 18 closes the drawer critique: the crew panel and the disclosure
+   grow out of their triggers like the other surfaces do. */
+.vt-morph-crew { view-transition-name: morph-crew; }
+.vt-morph-disclosure { view-transition-name: morph-disclosure; }
+
+::view-transition-group(morph-more),
+::view-transition-group(morph-settings),
+::view-transition-group(morph-trip),
+::view-transition-group(morph-voice),
+::view-transition-group(morph-crew),
+::view-transition-group(morph-disclosure) {
+  animation-duration: var(--dur-settle);
+  animation-timing-function: var(--ease-settle);
+}
+
+/* 2 · The dawn reveal — typed route changes wipe like light. Forward, the
+   incoming page rises from below the horizon while the outgoing one settles
+   away; back is the sun going down. The shared dawn disc rides above the
+   wipe in its own group, so the sun leads its own sunrise. `clip-path` is
+   paint-only (docs/DESIGN.md's allowance). */
+@keyframes vt-rise-in {
+  from { clip-path: inset(100% 0 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+@keyframes vt-descend-in {
+  from { clip-path: inset(0 0 100% 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+@keyframes vt-set-away {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: scale(0.985); }
+}
+
+@keyframes vt-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes vt-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Untyped navigations — browser back, plain links — get the quiet
+     crossfade; typed ones still take the dawn wipe. */
+  html:active-view-transition-type(nav-fade)::view-transition-old(root) {
+    animation: vt-fade-out var(--dur-drift) var(--ease-drift) both;
+    mix-blend-mode: normal;
+  }
+  html:active-view-transition-type(nav-fade)::view-transition-new(root) {
+    animation: vt-fade-in var(--dur-drift) var(--ease-drift) both;
+    mix-blend-mode: normal;
+  }
+  html:active-view-transition-type(nav-forward)::view-transition-old(root) {
+    animation: vt-set-away var(--dur-drift) var(--ease-drift) both;
+    mix-blend-mode: normal;
+  }
+  html:active-view-transition-type(nav-forward)::view-transition-new(root) {
+    animation: vt-rise-in var(--dur-drift) var(--ease-drift) both;
+    mix-blend-mode: normal;
+  }
+  html:active-view-transition-type(nav-back)::view-transition-old(root) {
+    animation: vt-set-away var(--dur-drift) var(--ease-drift) both;
+    mix-blend-mode: normal;
+  }
+  html:active-view-transition-type(nav-back)::view-transition-new(root) {
+    animation: vt-descend-in var(--dur-drift) var(--ease-drift) both;
+    mix-blend-mode: normal;
+  }
+}
+
+/* 3 · The light sweep — in-page mode switches pass two stage layers across
+   the content: horizon gold first, then a band of the page's own ground.
+   Transform-only, staggered, and never rendered under reduced motion (the
+   hook stands down). */
+.light-sweep {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-light);
+  pointer-events: none;
+  overflow: hidden;
+}
+/* Phase 2 — the shared light pass: a sharp 2px leading edge with a
+   ~160px trailing gradient tail (static blur), one 900ms transform/opacity
+   travel on --dur-light-pass. Reduced motion degrades to a short
+   opacity-only fade. */
+:root { --dur-light-pass: 900ms; }
+.light-pass {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 160px;
+  transform: translateY(100vh);
+  animation: light-pass-travel var(--dur-light-pass) var(--ease-glide) both;
+}
+.light-pass::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: rgba(255, 230, 190, 0.9);
+}
+.light-pass::after {
+  /* Trailing tail: strongest just below the leading edge, fading to the
+     end — a warm wash, never a full-screen flash. */
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 0;
+  right: 0;
+  height: 158px;
+  filter: blur(18px);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 196, 107, 0.45) 0%,
+    rgba(217, 107, 67, 0.28) 55%,
+    transparent 100%
+  );
+}
+@keyframes light-pass-travel {
+  from { transform: translateY(100vh); opacity: 1; }
+  to { transform: translateY(-180px); opacity: 0.85; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .light-pass { animation: light-pass-fade 150ms ease-out both; }
+}
+@keyframes light-pass-fade {
+  from { opacity: 0.6; }
+  to { opacity: 0; }
+}
+
+/* 4 · Places morph into their pages — the More sheet's rows carry the same
+   names as the destination headers, so the row you tapped becomes the page
+   you land on across the route transition. Scoped to the sheet so the home
+   menu's links can never double-book a name. */
+.more-sheet [data-place="crew"] { view-transition-name: place-crew; }
+.more-sheet [data-place="shift"] { view-transition-name: place-shift; }
+.more-sheet [data-place="team"] { view-transition-name: place-team; }
+.menu [data-place="crew"] { view-transition-name: place-crew; }
+.menu [data-place="shift"] { view-transition-name: place-shift; }
+.menu [data-place="team"] { view-transition-name: place-team; }
+[data-place-head="crew"] { view-transition-name: place-crew; }
+[data-place-head="shift"] { view-transition-name: place-shift; }
+[data-place-head="team"] { view-transition-name: place-team; }
+
+/* 5 · The trips deck — /history is a card deck: each journey pins under the
+   header and the next one covers it, so the list reads as riffling through
+   trips. The covered card recedes where scroll-driven animations exist;
+   without them the sticky stack still reads as a deck. */
+.trip-deck {
+  display: grid;
+  gap: 18px;
+}
+.trip-deck-card {
+  position: sticky;
+  top: calc(20px + var(--deck-i, 0) * 14px);
+  transform-origin: 50% 0;
+}
+.trip-deck-card:nth-child(1) { --deck-i: 0; }
+.trip-deck-card:nth-child(2) { --deck-i: 1; }
+.trip-deck-card:nth-child(3) { --deck-i: 2; }
+.trip-deck-card:nth-child(4) { --deck-i: 3; }
+.trip-deck-card:nth-child(5) { --deck-i: 4; }
+.trip-deck-card:nth-child(6) { --deck-i: 5; }
+.trip-deck-card:nth-child(7) { --deck-i: 6; }
+.trip-deck-card:nth-child(n + 8) { --deck-i: 7; }
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .trip-deck-card {
+      animation: deck-recede linear both;
+      animation-timeline: view();
+      animation-range: exit 0% exit 100%;
+    }
+    @keyframes deck-recede {
+      to { transform: scale(0.955) translateY(-6px); opacity: 0.72; }
+    }
+  }
+}
+
+/* 6 · Feed cadence (round 18) — the Today timeline is a sequence, not a
+   wall: each step breathes in as it crosses into view. The `translate`
+   property keeps the swipe gesture's inline `transform` untouched, and the
+   rule is scoped to the live feed's rows so preview strips stay static. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .tl-rows > .tl-row {
+      animation: tl-enter linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 45%;
+    }
+    @keyframes tl-enter {
+      from { opacity: 0.25; translate: 0 14px; }
+      to { opacity: 1; translate: 0 0; }
+    }
+  }
+}
+
+/* The More sheet's in-place disclosure swap: the panel stays, the body
+   crossfades inside it (the morph name never leaves the panel). */
+.more-sheet-swap .dial-title {
+  margin: 4px 0 2px;
+}
+.more-sheet-swap .dac-evidence {
+  margin-top: 6px;
+}
+
+/* ── Dawn pass · the run on the stage ────────────────────────────────────
+   While the crew works, the stage says who is speaking, how much of the
+   shift is locked, and how far the sun has moved. Visual only — the run
+   announcer already speaks it for screen readers. */
+.hero .hr-col {
+  color: var(--m-text);
+}
+.stage-run {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 4px 10px;
+  padding: 11px 13px;
+  border: 1px solid rgba(255, 196, 107, 0.28);
+  border-radius: 10px;
+  background: rgba(255, 196, 107, 0.07);
+}
+.stage-run-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-ghost);
+  animation: run-pulse 1.6s var(--ease-drift) infinite;
+}
+@keyframes run-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(255, 217, 138, 0.45); }
+  70% { box-shadow: 0 0 0 7px rgba(255, 217, 138, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 217, 138, 0); }
+}
+.stage-run-body {
+  min-width: 0;
+}
+.stage-run-label {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--color-paper);
+}
+.stage-run-meta {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--font-mono2);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  color: var(--color-mist);
+}
+.stage-run-bar {
+  grid-column: 1 / -1;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+.stage-run-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #d96b43, var(--color-sun-dest));
+  transition: width var(--dur-settle) var(--ease-settle);
+}
+
+/* The wake question, on the stage: paper text on glass, chips that glow. */
+.hero .ask p {
+  color: var(--color-paper);
+}
+.hero .ask p span {
+  color: var(--color-mist);
+}
+.hero .ask .ask-title {
+  color: var(--color-paper);
+}
+.hero .ask-promise,
+.hero .ask-foot {
+  color: var(--color-mist);
+}
+.hero .ask-chip:hover {
+  background: var(--color-sun-dest);
+  border-color: var(--color-sun-dest);
+  color: #1a1408;
+}
+
+/* First visit, once: the dawn line crosses the stage. Remembered in
+   localStorage (`meridian:visited`) so it never becomes decoration. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes stage-sweep {
+    from { transform: translateX(-70%); opacity: 0; }
+    20% { opacity: 0.9; }
+    to { transform: translateX(130%); opacity: 0; }
+  }
+  .hero.first-visit::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 55%;
+    background: linear-gradient(
+      100deg,
+      transparent 18%,
+      rgba(255, 217, 138, 0.1) 46%,
+      rgba(255, 217, 138, 0.2) 52%,
+      transparent 82%
+    );
+    pointer-events: none;
+    animation: stage-sweep 1.7s var(--ease-drift) 0.3s both;
+  }
+}
+.clock-stage .dac-reason {
+  font-size: 15px;
+  line-height: 1.55;
+  max-width: 46ch;
+}
+.clock-stage .dial-title {
+  font-size: var(--text-2xl);
+  letter-spacing: -0.01em;
+}
+.clock-stage .dial-figure {
+  color: var(--color-paper);
+}
+/* Press + hover glow for the stage's actions — the hero's micro-voice. */
+.clock-stage .dac-done,
+.clock-stage .dial-btn {
+  transition:
+    background var(--dur-glide) var(--ease-glide),
+    border-color var(--dur-glide) var(--ease-glide),
+    color var(--dur-glide) var(--ease-glide),
+    transform var(--dur-glide) var(--ease-glide);
+}
+.clock-stage .dac-done:hover,
+.clock-stage .dial-btn:hover {
+  border-color: var(--color-ghost);
+}
+.clock-stage .dac-done:active,
+.clock-stage .dial-btn:active {
+  transform: scale(0.98);
+}
+@media (max-width: 900px) {
+  .clock-stage {
+    grid-template-columns: 1fr;
+    padding: 26px 22px;
+    gap: 22px;
+  }
+}
+@media (max-width: 720px) {
+  .clock-stage {
+    margin-inline: -16px;
+    padding: 22px 18px;
+  }
+  .clock-stage .dac-action {
+    font-size: var(--text-4xl);
+  }
+}
+

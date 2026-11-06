@@ -1698,7 +1698,7 @@ export function NudgeFeedScreen({
                   title="Remind me at each step — as notifications on this device."
                   onClick={onToggleReminders}
                   className="icon-btn"
-                  style={remindersOn ? { color: "#D96B43", borderColor: "#D96B43" } : undefined}
+                  style={remindersOn ? { color: "var(--color-terracotta)", borderColor: "var(--color-terracotta)" } : undefined}
                 >
                   {remindersOn ? <BellRing size={16} /> : <Bell size={16} />}
                 </button>
@@ -1850,10 +1850,10 @@ export function NudgeFeedScreen({
                   style={{
                     alignSelf: "flex-start",
                     background: hasPlan
-                      ? "linear-gradient(90deg, #D96B43, #e99a6f)"
+                      ? "linear-gradient(90deg, var(--color-terracotta), var(--color-ember))"
                       : "transparent",
                     color: hasPlan ? "var(--m-on-accent)" : "var(--color-paper)",
-                    border: hasPlan ? "none" : "1.5px solid #D96B43",
+                    border: hasPlan ? "none" : "1.5px solid var(--color-terracotta)",
                     borderRadius: "999px",
                     padding: "10px 22px",
                     minHeight: "44px",
@@ -2062,7 +2062,7 @@ export function NudgeFeedScreen({
           {phase === "running" && (
             <div style={{ marginBottom: 10 }}>
               <div style={{ height: 3, borderRadius: 999, background: "var(--m-border-2)", overflow: "hidden" }}>
-                <div style={{ height: "100%", width: "30%", background: "#D96B43", animation: "skel-shimmer 1.2s ease-in-out infinite" }} />
+                <div style={{ height: "100%", width: "30%", background: "var(--color-terracotta)", animation: "skel-shimmer 1.2s ease-in-out infinite" }} />
               </div>
               <p style={{ margin: "6px 0 0", fontSize: 12, color: "var(--m-muted)" }}>
                 {(() => {
@@ -2310,8 +2310,8 @@ export function NudgeFeedScreen({
             type="button"
             onClick={sendPendingMarks}
             style={{
-              border: "1px solid #D96B43",
-              background: "#D96B43",
+              border: "1px solid var(--color-terracotta)",
+              background: "var(--color-terracotta)",
               color: "var(--m-card)",
               borderRadius: 999,
               padding: "6px 14px",
@@ -2367,8 +2367,8 @@ export function NudgeFeedScreen({
                 type="button"
                 onClick={sendPendingMarks}
                 style={{
-                  border: "1px solid #D96B43",
-                  background: "#D96B43",
+                  border: "1px solid var(--color-terracotta)",
+                  background: "var(--color-terracotta)",
                   color: "var(--m-card)",
                   borderRadius: 999,
                   padding: "8px 16px",
@@ -2393,7 +2393,7 @@ export function NudgeFeedScreen({
                     onClick={() => sendDayVerdict(s)}
                     style={{
                       border: "1px solid var(--m-border)",
-                      background: s === "done" ? "#D96B43" : "var(--m-card)",
+                      background: s === "done" ? "var(--color-terracotta)" : "var(--m-card)",
                       color: s === "done" ? "var(--m-card)" : "var(--m-text)",
                       borderRadius: 999,
                       padding: "8px 14px",

@@ -6,7 +6,9 @@ import { join } from "path";
 // the terracotta accent is gone from every stage surface, and the night theme
 // sits on the same ink family the stages use.
 
-const css = readFileSync(join(import.meta.dir, "../src/app/globals.css"), "utf8");
+import { readStylesheet } from "./css";
+
+const css = readStylesheet();
 
 /** The declaration block that follows a selector match (up to the next `}`). */
 const blockAfter = (needle: string): string => {

@@ -1,6 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { readFileSync } from "fs";
-import { join } from "path";
+import { readStylesheet } from "./css";
 import { crewAnswer, type CrewFacts } from "../src/domain/crew-answer";
 import { coverageOf, fmtMin } from "../src/domain/circadian";
 import { previewPlan } from "../src/domain/solver";
@@ -271,10 +270,7 @@ describe("crewAnswer — when and fallback", () => {
 });
 
 describe("crewAnswer — the surface keeps the motion + style laws", () => {
-  const css = readFileSync(
-    join(import.meta.dir, "..", "src", "app", "globals.css"),
-    "utf8",
-  );
+  const css = readStylesheet();
 
   test("the answer's fade is the crew's own transform/opacity keyframes", () => {
     expect(css).toContain(".crew-answer {\n  animation: crew-fade-up 0.3s");

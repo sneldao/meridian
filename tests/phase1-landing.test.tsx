@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { createElement } from "react";
 import { readFileSync } from "fs";
 import { join } from "path";
+import { readStylesheet } from "./css";
 import { TripEntryScreen } from "../src/components/TripEntryScreen";
 import { RoutePicker } from "../src/components/RoutePicker";
 
@@ -86,7 +87,7 @@ describe("the landing form (SSR)", () => {
 });
 
 describe("the headline's motion stays honest", () => {
-  const css = readFileSync(join(import.meta.dir, "..", "src", "app", "globals.css"), "utf8");
+  const css = readStylesheet();
 
   test("line rise lives inside a no-preference gate, settle token, blur kept", () => {
     // The fallback intro moved from per-char spans to the Filament WebGL

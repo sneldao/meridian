@@ -1,0 +1,9 @@
+/* ---- codrops Filament (src/lib/tca, MIT port) --------------------------
+ * The WebGL canvas sits over the DOM text; while masked, the DOM letters
+ * keep layout + a11y and stay unseen. */
+[data-effect='filament'] { position: relative; }
+[data-effect='filament'].is-masked [data-line] { color: transparent; }
+[data-effect='filament'] .gl-text {
+  position: absolute; pointer-events: none; display: none;
+}
+[data-effect='filament'] .gl-text.is-visible { display: block; }

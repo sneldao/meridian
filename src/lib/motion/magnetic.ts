@@ -1,10 +1,17 @@
 /* Magnetic pointer recipe — ported from museum-of-motion
  * (github.com/johnpolacek/museum-of-motion, lib/motion/recipes/pointer-effects.ts, MIT).
  * The CTA follows the pointer a few pixels and settles back on leave.
- * hover:fine only; reduced motion and touch get the plain button. */
+ * hover:fine only; reduced motion and touch get the plain button.
+ *
+ * gsap arrives via a dynamic import, never the static bundle: this module is
+ * imported by Today-surface components (NudgeFeedScreen, TripSetupScreen),
+ * and the pull is progressive enhancement — the button works identically
+ * while the effect chunk is still in flight. Callers that need the effect
+ * synchronously should use the CSS-`translate` recipe in ui/Button instead. */
 
-import gsap from "gsap";
 import { useEffect, useRef } from "react";
+import type gsapInstance from "gsap";
+type Gsap = typeof gsapInstance;
 
 function prefersReducedMotion(): boolean {
   if (typeof window === "undefined") return true;
@@ -30,7 +37,7 @@ type Register = (fn: () => void) => void;
  * Runs setup in its own GSAP context and returns a once-only teardown that also rolls back a throw.
  * `dispose` stops writers and listeners before the context reverts; `after` restores after it.
  */
-function own(setup: (dispose: Register, after: Register) => void): Teardown {
+function own(gsap: Gsap, setup: (dispose: Register, after: Register) => void): Teardown {
   const ctx = gsap.context(() => {});
   const disposers: Array<() => void> = [];
   const restores: Array<() => void> = [];
@@ -73,7 +80,11 @@ const MOTION_PROPS = ["transform", "translate", "rotate", "scale", "opacity", "v
  * Records inline properties and returns a restore. Reverting `quickTo` can leave its last
  * value inline, so restore after the context reverts. `clearProps` also resets GSAP's cache.
  */
-function snapshotStyles(elements: HTMLElement[], props = MOTION_PROPS): () => void {
+function snapshotStyles(
+  gsap: Gsap,
+  elements: HTMLElement[],
+  props = MOTION_PROPS,
+): () => void {
   const saved = elements.map((element) =>
     props.map(
       (prop) =>
@@ -109,9 +120,12 @@ export type MagneticOptions = {
   inner?: number;
 };
 
-export function magnetic(target: HTMLElement, { strength = 0.3, inner = 0.5 }: MagneticOptions = {}): Teardown {
-  if (prefersReducedMotion() || !finePointer()) return () => {};
-  return own((dispose, after) => {
+function startMagnetic(
+  gsap: Gsap,
+  target: HTMLElement,
+  { strength = 0.3, inner = 0.5 }: MagneticOptions = {},
+): Teardown {
+  return own(gsap, (dispose, after) => {
     let center = { x: 0, y: 0 };
     // Measure once per visit; the target's own movement must not shift its center.
     const measure = () => {
@@ -122,7 +136,7 @@ export function magnetic(target: HTMLElement, { strength = 0.3, inner = 0.5 }: M
     };
     const accepts = (event: PointerEvent) => event.pointerType === "mouse";
     const label = target.querySelector<HTMLElement>("[data-magnetic-inner]");
-    after(snapshotStyles(label ? [target, label] : [target]));
+    after(snapshotStyles(gsap, label ? [target, label] : [target]));
     const to = (el: HTMLElement, prop: "x" | "y") =>
       gsap.quickTo(el, prop, { duration: FOLLOW, ease: FOLLOW_EASE });
     const xTo = to(target, "x");
@@ -148,6 +162,27 @@ export function magnetic(target: HTMLElement, { strength = 0.3, inner = 0.5 }: M
       innerY?.(0);
     });
   });
+}
+
+export function magnetic(
+  target: HTMLElement,
+  options: MagneticOptions = {},
+): Teardown {
+  if (prefersReducedMotion() || !finePointer()) return () => {};
+  let teardown: Teardown | null = null;
+  let cancelled = false;
+  import("gsap")
+    .then(({ default: gsap }) => {
+      if (cancelled) return;
+      teardown = startMagnetic(gsap, target, options);
+    })
+    .catch(() => {
+      /* the plain button stands */
+    });
+  return () => {
+    cancelled = true;
+    teardown?.();
+  };
 }
 
 /** Attach a magnetic pull to an element. Returns a ref for the target. */

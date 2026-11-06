@@ -376,6 +376,26 @@ export interface CrewMemory {
   };
 }
 
+/** The `/api/trip` payload: the trip plus everything the plan builds on.
+ *  (Moved here from the Home page so the trip-query hook and the crew's
+ *  account builder share one shape.) */
+export interface TripData {
+  trip: Trip;
+  baseline: WearableBaseline;
+  /** Whether `baseline` is real wearable data or the demo fixture. Surfaced
+   *  so the UI can tag demo numbers instead of passing them off as measured. */
+  baselineSource?: "fixture" | "garmin";
+  /** Provenance of the baseline: `garmin` (uploaded), `wake-band` (the traveller
+   *  answered), `demo-default` (nothing known yet — the honest moment to ask). */
+  baselineKind?: BaselineKind;
+  /** Compliance hints (e.g. ignoresInterventionsBeforeMin) that keep asks
+   *  off the hours the traveller actually ignores them. */
+  adherence?: AdherenceProfile;
+  calendar: CalendarEvent[];
+  calendarSource?: "google" | "fixture";
+  provider: string;
+}
+
 /** The answers the setup collects. Persisted as they are given, so a reload
  *  never loses one and the setup never asks a question twice. */
 export interface OnboardingState {

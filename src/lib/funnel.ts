@@ -4,6 +4,8 @@
  *  configured. Instrumentation is a metric, never a dependency: nothing here
  *  may block, throw into, or re-render the UI. */
 
+import { safeStorageSet } from "@/lib/local-data";
+
 export const FUNNEL_STAGES = [
   "entry",
   "run",
@@ -58,11 +60,8 @@ export function recordFunnel(stage: FunnelStage, trip?: string | null): void {
   }
   const { log: next, event } = recordInto(log, stage, trip ?? null, new Date().toISOString());
   if (!event) return;
-  try {
-    localStorage.setItem(FUNNEL_KEY, JSON.stringify(next));
-  } catch {
-    /* best effort — the ring is a cache of what the server already got */
-  }
+  /* Best effort — the ring is a cache of what the server already got. */
+  safeStorageSet(() => localStorage.setItem(FUNNEL_KEY, JSON.stringify(next)), "funnel");
   try {
     fetch("/api/funnel", {
       method: "POST",

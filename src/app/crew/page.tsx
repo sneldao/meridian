@@ -20,6 +20,7 @@ import { BottomNav } from "@/components/BottomNav";
 import { BriefingCard } from "@/components/BriefingCard";
 import { MorningCheckin } from "@/components/MorningCheckin";
 import { MoreNav } from "@/components/MoreSheet";
+import { safeStorageRemove, safeStorageSet } from "@/lib/local-data";
 import { LensShell, type LensId } from "@/components/lenses/LensShell";
 import { WorldLens } from "@/components/lenses/WorldLens";
 import { CrewFeed, type LogEntry } from "@/components/CrewFeed";
@@ -178,12 +179,11 @@ export default function Home() {
           setBriefingDismissed(false);
           // Never let the welcome modal cover a running shift (fresh browser on stage).
           setShowOnboarding(false);
-          try { localStorage.setItem("meridian:onboarded", "1"); } catch { /* ignore */ }
-          try {
-            localStorage.setItem("meridian:lastTrip", JSON.stringify(e.trip));
-          } catch {
-            /* ignore */
-          }
+          safeStorageSet(() => localStorage.setItem("meridian:onboarded", "1"), "onboarded");
+          safeStorageSet(
+            () => localStorage.setItem("meridian:lastTrip", JSON.stringify(e.trip)),
+            "lastTrip",
+          );
           break;
         case "check_in":
           push({ kind: "system", text: `wearer reported: ${summarizeCheckIn(e.checkIn)}` });
@@ -308,9 +308,13 @@ export default function Home() {
             /* ignore */
           }
           try {
-            localStorage.setItem(
-              "meridian:lastPlan",
-              JSON.stringify({ summary: e.summary, score: e.score, citations: e.citations, days: e.days, ics: e.ics, lines: e.lines }),
+            safeStorageSet(
+              () =>
+                localStorage.setItem(
+                  "meridian:lastPlan",
+                  JSON.stringify({ summary: e.summary, score: e.score, citations: e.citations, days: e.days, ics: e.ics, lines: e.lines }),
+                ),
+              "lastPlan",
             );
             const entry = {
               id: Date.now(),
@@ -328,7 +332,10 @@ export default function Home() {
               try { return JSON.parse(localStorage.getItem("meridian:history") || "[]"); } catch { return []; }
             })();
             prev.unshift(entry);
-            localStorage.setItem("meridian:history", JSON.stringify(prev.slice(0, 20)));
+            safeStorageSet(
+              () => localStorage.setItem("meridian:history", JSON.stringify(prev.slice(0, 20))),
+              "history",
+            );
           } catch {
             /* ignore */
           }
@@ -340,7 +347,7 @@ export default function Home() {
         case "done":
           setEntries((prev) => [...prev, { kind: "system", text: "shift complete" }]);
           runIdRef.current = null;
-          try { localStorage.removeItem("meridian:crewActiveRunId"); } catch { /* ignore */ }
+          safeStorageRemove("meridian:crewActiveRunId", "crewActiveRunId");
           esRef.current?.close();
           break;
       }
@@ -359,7 +366,7 @@ export default function Home() {
     }
     esRef.current?.close();
     runIdRef.current = null;
-    try { localStorage.removeItem("meridian:crewActiveRunId"); } catch { /* ignore */ }
+    safeStorageRemove("meridian:crewActiveRunId", "crewActiveRunId");
     stopVoice();
     push({ kind: "system", text: "shift cancelled by operator" });
     reset();
@@ -382,7 +389,7 @@ export default function Home() {
     const runId = crypto.randomUUID();
     runIdRef.current = runId;
     params.set("runId", runId);
-    try { localStorage.setItem("meridian:crewActiveRunId", runId); } catch { /* ignore */ }
+    safeStorageSet(() => localStorage.setItem("meridian:crewActiveRunId", runId), "crewActiveRunId");
     const es = new EventSource("/api/crew/run?" + params.toString());
     esRef.current = es;
     es.onmessage = (m) => {
@@ -414,7 +421,7 @@ export default function Home() {
     es.onerror = () => {
       es.close();
       runIdRef.current = null;
-      try { localStorage.removeItem("meridian:crewActiveRunId"); } catch { /* ignore */ }
+      safeStorageRemove("meridian:crewActiveRunId", "crewActiveRunId");
       reset();
     };
   }, [dispatch, handleSideEffects, reset, run.phase]);
@@ -536,7 +543,10 @@ export default function Home() {
             const next = !voiceOn;
             voiceOnRef.current = next;
             setVoiceOn(next);
-            try { localStorage.setItem("meridian:crewVoice", next ? "on" : "off"); } catch { /* ignore */ }
+            safeStorageSet(
+              () => localStorage.setItem("meridian:crewVoice", next ? "on" : "off"),
+              "crewVoice",
+            );
             setVoiceEnabled(next);
             if (!next) stopVoice();
           }}
@@ -577,7 +587,7 @@ export default function Home() {
               variant="ghost"
               size="sm"
               onClick={() => {
-                try { localStorage.setItem("meridian:onboarded", "1"); } catch { /* ignore */ }
+                safeStorageSet(() => localStorage.setItem("meridian:onboarded", "1"), "onboarded");
                 setShowOnboarding(false);
               }}
               className="ml-auto"

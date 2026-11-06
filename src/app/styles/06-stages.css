@@ -1,0 +1,2712 @@
+/* --- A press response -------------------------------------------------------
+   The reference build acknowledges the finger before anything happens
+   (`scale(0.98)` on mouse-down, back on release). It is one line per
+   control and it is the difference between a control that answers and a
+   control that only reacts once the whole action has run. Applied to the
+   primary actions only — a page where everything presses is a page where
+   nothing reads as primary. */
+.pressable {
+  transition: transform var(--dur-glide) var(--ease-glide);
+}
+.pressable:active {
+  transform: scale(0.98);
+}
+@media (prefers-reduced-motion: reduce) {
+  /* The whole app, in one rule: no motion is motion nobody asked for. The
+     globe and the voice already honoured this; the CSS entrances did not. */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .pressable:active {
+    transform: none;
+  }
+}
+
+/* On the phone the trip is a caption, not a card: the route and the shift,
+   with the change affordance reduced to a glyph. The date is on the day
+   pills. */
+@media (max-width: 480px) {
+  .trip-chip {
+    padding: 6px 10px;
+    font-size: 12px;
+    gap: 4px;
+  }
+  .trip-chip-date { display: none; }
+  .trip-chip-change::after { content: " ✎"; }
+  .trip-chip-change { font-size: 0; }
+  .trip-chip-change::before { content: "✎"; font-size: 12px; }
+  /* The three numbers before the rail read as a dashboard on a phone; one
+     line, in the same voice as the rest. */
+  .cal-summary { grid-template-columns: 1fr; gap: 6px; }
+  .cal-summary-num { flex-direction: row; align-items: baseline; gap: 8px; }
+  .cal-summary-num b { font-size: 15px; }
+  .tz-clocks-bar {
+    padding: 6px 10px;
+    gap: 8px;
+    font-size: 11.5px;
+  }
+  .tz-clock-time {
+    font-size: 12px;
+  }
+}
+
+.entry {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: var(--space-2xl);
+  align-items: center;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: var(--space-2xl) 0 var(--space-xl);
+}
+.entry-intro { min-width: 0; }
+.entry-eyebrow {
+  /* The floor is 13px for anything informative — the eyebrow is a
+     label, not decoration; 12px was one step short of the law. */
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--m-muted);
+  margin: 0 0 var(--space-xs);
+}
+.entry-title {
+  font-family: var(--font-display);
+  font-size: var(--text-display);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.04;
+  margin: var(--space-sm) 0 0;
+  color: var(--m-text);
+  overflow-wrap: anywhere;
+}
+.entry-sub {
+  font-size: 17px;
+  line-height: 1.65;
+  max-width: 45ch;
+  color: var(--m-muted);
+  margin: var(--space-md) 0 0;
+}
+.entry-story {
+  margin: var(--space-lg) 0 0;
+  max-width: 45ch;
+}
+.entry-story > div {
+  padding: var(--space-xs) 0;
+  border-top: 1px solid var(--m-border);
+}
+.entry-story > div:last-child {
+  border-bottom: 1px solid var(--m-border);
+}
+.entry-story span {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--m-text);
+}
+.entry-story p {
+  margin: 2px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--m-muted);
+}
+.entry-source {
+  font-size: 12px;
+  color: var(--m-muted);
+  margin: var(--space-md) 0 0;
+}
+.entry-planner {
+  min-width: 0;
+  padding: var(--space-lg);
+  border: 1px solid var(--m-border);
+  border-radius: var(--radius-2xl);
+  background: var(--m-card);
+  color: var(--m-text);
+}
+.entry-planner h2,
+.taste-heading h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  line-height: 1.15;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.entry-planner-note {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--m-muted);
+  margin: var(--space-xs) 0 0;
+}
+.entry-form {
+  margin-top: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: stretch;
+  width: 100%;
+}
+.entry .rp-picker {
+  width: 100%;
+  min-width: 0;
+  border: none;
+  box-shadow: none;
+  background: transparent;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-sm);
+}
+.entry .rp-route-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  width: 100%;
+  align-items: end;
+}
+.entry .rp-field {
+  min-width: 0;
+}
+.entry .rp-field-wrap {
+  min-width: 0;
+  width: 100%;
+}
+.entry .rp-date-row {
+  width: 100%;
+  flex-wrap: wrap;
+}
+.entry .rp-label {
+  font-size: 12px;
+  color: var(--m-muted);
+}
+.entry .rp-input {
+  font-size: 16px;
+  font-family: var(--font-sans, inherit);
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid var(--m-border);
+  border-radius: var(--radius-sm);
+  background: var(--m-card);
+  color: var(--m-text);
+}
+.entry .rp-input::placeholder {
+  color: var(--m-muted);
+}
+.entry .rp-field .rp-input {
+  width: 100%;
+  min-width: 0;
+}
+html[data-theme="night"] .entry .rp-input[type="date"] {
+  color-scheme: dark;
+}
+.entry .rp-route-row button {
+  min-width: 44px;
+  min-height: 44px;
+  align-self: end;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.entry .rp-field--from .rp-listbox {
+  left: 0;
+}
+.entry .rp-field--to .rp-listbox {
+  left: auto;
+  right: 0;
+}
+.entry .rp-listbox {
+  max-width: min(18rem, calc(100vw - 6rem));
+}
+.entry-helper {
+  min-height: calc(2 * 1em * 1.3);
+  font-size: 13px;
+  line-height: 1.3;
+  color: var(--m-muted);
+}
+.entry-helper p {
+  margin: 0;
+}
+.entry-error {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-clay-fail);
+}
+.entry-cta {
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  border: none;
+  border-radius: 999px;
+  padding: 12px 16px;
+  min-height: 48px;
+  cursor: pointer;
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  white-space: nowrap;
+  background: var(--color-terracotta);
+  color: var(--color-clay);
+  transition: filter var(--duration-fast) var(--ease-smooth-out);
+}
+.entry-cta:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+.entry-cta:active:not(:disabled) {
+  filter: brightness(0.94);
+}
+.entry-cta:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+.entry-cta:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+/* The taste crate row — the WHAT half of the landing's promise, offered
+   inside the entry form. Label in the stamp's type idiom; pills reuse the
+   ghost taste button so the pressed inversion is already answered. */
+.entry-crate {
+  margin: 16px 0 0;
+}
+.entry-crate-label {
+  font-family: var(--font-mono2);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--m-faint);
+  margin: 0 0 8px;
+}
+.entry-crate-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.entry-crate-note {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--m-muted);
+  margin: 8px 0 0;
+}
+/* The crate's live payoff — a real count from the same resolution the
+   trip runs, quiet mono so it reads as telemetry, not ad copy. */
+.entry-crate-count {
+  font-family: var(--font-mono2);
+  font-size: 12px;
+  line-height: 1.5;
+  letter-spacing: 0.04em;
+  color: var(--m-faint);
+  margin: 8px 0 0;
+}
+.entry-crate-route {
+  margin-top: 8px;
+}
+/* Free-text favorites (agent-native §4b): a combobox over the bundled
+   entity catalog. The input reuses the taste-field idiom, the listbox the
+   route picker's dark menu — all token-driven, no new motion (the demand-
+   drawn law; a dropdown appears or doesn't). */
+.entry-crate-type {
+  position: relative;
+  margin-top: 10px;
+}
+.entry-crate-input {
+  font: inherit;
+  font-size: 16px;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid var(--m-border);
+  border-radius: var(--radius-sm);
+  background: var(--m-card);
+  color: var(--m-text);
+}
+.entry-crate-input::placeholder {
+  color: var(--m-muted);
+}
+.entry-crate-input:disabled {
+  opacity: 0.45;
+}
+.entry-crate-listbox {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  overflow: hidden;
+  border: 1px solid var(--m-border);
+  border-radius: var(--radius-sm);
+  background: var(--m-card);
+}
+.entry-crate-option {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: var(--m-text);
+  cursor: pointer;
+}
+.entry-crate-option.is-active {
+  background: var(--m-tag);
+}
+.entry-crate-option-name {
+  min-width: 0;
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+.entry-crate-option-kind {
+  flex-shrink: 0;
+  font-family: var(--font-mono2);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--m-muted);
+}
+/* The honest miss — same telemetry idiom as the crate count, naming the
+   catalog and what a live key would have done. */
+.entry-crate-miss {
+  font-family: var(--font-mono2);
+  font-size: 12px;
+  line-height: 1.5;
+  letter-spacing: 0.04em;
+  color: var(--m-muted);
+  margin: 6px 0 0;
+}
+.entry-crate-chips {
+  margin-top: 10px;
+}
+.entry-crate-chip-kind {
+  font-family: var(--font-mono2);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--m-faint);
+}
+.entry-example-row {
+  margin-top: var(--space-sm);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: var(--m-muted);
+}
+.entry-example {
+  font: inherit;
+  background: none;
+  border: none;
+  padding: 6px 0;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--m-muted);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.entry-example:hover {
+  color: var(--m-text);
+  text-decoration: underline;
+}
+.entry-example:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+.entry-privacy {
+  font-size: 13px;
+  color: var(--m-muted);
+  margin: var(--space-sm) 0 0;
+}
+
+@media (max-width: 800px) {
+  .entry {
+    grid-template-columns: 1fr;
+    gap: 32px;
+    padding: 32px 0;
+  }
+}
+@media (max-width: 480px) {
+  .entry-planner {
+    padding: 16px;
+  }
+  .entry-title {
+    font-size: clamp(2.4rem, 10vw, 3.5rem);
+  }
+  .entry .rp-route-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .entry .rp-route-row button {
+    justify-self: center;
+  }
+}
+
+.taste-discovery {
+  margin: 32px auto;
+  padding: 24px 0;
+  border-top: 1px solid var(--m-border);
+  border-bottom: 1px solid var(--m-border);
+  max-width: 720px;
+}
+.taste-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+.taste-source {
+  font-size: 12px;
+  color: var(--m-muted);
+  white-space: nowrap;
+}
+.taste-intro {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--m-muted);
+  max-width: 60ch;
+  margin: var(--space-sm) 0 0;
+}
+.taste-search {
+  margin-top: var(--space-md);
+  display: grid;
+  grid-template-columns: minmax(0, 110px) minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: end;
+}
+.taste-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.taste-field-label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--m-muted);
+}
+.taste-field select,
+.taste-field input {
+  font: inherit;
+  font-size: 16px;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid var(--m-border);
+  border-radius: var(--radius-sm);
+  background: var(--m-card);
+  color: var(--m-text);
+}
+.taste-field input::placeholder {
+  color: var(--m-muted);
+}
+.taste-button {
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 6px;
+  min-height: 44px;
+  padding: 12px 16px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+  transition: filter var(--duration-fast) var(--ease-smooth-out);
+}
+.taste-button--primary {
+  border: none;
+  background: var(--color-terracotta);
+  color: var(--color-clay);
+}
+.taste-button--primary:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+.taste-button--primary:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.taste-button--ghost {
+  background: transparent;
+  border: 1px solid var(--m-border);
+  color: var(--m-text);
+}
+/* Hover recolors ONLY an unpressed ghost button. This selector is (0,3,1);
+   every scoped pressed-state rule (.demo-taste-toggle, .day-card-dialog,
+   .scenario :is(...)) is (0,2,1), so a hover recolor here would beat them
+   and repaint the label to --m-text — the same value the pressed fill paints
+   from. On ink surfaces (and on touch, where hover sticks after the tap)
+   the selected pill's name dissolved into its fill (prod bug, 2026-11-05). */
+.taste-button--ghost:hover:not(:disabled):not([aria-pressed="true"]) {
+  color: var(--m-text);
+  text-decoration: underline;
+}
+/* The structural pressed answer for ghost buttons — the same inversion the
+   scoped surfaces (demo taste toggle, day-card dialog, scenario) use, so a
+   ghost pill with aria-pressed reads as chosen wherever it appears,
+   including the landing's crate row. The hover recolour above stays out of
+   the way of this. */
+.taste-button--ghost[aria-pressed="true"] {
+  background: var(--m-text);
+  border-color: var(--m-text);
+  color: var(--m-bg);
+}
+.taste-button:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+.taste-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.taste-live {
+  min-height: 1.4em;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--m-muted);
+}
+.taste-error {
+  margin: 4px 0 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-clay-fail);
+}
+.taste-matches {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.taste-matches li {
+  min-width: 0;
+  max-width: 100%;
+}
+.taste-matches button {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+.taste-selected {
+  margin-top: 12px;
+}
+.taste-chips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 100%;
+}
+.taste-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--m-border);
+  border-radius: 6px;
+  background: var(--m-card);
+  padding: 2px 4px 2px 12px;
+  font-size: 13px;
+  color: var(--m-text);
+  max-width: 100%;
+}
+.taste-chip-name {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.taste-chip-remove {
+  font: inherit;
+  border: none;
+  background: none;
+  color: var(--m-muted);
+  cursor: pointer;
+  min-width: 44px;
+  min-height: 44px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+}
+.taste-chip-remove:hover {
+  color: var(--color-clay-fail);
+}
+.taste-chip-remove:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+.taste-count {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--m-muted);
+}
+.taste-actions {
+  margin-top: var(--space-md);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.taste-helper {
+  margin: 0;
+  font-size: 13px;
+  color: var(--m-muted);
+}
+.taste-note {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--m-muted);
+}
+.taste-results {
+  margin-top: var(--space-md);
+}
+.taste-provenance {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--m-muted);
+}
+.taste-places-heading {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 8px 0 0;
+  color: var(--m-text);
+}
+.taste-places {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.taste-place {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: start;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--m-border);
+}
+.taste-ordinal {
+  font-family: var(--font-mono2);
+  font-size: 12px;
+  color: var(--m-muted);
+  padding-top: 3px;
+}
+.taste-place-main {
+  min-width: 0;
+}
+.taste-place-name {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--m-text);
+  overflow-wrap: anywhere;
+}
+.taste-place-cats {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--m-muted);
+  overflow-wrap: anywhere;
+}
+.taste-map-link {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--m-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.taste-map-link:hover {
+  text-decoration-thickness: 2px;
+}
+.taste-map-link:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+.taste-footnote {
+  margin: var(--space-md) 0 0;
+  font-size: 12px;
+  color: var(--m-muted);
+}
+
+@media (max-width: 480px) {
+  .taste-search {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+  .taste-search .taste-button {
+    width: 100%;
+  }
+  .taste-heading {
+    flex-direction: column;
+    gap: 4px;
+  }
+  .taste-place {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .taste-map-link {
+    grid-column: 2;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .taste-button--primary:active:not(:disabled) {
+    transform: none;
+  }
+}
+
+.entry :is(button, input, select):focus-visible,
+.taste-discovery :is(button, a, input, select):focus-visible {
+  outline: 2px solid var(--m-text);
+  outline-offset: 3px;
+}
+
+.taste-itinerary {
+  margin: 24px auto;
+  padding: 24px;
+  border: 1px solid var(--m-border);
+  border-radius: 10px;
+  background: var(--m-card);
+  color: var(--m-text);
+  max-width: 720px;
+}
+.taste-itinerary h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(1.4rem, 2.4vw, 1.8rem);
+  line-height: 1.15;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.taste-itinerary .taste-provenance {
+  margin-top: 8px;
+}
+.taste-place-links {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+.taste-itinerary :is(button, a):focus-visible {
+  outline: 2px solid var(--m-text);
+  outline-offset: 3px;
+}
+
+/* §4b — the tier badge: one honest rung tag wherever an answer lands.
+   Pressed open it carries a one-line explainer under itself. */
+.tier-badge {
+  position: relative;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+}
+.tier-badge-btn {
+  font-family: var(--font-mono2);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border: 1px solid var(--m-border-2);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--m-muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tier-badge-btn::after {
+  content: " ▾";
+}
+.tier-badge-btn:hover {
+  color: var(--m-text);
+}
+.tier-badge-btn[aria-expanded="true"] {
+  color: var(--m-text);
+  border-color: var(--m-text);
+}
+.tier-badge[data-tier="live"] .tier-badge-btn {
+  color: var(--m-text);
+  border-color: var(--m-text);
+}
+.tier-badge-refresh {
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 2px 4px;
+  border: none;
+  background: transparent;
+  color: var(--m-muted);
+  cursor: pointer;
+}
+.tier-badge-refresh:hover {
+  color: var(--m-text);
+}
+.tier-badge :is(button):focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+.tier-badge-pop {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 30;
+  width: max-content;
+  max-width: min(320px, 84vw);
+  padding: 8px 12px;
+  border: 1px solid var(--m-border);
+  border-radius: 8px;
+  background: var(--m-card);
+  color: var(--m-text);
+  font-family: var(--font-body);
+  font-size: 13px;
+  letter-spacing: normal;
+  line-height: 1.45;
+  white-space: normal;
+  box-shadow: 0 14px 34px rgba(30, 27, 24, 0.18);
+}
+
+@media (max-width: 480px) {
+  .taste-place-links {
+    grid-column: 2;
+    align-items: flex-start;
+  }
+}
+
+.example-banner {
+  max-width: 720px;
+  margin: 12px auto 0;
+  padding: 10px 14px;
+  border: 1px solid var(--m-border);
+  border-radius: 12px;
+  background: var(--m-card);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--m-text);
+}
+.example-banner-cta {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  min-height: 44px;
+  cursor: pointer;
+  white-space: nowrap;
+  background: var(--color-terracotta);
+  color: var(--color-clay);
+  transition: filter var(--duration-fast) var(--ease-smooth-out);
+}
+.example-banner-cta:hover {
+  filter: brightness(1.06);
+}
+.example-banner-cta:active {
+  filter: brightness(0.94);
+}
+.example-banner-cta:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.now-line {
+  font-size: 15px;
+  align-self: flex-start;
+  font-weight: 600;
+}
+
+.clock-details {
+  margin-top: 22px;
+  border: 1px solid var(--m-border);
+  border-radius: 10px;
+  background: var(--m-card);
+}
+.clock-details-summary {
+  cursor: pointer;
+  padding: 12px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--m-text);
+  list-style-position: inside;
+}
+.clock-details-body {
+  padding: 0 14px 14px;
+}
+.clock-details-text {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--m-text);
+  margin: 4px 0 12px;
+}
+.clock-details .dial {
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.arrival-day {
+  margin: 24px 0;
+  padding: 24px 0;
+  border-top: 1px solid var(--m-border);
+  border-bottom: 1px solid var(--m-border);
+}
+.arrival-day h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(1.8rem, 3.2vw, 2rem);
+  line-height: 1.1;
+  margin: 0;
+  color: var(--m-text);
+  overflow-wrap: anywhere;
+}
+.arrival-day-meta {
+  font-size: 14px;
+  color: var(--m-muted);
+  margin: 8px 0 0;
+}
+.arrival-day-rows {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+}
+.arrival-day-row {
+  /* Anchors the resolve's CalcCell shimmer (agent-native step 7). */
+  position: relative;
+  display: grid;
+  grid-template-columns: 80px minmax(0, 1fr);
+  gap: 16px;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--m-border);
+}
+.arrival-day-time {
+  font-family: var(--font-mono2);
+  font-size: 12px;
+  color: var(--cat, var(--m-muted));
+  padding-top: 4px;
+}
+.arrival-day-step {
+  min-width: 0;
+}
+.arrival-day-step-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--m-text);
+  overflow-wrap: anywhere;
+}
+.arrival-day-step-summary {
+  margin: 4px 0 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--m-text);
+  overflow-wrap: anywhere;
+}
+.arrival-day-why {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--m-muted);
+}
+.arrival-day-why summary {
+  cursor: pointer;
+  font-weight: 500;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+.arrival-day-why summary:focus-visible,
+.arrival-day :is(button, a):focus-visible {
+  outline: 2px solid var(--m-text);
+  outline-offset: 3px;
+}
+.arrival-day-idea-body {
+  min-width: 0;
+  background: var(--m-card-2);
+  border-radius: 12px;
+  padding: 16px;
+}
+.arrival-day-idea-label {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--m-muted);
+}
+.arrival-day-idea-name {
+  margin: 4px 0 0;
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--m-text);
+  overflow-wrap: anywhere;
+}
+.arrival-day-idea-cats {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--m-muted);
+  overflow-wrap: anywhere;
+}
+.arrival-day-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  align-items: center;
+}
+.arrival-day-aside {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.arrival-day-foot {
+  margin: 16px 0 0;
+  font-size: 12px;
+  color: var(--m-muted);
+}
+@media (max-width: 480px) {
+  .arrival-day-row {
+    grid-template-columns: 56px minmax(0, 1fr);
+    gap: 12px;
+  }
+}
+.arrival-day-time > span {
+  display: block;
+  white-space: nowrap;
+}
+.arrival-day-actions button {
+  white-space: nowrap;
+}
+@media (max-width: 480px) {
+  .arrival-day-idea .arrival-day-time {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 6px;
+  }
+  .arrival-day-idea-body {
+    grid-column: 1 / -1;
+  }
+}
+
+.perf-brief {
+  margin:24px 0;
+  padding:28px;
+  border:1px solid var(--color-line);
+  border-radius:24px;
+  background:var(--color-ink-2);
+  color:var(--color-paper);
+  min-width:0;
+}
+.perf-brief .entry-eyebrow {
+  color:var(--color-sun-dest);
+  margin:0 0 12px;
+}
+.perf-brief h2 {
+  font-family:var(--font-display);
+  font-size:clamp(1.6rem,4vw,2.4rem);
+  font-weight:550;
+  line-height:1.15;
+  margin:0;
+  overflow-wrap:anywhere;
+}
+.perf-grid {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:24px;
+  margin:24px 0;
+  padding:20px 0;
+  border-block:1px solid var(--color-line);
+}
+.perf-col {
+  min-width:0;
+}
+.perf-label {
+  margin:0 0 8px;
+  font-size:12px;
+  letter-spacing:.03em;
+  color:var(--color-paper);
+}
+.perf-time {
+  font-family:var(--font-mono2);
+  font-size:clamp(1.8rem,6vw,3.3rem);
+  font-weight:500;
+  letter-spacing:-.05em;
+  line-height:1.1;
+  margin:0 0 10px;
+}
+.perf-col:last-child .perf-time {
+  color:var(--color-sun-dest);
+}
+.perf-sub,.perf-note,.perf-foot {
+  font-size:12px;
+  line-height:1.65;
+  color:var(--color-paper);
+  margin:8px 0 0;
+  overflow-wrap:anywhere;
+}
+.perf-note {
+  font-size:13px;
+}
+.perf-foot {
+  color:#b8c0d0;
+  margin-top:16px;
+}
+.light-panel {
+  margin:24px 0;
+  padding:24px;
+  border:1px solid var(--m-border);
+  border-radius:20px;
+  background:var(--m-card);
+  color:var(--m-text);
+  min-width:0;
+}
+.light-panel h3 {
+  font-family:var(--font-display);
+  font-size:clamp(1.5rem,4vw,1.9rem);
+  font-weight:550;
+  margin:0;
+  line-height:1.2;
+}
+.light-sub {
+  font-size:14px;
+  line-height:1.6;
+  margin:8px 0;
+  color:var(--m-text);
+}
+.light-meta {
+  font-family:var(--font-mono2);
+  font-size:12px;
+  line-height:1.5;
+  margin:8px 0 20px;
+  color:var(--m-muted);
+}
+.light-row {
+  display:grid;
+  grid-template-columns:22px minmax(0,1fr);
+  gap:12px;
+  padding:18px;
+  border-radius:14px;
+  margin-top:10px;
+  border-left:3px solid var(--color-sun-dest);
+}
+.light-row > svg {
+  margin-top:3px;
+}
+.light-row--seek {
+  background:var(--m-card-2);
+  color:var(--m-text);
+}
+.light-row--avoid {
+  background:var(--color-ink-3);
+  color:var(--color-paper);
+  border-left-color:var(--color-sleep);
+}
+.light-row-label {
+  margin:0 0 6px;
+  font-size:12px;
+  font-weight: 500;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+}
+.light-row-time {
+  margin:0;
+  font-family:var(--font-mono2);
+  font-size:clamp(1rem,4vw,1.35rem);
+  font-weight:600;
+  overflow-wrap:anywhere;
+}
+.light-row-note {
+  margin:8px 0 0;
+  font-size:13px;
+  line-height:1.65;
+  overflow-wrap:anywhere;
+}
+.light-support,.light-foot,.light-empty {
+  font-size:12px;
+  line-height:1.65;
+  color:var(--m-muted);
+  margin:16px 0 0;
+}
+.light-support {
+  border-top:1px solid var(--m-border);
+  padding-top:16px;
+}
+.sample-journeys {
+  grid-column:1/-1;
+  margin-top:32px;
+  border-top:1px solid var(--m-border);
+  padding-top:32px;
+  color:var(--m-text);
+  min-width:0;
+}
+.sample-journeys > h2 {
+  font-family:var(--font-display);
+  font-size:clamp(1.7rem,4vw,2.4rem);
+  font-weight:550;
+  line-height:1.15;
+  margin:8px 0 24px;
+}
+.sample-row {
+  display:grid;
+  grid-template-columns:44px minmax(0,1fr) auto;
+  gap:20px;
+  align-items:center;
+  padding:24px 0;
+  border-bottom:1px solid var(--m-border);
+}
+.sample-num {
+  font-family:var(--font-mono2);
+  font-size:16px;
+  color:var(--m-muted);
+  align-self:start;
+  padding-top:5px;
+}
+.sample-body {
+  min-width:0;
+}
+.sample-name {
+  font-family:var(--font-display);
+  font-size:24px;
+  line-height:1.2;
+  margin:0;
+  font-weight:550;
+  overflow-wrap:anywhere;
+}
+/* The route badge beside each name — mono at the floor, quiet, so the row
+   tells you which flight the story flies without raising its voice. */
+.sample-route {
+  display:inline-block;
+  font-family:var(--font-mono2);
+  font-size:13px;
+  font-weight:500;
+  letter-spacing:0.06em;
+  color:var(--m-faint);
+  margin-left:10px;
+  vertical-align:middle;
+  white-space:nowrap;
+}
+.sample-role {
+  font-size:12px;
+  font-weight: 500;
+  letter-spacing:.04em;
+  margin:7px 0;
+  color:var(--m-muted);
+}
+.sample-joke {
+  font-size:14px;
+  line-height:1.65;
+  margin:0;
+  color:var(--m-text);
+}
+.sample-foot {
+  font-size:12px;
+  line-height:1.7;
+  color:var(--m-muted);
+  margin:20px 0 0;
+}
+.sample-row button {
+  min-height:44px;
+  white-space:normal;
+  text-align:left;
+}
+.sample-row .taste-button svg {
+  flex-shrink:0;
+  transition:transform 160ms ease;
+}
+.sample-row .taste-button:hover svg {
+  transform:translateX(3px);
+}
+.sample-actions {
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+/* The screening room — the travellers' adverts paired with the entry
+   stage: the featured frame is the stage's second column (the "who"
+   beside the ask) and the rail of the three tiles reads beneath the pair,
+   centred. The rail's clips stay muted loops and move only while ≥40% of
+   one is on screen — the IntersectionObserver's call, never a timer;
+   reduced motion keeps the posters. */
+.adverts {
+  max-width:720px;
+  margin:32px auto 0;
+  color:var(--m-text);
+  text-align:center;
+  min-width:0;
+}
+.adverts > h2 {
+  font-family:var(--font-display);
+  font-size:clamp(1.7rem,4vw,2.4rem);
+  font-weight:550;
+  line-height:1.15;
+  margin:8px 0 28px;
+}
+.ad-feature {
+  position:relative;
+  aspect-ratio:9/16;
+  height:clamp(420px,62dvh,640px);
+  max-width:100%;
+  margin:0 auto;
+  border-radius:var(--radius-lg);
+  overflow:hidden;
+  border:1px solid var(--m-border);
+  background:var(--m-ink-solid);
+}
+.ad-feature video {
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+/* The house ghost button, rung to a circle over the frame. While the clip
+   plays it steps back — the words are the frame's — and returns on hover
+   or focus so pause is always reachable. */
+.ad-play {
+  position:absolute;
+  inset:0;
+  margin:auto;
+  width:72px;
+  height:72px;
+  min-height:72px;
+  padding:0;
+  border-radius:50%;
+  border-color:color-mix(in srgb, var(--m-text) 55%, transparent);
+  background:color-mix(in srgb, var(--color-ink) 45%, transparent);
+  color:var(--m-text);
+  transition:opacity var(--duration-fast) var(--ease-smooth-out), filter var(--duration-fast) var(--ease-smooth-out);
+}
+.ad-feature[data-playing] .ad-play { opacity:0; }
+.ad-feature[data-playing]:hover .ad-play,
+.ad-play:focus-visible { opacity:1; }
+.ad-name {
+  position:absolute;
+  left:12px;
+  bottom:12px;
+  font-family:var(--font-mono2);
+  font-size:13px;
+  font-weight:500;
+  letter-spacing:0.08em;
+  text-transform:uppercase;
+  color:var(--m-text);
+  background:color-mix(in srgb, var(--color-ink) 55%, transparent);
+  border:1px solid var(--m-border);
+  border-radius:999px;
+  padding:4px 10px;
+}
+.ad-rail {
+  display:flex;
+  justify-content:center;
+  gap:14px;
+  margin-top:20px;
+}
+.ad-tile {
+  position:relative;
+  width:clamp(120px,14vw,170px);
+  aspect-ratio:9/16;
+  border-radius:var(--radius-lg);
+  overflow:hidden;
+}
+.ad-tile--on { box-shadow:0 0 0 2px var(--color-terracotta); }
+.ad-tile-btn {
+  display:block;
+  width:100%;
+  height:100%;
+  padding:0;
+  border:none;
+  background:none;
+  font:inherit;
+  cursor:pointer;
+}
+/* The tile clips its contents, so the focus ring draws inside. */
+.ad-tile-btn:focus-visible {
+  outline:none;
+  box-shadow:inset 0 0 0 2px var(--color-focus);
+}
+.ad-clip {
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.ad-tile-name {
+  position:absolute;
+  left:8px;
+  bottom:8px;
+  font-family:var(--font-mono2);
+  font-size:13px;
+  font-weight:500;
+  letter-spacing:0.08em;
+  text-transform:uppercase;
+  color:var(--m-text);
+  text-shadow:0 1px 6px var(--color-ink);
+}
+/* The one-line speaker — same small circle on a tile and beside a journey
+   row's CTA. Pressed inverts like the ghost pill's chosen state. */
+.ad-voice,
+.sample-voice {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:0;
+  border-radius:50%;
+  border:1px solid color-mix(in srgb, var(--m-text) 40%, transparent);
+  background:color-mix(in srgb, var(--color-ink) 45%, transparent);
+  color:var(--m-text);
+  cursor:pointer;
+  transition:filter var(--duration-fast) var(--ease-smooth-out);
+}
+.ad-voice:hover:not([aria-pressed="true"]),
+.sample-voice:hover:not([aria-pressed="true"]) { filter:brightness(1.25); }
+.ad-voice[aria-pressed="true"],
+.sample-voice[aria-pressed="true"] {
+  background:var(--m-text);
+  border-color:var(--m-text);
+  color:var(--m-bg);
+}
+.ad-voice:focus-visible,
+.sample-voice:focus-visible {
+  outline:2px solid var(--color-focus);
+  outline-offset:2px;
+}
+.ad-voice {
+  position:absolute;
+  right:8px;
+  bottom:8px;
+  width:40px;
+  height:40px;
+  min-height:40px;
+}
+.sample-voice {
+  width:44px;
+  height:44px;
+  flex-shrink:0;
+}
+.ad-caption {
+  font-size:12px;
+  line-height:1.7;
+  color:var(--m-muted);
+  margin:14px auto 0;
+  max-width:52ch;
+}
+
+/* The advert portraits ride the rows as a fourth lane, alternating sides
+   like the references. Sofia's row keeps the text-only layout — her
+   advert was never shot. The lane only exists above 640px; below it the
+   image stands down and the row is text again. */
+@media (min-width:641px) {
+  .sample-row--img-r { grid-template-columns:44px minmax(0,1fr) 200px auto; }
+  .sample-row--img-l { grid-template-columns:44px 200px minmax(0,1fr) auto; }
+}
+.sample-ad {
+  display:block;
+  width:min(220px,100%);
+  aspect-ratio:4/5;
+  object-fit:cover;
+  border-radius:var(--radius-lg);
+  justify-self:center;
+}
+@media (max-width:640px) {
+  .sample-ad { display:none; }
+}
+.scenario {
+  max-width:720px;
+  margin:0 auto;
+  padding-bottom:36px;
+  color:var(--m-text);
+}
+.scenario-heading {
+  padding:28px 0 20px;
+}
+.scenario-person {
+  font-size:14px;
+  font-weight: 500;
+  line-height:1.6;
+  margin:0 0 16px;
+  color:var(--m-text);
+}
+.scenario-person span {
+  display:block;
+  font-weight:400;
+  color:var(--m-muted);
+}
+.scenario-title {
+  font-family:var(--font-display);
+  font-size:clamp(2.2rem,6vw,3.7rem);
+  line-height:1.02;
+  letter-spacing:-.035em;
+  font-weight:550;
+  margin:0;
+  max-width:18ch;
+  overflow-wrap:anywhere;
+}
+.scenario-joke {
+  font-size:16px;
+  line-height:1.7;
+  color:var(--m-muted);
+  margin:18px 0 0;
+  max-width:52ch;
+}
+.scenario-disclosure {
+  border-left:2px solid var(--m-border-2);
+  padding:12px 16px;
+  margin:0 0 24px;
+  font-size:12px;
+  line-height:1.7;
+  color:var(--m-muted);
+}
+.scenario-nav,.scenario-days {
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin:20px 0;
+}
+.scenario :is(.scenario-nav,.scenario-days,.scenario-toggle) button[aria-pressed="true"] {
+  background:var(--m-text);
+  border-color:var(--m-text);
+  color:var(--m-bg);
+}
+.scenario-route {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:24px;
+  padding:24px 0;
+  border-block:1px solid var(--m-border);
+  margin:24px 0;
+}
+.scenario-airport {
+  font-family:var(--font-mono2);
+  font-size:28px;
+  line-height:1.2;
+}
+.scenario-airport small {
+  display:block;
+  font-family:var(--font-body);
+  font-size:12px;
+  color:var(--m-muted);
+  margin-top:6px;
+}
+.scenario-departure {
+  margin-left:auto;
+  font-size:12px;
+  line-height:1.8;
+  color:var(--m-muted);
+}
+.scenario-departure time {
+  display:block;
+  font-family:var(--font-mono2);
+  color:var(--m-text);
+}
+.scenario-toggle {
+  border:1px solid var(--m-border);
+  border-radius:16px;
+  padding:16px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  min-width:0;
+  margin:24px 0 12px;
+}
+.scenario-toggle legend {
+  font-size:13px;
+  font-weight: 500;
+  padding:0 8px;
+  color:var(--m-text);
+}
+.scenario-source {
+  font-size:12px;
+  line-height:1.7;
+  color:var(--m-muted);
+  margin:12px 0;
+}
+.scenario-cta {
+  margin-top:32px;
+  padding-top:24px;
+  border-top:1px solid var(--m-border);
+}
+.scenario-taste {
+  margin:24px 0 0;
+}
+.scenario-taste summary {
+  cursor:pointer;
+  font-size:13px;
+  font-weight: 500;
+  color:var(--m-muted);
+  padding:8px 0;
+}
+.scenario-taste .scenario-toggle {
+  margin-top:12px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .scenario-days,
+    .scenario-route {
+      animation: scenario-rise var(--dur-settle) var(--ease-settle) both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 40%;
+    }
+  }
+}
+@keyframes scenario-rise {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: none; }
+}
+.scenario-sub {
+  font-size:13px;
+  line-height:1.7;
+  margin:12px 0;
+  color:var(--m-muted);
+}
+.scenario :is(button,select):focus-visible,.sample-journeys button:focus-visible {
+  outline:2px solid var(--color-focus);
+  outline-offset:4px;
+}
+.scenario .taste-button {
+  min-height:44px;
+  white-space:normal;
+}
+@media(max-width:600px) {
+ .sample-row {
+  grid-template-columns:28px minmax(0,1fr);
+  gap:12px;
+  align-items:start;
+}
+ .sample-row .sample-actions {
+  grid-column:2;
+  justify-self:start;
+}
+ .perf-brief,.light-panel {
+  padding:20px;
+}
+ .perf-grid {
+  gap:14px;
+}
+ .scenario-route {
+  gap:16px;
+}
+}
+@media(max-width:380px) {
+ .scenario-departure {
+  width:100%;
+  margin-left:0;
+}
+ .light-row {
+  padding:14px;
+  gap:8px;
+  grid-template-columns:18px minmax(0,1fr);
+}
+}
+@media(prefers-reduced-motion:reduce) {.sample-row .taste-button svg{transition:none;}.sample-row .taste-button:hover svg{transform:none;}}
+
+.perf-event-summary {
+  font-family: var(--font-mono2);
+  font-size: 13px;
+  line-height: 1.7;
+  margin: 16px 0 0;
+  color: var(--color-paper);
+}
+.day-scene-details {
+  margin-top: 20px;
+}
+.day-scene-details summary {
+  display: list-item;
+  list-style-position: inside;
+}
+.day-scene-details .light-panel {
+  margin: 12px 0 0;
+}
+
+/* drawer removed — kept selector block harmless: LightWindowPanel still
+ *  renders inside other surfaces that may reuse .day-scene-details. */
+
+.taste-tokens {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0;
+  margin: 12px 0 20px;
+  list-style: none;
+}
+.taste-tokens li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--m-border-2);
+  border-radius: 6px;
+  padding: 7px 12px 7px 7px;
+  font-size: 12px;
+  color: var(--m-text);
+  background: var(--m-card);
+}
+.taste-token-mark {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  font-family: var(--font-display);
+  font-size: 20px;
+  background: var(--color-clay);
+  color: var(--color-cream);
+}
+.taste-tokens small {
+  display: block;
+  color: var(--m-muted);
+  font-size: 12px;
+}
+.arrival-day-idea[data-kept="true"] .arrival-day-idea-body {
+  border-left: 3px solid var(--color-terracotta);
+  background: var(--m-card);
+  border-radius: 10px;
+  padding: 16px;
+}
+.day-card-trigger {
+  margin-top: 16px;
+}
+.day-card-dialog {
+  width: min(960px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  overflow: auto;
+  border: 1px solid var(--m-border);
+  border-radius: 10px;
+  padding: 24px;
+  background: var(--m-bg);
+  color: var(--m-text);
+}
+.day-card-dialog::backdrop {
+  background: rgba(7, 9, 15, 0.8);
+}
+.day-card-layout {
+  display: grid;
+  grid-template-columns: minmax(230px, 0.8fr) minmax(0, 1fr);
+  gap: 28px;
+}
+.day-card-preview {
+  display: flex;
+  justify-content: center;
+  background: var(--color-ink);
+  border-radius: 10px;
+  padding: 12px;
+  min-width: 0;
+}
+.day-card-preview img {
+  max-height: 65dvh;
+  max-width: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+.day-card-dialog h2 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  line-height: 1.2;
+  margin: 0 0 16px;
+}
+.day-card-dialog p,
+.day-card-dialog label {
+  font-size: 13px;
+  line-height: 1.65;
+}
+.day-card-options {
+  display: grid;
+  gap: 12px;
+  margin: 20px 0;
+  border: 0;
+  padding: 0;
+}
+.day-card-options label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  margin: 0;
+}
+.day-card-options input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-terracotta);
+  flex-shrink: 0;
+}
+.day-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0;
+}
+.day-card-dialog button {
+  font: inherit;
+  font-size: 13px;
+  min-height: 44px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--m-border-2);
+  background: var(--m-card);
+  color: var(--m-text);
+  cursor: pointer;
+}
+.day-card-dialog button[aria-pressed="true"] {
+  background: var(--m-text);
+  color: var(--m-bg);
+}
+.day-card-dialog button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.day-card-dialog :is(button, input, summary):focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 3px;
+}
+@media (max-width: 680px) {
+  .day-card-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .day-card-dialog {
+    padding: 18px;
+  }
+  .day-card-preview img {
+    max-height: 55dvh;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .taste-tokens *,
+  .arrival-day-idea,
+  .day-card-dialog * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+.offline-badge {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--z-status);
+  padding: 8px 14px;
+  border-radius: 6px;
+  background: var(--color-clay, #1e1b18);
+  color: var(--color-paper, #f5efe6);
+  font-size: 12px;
+  font-weight: 500;
+  box-shadow: 0 8px 28px rgba(30, 27, 24, 0.35);
+}
+
+.right-now-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  margin: 8px 0 12px;
+  border-radius: 12px;
+  background: var(--m-card, #fff);
+  border: 1px solid var(--m-border, #ddd);
+  font-size: 13px;
+  font-weight: 500;
+}
+.right-now-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--color-terracotta, #d96b43);
+}
+
+.recovery-card {
+  padding: 10px 14px;
+  margin: 8px 0 12px;
+  border-radius: 12px;
+  background: var(--m-card-2, #f3efe6);
+  border: 1px solid var(--m-border, #ddd);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.dial-cas {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--m-muted);
+  margin: 6px 0;
+}
+
+/* The everyday anchors are a landing section, not a widget dropped onto
+   the page: the same section rhythm as the sample journeys above it — a
+   hairline rule, a display heading, quiet chips. The card chrome it used
+   to carry (a boxed panel on a field of ink) made it read as a different
+   app entirely. */
+.everyday-rhythm {
+  margin-top: 32px;
+  padding-top: 32px;
+  border-top: 1px solid var(--m-border);
+}
+.everyday-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.7rem, 4vw, 2.4rem);
+  font-weight: 550;
+  line-height: 1.15;
+  margin: 8px 0 10px;
+}
+.everyday-sub { font-size: 14px; color: var(--m-muted); margin: 0 0 16px; }
+.everyday-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.everyday-chip {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--m-border);
+  background: transparent;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.everyday-chip.done { background: var(--m-tag, #eee); }
+
+.recovery-list { margin: 6px 0 0; padding-left: 18px; font-size: 12px; line-height: 1.5; }
+
+.everyday-streak { margin: 12px 0 0; font-size: 13px; font-weight: 500; }
+
+.constraint-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.constraint-chip {
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--m-tag, #eee);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.constraint-replan {
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--m-border, #ddd);
+  background: var(--m-accent, #d96b43);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.offline-toggle { margin-left: 8px; padding: 4px 8px; border-radius: 6px; border: none; background: var(--m-accent, #d96b43); color: #fff; font-size: 11px; font-weight: 600; cursor: pointer; }
+.offline-hint { display: block; font-size: 11px; margin-top: 4px; }
+
+/* ?via= acknowledgment — the shared card that brought a recipient here,
+   named with its own numbers before the entry form asks for theirs. */
+.via-note {
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--m-border, #ddd);
+  border-left: 3px solid var(--m-accent, #d96b43);
+  background: var(--m-card, #fff);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--m-text, #4a3f35);
+}
+
+/* ── The demo journey (round 19) ────────────────────────────────────────
+   Four beats, one stage: stakes → crew → plan → payoff. The example trip
+   told in order instead of dumped at once. Tokens only; the beat content
+   rises with the shared choreography and the light sweep carries the
+   hand-offs (useLightSweep). */
+/* Round 27: the demo is a stage, not a working surface. Stages are ink in
+   both themes, so the landing's stage grammar carries straight through —
+   no theme jump between the hero the visitor left and the story they get.
+   Tokens follow .today-stage; the modeled sky rides --stage-sky, written
+   imperatively by DemoBeats (ink default for the server paint). */
+.demo-root {
+  min-height: 100dvh;
+}
+.demo-root .demo {
+  --m-bg: #0b0e16;
+  --m-card: rgba(255, 255, 255, 0.05);
+  --m-text: #c9d2e4;
+  --m-muted: #8b93a7;
+  --m-faint: #6b7590;
+  --m-border: rgba(255, 255, 255, 0.12);
+  --m-line: rgba(255, 255, 255, 0.12);
+  --m-accent: #e99a6f;
+  color: var(--m-text);
+}
+.demo-root .stage-sun { z-index: var(--z-flat); }
+/* On small screens the moment-positioned sun can cross the crew and plan
+   rows. On every beat after the stakes it docks in the head region at a
+   reduced scale instead — the words keep the stage (round-31: characters
+   never cover words). */
+@media (max-width: 840px) {
+  /* The docked sun sits in the head row — room is reserved for it, so it
+     can never cover the wordmark, the subtitle or the skip link. The
+     eyebrow drops to its own line so the skip link never wraps. */
+  .demo-root .demo-head { flex-wrap: wrap; row-gap: 2px; }
+  .demo-root .demo-sub { order: 3; flex-basis: 100%; }
+  .demo-root .demo-skip { white-space: nowrap; }
+  .demo-root .demo:not([data-beat="stakes"]) .demo-head { padding-right: 64px; }
+  .demo-root .demo:not([data-beat="stakes"]) .stage-sun {
+    left: auto;
+    right: 8px;
+    top: 8px;
+    width: 9%;
+    min-width: 40px;
+    translate: 0 0;
+  }
+}
+.demo-root .demo-stage, .demo-root .demo-head, .demo-root .demo-foot, .demo-root .demo-footnote {
+  position: relative;
+  z-index: var(--z-raised);
+}
+
+/* The night stage's depth — generated star planes and terrain silhouettes
+   in front of the painted sky, behind the words (fixed, so the backdrop
+   spans the viewport the shared sky already paints). Stars drift on
+   transform only, each plane at its own rate; the dawn wash and the ridge
+   rim ride the beat (later beats, more light); everything is aria-hidden
+   chrome — the written beats stay the read. */
+.demo-depth {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-flat);
+  overflow: hidden;
+  pointer-events: none;
+}
+.demo-depth > * { position: absolute; }
+.demo-stars {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transition: opacity 900ms var(--ease-drift);
+}
+.demo-stars circle { fill: var(--color-paper); }
+.demo-stars-far { opacity: 0.5; }
+.demo-stars-mid { opacity: 0.7; }
+.demo-stars-near { opacity: 0.95; }
+.demo-depth[data-drift="no"] .demo-stars { animation-play-state: paused; }
+
+.demo-dawn {
+  inset: 0;
+  opacity: 0.14;
+  background: radial-gradient(ellipse 130% 55% at var(--stage-sun-x, 50%) 100%, var(--stage-horizon) 0%, transparent 68%);
+  transition: opacity 900ms var(--ease-drift);
+}
+
+.demo-ridge {
+  left: -3%;
+  width: 106%;
+  bottom: -1px;
+  transition: opacity 900ms var(--ease-drift), filter 900ms var(--ease-drift);
+}
+.demo-ridge-far { height: 26%; opacity: 0.8; }
+.demo-ridge-far path { fill: var(--color-ink-3); }
+.demo-ridge-near { height: 15%; opacity: 0.95; }
+.demo-ridge-near path { fill: var(--color-ink); }
+
+/* The beats shift the composition: dawn climbs and the stars thin as the
+   morning gets closer — the story arriving in the light, not the words. */
+.demo[data-beat="crew"] .demo-dawn { opacity: 0.2; }
+.demo[data-beat="plan"] .demo-dawn { opacity: 0.3; }
+.demo[data-beat="taste"] .demo-dawn { opacity: 0.42; }
+.demo[data-beat="payoff"] .demo-dawn { opacity: 0.52; }
+.demo[data-beat="plan"] .demo-stars { opacity: 0.55; }
+.demo[data-beat="taste"] .demo-stars { opacity: 0.42; }
+.demo[data-beat="payoff"] .demo-stars { opacity: 0.3; }
+.demo[data-beat="plan"] .demo-ridge-far { filter: drop-shadow(0 -1px 3px rgba(255, 214, 150, 0.18)); }
+.demo[data-beat="payoff"] .demo-ridge-far { filter: drop-shadow(0 -2px 8px rgba(255, 214, 150, 0.4)); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .demo-stars-far { animation: demo-drift-far 190s ease-in-out infinite alternate; }
+  .demo-stars-mid { animation: demo-drift-mid 140s ease-in-out infinite alternate; }
+  .demo-stars-near { animation: demo-drift-near 105s ease-in-out infinite alternate; }
+}
+@keyframes demo-drift-far { from { transform: translateX(-1.2%); } to { transform: translateX(1.2%); } }
+@keyframes demo-drift-mid { from { transform: translateX(1.8%); } to { transform: translateX(-1.8%); } }
+@keyframes demo-drift-near { from { transform: translateX(-2.6%); } to { transform: translateX(2.6%); } }
+@media (prefers-reduced-motion: reduce) {
+  .demo-stars, .demo-dawn, .demo-ridge { transition: none; }
+}
+.demo {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+.demo-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 18px 0 10px;
+}
+.demo-word {
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  font-size: 13px;
+  color: var(--m-text);
+  text-decoration: none;
+}
+.demo-sub {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--m-muted);
+}
+.demo-skip {
+  margin-left: auto;
+  background: none;
+  border: none;
+  font: inherit;
+  font-size: 11px;
+  color: var(--m-muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.demo-skip:hover { color: var(--m-text); }
+
+.demo-stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 28px 0;
+}
+.demo-beat { max-width: 560px; margin: 0 auto; width: 100%; }
+.demo-kicker {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--m-accent);
+  margin: 0;
+}
+.demo-title {
+  font-size: var(--text-2xl);
+  line-height: 1.12;
+  font-weight: 600;
+  color: var(--m-text);
+  margin: 10px 0 0;
+}
+.demo-clocks {
+  margin: 18px 0 0;
+  font-size: var(--text-lg);
+  color: var(--m-muted);
+}
+.demo-clocks b {
+  font-size: 34px;
+  font-weight: 800;
+  color: var(--m-text);
+  font-variant-numeric: tabular-nums;
+}
+.demo-clocks-sep { margin: 0 10px; color: var(--m-faint); }
+.demo-gap {
+  margin: 14px 0 0;
+  font-size: var(--text-sm);
+  color: var(--m-muted);
+}
+.demo-gap-num {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--m-accent);
+  font-variant-numeric: tabular-nums;
+}
+.demo-joke {
+  margin: 22px 0 0;
+  font-style: italic;
+  font-size: var(--text-sm);
+  color: var(--m-faint);
+}
+
+.demo-crew { margin: 18px 0 0; display: grid; gap: 10px; }
+.demo-line {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--m-text);
+}
+.demo-agent {
+  display: inline-block;
+  min-width: 44px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--m-accent);
+}
+.demo-days {
+  margin-top: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.demo-day {
+  font-size: 12px;
+  color: var(--m-muted);
+  border: 1px solid var(--m-line);
+  border-radius: 6px;
+  padding: 4px 10px;
+}
+.demo-day b { color: var(--m-text); font-variant-numeric: tabular-nums; }
+.demo-honest {
+  margin: 18px 0 0;
+  font-size: 12px;
+  color: var(--m-faint);
+}
+
+.demo-rows { margin: 18px 0 0; display: grid; gap: 8px; }
+.demo-row {
+  display: flex;
+  gap: 14px;
+  align-items: baseline;
+  border: 1px solid var(--m-line);
+  border-radius: 12px;
+  padding: 10px 14px;
+  background: var(--m-card);
+}
+.demo-row-time {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--m-accent);
+  font-variant-numeric: tabular-nums;
+}
+.demo-row-body { display: grid; gap: 2px; }
+.demo-row-body b { font-size: var(--text-sm); color: var(--m-text); }
+.demo-row-body small { font-size: 12px; color: var(--m-muted); }
+
+/* The taste beat: the favourite-picker uses the scenario toggle's shape but
+   needs its own pressed state (the scenario rule is scoped to .scenario). */
+.demo-taste-toggle {
+  margin: 18px 0 0;
+}
+.demo-taste-toggle button[aria-pressed="true"] {
+  background: var(--m-text);
+  border-color: var(--m-text);
+  color: var(--m-bg);
+}
+.demo-provenance {
+  margin: 14px 0 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--m-muted);
+}
+
+.demo-score {
+  margin: 18px 0 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.demo-score-cell {
+  border: 1px solid var(--m-line);
+  border-radius: 12px;
+  padding: 12px 10px;
+  display: grid;
+  gap: 3px;
+  justify-items: start;
+  background: var(--m-card);
+}
+.demo-score-cell b {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--m-text);
+  font-variant-numeric: tabular-nums;
+}
+.demo-score-cell small { font-size: 11px; color: var(--m-muted); }
+
+.demo-passport { margin: 20px auto 0; max-width: 300px; position: relative; }
+.demo-passport svg { width: 100%; height: auto; border-radius: 14px; }
+.demo-passport-frame { position: relative; }
+.demo-stamp-burst {
+  position: absolute;
+  inset: -14%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(233, 154, 111, 0.38), transparent 72%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.demo-ctas { margin: 22px 0 0; display: flex; flex-wrap: wrap; gap: 10px; }
+.demo-cta-primary {
+  display: inline-block;
+  background: var(--m-accent);
+  color: var(--m-bg);
+  font-weight: 500;
+  font-size: var(--text-sm);
+  border-radius: 999px;
+  padding: 10px 18px;
+  text-decoration: none;
+}
+.demo-cta-quiet {
+  display: inline-block;
+  border: 1px solid var(--m-line);
+  color: var(--m-text);
+  font-size: var(--text-sm);
+  border-radius: 6px;
+  padding: 10px 18px;
+  text-decoration: none;
+}
+
+.demo-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 0 8px;
+  border-top: 1px solid var(--m-line);
+}
+.demo-nav {
+  background: none;
+  border: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--m-text);
+  cursor: pointer;
+  text-decoration: none;
+  padding: 6px 4px;
+}
+.demo-nav:disabled { color: var(--m-faint); cursor: default; }
+.demo-nav-cta { color: var(--m-accent); }
+.demo-dots { display: flex; gap: 8px; }
+.demo-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1px solid var(--m-faint);
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+}
+.demo-dot.on { background: var(--m-accent); border-color: var(--m-accent); }
+.demo-dot.past { background: var(--m-faint); border-color: var(--m-faint); }
+.demo-footnote {
+  padding: 10px 0 26px;
+  margin: 0;
+  font-size: 11px;
+  color: var(--m-faint);
+  text-align: center;
+}
+.demo-footnote a { color: var(--m-muted); }
+/* The press floor above reaches these through `a[href]`; the hover is still
+   this line's own, because a dip does not tell you which of three switchers
+   you are about to land on. */
+.demo-footnote a:hover { color: var(--m-text); }
+
+/* Beat choreography: each beat's elements rise in order. Same vocabulary as
+   the arrival page, guarded by the global reduced-motion stand-down. */
+@media (prefers-reduced-motion: no-preference) {
+  .demo-beat [data-rise] {
+    opacity: 0;
+    animation: rise 620ms var(--ease-drift) forwards;
+  }
+  .demo-beat [data-rise="1"] { animation-delay: 0ms; }
+  .demo-beat [data-rise="2"] { animation-delay: 90ms; }
+  .demo-beat [data-rise="3"] { animation-delay: 180ms; }
+  .demo-beat [data-rise="4"] { animation-delay: 270ms; }
+  .demo-beat [data-rise="5"] { animation-delay: 360ms; }
+  .demo-beat [data-rise="6"] { animation-delay: 450ms; }
+  .demo-beat [data-rise="7"] { animation-delay: 540ms; }
+  .demo-beat [data-rise="8"] { animation-delay: 630ms; }
+  /* The peak beat (round 21): the passport lands a moment after its rise
+     begins, the stamp hits with one scale/rotate impact, and an ink burst
+     blooms out from behind. Transform + opacity only, per the motion
+     language; under reduced motion the passport simply appears. */
+  .demo-passport-frame {
+    animation: stamp-land 620ms var(--ease-drift) 480ms both;
+  }
+  .demo-stamp-burst {
+    animation: stamp-burst 760ms ease-out 560ms both;
+  }
+}
+@keyframes stamp-land {
+  0% { opacity: 0; transform: scale(1.16) rotate(-2.5deg); }
+  60% { opacity: 1; transform: scale(0.982) rotate(0.5deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+@keyframes stamp-burst {
+  0% { opacity: 0.85; transform: scale(0.55); }
+  100% { opacity: 0; transform: scale(1.45); }
+}
+
+/* ── Landing artifacts (round 19) ───────────────────────────────────────
+   The landing shows the three artifacts instead of naming them. They wake
+   once when scrolled into view (IntersectionObserver toggles data-seen);
+   the reveal is opacity + translate, staggered, and stands down under the
+   global reduced-motion guard. */
+.landing-artifacts { margin: 6px 0 18px; }
+.ld-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+@media (max-width: 640px) {
+  .ld-grid { grid-template-columns: 1fr; gap: 12px; }
+}
+.ld-card {
+  border: 1px solid var(--m-line);
+  border-radius: 10px;
+  background: var(--m-card);
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  text-align: center;
+  opacity: 0;
+  translate: 0 18px;
+  transition: opacity 560ms var(--ease-drift), translate 560ms var(--ease-drift);
+}
+.landing-artifacts[data-seen="yes"] .ld-card { opacity: 1; translate: 0 0; }
+.landing-artifacts[data-seen="yes"] .ld-card:nth-child(2) { transition-delay: 110ms; }
+.landing-artifacts[data-seen="yes"] .ld-card:nth-child(3) { transition-delay: 220ms; }
+.ld-card svg { width: 108px; height: 108px; }
+.ld-ring { fill: none; stroke: var(--m-line); stroke-width: 2; }
+.ld-tick { stroke: var(--m-faint); stroke-width: 1.5; }
+.ld-hand-local { stroke: var(--m-text); stroke-width: 3; stroke-linecap: round; }
+.ld-hand-body { stroke: var(--m-accent); stroke-width: 3; stroke-linecap: round; }
+.ld-pin { fill: var(--m-text); }
+.ld-cap { margin: 0; display: grid; gap: 2px; }
+.ld-cap b { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--m-text); }
+.ld-cap small { font-size: 12px; color: var(--m-muted); }
+.ld-score { margin: 0; display: grid; gap: 3px; min-height: 108px; align-content: center; }
+.ld-score b { font-size: 30px; font-weight: 600; color: var(--m-text); font-variant-numeric: tabular-nums; }
+.ld-score small { font-size: 12px; color: var(--m-muted); }
+.ld-score-line { font-size: 11px; color: var(--m-faint); }
+.ld-passport { display: block; width: 100%; max-width: 150px; }
+.ld-passport svg { width: 100%; height: auto; border-radius: 8px; }
+.ld-strip {
+  margin-top: 14px;
+  border-top: 1px solid var(--m-line);
+  padding-top: 12px;
+  display: grid;
+  gap: 6px;
+  text-align: center;
+}
+.ld-strip-line { margin: 0; font-size: 12px; color: var(--m-muted); }
+.ld-strip-label {
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--m-accent);
+  margin-right: 8px;
+}
+
+/* ── Today's stage (round 20) ───────────────────────────────────────────
+   First paint is the full-bleed stage — sky, route, clocks, the one next
+   step. The rest of Today unfolds below: the stage pins and recedes as the
+   traveller scrolls (the sky hands the page to the plan), and each section
+   rises on arrival. Scroll-driven, transform + opacity only, and every rule
+   stands down under reduced motion or where animation-timeline is absent —
+   the stage then simply scrolls away like any section. */
+.today-stage {
+  /* The sky is dark ink — the stage's tokens follow the clock stage's so
+     chips, clocks and the next line stay legible on it. */
+  --m-bg: #0b0e16;
+  --m-card: rgba(255, 255, 255, 0.05);
+  --m-text: #c9d2e4;
+  --m-muted: #8b93a7;
+  --m-faint: #6b7590;
+  --m-border: rgba(255, 255, 255, 0.12);
+  --m-ink: #f4f0e8;
+  --m-accent: #e99a6f;
+  /* The sun's display size — clamped with the viewport so the glass reads
+     on wide stages (the JSX renders a 240px backing and scales into this
+     box; pinned by tests/stage-css.test.ts). */
+  --stage-sun-size: clamp(140px, 15vw, 220px);
+  border-radius: 10px;
+  /* clips the sun's streak (stage-sunself::after) and the star plane at the
+     stage's rounded edge — the sky ends where the stage does. */
+  overflow: hidden;
+  padding: 26px 20px 18px;
+  min-height: 340px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.today-stage-inner {
+  position: relative;
+  /* The stage sun sits at z-index 1 — the instruments must paint above it,
+     or a modeled position can park the disc over the CTA (characters never
+     cover words). */
+  z-index: var(--z-instruments);
+  display: grid;
+  gap: 14px;
+  justify-items: center;
+  text-align: center;
+  width: 100%;
+}
+@media (max-width: 640px) {
+  /* On a narrow stage the centered cluster lands where the horizon sun is.
+     Anchor the instruments high so the sun keeps the lower half. */
+  .today-stage { align-items: flex-start; padding-top: clamp(48px, 11dvh, 96px); }
+}
+.stage-chip { backdrop-filter: none; }
+.stage-next {
+  margin: 0;
+  font-size: 17px;
+  font-size: clamp(17px, 1.6vw, 21px);
+  color: var(--m-ink);
+}
+.stage-next-kicker {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--m-accent);
+  margin-right: 2px;
+}
+/* The run's own door, under the one-line plan — ghost on the ink sky so it
+   reads as a quiet invitation, not a second CTA fighting the setup sheet. */
+.stage-start {
+  margin-top: 14px;
+}
+.stage-cue {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: var(--m-faint);
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    /* The wrapper is taller than the viewport, so its view-timeline phases
+       only address cleanly as lengths: exit 0 starts when the pin releases,
+       and the stage recedes over the following viewport of scroll while the
+       next scene takes over. The run div below the pin is pure scroll room —
+       it keeps the stage held for one beat before the hand-off. */
+    .today-stage-wrap {
+      view-timeline: --stage block;
+    }
+    .today-stage-run {
+      height: 68dvh;
+    }
+    .today-stage-pin {
+      position: sticky;
+      top: 0;
+      height: 100dvh;
+      display: flex;
+      align-items: center;
+    }
+    /* Inside the pin the stage IS the first viewport — sky edge to edge, no
+       dead band around a 340px island. Browsers without scroll-driven
+       animation keep the card form (min-height rule above). */
+    .today-stage-pin .today-stage {
+      width: 100%;
+      height: 100%;
+      min-height: 100%;
+      border-radius: 0;
+    }
+    /* The signature move for entering Today: while the stage holds, the sky
+       recedes and the clocks rise to meet the plan. */
+    .today-stage {
+      animation: stage-recede linear both;
+      animation-timeline: --stage;
+      animation-range: exit 0dvh exit 90dvh;
+    }
+    .today-stage-inner {
+      animation: stage-hand-off linear both;
+      animation-timeline: --stage;
+      animation-range: exit 0dvh exit 90dvh;
+    }
+    /* The sections below rise as they arrive — the same cadence vocabulary
+       the feed uses, one register up. They RISE rather than fade: a section
+       is content, and a scroll-driven fade leaves it invisible until the
+       traveller scrolls to it — which shows up as a blank band in a
+       full-page capture, in print, and on the block that is already on
+       screen when the page loads. The rise moves it into place; the words
+       are readable the whole time. */
+    .today-flow > * {
+      animation: land-rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 42%;
+    }
+  }
+}
+@keyframes stage-recede {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0.22; transform: scale(0.96); }
+}
+@keyframes stage-hand-off {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-26px); }
+}
+
+/* ── The sun-self (round 23) ────────────────────────────────────────────
+   The dial's sun stepped off the ring — the traveller's own body clock as
+   an instrument (face retired, design reset Phase 0). Colours come in two
+   tones (cream surfaces, and the stage's night sky); the pulse is
+   transform + opacity only, guarded, and the glyph never shows a state
+   the numbers don't carry. */
+.sunself { display: block; }
+.sunself-ray { stroke-width: 3; stroke-linecap: round; }
+
+.sunself-paper {
+  --sunself-disc: #f2b95c;
+  --sunself-halo: #f2b95c;
+  --sunself-ray-lit: #d96b43;
+  --sunself-ray-dim: #dccfbc;
+}
+.sunself-ink {
+  --sunself-disc: #ffc46b;
+  --sunself-halo: #ffc46b;
+  --sunself-ray-lit: #e99a6f;
+  --sunself-ray-dim: rgba(255, 255, 255, 0.18);
+}
+.sunself:not(.glass) .sunself-disc { fill: var(--sunself-disc); }
+.glass .sunself-ray { stroke-width: 1.2; stroke-linecap: butt; }
+.sunself:not(.glass) .sunself-halo { fill: var(--sunself-halo); }
+.sunself:not(.glass) .sunself-ray.lit { stroke: var(--sunself-ray-lit); }
+.sunself:not(.glass) .sunself-ray.dim { stroke: var(--sunself-ray-dim); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .sunself.enter {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: sunself-pulse 700ms var(--ease-drift);
+  }
+  .sunself-halo {
+    transition: opacity 420ms var(--ease-drift);
+  }
+  /* The done cue on the card matches the sun's pulse: one shared beat. */
+  .right-now-btn.done.just-done {
+    animation: sunself-pulse 700ms var(--ease-drift);
+  }
+}
+@keyframes sunself-pulse {
+  0% { transform: scale(1); }
+  38% { transform: scale(1.07); }
+  100% { transform: scale(1); }
+}
+
+/* Demo persona + sun-self placement (round 23). */
+.demo-persona {
+  margin: 10px 0 0;
+  font-size: var(--text-sm);
+  color: var(--m-muted);
+}
+.demo-persona b { color: var(--m-text); }
+.demo-glyph {
+  display: flex;
+  justify-content: center;
+  margin: 16px 0 6px;
+}
+

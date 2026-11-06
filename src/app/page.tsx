@@ -4,14 +4,13 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Plane } from "lucide-react";
-import { coverageOf, evaluatePlan, fmtMin } from "@/domain/circadian";
+import { coverageOf, fmtMin } from "@/domain/circadian";
 import { todayDayIndex } from "@/domain/today";
 import { resolveBaseline, buildTrip, calendarFor, GARMIN_BASELINE, ADHERENCE_PROFILE, type WakeBand } from "@/domain/fixtures";
 import { buildDailyNudgesForDay, getFlightRecommendations } from "@/domain/nudges";
-import { previewPlan, type SolvedDay } from "@/domain/solver";
+import { previewPlan } from "@/domain/solver";
 import { summarizeCheckIn } from "@/domain/adherence";
 import type {
-  AdherenceProfile,
   CheckIn,
   CheckInRequest,
   BaselineKind,
@@ -20,6 +19,7 @@ import type {
   CrewEvent,
   DayPlan,
   Trip,
+  TripData,
   WearableBaseline,
 } from "@/domain/types";
 import { type LogEntry } from "@/components/CrewFeed";
@@ -77,9 +77,10 @@ import { isValidHomeRoute, resolveHomeEntry, type HomeEntry, type HomeRoute } fr
 import { useMorphTransition } from "@/lib/use-morph-transition";
 import { funnelKey, recordFunnel } from "@/lib/funnel";
 import { useLightSweep } from "@/components/LightSweep";
-import { safeStorageGet, safeStorageSet } from "@/lib/local-data";
+import { safeStorageGet, safeStorageRemove, safeStorageSet } from "@/lib/local-data";
 import { useTripActions } from "@/lib/use-trip-actions";
-import { readTasteProfile, readTripTaste, useTripTaste } from "@/lib/use-trip-taste";
+import { useTripTaste } from "@/lib/use-trip-taste";
+import { buildTripAccountRows, validateTripPayload } from "@/lib/trip-account";
 import { usePlaceChoices } from "@/lib/use-place-choices";
 import { readTasteSignals } from "@/lib/taste-signals";
 import { shareTripContext } from "@/lib/share-trip";
@@ -87,7 +88,6 @@ import { shareLink } from "@/lib/share-client";
 import { ScenarioExperience } from "@/components/ScenarioExperience";
 import type { DemoScenarioId } from "@/domain/demo-scenarios";
 import { isTasteItinerary, itineraryMatchesTrip, type TasteItinerary } from "@/domain/taste";
-import { matchSampleProfileForTrip, splitSamplePlaces } from "@/lib/sample-taste";
 import { findAirport } from "@/domain/airports";
 import { readTasteCacheEntry, tasteCacheKey, writeTasteCacheEntry } from "@/lib/taste-cache";
 import { JourneySteps } from "@/components/JourneySteps";
@@ -103,23 +103,6 @@ import {
   stopAll as stopVoiceAll,
   subscribeVoiceErrors,
 } from "@/lib/voice/engine";
-
-interface TripData {
-  trip: Trip;
-  baseline: WearableBaseline;
-  /** Whether `baseline` is real wearable data or the demo fixture. Surfaced
-   *  so the UI can tag demo numbers instead of passing them off as measured. */
-  baselineSource?: "fixture" | "garmin";
-  /** Provenance of the baseline: `garmin` (uploaded), `wake-band` (the traveller
-   *  answered), `demo-default` (nothing known yet — the honest moment to ask). */
-  baselineKind?: BaselineKind;
-  /** Compliance hints (e.g. ignoresInterventionsBeforeMin) that keep asks
-   *  off the hours the traveller actually ignores them. */
-  adherence?: AdherenceProfile;
-  calendar: CalendarEvent[];
-  calendarSource?: "google" | "fixture";
-  provider: string;
-}
 
 /** Wall-clock time (HH:MM) in a city, from its DST-aware UTC offset. */
 function clockAt(offsetMin: number, now = new Date()): string {
@@ -421,12 +404,7 @@ export default function Home() {
       })
       .then((d: TripData) => {
         if (ctrl.signal.aborted) return;
-        const depDay = d?.trip?.days?.find((x) => x.dayIndex === d.trip.departureDayIndex);
-        if (
-          d?.trip?.origin?.code !== origin ||
-          d?.trip?.destination?.code !== dest ||
-          depDay?.date !== departureDate
-        ) {
+        if (!validateTripPayload(d, { origin, dest, departureDate })) {
           setTripResolved(true);
           setTripFetchError(true);
           return;
@@ -434,97 +412,11 @@ export default function Home() {
         setTripResolved(true);
         setTripFetchError(false);
         setData(d);
-        /* The crew's account closes on the real payload: the same trip,
-           calendar and baseline the plan build runs against, pushed through
-           the same functions — the solver's own chain for the light windows,
-           the gate's conflict scan, the crate matcher the run will call.
+        /* The crew's account closes on the real payload (see trip-account:
+           the same trip, calendar and baseline the plan build runs against).
            The elapsed is measured at the moment the last fact exists; the
            rows' on-screen pacing below is presentation, never this number. */
-        const accountRows: CrewAccountRow[] = [];
-        if (d?.trip) {
-          const base = resolveBaseline(wakeBand, d.baseline ?? GARMIN_BASELINE);
-          const adherence = d.adherence ?? ADHERENCE_PROFILE;
-          const calendar = d.calendar ?? [];
-          try {
-            const solved = previewPlan({ trip: d.trip, calendar, adherence, baseline: base });
-            const solvedDays = [...solved.values()]
-              .filter((s): s is SolvedDay => !!s)
-              .map((s) => s.plan);
-            const lightCount = solvedDays.reduce(
-              (n, p) => n + p.interventions.filter((iv) => iv.kind === "light_exposure").length,
-              0,
-            );
-            const lightDays = solvedDays.filter((p) =>
-              p.interventions.some((iv) => iv.kind === "light_exposure"),
-            ).length;
-            accountRows.push({
-              id: "light",
-              label: "Computed light windows",
-              secondary: lightCount
-                ? `${lightCount} across ${lightDays} ${lightDays === 1 ? "day" : "days"}`
-                : "none placed",
-            });
-            const verdict = evaluatePlan({
-              trip: d.trip,
-              days: solvedDays,
-              calendar,
-              adherence,
-              baseline: base,
-            });
-            const flagged =
-              verdict.violations.filter((v) => v.code === "CALENDAR_CONFLICT").length +
-              verdict.notes.filter((n) => n.includes("overlaps movable")).length;
-            accountRows.push({
-              id: "conflicts",
-              label: "Checked for conflicts",
-              secondary: flagged ? `${flagged} flagged` : "none",
-            });
-          } catch {
-            accountRows.push({
-              id: "light",
-              label: "Computed light windows",
-              secondary: "the solver could not place this route",
-            });
-            accountRows.push({
-              id: "conflicts",
-              label: "Checked for conflicts",
-              secondary: "the scan needs the crew",
-            });
-          }
-          try {
-            const scope = `${origin}-${dest}-${departureDate}`;
-            let favorites = readTripTaste(localStorage, scope);
-            if (!favorites.length) favorites = readTasteProfile(localStorage);
-            if (!favorites.length) {
-              accountRows.push({ id: "crate", label: "Matched your crate", secondary: "no crate packed" });
-            } else {
-              const entities = `${favorites.length} ${favorites.length === 1 ? "entity" : "entities"}`;
-              const matched = matchSampleProfileForTrip(d.trip.destination.name, favorites);
-              if (matched) {
-                const { daytime, evening } = splitSamplePlaces(matched.places);
-                /* The evening list re-includes daytime venues as fallbacks
-                   (splitSamplePlaces' own ordering), so count the distinct
-                   places the crate actually matched — never a double count. */
-                const places = new Set(
-                  [...daytime, ...evening].map((p) => p.id ?? p.name),
-                ).size;
-                accountRows.push({
-                  id: "crate",
-                  label: "Matched your crate",
-                  secondary: `${entities} · ${places} ${places === 1 ? "place" : "places"}`,
-                });
-              } else {
-                accountRows.push({
-                  id: "crate",
-                  label: "Matched your crate",
-                  secondary: `${entities} · places resolve with the crew`,
-                });
-              }
-            }
-          } catch {
-            accountRows.push({ id: "crate", label: "Matched your crate", secondary: "no crate packed" });
-          }
-        }
+        const accountRows = buildTripAccountRows(d, { origin, dest, departureDate, wakeBand });
         const accountDoneAt = performance.now();
         setCrewAccount((prev) =>
           prev && !prev.done
@@ -590,7 +482,10 @@ export default function Home() {
             setOrigin(resolved.route.origin);
             setDest(resolved.route.dest);
             setDepartureDate(resolved.route.date);
-            try { localStorage.setItem("meridian:activeTrip", JSON.stringify(resolved.route)); } catch { /* best effort */ }
+            safeStorageSet(
+              () => localStorage.setItem("meridian:activeTrip", JSON.stringify(resolved.route)),
+              "activeTrip",
+            );
             /* When the trip came from storage rather than the URL, write it
                into the URL (replace, not push). The address bar becomes the
                single source of truth, so Back from a later state lands on
@@ -679,12 +574,10 @@ export default function Home() {
           setBriefingDismissed(false);
           runTripRef.current = e.trip;
           saveCalendarRef.current = (e.calendar as CalendarEvent[] | undefined) ?? [];
-          try {
+          safeStorageSet(() => {
             localStorage.setItem("meridian:onboarded", "1");
             localStorage.setItem("meridian:lastTrip", JSON.stringify(e.trip));
-          } catch {
-            /* ignore */
-          }
+          }, "onboarded-trip");
           break;
         case "check_in":
           push({ kind: "system", text: `wearer reported: ${summarizeCheckIn(e.checkIn)}` });
@@ -772,31 +665,35 @@ export default function Home() {
             /* ignore */
           }
           try {
-            localStorage.setItem(
-              "meridian:lastPlan",
-              JSON.stringify({
-                summary: e.summary,
-                score: e.score,
-                citations: e.citations,
-                days: e.days,
-                ics: e.ics,
-                lines: e.lines,
-                // The gate's promise, kept so the arrival surface has something
-                // honest to score the trip against. Without it the only number
-                // available after landing is the traveller's own recollection.
-                coverage: e.coverage,
-                tasteItinerary: e.tasteItinerary,
-                // The calendar the ics was built from (moves applied) — an
-                // edit needs it to rebuild the same feed the server wrote.
-                calendar: saveCalendarRef.current,
-                // The baseline the plan was built on, kept with it so the
-                // landing can be scored against the same model the clock was
-                // showing. Without it the arrival page falls back to the
-                // gate's own numbers — the claim, not the projection.
-                baseline,
-                baselineKind: effectiveBaselineKind,
-                savedAt: new Date().toISOString(),
-              }),
+            safeStorageSet(
+              () =>
+                localStorage.setItem(
+                  "meridian:lastPlan",
+                  JSON.stringify({
+                    summary: e.summary,
+                    score: e.score,
+                    citations: e.citations,
+                    days: e.days,
+                    ics: e.ics,
+                    lines: e.lines,
+                    // The gate's promise, kept so the arrival surface has something
+                    // honest to score the trip against. Without it the only number
+                    // available after landing is the traveller's own recollection.
+                    coverage: e.coverage,
+                    tasteItinerary: e.tasteItinerary,
+                    // The calendar the ics was built from (moves applied) — an
+                    // edit needs it to rebuild the same feed the server wrote.
+                    calendar: saveCalendarRef.current,
+                    // The baseline the plan was built on, kept with it so the
+                    // landing can be scored against the same model the clock was
+                    // showing. Without it the arrival page falls back to the
+                    // gate's own numbers — the claim, not the projection.
+                    baseline,
+                    baselineKind: effectiveBaselineKind,
+                    savedAt: new Date().toISOString(),
+                  }),
+                ),
+              "lastPlan",
             );
             // A subscribed calendar tracks the newest plan without the
             // traveller re-importing the .ics by hand.
@@ -837,7 +734,10 @@ export default function Home() {
                 }
               })();
               prev.unshift(entry);
-              localStorage.setItem("meridian:history", JSON.stringify(prev.slice(0, 20)));
+              safeStorageSet(
+                () => localStorage.setItem("meridian:history", JSON.stringify(prev.slice(0, 20))),
+                "history",
+              );
             }
           } catch {
             /* ignore */
@@ -890,7 +790,10 @@ export default function Home() {
                 tripId: e.tripId,
                 planHash: e.planHash,
               };
-              localStorage.setItem("meridian:lastPlan", JSON.stringify(saved));
+              safeStorageSet(
+                () => localStorage.setItem("meridian:lastPlan", JSON.stringify(saved)),
+                "lastPlan-seal",
+              );
             }
           } catch {
             /* ignore */
@@ -903,7 +806,7 @@ export default function Home() {
           setEntries((prev) => [...prev, { kind: "system", text: "shift complete" }]);
           setStreamError(null);
           runIdRef.current = null;
-          try { localStorage.removeItem("meridian:activeRunId"); } catch { /* ignore */ }
+          safeStorageRemove("meridian:activeRunId", "activeRunId");
           esRef.current?.close();
           // While the run streamed, the day pills followed each lock — which
           // leaves them sitting on the last day the crew touched. Hand the
@@ -930,7 +833,7 @@ export default function Home() {
     }
     esRef.current?.close();
     runIdRef.current = null;
-    try { localStorage.removeItem("meridian:activeRunId"); } catch { /* ignore */ }
+    safeStorageRemove("meridian:activeRunId", "activeRunId");
     stopVoice();
     push({ kind: "system", text: "shift cancelled by operator" });
     reset();
@@ -979,7 +882,7 @@ export default function Home() {
       runIdRef.current = runId;
       params.set("runId", runId);
       recordFunnel("run", funnelKey(origin, dest, departureDate));
-      try { localStorage.setItem("meridian:activeRunId", runId); } catch { /* ignore */ }
+      safeStorageSet(() => localStorage.setItem("meridian:activeRunId", runId), "activeRunId");
       const es = new EventSource("/api/crew/run?" + params.toString());
       esRef.current = es;
       lastEventAt.current = Date.now();
@@ -1026,7 +929,7 @@ export default function Home() {
     es.onerror = () => {
       es.close();
       runIdRef.current = null;
-      try { localStorage.removeItem("meridian:activeRunId"); } catch { /* ignore */ }
+      safeStorageRemove("meridian:activeRunId", "activeRunId");
       setStreamError("Couldn’t resume that crew run — start a new plan.");
       reset();
     };
@@ -1201,11 +1104,10 @@ export default function Home() {
       setDest(route.dest);
       setDepartureDate(route.date);
       setEntry((prev) => ({ mode: "trip", route, clockOpen: prev?.clockOpen ?? false }));
-      try {
-        localStorage.setItem("meridian:activeTrip", JSON.stringify(route));
-      } catch {
-        /* best effort */
-      }
+      safeStorageSet(
+        () => localStorage.setItem("meridian:activeTrip", JSON.stringify(route)),
+        "activeTrip",
+      );
       try {
         const url = new URL(window.location.href);
         url.searchParams.set("origin", route.origin);
@@ -1653,10 +1555,10 @@ export default function Home() {
                 sweep();
                 const next = depth === "guided" ? null : "guided";
                 setDepth(next);
-                try {
+                safeStorageSet(() => {
                   if (next) localStorage.setItem(DEPTH_KEY, next);
                   else localStorage.removeItem(DEPTH_KEY);
-                } catch { /* storage unavailable */ }
+                }, "depth");
                 try {
                   const url = new URL(window.location.href);
                   if (url.searchParams.has("depth")) {
@@ -2224,12 +2126,11 @@ export default function Home() {
                     ? undefined
                     : (b) => {
                         setWakeBand(b);
-                        try {
+                        /* Memory-only answer when storage is blocked. */
+                        safeStorageSet(() => {
                           if (b) localStorage.setItem("meridian:wakeBand", b);
                           else localStorage.removeItem("meridian:wakeBand");
-                        } catch {
-                          /* memory-only answer when storage is blocked */
-                        }
+                        }, "wakeBand");
                       }
                 }
                 onStartCrewSync={entry.mode === "example" ? openEntry : startShift}

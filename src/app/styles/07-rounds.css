@@ -1,0 +1,1660 @@
+/* ---- round 24 · the sun-self takes its places -------------------------
+ * The face is the traveller's own meridian, so it lives where the light
+ * lives: on the stage horizon, asleep at the empty entry, beside the
+ * passport's stamp, and wearing SolLuna's sun half in the dial. */
+.today-stage { position: relative; }
+.stage-sunself {
+  position: absolute;
+  left: 18px;
+  width: var(--stage-sun-size);
+  /* sit on the horizon band: half-risen, where a sun belongs — the offset
+     tracks --stage-sun-size so the centre stays 8px above the horizon. */
+  bottom: calc(var(--stage-horizon-h, 26%) - var(--stage-sun-size) / 2 + 8px);
+  z-index: var(--z-raised);
+  pointer-events: none;
+}
+/* The rendered sun scales into the var-sized box — canvas fills it by
+   .sunself-gl's own inset, the SVG face scales with the viewBox. */
+.stage-sunself .sunself { width: 100%; height: auto; }
+/* The sun sits effectively at infinity — the smallest drift of any plane
+   (kept after the rule it rides so tests pin the real block first). */
+@media (prefers-reduced-motion: no-preference) {
+  .stage-sunself {
+    transition: transform var(--dur-settle) var(--ease-settle);
+    transform: translate(calc(var(--px, 0) * -4px), calc(var(--py, 0) * -2px));
+  }
+}
+/* The sun's luminosity — a soft halo behind the glass so it reads as a
+   light source, not a sticker. Painted, not rendered: a radial bleed of
+   the beam colour, layered so the bloom fades before the disc's edge. */
+.stage-sunself::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: -1;
+  width: 260%;
+  height: 260%;
+  transform: translate(-50%, -50%);
+  background:
+    radial-gradient(50% 50% at 50% 50%, var(--stage-horizon) 0%, transparent 62%),
+    radial-gradient(30% 30% at 50% 50%, rgba(255, 226, 170, 0.5) 0%, transparent 70%);
+  opacity: 0.9;
+  pointer-events: none;
+}
+/* The stage sun's anamorphic streak — a painted highlight thrown along the
+   horizon behind the glass, riding the same beam colour the band uses. */
+.sky-gl .stage-sunself::before,
+.sky-gl .stage-sunself::after { display: none; }
+.stage-sunself::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: var(--z-below);
+  width: 340%;
+  height: 30%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(50% 50% at 50% 50%, var(--stage-horizon) 0%, transparent 70%);
+  opacity: 0.85;
+  pointer-events: none;
+}
+.entry-sunself { margin: 0 0 14px; width: fit-content; }
+.arr-passport-face {
+  position: absolute;
+  top: 92px;
+  right: 26px;
+  width: fit-content;
+  pointer-events: none;
+}
+/* the done step's receipt (round 26): the answer sits where the action was */
+.tl-receipt { margin: 4px 0 0; font-size: 12px; color: var(--m-muted); }
+
+/* ---- round 27 · the example is one stage ------------------------------
+ * The scrubbed sky is the backdrop, the hero sun rides the modeled arc with
+ * the traveller's face inside it, and everything re-answers in place. The
+ * stage is ink in both themes (stages don't flip); the backdrop rides the
+ * shared ink-stage background rule (stageSky's luminance-clamped horizon),
+ * and the sun's position rides --stage-sun-x/y/d — both written
+ * imperatively, so the server paint is the ink default. */
+
+/* The hero sun — disc, halo, smear. Position from the CSS vars; paint from
+   the tokens. The smear decays with a transform-only transition, so a fast
+   scrub stretches the halo and it relaxes behind the disc (transform/opacity
+   only, stood down by the global reduced-motion flatten). */
+.stage-sun {
+  position: absolute;
+  left: var(--stage-sun-x, 50%);
+  top: var(--stage-sun-y, 75%);
+  width: var(--stage-sun-d, 16%);
+  min-width: 96px;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  z-index: var(--z-raised);
+  pointer-events: none;
+}
+.stage-sun-disc {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  /* Phase 2: no opaque backing or shadow — the glass inside needs clear
+     backing to read as glass. Position/smear variables preserved. */
+}
+.stage-sun-disc .stage-sun-face { width: 100%; height: 100%; }
+.stage-sun-halo {
+  position: absolute;
+  inset: -42%;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--stage-horizon) 0%, transparent 68%);
+  transition: transform 420ms var(--ease-settle), opacity var(--dur-settle) var(--ease-settle);
+  transform: scaleX(calc(1 + var(--stage-sun-smear, 0) * 1.6));
+  opacity: calc(0.55 + var(--stage-sun-smear, 0) * 0.45);
+}
+.stage-sun-smear {
+  position: absolute;
+  inset: 8% -60% 8% 30%;
+  border-radius: 50%;
+  background: linear-gradient(90deg, transparent 0%, var(--stage-horizon) 55%, transparent 100%);
+  opacity: calc(var(--stage-sun-smear, 0) * 0.8);
+  transition: opacity var(--dur-settle) var(--ease-settle);
+}
+.stage-sun.below .stage-sun-disc { opacity: 0.72; }
+.stage-sun.below .stage-sun-halo { opacity: 0.4; }
+
+
+
+/* One stage: the CTA row stops stacking steps and simply sits below. */
+.scenario-one-stage .scenario-days { margin: 14px 0 0; }
+.scenario-moment {
+  margin: 10px 0 0;
+  font-size: var(--text-sm);
+  color: var(--m-muted);
+  text-align: center;
+}
+.scenario-moment b { color: var(--m-text); }
+
+/* ---- round 28 · the crew performs in view ------------------------------
+ * Agents speak, solver cues appear on a 24h lane, days lock with the gate's
+ * real verdict stamped beside them. Every figure is crewPerformance() data;
+ * the choreography is transform/opacity only and stands down under reduced
+ * motion (the finished state is the written read). Cue hues ride the shared
+ * data-colour law: data-cat sets --cat, the cue paints var(--cat). */
+.crew-perf { display: grid; gap: 12px; margin: 16px 0 0; }
+.crew-perf-lines { display: grid; gap: 6px; }
+.crew-perf-line {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--m-muted);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity var(--dur-settle) var(--ease-settle), transform var(--dur-settle) var(--ease-settle);
+}
+.crew-perf-line[data-spoken="yes"] { opacity: 1; transform: none; color: var(--m-text); }
+.crew-perf-agent {
+  display: inline-block;
+  min-width: 44px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--m-accent);
+  margin-right: 6px;
+}
+.crew-perf-role {
+  display: inline-block;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--m-muted);
+  margin-right: 8px;
+}
+.crew-perf-days { display: grid; gap: 6px; }
+.crew-perf-day {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border: 1px solid var(--m-border);
+  border-radius: var(--radius-md);
+  background: var(--m-card);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity var(--dur-settle) var(--ease-settle), transform var(--dur-settle) var(--ease-settle);
+}
+.crew-perf-day[data-phase="draft"],
+.crew-perf-day[data-phase="locked"] { opacity: 1; transform: none; }
+.crew-perf-day[data-phase="locked"] { border-color: var(--m-accent); }
+.crew-perf-day-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--m-text);
+  font-family: var(--font-mono2);
+}
+.crew-perf-lane {
+  width: 100%;
+  height: 10px;
+  display: block;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 5px;
+}
+.crew-perf-cue {
+  fill: var(--cat);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity var(--dur-glide) var(--ease-glide), transform var(--dur-glide) var(--ease-glide);
+}
+.crew-perf-day[data-phase="draft"] .crew-perf-cue,
+.crew-perf-day[data-phase="locked"] .crew-perf-cue { opacity: 1; transform: none; }
+.crew-perf-stamp {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  font-family: var(--font-mono2);
+  color: var(--m-faint);
+  min-width: 64px;
+  text-align: right;
+}
+.crew-perf-stamp[data-pass="yes"] { color: var(--color-pass); }
+.crew-perf-stamp[data-pass="no"] { color: var(--color-fail); }
+.crew-perf-read {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--m-muted);
+}
+.crew-perf-controls button {
+  font: inherit;
+  font-size: 13px;
+  background: none;
+  border: none;
+  padding: 4px 0;
+  color: var(--m-accent);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.crew-perf-controls { min-height: 28px; }
+/* The landing strip: tighter, quieter, no role tags. */
+.crew-perf-avatar { display: inline-block; vertical-align: -8px; margin-right: 8px; }
+.crew-perf-sr {
+  position: absolute;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.crew-perf-compact { gap: 8px; margin: 14px 0 0; }
+.crew-perf-compact .crew-perf-line { font-size: 14px; }
+.crew-perf-compact .crew-perf-role { display: none; }
+.crew-perf-compact .crew-perf-day { padding: 5px 8px; }
+.crew-perf-compact .crew-perf-stamp { min-width: 54px; font-size: 13px; }
+@media (prefers-reduced-motion: reduce) {
+  .crew-perf-line, .crew-perf-day, .crew-perf-cue { opacity: 1; transform: none; }
+}
+
+/* ---- round 29 · the lookbook of states ---------------------------------
+ * Five windows, each a computed state of the traveller's meridian. The
+ * takeover reveals the face along a jagged clip-path edge (paint-only
+ * allowance in docs/DESIGN.md), driven by GSAP on the stages that earn it. The
+ * written read (hour + caption) is the fact; the reveal is the enhancement.
+ * The pane hides by default so no frame flashes before the choreography
+ * arms. */
+
+/* ---- round 30 · the landing is the flight -------------------------------
+ * One pinned ink stage scrubbed by scroll: the gap (two dawns held apart by
+ * the shift still owed) → the night before (the crew) → the crossing (the
+ * sun travels its arc, hours bank, the dawns close) → the first morning
+ * (the jagged takeover). Every figure is landingFrame() model output —
+ * sky, sun, dawn separation and face all recompute per frame.
+ *
+ * The track is plain height when unstaged: SSR and reduced motion render
+ * the same beats as stacked written sections — the performed stage
+ * degrades to its written read (Rule 2), never to a blank. Stage vars are
+ * written imperatively per scroll frame, so this stage stays OUT of the
+ * shared --stage-* transition block (a transition would lag the scrub). */
+
+/* The two dawns: the destination's line fixed, the body's ghost drawn in
+   origin blue at a separation that IS the owed ratio (--ls-gap). As hours
+   bank the ghost converges — the gap closing is the thing you watch. */
+/* Westbound travel drags the body clock the other way — the ghost sits on
+   the far side of the destination line. */
+
+/* The dawn-drag (beat 0): explore the plan's honest range — full debt down
+   to what the plan carries. Bounds come from the frame, not the copy. */
+
+/* The beats: absolute layers when staged (scroll owns their opacity and
+   visibility — hidden beats leave the tab order entirely), plain stacked
+   sections when not. */
+.ls-pain { font-size: 17px; font-weight: 500; color: var(--m-text); margin: 0; }
+.ls-mech { font-size: 1rem; color: var(--m-muted); margin: 0; max-width: 46ch; }
+.ls-cta-row {
+  display: flex;
+  gap: 10px;
+  margin: 10px 0 0;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.ls-cta-ghost {
+  display: inline-block;
+  padding: 12px 20px;
+  border-radius: 6px;
+  border: 1px solid var(--m-border);
+  color: var(--m-text);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+}
+/* The crossing HUD — the written read of the crossing beat: both clocks
+   and the honest tally, pinned low so the sun owns the sky. */
+
+/* The morning takeover: clips in along the lookbook's jagged edge (the
+   polygon grammar at stage scale). A faint warm wash over the ink says the
+   light changed; the cards are the same honest artifacts, reseated. */
+/* The traveller rides above every beat — the object the hero promised is
+   the object the morning lands. Hidden in the stacked written read: the
+   faces return in the lookbook epilogue that follows the stage. */
+
+
+
+/* ---- round 31 · the crew as celestial bodies ---------------------------
+ * Five bounded glyphs — crescent, lensed star, crowned sun, eclipse eye,
+ * comet — each with six static poses CSS transitions between. Colours ride
+ * the --agent-* tokens; timing tokens give each member its own tempo.
+ * transform/opacity only; reduced motion keeps the poses and drops the
+ * travel between them. */
+.crew-avatar {
+  --crew-dur: var(--dur-settle);
+  --crew-ease: var(--ease-settle);
+  display: inline-block;
+  flex: none;
+  overflow: visible;
+}
+.crew-avatar-analyst { --crew-dur: 600ms; --crew-ease: var(--ease-drift); }
+.crew-avatar-researcher { --crew-dur: 300ms; --crew-ease: var(--ease-glide); }
+.crew-avatar-planner { --crew-dur: 240ms; --crew-ease: cubic-bezier(0.34, 1.56, 0.64, 1); }
+.crew-avatar-evaluator { --crew-dur: 450ms; --crew-ease: var(--ease-settle); }
+.crew-avatar-negotiator { --crew-dur: 180ms; --crew-ease: var(--ease-glide); }
+
+.crew-avatar .ca-body,
+.crew-avatar .ca-eye,
+.crew-avatar .ca-eye-arc,
+.crew-avatar .ca-rays,
+.crew-avatar .ca-lens,
+.crew-avatar .ca-corona,
+.crew-avatar .ca-scan,
+.crew-avatar .ca-tail,
+.crew-avatar .ca-glint,
+.crew-avatar .ca-fill,
+.crew-avatar .ca-spark,
+.crew-avatar .ca-gaze {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform var(--crew-dur) var(--crew-ease), opacity var(--crew-dur) var(--crew-ease);
+}
+.crew-avatar-analyst .ca-shape { fill: var(--agent-analyst); }
+.crew-avatar-researcher .ca-shape { fill: var(--agent-researcher); }
+.crew-avatar-planner .ca-shape { fill: var(--agent-planner); }
+.crew-avatar-negotiator .ca-shape { fill: var(--agent-negotiator); }
+.crew-avatar-negotiator .ca-tail { fill: var(--agent-negotiator); opacity: 0.55; }
+.crew-avatar-negotiator .ca-tail-2 { opacity: 0.4; }
+.crew-avatar-negotiator .ca-tail-3 { opacity: 0.3; }
+.crew-avatar-evaluator .ca-shape { fill: var(--color-ink); }
+.crew-avatar-evaluator .ca-corona {
+  fill: none;
+  stroke: var(--agent-evaluator);
+  stroke-width: 2.5;
+  opacity: 0.55;
+}
+.crew-avatar-evaluator .ca-iris-ring {
+  fill: none;
+  stroke: var(--agent-evaluator);
+  stroke-width: 1.6;
+  opacity: 0.9;
+}
+.crew-avatar .ca-ray {
+  stroke: var(--agent-planner);
+  stroke-width: 3;
+  stroke-linecap: square;
+}
+.crew-avatar .ca-eye { fill: var(--color-ink); }
+.crew-avatar-evaluator .ca-pupil { fill: var(--agent-evaluator); }
+.crew-avatar .ca-eye-arc {
+  fill: none;
+  stroke: var(--color-ink);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  opacity: 0;
+}
+.crew-avatar-evaluator .ca-eye-arc { stroke: var(--agent-evaluator); }
+.crew-avatar .ca-lens {
+  fill: none;
+  stroke: var(--color-ink);
+  stroke-width: 2.2;
+  opacity: 0.85;
+}
+.crew-avatar .ca-glint { fill: var(--color-paper); opacity: 0; }
+.crew-avatar .ca-scan {
+  stroke: var(--agent-evaluator);
+  stroke-width: 1.2;
+  opacity: 0;
+}
+
+/* The poses — each state a distinct static figure. */
+.crew-avatar[data-state="attentive"] .ca-body { transform: rotate(5deg) translateX(1px); }
+.crew-avatar[data-state="attentive"] .ca-eye { transform: scaleY(1.3); }
+.crew-avatar-planner[data-state="attentive"] .ca-rays { transform: scale(1.18); }
+.crew-avatar[data-state="explaining"] .ca-glint { opacity: 1; }
+.crew-avatar[data-state="explaining"] .ca-body { transform: translateY(-1px); }
+.crew-avatar[data-state="concerned"] .ca-eye { transform: scaleY(0.45); }
+.crew-avatar[data-state="concerned"] .ca-body { transform: translate(-1px, -1.5px); }
+.crew-avatar[data-state="complete"] .ca-eye { opacity: 0; }
+.crew-avatar[data-state="complete"] .ca-eye-arc { opacity: 1; }
+.crew-avatar-evaluator[data-state="complete"] .ca-corona { opacity: 1; stroke-width: 3; }
+
+/* Mara — the crescent is a body, not a badge: it drowses in its hammock at
+   rest, sits up alert, tips horns-up to explain, dims and turns away when
+   the numbers worry her, and tips into a near-full moon when the day lands.
+   Every pose is silhouette-first so the six states read in monochrome at
+   24px. These rules follow the generic poses on purpose — same specificity,
+   later wins. */
+.crew-avatar-analyst .ca-fill { fill: var(--agent-analyst); opacity: 0; }
+.crew-avatar-analyst[data-state="resting"] .ca-body { transform: rotate(24deg) translateY(1px); }
+.crew-avatar-analyst[data-state="resting"] .ca-eye { opacity: 0; }
+.crew-avatar-analyst[data-state="resting"] .ca-eye-arc { opacity: 1; }
+.crew-avatar-analyst[data-state="attentive"] .ca-body { transform: rotate(-7deg) translateX(1px); }
+.crew-avatar-analyst[data-state="explaining"] .ca-body { transform: translateY(-1.5px) rotate(-11deg); }
+.crew-avatar-analyst[data-state="concerned"] .ca-body { transform: rotate(-13deg) translate(-1px, -1px); opacity: 0.6; }
+.crew-avatar-analyst[data-state="complete"] .ca-body { transform: rotate(-9deg); }
+.crew-avatar-analyst[data-state="complete"] .ca-fill { opacity: 1; }
+
+/* Jun — the star's lens is a magnifier: it zooms on what interests him,
+   slips down when the evidence is thin, and the star itself shows a spark
+   when he has found something or has it to say. */
+.crew-avatar-researcher .ca-spark { fill: var(--color-paper); opacity: 0; }
+.crew-avatar-researcher[data-state="resting"] .ca-body { transform: rotate(-9deg); opacity: 0.82; }
+.crew-avatar-researcher[data-state="resting"] .ca-lens { transform: translate(1.5px, 1.5px) scale(0.85); }
+.crew-avatar-researcher[data-state="resting"] .ca-eye { opacity: 0; }
+.crew-avatar-researcher[data-state="resting"] .ca-eye-arc { opacity: 1; }
+.crew-avatar-researcher[data-state="attentive"] .ca-body { transform: rotate(6deg) translateX(1px); }
+.crew-avatar-researcher[data-state="attentive"] .ca-lens { transform: scale(1.28); }
+.crew-avatar-researcher[data-state="attentive"] .ca-eye { transform: scale(1.4); }
+.crew-avatar-researcher[data-state="explaining"] .ca-body { transform: translateY(-1.5px) rotate(-5deg); }
+.crew-avatar-researcher[data-state="explaining"] .ca-spark { opacity: 0.95; }
+.crew-avatar-researcher[data-state="concerned"] .ca-body { transform: rotate(-10deg) translateY(-1px); opacity: 0.68; }
+.crew-avatar-researcher[data-state="concerned"] .ca-lens { transform: translateY(2px) scale(0.88); }
+.crew-avatar-researcher[data-state="complete"] .ca-body { transform: rotate(11deg); }
+.crew-avatar-researcher[data-state="complete"] .ca-spark { opacity: 1; transform: scale(1.2); }
+.crew-avatar-researcher[data-state="complete"] .ca-glint { opacity: 1; }
+
+/* Working is the only state allowed a loop — and only while it lasts. */
+.crew-avatar-planner[data-state="working"] .ca-rays { animation: ca-otto-turn 2.4s steps(8) infinite; }
+.crew-avatar-researcher[data-state="working"] .ca-lens { animation: ca-jun-focus 1.8s var(--ease-glide) infinite; }
+.crew-avatar-evaluator[data-state="working"] .ca-scan { animation: ca-iris-scan 1.6s var(--ease-glide) infinite; opacity: 1; }
+.crew-avatar-negotiator[data-state="working"] .ca-tail { animation: ca-rex-streak 0.9s var(--ease-glide) infinite; }
+.crew-avatar-analyst[data-state="working"] .ca-body { animation: ca-mara-drift 3s var(--ease-drift) infinite; }
+@keyframes ca-otto-turn { to { transform: rotate(45deg); } }
+@keyframes ca-jun-focus { 0%, 100% { transform: scale(1); opacity: 0.85; } 50% { transform: scale(1.18); opacity: 0.45; } }
+@keyframes ca-iris-scan { 0%, 100% { transform: translateY(-8px); } 50% { transform: translateY(8px); } }
+@keyframes ca-rex-streak { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-2.5px); } }
+@keyframes ca-mara-drift { 0%, 100% { transform: rotate(21deg) translateY(1px); } 50% { transform: rotate(27deg) translateY(1px); } }
+
+/* ---- the shared cue layer (motion-cues.ts) ------------------------------
+ * The six poses above say what an agent is doing; the four cues say how the
+ * set moves together — arrive, work, done, fail. `arrive` and `work` add
+ * nothing here: the resting and working poses already carry them, and a
+ * second animation on the root would fight the loop the crew is allowed.
+ * `done` reuses `sunself-pulse` verbatim, so the crew landing and the sun
+ * landing are one keyframe; each agent keeps its own --crew-dur/--crew-ease,
+ * so they land in their own tempo rather than in lockstep. */
+.crew-avatar[data-cue="done"] { animation: sunself-pulse var(--crew-dur) var(--crew-ease); }
+.crew-avatar[data-cue="fail"] {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: crew-cue-fail 420ms var(--ease-glide);
+}
+@keyframes crew-cue-fail {
+  0% { transform: translateY(0) scale(1); opacity: 1; }
+  45% { transform: translateY(1.2px) scale(0.94); opacity: 0.82; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crew-avatar,
+  .crew-avatar * { transition: none !important; animation: none !important; }
+}
+
+/* ---- round 31 · the interactive day (exploration only) -----------------
+ * Bounded sky band, crew row, timeline — nothing overlaps, every number is
+ * readInteractiveDay copy. The sun and cursor track input directly and
+ * glide on release via registered custom properties (transition on the
+ * property itself, never a layout property). */
+@property --iday-sun-x { syntax: "<percentage>"; inherits: true; initial-value: 50%; }
+@property --iday-sun-y { syntax: "<percentage>"; inherits: true; initial-value: 70%; }
+@property --iday-cursor-x { syntax: "<percentage>"; inherits: true; initial-value: 0%; }
+@property --iday-moment-x { syntax: "<percentage>"; inherits: true; initial-value: 50%; }
+@property --iday-caff-x { syntax: "<percentage>"; inherits: true; initial-value: 50%; }
+@property --iday-star-o { syntax: "<number>"; inherits: true; initial-value: 0; }
+
+.iday {
+  display: grid;
+  gap: 14px;
+  color: var(--m-text);
+}
+.iday-head { display: grid; gap: 4px; }
+.iday-stamp { justify-self: end; }
+.iday-headline {
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: 600;
+  line-height: 1.15;
+}
+.iday-lead { margin: 0; font-size: 1rem; color: var(--m-muted); }
+
+.iday-sky {
+  position: relative;
+  height: 180px;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--m-border);
+  background:
+    radial-gradient(ellipse 130% 46% at var(--iday-sun-x) 104%, var(--stage-horizon, rgba(233, 154, 111, 0.25)) 0%, transparent 72%),
+    var(--stage-ink-2, #0c1220);
+  transition: --iday-sun-x var(--dur-glide) var(--ease-glide), --iday-sun-y var(--dur-glide) var(--ease-glide), --iday-star-o var(--dur-glide) var(--ease-glide);
+}
+.iday[data-dragging="yes"] .iday-sky { transition: none; }
+.iday-sky .stage-sun {
+  left: var(--iday-sun-x);
+  top: var(--iday-sun-y);
+  width: 15%;
+  min-width: 44px;
+}
+
+/* The band's own depth — the landing backdrop's family inside the bounded
+   sky. Two seeded star planes fade with the same solar altitude the
+   gradient reads (--iday-star-o: full below −10°, gone by +6°), a haze
+   rides the horizon band's own floor colour, and two ridges hold the
+   bottom down — the very paths LandingDepth plants, so the frame's horizon
+   is the backdrop's terrain seen closer. Ridges are the beam's colour
+   mixed back into the ink family, so their warmth tracks the model and
+   stays under the luminance cap; the planes lean on the page's scroll var
+   (--lp, written on the root by LandingDepth) at the same relative rates
+   the backdrop uses, so the handoff's parallax shares one clock — and off
+   the landing the unset var simply rests. All layers are aria-hidden
+   chrome and move on transform/opacity only; reduced motion meets the
+   whole depth seated. */
+.iday-depth { position: absolute; inset: 0; pointer-events: none; }
+.iday-depth > * { position: absolute; }
+.iday-stars {
+  top: -3%;
+  left: -4%;
+  width: 108%;
+  height: 76%;
+}
+.iday-stars circle { fill: var(--color-paper); }
+.iday-stars-far {
+  opacity: calc(var(--iday-star-o, 0) * 0.5);
+  transform: translateY(calc(var(--lp, 0) * -5%));
+}
+.iday-stars-mid {
+  opacity: calc(var(--iday-star-o, 0) * 0.85);
+  transform: translateY(calc(var(--lp, 0) * -9%));
+}
+.iday-haze {
+  left: -6%;
+  width: 112%;
+  top: 54%;
+  height: 34%;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    var(--stage-horizon-floor, rgba(199, 131, 42, 0.10)) 52%,
+    transparent
+  );
+  transform: translateY(calc(var(--lp, 0) * -8px));
+}
+.iday-ridge {
+  left: -3%;
+  width: 106%;
+  bottom: -1px;
+  transform-origin: bottom;
+}
+.iday-ridge-far {
+  height: 36%;
+  transform: translateY(calc(var(--lp, 0) * -10px)) scaleY(calc(1 - var(--lp, 0) * 0.1));
+}
+.iday-ridge-far path {
+  fill: color-mix(in srgb, var(--stage-horizon, rgba(255, 196, 107, 0.26)) 30%, var(--color-ink-3));
+}
+.iday-ridge-near {
+  height: 22%;
+  transform: translateY(calc(var(--lp, 0) * -18px)) scaleY(calc(1 - var(--lp, 0) * 0.16));
+}
+.iday-ridge-near path {
+  fill: color-mix(in srgb, var(--stage-horizon, rgba(255, 196, 107, 0.26)) 14%, var(--color-ink));
+}
+/* Momentum (round 32 trial) — smear, ambient, lean. All transform/opacity,
+   all driven by CSS vars the springs write. Nothing painted at rest. */
+.iday-smear {
+  position: absolute;
+  left: var(--iday-sun-x, 50%);
+  top: var(--iday-sun-y, 50%);
+  width: 15%;
+  min-width: 44px;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.iday-smear i {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--m-accent, #d96b43);
+}
+.iday-smear i:nth-child(1) {
+  opacity: var(--smear-g1, 0);
+  transform: translateX(calc(var(--smear-l, 0px) * -0.4 * var(--smear-v, 1)));
+}
+.iday-smear i:nth-child(2) {
+  opacity: var(--smear-g2, 0);
+  transform: translateX(calc(var(--smear-l, 0px) * -0.7 * var(--smear-v, 1)));
+}
+.iday-smear i:nth-child(3) {
+  opacity: var(--smear-g3, 0);
+  transform: translateX(calc(var(--smear-l, 0px) * -1 * var(--smear-v, 1)));
+}
+.iday[data-motion="momentum"] .iday-sky .stage-sun {
+  transform: scale(var(--smear-sa, 1), var(--smear-sc, 1));
+}
+.iday-amb {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 90% 40% at 50% 100%, rgba(233, 154, 111, 0.14), transparent 70%);
+  animation: iday-amb-drift 11s ease-in-out infinite alternate;
+}
+.iday-amb[data-on="no"] { animation-play-state: paused; }
+@keyframes iday-amb-drift {
+  from { opacity: 0.4; transform: translateX(-4%); }
+  to { opacity: 0.9; transform: translateX(4%); }
+}
+.iday[data-motion="momentum"] .iday-axis { touch-action: pan-y; cursor: ew-resize; }
+.iday[data-motion="momentum"] .iday-window-proposed {
+  transform: translateY(-50%) skewX(var(--prop-lean, 0deg)) scaleX(var(--prop-sa, 1)) scaleY(var(--prop-sc, 1));
+}
+.iday[data-motion="momentum"] .iday-window-proposed::before {
+  content: "";
+  position: absolute;
+  top: 15%;
+  bottom: 15%;
+  width: var(--prop-smear, 0px);
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 22%, transparent);
+  right: calc(100% + 2px);
+}
+.iday { --av-v: 0; --av-gaze: 0; }
+/* Secondary motion rides the independent transform properties so it adds
+   on top of the gaze/rays attribute transforms instead of replacing them. */
+.crew-avatar.ca-var .ca-rays { transform-box: fill-box; transform-origin: center; rotate: calc(var(--av-v) * 18deg); }
+.crew-avatar.ca-var .ca-tail { transform-box: fill-box; transform-origin: right center; scale: calc(1 + var(--av-v) * var(--av-v) * 0.6) 1; }
+.crew-avatar.ca-var .ca-gaze { translate: calc(var(--av-gaze) * 3px) 0; transition: translate .3s ease-out; }
+.crew-avatar.ca-var.crew-avatar-evaluator .ca-gaze { transition: translate .12s ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .iday-amb, .iday-smear { display: none; }
+}
+
+/* The traveller answers the edit's outcome (round-31 engagement → response
+   with character): a one-shot squash-and-flare when a proposal lands, a
+   small recoil when the gate refuses. The animations only exist while
+   data-sun-fx names them and the sun only remounts when the outcome count
+   changes, so each response plays exactly once and can never linger. */
+@media (prefers-reduced-motion: no-preference) {
+  .iday-sky[data-sun-fx="cheer"] .stage-sun-disc {
+    transform-box: fill-box;
+    transform-origin: 50% 100%;
+    animation: iday-sun-cheer 640ms var(--ease-settle);
+  }
+  .iday-sky[data-sun-fx="cheer"] .stage-sun-smear { animation: iday-sun-flare 640ms var(--ease-settle); }
+  .iday-sky[data-sun-fx="shy"] .stage-sun { animation: iday-sun-shy 560ms var(--ease-settle); }
+  .iday-sky[data-sun-fx="shy"] .stage-sun-disc { animation: iday-sun-dim 560ms var(--ease-settle); }
+}
+@keyframes iday-sun-cheer {
+  0% { transform: scale(1, 1); }
+  32% { transform: scale(1.22, 0.78); }
+  62% { transform: scale(0.93, 1.08); }
+  100% { transform: scale(1, 1); }
+}
+@keyframes iday-sun-flare {
+  0% { opacity: 0; transform: scale(0.7); }
+  35% { opacity: 0.8; }
+  100% { opacity: 0; transform: scale(1.6); }
+}
+@keyframes iday-sun-shy {
+  0%, 100% { translate: -50% -50%; }
+  45% { translate: -50% -44%; }
+}
+@keyframes iday-sun-dim {
+  0%, 100% { opacity: 1; }
+  45% { opacity: 0.55; }
+}
+
+.iday-crew { display: grid; gap: 8px; }
+.iday-crew-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--m-border);
+  border-radius: var(--radius-md);
+  background: var(--m-card);
+}
+.iday-crew-line[data-quiet="yes"] { opacity: 0.75; }
+.iday-crew-line[data-quiet="yes"] .iday-crew-text { color: var(--m-muted); font-style: italic; }
+.iday-crew-text { margin: 0; font-size: 1rem; line-height: 1.45; }
+.iday-crew-text b { margin-right: 8px; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; }
+
+.iday-timeline { display: grid; gap: 6px; }
+.iday-axis {
+  position: relative;
+  height: 46px;
+  font-size: 13px;
+  font-family: var(--font-mono2);
+  color: var(--m-muted);
+}
+.iday-tick { position: absolute; transform: translateX(-50%); }
+.iday-tick[data-pos="0"] { left: 0; transform: none; }
+.iday-tick[data-pos="1"] { left: 25%; }
+.iday-tick[data-pos="2"] { left: 50%; }
+.iday-tick[data-pos="3"] { left: 75%; }
+.iday-tick[data-pos="4"] { right: 0; transform: none; }
+.iday-cursor {
+  position: absolute;
+  left: var(--iday-cursor-x);
+  top: 18px;
+  width: 2px;
+  height: 8px;
+  background: var(--m-text);
+  transform: translateX(-50%);
+  transition: --iday-cursor-x var(--dur-glide) var(--ease-glide);
+}
+.iday[data-dragging="yes"] .iday-cursor { transition: none; }
+.iday-moment {
+  position: absolute;
+  left: var(--iday-moment-x);
+  top: 28px;
+  transform: translateX(-50%);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--m-accent);
+  white-space: nowrap;
+}
+.iday-caffeine {
+  position: absolute;
+  left: var(--iday-caff-x);
+  top: 44px;
+  transform: translateX(-50%);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--m-muted);
+  white-space: nowrap;
+}
+.iday-plansum {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--m-muted);
+  text-align: center;
+  margin: 2px 0 0;
+}
+.iday-note {
+  font-size: 14px;
+  color: var(--m-text);
+  border-left: 2px solid var(--m-accent);
+  padding-left: 10px;
+  margin: 8px 0 0;
+}
+.iday-lane { display: grid; grid-template-columns: 92px 1fr; align-items: center; gap: 8px; }
+.iday-lane-name {
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--m-muted);
+}
+.iday-track { position: relative; height: calc(var(--rows, 1) * 48px); }
+.iday-window {
+  position: absolute;
+  left: var(--w-l);
+  width: var(--w-w);
+  top: var(--w-t, 0);
+  height: 44px;
+  min-width: 44px;
+  padding: 0 8px;
+  border: 1px solid var(--m-border);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--m-card);
+  color: var(--m-text);
+  font: inherit;
+  font-size: 13px;
+  font-family: var(--font-mono2);
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: pointer;
+}
+.iday-window[data-kind="seek"] { border-color: var(--cat-light); }
+.iday-window[data-kind="reduce"] { border-color: var(--cat-cal); }
+.iday-window[data-kind="sleep"] { border-color: var(--cat-sleep); }
+.iday-window[aria-pressed="true"] {
+  background: var(--m-text);
+  color: var(--m-bg);
+  font-weight: 500;
+}
+.iday-scrub {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+.iday-scrub input[type="range"] { width: 100%; accent-color: var(--m-accent); }
+.iday-scrub button {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--m-border);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--m-card);
+  color: var(--m-text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.iday-read {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--m-border);
+  border-radius: var(--radius-md);
+  background: var(--m-card);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+.iday-honest,
+.iday-foot { margin: 0; font-size: 13px; color: var(--m-muted); }
+.iday-live {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+@media (prefers-reduced-motion: reduce) {
+  .iday-sky, .iday-cursor { transition: none; }
+}
+
+/* ---- milestone 4 · proposing a new time --------------------------------
+ * The original block stays as a dashed ghost; the proposal is a solid block
+ * on the same lane, draggable/keyboard-movable, direct tracking while held
+ * and a glide on release. Blocked gets a one-shot transform nudge. */
+.iday-window-ghost {
+  background: transparent;
+  border-style: dashed;
+  color: var(--m-muted);
+  pointer-events: none;
+  opacity: 0.7;
+}
+.iday-window-proposed {
+  border-style: solid;
+  border-width: 2px;
+  font-weight: 500;
+  z-index: var(--z-instruments);
+  touch-action: none;
+  cursor: grab;
+  transition: --w-l var(--dur-glide) var(--ease-glide);
+}
+.iday-window-proposed[data-dragging="yes"] { transition: none; cursor: grabbing; }
+.iday-window-proposed[data-blocked="yes"] {
+  border-color: var(--color-fail);
+  animation: iday-nudge 240ms var(--ease-glide) 1;
+}
+@keyframes iday-nudge {
+  0%, 100% { transform: translateX(0); }
+  30% { transform: translateX(-6px); }
+  65% { transform: translateX(4px); }
+}
+.iday-window-proposed:focus-visible {
+  outline: 2px solid var(--m-accent);
+  outline-offset: 2px;
+}
+.iday-window-reason {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: var(--w-t);
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--m-text);
+  border-left: 3px solid var(--color-fail);
+  padding: 4px 10px;
+  background: var(--m-card);
+}
+.iday-window-caret {
+  position: absolute;
+  left: var(--w-l);
+  top: -5px;
+  width: 10px;
+  height: 10px;
+  background: var(--m-card);
+  border-left: 2px solid var(--color-fail);
+  border-top: 2px solid var(--color-fail);
+  transform: rotate(45deg);
+}
+.iday-edit {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--m-border);
+  border-radius: var(--radius-md);
+  background: var(--m-card);
+}
+.iday-edit-line { margin: 0; font-size: 1rem; }
+.iday-edit-est { margin: 0; font-size: 13px; color: var(--m-muted); }
+.iday-edit-outcome { margin: 0; font-size: 1rem; }
+.iday-edit-outcome button {
+  font: inherit;
+  color: var(--m-accent);
+  background: none;
+  border: none;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.iday-edit-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+.iday-edit-controls button {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--m-border);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--m-bg);
+  color: var(--m-text);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.iday-edit-apply {
+  background: var(--m-text);
+  color: var(--m-bg);
+  font-weight: 500;
+}
+.iday-edit-apply:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.iday-read-wrap { display: grid; gap: 8px; }
+.iday-edit-cta { margin: 0; font-size: 14px; }
+.iday-edit-cta button {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--m-border);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--m-card);
+  color: var(--m-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.iday-edit-no { color: var(--m-muted); font-size: 14px; }
+@media (prefers-reduced-motion: reduce) {
+  .iday-window-proposed[data-blocked="yes"] { animation: none; }
+}
+
+/* ---- round 31 · landing hero + explorable example ----------------------
+ * The pinned stage is gone from the landing: a stable hero, the explorable
+ * example day, then trip entry. Same tokens, same floors. The hero's
+ * bottom padding is the airspace the day frame peeks into — the negative
+   margin below pulls the frame's top edge up so the first viewport ends on
+   an invitation, not dead air. */
+/* ── Design reset Phase 1 — the ink Statement landing ────────────────────
+   The cold visit reads ink in BOTH themes: the vars below are the stage
+   palette scoped to .root.landing-ink so every descendant resolves ink
+   values — useTheme, localStorage and the Today surface are untouched.
+   body:has() paints the viewport gutters so the whole cold-visit chrome
+   (nav, menu, footer) sits on one coherent ink field. */
+:root { --landing-ink-bg: #0b0e16; }
+.root.landing-ink {
+  --m-bg: var(--landing-ink-bg);
+  --m-card: #121726;
+  --m-card-2: #171d2e;
+  --m-border: #26304a;
+  --m-border-2: #1c2436;
+  --m-faint: #7c88a4;
+  --m-text: #F5EFE6;
+  --m-ink: #F5EFE6;
+  --m-muted: #a89a8c;
+  --m-tag: rgba(255, 196, 107, 0.14);
+  --m-accent: #e99a6f;
+  --m-on-accent: #fff8ef;
+  --dial-target: #ffc46b;
+  --dial-ghost: #6b7590;
+  --dial-sleep: #b8a8ff;
+  --dial-body: #7adfff;
+  --dial-body-soft: rgba(122, 223, 255, 0.18);
+  --dial-committed: #ff7a7a;
+  --dial-movable: #8b93a7;
+  /* Step-kind data colours, the stage palette */
+  --cat-light: #ffc46b;
+  --cat-sleep: #b8a8ff;
+  --cat-food: #e99a6f;
+  --cat-cal: #9db8ff;
+  --cat-run: #8fc7a3;
+  --cat-flight: #8b93a7;
+}
+body:has(.root.landing-ink) { background: var(--landing-ink-bg); }
+/* The static beam tint is cream-surface atmosphere — on the ink statement
+   it reads as a hard-edged rectangle inside the root. LandingDepth's wash
+   is the landing's whole ambient layer. */
+.landing-ink > .beam { display: none; }
+
+/* First-viewport chrome stays one row on the phone: brand alone + Menu,
+   ~56px header, no wrapped row eating the statement's space. */
+@media (max-width: 599px) {
+  .landing-ink .nav { padding: 12px 0 10px; flex-wrap: nowrap; }
+  .landing-ink .brand span { display: none; }
+}
+
+/* The Statement macrostructure: headline, then the form, then the example
+   instrument — left aligned, never a centred marketing card. Desktop is a
+   12-col grid: headline spans 1–9, the form sits 1–6 beneath it, the
+   example instrument takes the full row as the second screen. */
+.landing-statement { position: relative; text-align: left; }
+@media (min-width: 960px) {
+  .landing-statement {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    column-gap: 24px;
+  }
+  .landing-statement > * { grid-column: 1 / -1; }
+  .landing-statement > .landing-hero { grid-column: 1 / 10; }
+  .landing-statement > .via-note,
+  .landing-statement > .entry { grid-column: 1 / 7; }
+  .landing-statement > .everyday-rhythm { margin-left: 0; }
+}
+/* The form joins the statement directly — no 720px reading column, no
+   card-in-card. */
+.landing-statement .entry {
+  grid-template-columns: 1fr;
+  gap: 0;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+.landing-statement .entry-planner {
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.landing-statement .entry-planner h2 {
+  font-size: var(--text-xl);
+  font-weight: 600;
+}
+.landing-statement .entry-planner-note {
+  font-size: 14px;
+  margin: 4px 0 0;
+}
+.landing-statement .via-note { max-width: 52ch; }
+.landing-statement .entry-form { gap: 12px; margin-top: 10px; }
+.landing-statement .entry-cta { min-height: 48px; }
+.landing-statement .entry-error { margin: 0; }
+
+/* Phase 2 — the glass instrument: refractive medallion beside the form. */
+.landing-ink {
+  --glass-tint: rgba(233, 154, 111, 0.85);
+  --glass-edge: rgba(255, 196, 107, 0.5);
+}
+.sunself-wrap { position: relative; display: inline-block; }
+/* Glass palette lives on the WRAPPER so the GPU can re-read it per draw —
+   the svg child only carries the svg-side tone class. */
+.sunself-wrap[data-tone="paper"] {
+  --glass-tint: rgba(242, 185, 92, 0.9);
+  --glass-edge: rgba(217, 107, 67, 0.5);
+  --glass-bg: #f7efe4;
+  --glass-spec: #fff8ef;
+}
+.sunself-wrap[data-tone="ink"] {
+  --glass-tint: rgba(255, 196, 107, 0.9);
+  --glass-edge: rgba(255, 196, 107, 0.5);
+  --glass-bg: #0b0e16;
+  --glass-spec: #fff4e2;
+}
+/* Mood shifts the tint subtly — never a generic flat yellow. */
+.sunself-wrap[data-mood="drained"] { --glass-tint: rgba(200, 168, 140, 0.9); }
+.sunself-wrap[data-mood="sleeping"] { --glass-tint: rgba(178, 164, 200, 0.85); }
+.sunself-wrap[data-mood="half-lit"] { --glass-tint: rgba(255, 196, 107, 0.9); }
+.sunself-wrap[data-mood="adjusted"] { --glass-tint: rgba(233, 154, 111, 0.95); }
+/* The tap ring: one finite 300ms expanding circle per press — the keyed
+   element restarts the animation each time. */
+@media (prefers-reduced-motion: no-preference) {
+  .sunself-ripple {
+    position: absolute;
+    inset: 18%;
+    border-radius: 50%;
+    border: 1.5px solid var(--glass-spec);
+    opacity: 0;
+    pointer-events: none;
+    animation: sunself-ripple 260ms ease-out both;
+  }
+}
+@keyframes sunself-ripple {
+  from { transform: scale(0.85); opacity: 0.7; }
+  to { transform: scale(1.5); opacity: 0; }
+}
+.sunself-wrap .sunself-gl { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; }
+/* Exactly one body draws: the canvas takes over only after a real first
+   draw (data-renderer flips), and the SVG stays laid out underneath so
+   the wrapper keeps its intrinsic size. */
+.sunself-wrap[data-renderer="webgl"] .sunself-gl { opacity: 1; }
+.sunself-wrap[data-renderer="webgl"] .sunself { visibility: hidden; }
+/* Native button for speak — reset to wrapper chrome, keep focus-visible. */
+button.sunself-wrap {
+  appearance: none;
+  border: none;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  text-align: inherit;
+  min-width: 44px;
+  min-height: 44px;
+}
+button.sunself-wrap:focus-visible {
+  outline: 2px solid var(--color-focus, var(--m-accent));
+  outline-offset: 3px;
+}
+.landing-entry-stage { display: grid; grid-template-columns: 1fr; gap: 16px; scroll-margin-top: 24px; }
+/* The landing's close — the page owes the reader an ending: the horizon
+   hairline, one line in the crew's voice, the door back up to the form,
+   and the privacy note every surface carries. */
+.landing-close {
+  margin-top: clamp(56px, 9vh, 96px);
+  padding: 36px 28px 64px;
+  border-top: 1px solid var(--stage-ember-line);
+  text-align: center;
+}
+.landing-close-line {
+  font-family: var(--font-display);
+  font-weight: 560;
+  letter-spacing: -0.02em;
+  font-size: clamp(20px, 2.6vw, 28px);
+  color: var(--m-ink);
+  margin: 0;
+}
+.landing-close-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  margin-top: 20px;
+  font-size: 13px;
+}
+.landing-close-cta {
+  color: var(--m-accent);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--dur-glide) var(--ease-glide);
+}
+.landing-close-cta:hover { border-bottom-color: var(--m-accent); }
+/* Touch gets tactility the magnetic CTA can't give: a press settles the
+   button toward the glass, hover:fine devices keep the pointer pull. */
+@media (hover: none) {
+  .entry-cta:active, .stage-start:active { transform: scale(0.97); transition: transform 120ms var(--ease-settle); }
+}
+@media (min-width: 960px) {
+  .landing-entry-stage { grid-column: 1 / -1; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 48px; align-items: start; max-width: 100%; }
+  /* The feature frame in the stage's second column: a tall vertical film,
+     centred in its lane. */
+  .landing-entry-stage .ad-feature { justify-self: center; }
+}
+/* The mechanism beside its proof — the glass instrument pairs with the
+   example day it explains, one column narrow (instrument first — the
+   read's logic), `1fr | 2fr` wide. */
+.landing-iday-pair { display: grid; grid-template-columns: 1fr; gap: 24px; margin-top: 36px; }
+.landing-iday-pair .landing-iday { margin-top: 0; }
+@media (min-width: 960px) {
+  .landing-iday-pair { grid-template-columns: minmax(0,1fr) minmax(0,2fr); gap: 48px; align-items: center; }
+  .landing-iday-pair .landing-instrument { align-self: center; }
+}
+.landing-instrument { margin: 0; display: grid; place-items: center; gap: 12px; position: relative; }
+/* the instrument throws light — a halo of dawn bleeding past the disc's
+   edge, so the medallion reads as a lamp, not an illustration */
+.landing-instrument::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 44%;
+  width: 150%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(50% 50% at 50% 50%,
+    rgba(255, 210, 150, 0.28) 0%,
+    rgba(255, 178, 116, 0.12) 44%,
+    transparent 72%);
+  pointer-events: none;
+}
+.landing-instrument-base { width: 62%; height: 0; border-top: 1px solid var(--m-border); }
+.landing-instrument-cap { display: grid; gap: 2px; text-align: center; max-width: 34ch; }
+.li-label { font-family: var(--font-mono2); font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--m-muted); }
+.li-line { font-size: 14px; color: var(--m-text); }
+.li-hint { font-size: 13px; color: var(--m-faint); }
+
+@media (max-width: 599px) {
+  .landing-hero { padding: 16px 0 12px; }
+  .landing-hero .lh-title { font-size: clamp(32px, 11.5vw, 44px); line-height: 1.02; }
+  .landing-hero .lh-title--resolved { font-size: clamp(28px, 8.5vw, 34px); }
+  .landing-hero .lh-lede { font-size: 16px; line-height: 1.4; margin-bottom: 12px; }
+  /* The form's CTA is already the primary action — the anchor duplicates
+     it and eats a row. Desktop keeps both links. */
+  .landing-hero .lh-link--start { display: none; }
+}
+
+/* The headline: Fraunces 500 at display size, tight tracking, left rail.
+   The resolved visitor headline steps down a rung so the form stays in
+   the first viewport. */
+.landing-hero { padding: 40px 0 18px; }
+.lh-title {
+  margin: 0 0 14px;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-optical-sizing: auto;
+  font-size: var(--text-display);
+  letter-spacing: -0.02em;
+  line-height: 1.0;
+  color: var(--m-ink);
+  overflow-wrap: anywhere;
+}
+.lh-title--resolved {
+  font-size: clamp(32px, 5.2vw, 56px);
+}
+/* One secondary sentence — Inter 400, muted. */
+.lh-lede {
+  font-size: 17px;
+  line-height: 1.55;
+  color: var(--m-muted);
+  margin: 0 0 16px;
+  max-width: 46ch;
+}
+/* The two-pillar rubric — the film's end card, carried into the product.
+   The stamp's type idiom (mono, floor size, letterspaced) without the
+   border: this is the thesis, not a provenance mark. */
+.lh-rubric {
+  font-family: var(--font-mono2);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--m-faint);
+  margin: -6px 0 18px;
+}
+/* Quiet text anchors — the form's own CTA is the only button. */
+.lh-links {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+.lh-link {
+  color: var(--m-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  /* The links are the hero's only actions on mobile, so the tap target
+     has to be a finger, not a line of text: 44px of hit area around a
+     15px word, with the extra space taken back out of the layout so the
+     statement's rhythm is unchanged. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 12px 0;
+  margin: -12px 0;
+}
+.lh-link--quiet { color: var(--m-muted); }
+
+/* Fallback headline arrival: the line rises, fades and unblurs once —
+   the no-JS / no-WebGL2 intro; when the Filament effect builds it masks
+   the DOM letters and plays its own catch. Reduced motion seats it. */
+@media (prefers-reduced-motion: no-preference) {
+  .landing-hero .lh-line {
+    display: inline-block;
+    animation: lh-char-rise 560ms var(--ease-settle) both;
+  }
+}
+@keyframes lh-char-rise {
+  from { transform: translateY(0.45em); opacity: 0; filter: blur(6px); }
+  to { transform: none; opacity: 1; filter: blur(0); }
+}
+
+/* Press feedback on the shared Button: a springy squash on press and a
+   soft lean-back on release. Transform only, so it stays compositing-safe. */
+@media (prefers-reduced-motion: no-preference) {
+  .ui-btn {
+    transition: transform var(--dur-glide) var(--ease-spring), background-color var(--dur-glide) var(--ease-glide), color var(--dur-glide) var(--ease-glide);
+  }
+  .ui-btn:active:not(:disabled) { transform: scale(0.96); }
+}
+
+/* The landing form's instrument cells — warm ink backing, hairline
+   borders, mono IATA over the resolved city name in Fraunces. Rules are
+   scoped under `.entry .rp-picker--landing` so they win the cascade
+   against the app's generic `.entry .rp-*` overrides. */
+.entry .rp-picker--landing { display: grid; gap: 12px; }
+.rp-landing-route {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: stretch;
+}
+.rp-landing-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 94px; /* label + 44px input + reserved city line + padding — same height blank or resolved */
+  padding: 8px 12px;
+  border: 1px solid var(--m-border);
+  border-radius: 10px;
+  background: var(--m-card);
+  min-width: 0;
+}
+/* 13px floor on landing labels — must outrank `.entry .rp-label` (12px). */
+.entry .rp-picker--landing .rp-label {
+  font-family: var(--font-mono2);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--m-muted);
+}
+/* The cell owns the border; the input inside it carries none. */
+.entry .rp-picker--landing .rp-landing-cell .rp-input {
+  font-family: var(--font-mono2);
+  font-size: 16px;
+  letter-spacing: 0.04em;
+  min-height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--m-text);
+}
+.rp-input-landing { min-height: 56px; }
+.rp-city {
+  font-family: var(--font-display);
+  font-size: 15px;
+  line-height: 1.25;
+  color: var(--m-muted);
+  min-height: 1.25em; /* reserved even when blank, so the cell never jumps */
+}
+.rp-swap-landing {
+  align-self: center;
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--m-accent);
+  border: 1px solid var(--m-border);
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+.rp-swap-landing:disabled { opacity: 0.4; }
+.rp-landing-date { display: flex; flex-direction: column; gap: 6px; }
+.entry .rp-picker--landing .rp-landing-date .rp-input {
+  min-height: 56px;
+  padding: 8px 12px;
+  font-size: 16px;
+  border: 1px solid var(--m-border);
+  border-radius: 10px;
+  background: var(--m-card);
+  color: var(--m-text);
+}
+.rp-picker--landing .rp-listbox {
+  width: min(18rem, calc(100vw - 40px));
+}
+.rp-picker--landing .rp-field--to .rp-listbox { left: auto; right: 0; }
+/* The preview line under the CTA — a model read, never a promise. */
+.entry-preview {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--m-muted);
+}
+
+/* The example day in its instrument frame: a hairline border, a labelled
+   head bar, and the honesty tag stamped in the chrome — a mounted dial,
+   not a floating card. The negative margin peeks the frame's top edge
+   into the hero's bottom padding — a few px of card above the fold's end
+   to invite the scroll. The reveal is choreographed on the frame's own
+   entry (the --iday-wake timeline, declared in the guarded block below):
+   the sky band unclips first — the scene arrives before the chrome — the
+   hairline draws itself, the head bar slides in a breath behind, and the
+   lower sections wake as the frame traverses. An instrument opening, not
+   a card scrolling past. */
+.landing-iday { margin: 28px 0 0; text-align: left; }
+.landing-iday-frame {
+  border: 1px solid var(--m-border);
+  border-radius: var(--radius-xl);
+  padding: 14px 16px 18px;
+  /* A stable backing that still lets the ambient sky breathe through —
+     text keeps its floor while the depth reads behind it. */
+  background: color-mix(in srgb, var(--m-bg) 78%, transparent);
+}
+.landing-iday-bar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 10px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--m-border);
+}
+.landing-iday-title { margin: 0; font-size: var(--text-xl); font-weight: 600; }
+@media (max-width: 560px) {
+  .landing-iday-bar { flex-direction: column; align-items: flex-start; gap: 6px; }
+}
+
+/* The frame's wake choreography — keyframes alone are inert; the timelines
+   that run them live in the @supports + no-preference block at the file's
+   end. Paint-safe only: clip-path, opacity, translate, border-color. */
+@keyframes iday-frame-line {
+  from { border-color: transparent; }
+}
+@keyframes iday-band-in {
+  from { clip-path: inset(0 0 84% 0 round var(--radius-md)); }
+  to { clip-path: inset(0 0 0 0 round var(--radius-md)); }
+}
+@keyframes iday-bar-in {
+  from { translate: 0 10px; }
+}
+@keyframes iday-wake-in {
+  from { translate: 0 12px; }
+}
+
+.iday-jump {
+  justify-self: start;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--m-border);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--m-card);
+  color: var(--m-text);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* ---- the landing's ambient depth ---------------------------------------
+ * The demo stage's depth system on the ink statement: two seeded mote
+ * planes, a warm haze on the horizon, ONE dark ridge — plus grain over the
+ * whole field. `--lp` is the page's descent, written per scroll frame by
+ * LandingDepth: each plane recedes and compresses at its own rate — scroll
+ * parallax only, no ambient loops. Transform + opacity only; SSR and
+ * reduced motion meet it seated. Fixed at z -1 inside .in's stacking
+ * context: behind every word, above the painted ground. */
+.landing-depth {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-below);
+  overflow: hidden;
+  pointer-events: none;
+}
+.landing-depth > * { position: absolute; }
+
+/* Phase 1 ink statement: one broad warm horizon wash in the right-side
+   negative space — tokens only, never a pink polygon. */
+.ld-sky {
+  inset: 0 0 auto;
+  height: 92vh;
+  background:
+    /* the gold band the sun sits under — the light the whole page leans on */
+    radial-gradient(ellipse 130% 34% at 62% 88%,
+      rgba(255, 190, 110, 0.34) 0%,
+      rgba(233, 122, 78, 0.20) 38%,
+      transparent 72%),
+    /* rose lift above the band */
+    radial-gradient(ellipse 120% 46% at 58% 78%,
+      rgba(196, 96, 112, 0.20) 0%,
+      transparent 66%),
+    /* the blue falloff of the upper sky */
+    linear-gradient(180deg,
+      #070a13 0%,
+      #0b1120 34%,
+      #141a30 58%,
+      #241d2e 78%,
+      #331f28 92%,
+      #0b0e16 100%);
+  transform: translateY(calc(var(--lp, 0) * -30vh));
+}
+.ld-motes {
+  top: 0;
+  left: -4%;
+  width: 108%;
+  height: 62vh;
+}
+.ld-motes circle { fill: var(--color-terracotta); }
+.ld-motes-far {
+  opacity: 0.3;
+  transform: translate(
+    calc(var(--px, 0) * -5px),
+    calc(var(--lp, 0) * -10vh + var(--py, 0) * -3px)
+  );
+  transition: transform var(--dur-settle) var(--ease-settle);
+}
+.ld-motes-mid {
+  opacity: 0.5;
+  transform: translate(
+    calc(var(--px, 0) * -11px),
+    calc(var(--lp, 0) * -19vh + var(--py, 0) * -6px)
+  );
+  transition: transform var(--dur-settle) var(--ease-settle);
+}
+/* The haze is the sun-dest token at a whisper of alpha along the horizon —
+   atmosphere, never a light band. */
+.ld-haze {
+  top: 40vh;
+  left: -6%;
+  width: 112%;
+  height: 18vh;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    color-mix(in srgb, var(--color-sun-dest) 12%, transparent) 50%,
+    transparent
+  );
+  opacity: calc(0.8 - var(--lp, 0) * 0.3);
+  transform: translate(calc(var(--px, 0) * -7px), calc(var(--lp, 0) * -12vh));
+  transition: transform var(--dur-settle) var(--ease-settle);
+}
+.ld-ridge {
+  left: -3%;
+  width: 106%;
+}
+.ld-ridge-far {
+  top: 44vh;
+  height: 16vh;
+  transform: translate(calc(var(--px, 0) * -14px), calc(var(--lp, 0) * -14vh))
+    scaleY(calc(1 - var(--lp, 0) * 0.22));
+  transform-origin: bottom;
+  transition: transform var(--dur-settle) var(--ease-settle);
+}
+.ld-ridge-far path { fill: var(--color-ink-3, #131826); }
+.ld-ridge-far { opacity: 0.25; }
+.ld-grain { inset: 0; width: 100%; height: 100%; opacity: 0.55; }
+
+/* Sections arrive as they enter — the design language's reveal pattern,
+   gated on the capability and the preference like every other scroll
+   reveal in the file. Without either, content simply stands.
+
+   The landing's arrival is a RISE, not a fade: the words below the fold
+   are content, and a scroll-driven fade leaves them invisible until the
+   traveller scrolls to them — which shows up as a dead band in any
+   full-page capture, in print, and on the frame that is already on
+   screen when the page loads. `land-rise` moves the section into place
+   and never takes it out of the reading. */
+@keyframes land-rise {
+  from { translate: 0 24px; }
+  to { translate: 0 0; }
+}
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .landing-iday,
+    .adverts,
+    .sample-journeys,
+    .everyday-rhythm {
+      animation: land-rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 38%;
+    }
+
+    /* The frame wakes on its own entry timeline so every section is
+       choreographed against the same rise — not each element's private
+       crossing. Order: the sky band unclips first, the hairline draws
+       itself, the head bar slides in a breath behind, then the day's
+       sections wake as the frame traverses. Without scroll-driven
+       animations none of this exists — the surface simply stands. */
+    .landing-iday-frame {
+      view-timeline: --iday-wake block;
+      animation: iday-frame-line linear both;
+      animation-timeline: --iday-wake;
+      animation-range: entry 0% entry 24%;
+    }
+    .landing-iday-frame .iday-sky {
+      animation: iday-band-in linear both;
+      animation-timeline: --iday-wake;
+      animation-range: entry 0% entry 30%;
+    }
+    .landing-iday-frame .iday-head {
+      animation: iday-wake-in linear both;
+      animation-timeline: --iday-wake;
+      animation-range: entry 10% entry 40%;
+    }
+    .landing-iday-frame .landing-iday-bar {
+      animation: iday-bar-in linear both;
+      animation-timeline: --iday-wake;
+      animation-range: entry 14% entry 46%;
+    }
+    .landing-iday-frame .iday > :where(
+      .iday-crew, .iday-timeline, .iday-read-wrap, .iday-edit,
+      .day-scene-details, .iday-foot, .iday-jump
+    ) {
+      animation: iday-wake-in linear both;
+      animation-timeline: --iday-wake;
+      animation-range: entry 24% entry 62%;
+    }
+  }
+}
+
+/* ---- shared plan card (recipient-facing /plan/[id]) --------------------
+ * The one page outsiders see — it runs on the token law like every other
+ * surface: clay dark cards, terracotta kicker, mono for measurements, no
+ * text under the 12px body floor, no interactive text under 13px. */
+.share { min-height: 100dvh; padding: clamp(24px, 5vw, 48px) 20px; }
+.share-inner { max-width: 560px; margin: 0 auto; }
+.share-kicker {
+  font-size: var(--text-2xs); font-weight: 700; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--color-terracotta);
+}
+.share-title {
+  font-family: var(--font-display); font-size: var(--text-2xl); font-weight: 600;
+  letter-spacing: -0.02em; margin: 10px 0 4px; color: var(--m-ink);
+}
+.share-summary { font-size: var(--text-sm); color: var(--m-muted); margin: 0 0 20px; }
+.share-dark {
+  background: var(--color-clay); color: var(--m-card);
+  border-radius: 16px; padding: 16px 18px; margin-bottom: 16px;
+}
+.share-dark-kicker {
+  font-size: var(--text-2xs); font-weight: 700; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--color-ember);
+}
+.share-dark-head { font-size: var(--text-lg); font-weight: 700; margin-top: 6px; }
+.share-dark-sub { font-size: var(--text-sm); margin-top: 4px; }
+.share-dark-note { font-size: var(--text-xs); color: var(--color-clay-note); margin-top: 4px; }
+.share-card {
+  background: var(--m-card); border: 1px solid var(--m-border);
+  border-radius: 16px; padding: 16px;
+}
+.share-day {
+  display: flex; justify-content: space-between; gap: 12px;
+  font-size: var(--text-sm); padding: 8px 0;
+  border-top: 1px solid var(--m-border-2);
+}
+.share-day:first-child { border-top: 0; }
+.share-day span { font-family: var(--font-mono2); color: var(--m-muted); font-size: var(--text-xs); }
+.share-meta { font-size: var(--text-xs); color: var(--m-muted); margin-top: 10px; font-family: var(--font-mono2); }
+.share-cta {
+  display: inline-block; margin-top: 20px; background: var(--color-terracotta);
+  color: var(--m-on-accent); border-radius: 999px; padding: 10px 22px;
+  font-size: var(--text-sm); font-weight: 700; text-decoration: none;
+}
+.share-foot { font-size: var(--text-2xs); color: var(--m-faint); margin-top: 16px; }
+

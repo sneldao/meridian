@@ -18,6 +18,10 @@ export function safeStorageGet(read: () => string | null): string | null {
   }
 }
 
+export function safeStorageRemove(key: string, label = "remove"): boolean {
+  return safeStorageSet(() => localStorage.removeItem(key), label);
+}
+
 export function safeStorageSet(write: () => void, label = "write"): boolean {
   try {
     write();

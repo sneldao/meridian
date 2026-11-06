@@ -7,7 +7,7 @@ import { BottomNav } from "@/components/BottomNav";
 import { PageHeader } from "@/components/PageHeader";
 import { useUndoToast } from "@/components/UndoToast";
 import { secondTripCopy, secondTripProof } from "@/domain/second-trip";
-import { meridianStorageKeys } from "@/lib/local-data";
+import { meridianStorageKeys, safeStorageSet } from "@/lib/local-data";
 import { scoreBand } from "@/domain/score";
 
 interface HistTrip {
@@ -69,10 +69,10 @@ export default function HistoryPage() {
     keys.map((k) => [k, localStorage.getItem(k)] as const);
   const restore = (snap: (readonly [string, string | null])[]) => {
     snap.forEach(([k, v]) => {
-      try {
+      safeStorageSet(() => {
         if (v === null) localStorage.removeItem(k);
         else localStorage.setItem(k, v);
-      } catch {}
+      }, "history-restore");
     });
   };
 
