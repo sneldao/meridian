@@ -510,6 +510,19 @@
   line-height: 1.15;
 }
 .iday-lead { margin: 0; font-size: 1rem; color: var(--m-muted); }
+.iday-motion {
+  justify-self: start;
+  background: none;
+  border: 0;
+  padding: 4px 0;
+  font: inherit;
+  /* A control is interactive text: 13px is the floor, not 11px. */
+  font-size: 13px;
+  color: var(--m-muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
 
 .iday-sky {
   position: relative;
@@ -1292,6 +1305,24 @@ button.sunself-wrap:focus-visible {
 @keyframes lh-char-rise {
   from { transform: translateY(0.45em); opacity: 0; filter: blur(6px); }
   to { transform: none; opacity: 1; filter: blur(0); }
+}
+/* The line rhythm under the headline: lede, rubric and links arrive a line
+   beat apart, settled rather than sprung. That is the second half of the
+   stagger hierarchy — characters carry the headline, lines carry the stack;
+   before this, four blocks landed on the same frame and read as one slab. */
+@media (prefers-reduced-motion: no-preference) {
+  .landing-hero .lh-lede,
+  .landing-hero .lh-rubric,
+  .landing-hero .lh-links {
+    animation: lh-line-rise 420ms var(--ease-settle) both;
+  }
+  .landing-hero .lh-lede { animation-delay: var(--stagger-line); }
+  .landing-hero .lh-rubric { animation-delay: calc(var(--stagger-line) * 2); }
+  .landing-hero .lh-links { animation-delay: calc(var(--stagger-line) * 3); }
+}
+@keyframes lh-line-rise {
+  from { transform: translateY(0.35em); opacity: 0; }
+  to { transform: none; opacity: 1; }
 }
 
 /* Press feedback on the shared Button: a springy squash on press and a

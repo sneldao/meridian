@@ -15,6 +15,7 @@ import { CrewAvatar, type CrewAvatarState } from "@/components/CrewAvatar";
 import { StageSun } from "@/components/StageSun";
 import { useUndoToast } from "@/components/UndoToast";
 import { Stamp } from "@/components/ui/Stamp";
+import { MotionPause } from "@/components/MotionPause";
 import type { PlanEditApi } from "@/lib/use-plan-edit";
 
 /* The interactive day (round 31) — the one place a visitor can touch the
@@ -569,6 +570,9 @@ export function InteractiveDay({ scene, requiredMin, direction, edit, initialMin
         {!example && preview && <Stamp kind="preview" className="iday-stamp" />}
         <h3 className="iday-headline">{read.headline}</h3>
         <p className="iday-lead">{read.lead}</p>
+        {/* The haze drifts on an 11s loop beside the readout. It is chrome and
+            not data, but a loop that long gets a switch regardless. */}
+        {momentum && <MotionPause className="iday-motion" />}
       </header>
 
       <div className="iday-sky" ref={skyRef} role="img" aria-label={`Modeled sky over ${scene.city.name} at ${fmtMin(read.minute)}: ${sun.bandLabel ?? "sun position unavailable"}`} data-sun-fx={sunFx?.kind}>

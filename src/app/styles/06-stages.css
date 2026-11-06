@@ -2171,6 +2171,17 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   text-transform: uppercase;
   color: var(--m-muted);
 }
+.demo-motion {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-size: 13px;
+  color: var(--m-muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
 .demo-skip {
   margin-left: auto;
   background: none;

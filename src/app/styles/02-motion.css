@@ -20,6 +20,18 @@
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --dur-spring: 420ms;
   --stagger-step: 22ms;
+  /* Arrivals bounce; departures don't. The three levels above named no way
+     out, so every exit borrowed an entrance curve and sprang at the end of
+     it — an arrival playing backwards. This is the one exit pair: both
+     control-point y values sit inside 0…1, so nothing overshoots on the way
+     out, and it is shorter than the level it answers. */
+  --ease-exit: cubic-bezier(0.55, 0, 0.85, 0.3);
+  --dur-exit: 140ms;
+  /* A split display block gets a line rhythm as well as a character one:
+     66ms is three characters' worth of the step above, so a headline that
+     arrives per letter does not also take a second to finish arriving line
+     by line. */
+  --stagger-line: 66ms;
 }
 
 @keyframes rise {
@@ -566,6 +578,8 @@ a[href]:active {
 @media (prefers-reduced-motion: no-preference) {
   .arr-in .arr-passport-stamp { animation: arr-stamp-slam 560ms var(--ease-drift) 2050ms backwards; }
 }
+/* The stamp lands once and stays: no overshoot past its rest rotation, and
+   nothing loops (Rule 3's channel gate — the stamp carries the verdict). */
 @keyframes arr-stamp-slam {
   0% { opacity: 0; transform: scale(1.28) rotate(-8deg); }
   55% { opacity: 1; transform: scale(0.96) rotate(-8deg); }

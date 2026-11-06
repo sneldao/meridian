@@ -2027,7 +2027,7 @@ select:focus-visible {
     font-weight: 600;
     font-size: 13px;
   }
-  .toast-out { opacity: 0; transform: translate(-50%, 8px); transition: opacity var(--dur-glide) var(--ease-glide), transform var(--dur-glide) var(--ease-glide); }
+  .toast-out { opacity: 0; transform: translate(-50%, 8px); transition: opacity var(--dur-exit) var(--ease-exit), transform var(--dur-exit) var(--ease-exit); }
   .tl-recovery-tip {
     margin-top: 8px;
     padding: 10px 12px;

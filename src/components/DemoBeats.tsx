@@ -14,6 +14,7 @@ import {
   type DemoBeatId,
 } from "@/domain/demo-beats";
 import { StageSun } from "@/components/StageSun";
+import { MotionPause } from "@/components/MotionPause";
 import { arrivalPassportSvg } from "@/lib/arrival-passport-svg";
 import { downloadSunPortrait } from "@/lib/download-sun-portrait";
 import { buildTasteItinerary } from "@/domain/taste-itinerary";
@@ -272,6 +273,10 @@ function DemoBeatsInner() {
             Skip to the payoff →
           </button>
         )}
+        {/* The star planes drift for three minutes at a time. That is motion
+            nobody asked for, so it gets a switch (WCAG 2.2.2; museum-of-motion's
+            five-second rule). */}
+        <MotionPause className="demo-motion" />
       </header>
 
       {/* Keyed by beat so the choreography replays on every change. */}

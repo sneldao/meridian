@@ -226,6 +226,15 @@
   from { transform: scaleX(1); }
   to { transform: scaleX(0); }
 }
+/* The traveller's own switch over the stage loops (MotionPause). Both stages
+   already pause off-screen and on a hidden tab; this pauses them because
+   someone asked. It is not a reduced-motion substitute — that still stands
+   every loop down on its own — and it lives on <html> so the choice holds
+   across surfaces. Declared last so it wins over each stage's own rule. */
+:root[data-motion-pause="1"] .iday-amb,
+:root[data-motion-pause="1"] .demo-stars {
+  animation-play-state: paused;
+}
 
 /* The sheet rises out of the tab bar on a soft spring, the way a drop of
    liquid settles, instead of appearing whole. Transform only. */

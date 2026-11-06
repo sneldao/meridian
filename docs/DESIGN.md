@@ -309,6 +309,37 @@ One deliberate impact per screen. The landing hero's "Start with your trip"
 CTA lands with a single overshoot after the headline's character stagger;
 no other element on the landing page overshoots.
 
+#### Arrivals bounce; departures don't (amended round 54, 2026-11-06)
+
+The vocabulary named three levels and no way *out*. Every exit borrowed the
+entrance curve, so a pill leaving took as long as one arriving and sprang at
+the end of it — an arrival playing backwards.
+
+- `--ease-exit` cubic-bezier(0.55, 0, 0.85, 0.3) and `--dur-exit` 140ms are
+the exit pair: both control-point `y` values inside 0…1, so nothing
+overshoots on the way out, and shorter than the level it answers. The spring
+is entrance-only by construction now. `tests/motion-policy.test.ts` parses
+both curves and holds the contrast.
+- A split display block gets a **line** rhythm as well as a character one.
+`--stagger-line` (66ms) is three characters' worth of `--stagger-step`: the
+headline still arrives per letter, the lede/rubric/links arrive a line beat
+behind it instead of landing on the same frame as one slab.
+
+#### Ambient loops have a switch (amended round 54)
+
+Rule 3's channel gate says a loop may live where no readout is. It never said
+how long, and none of them could be stopped — every stage loop pauses off-screen
+and on a hidden tab, but not because someone asked. WCAG 2.2.2 wants a
+mechanism when motion starts by itself, runs past five seconds and sits beside
+other content, which is the example day's haze and the demo's three star
+planes.
+
+`MotionPause` (`src/components/MotionPause.tsx`) writes `data-motion-pause` on
+`<html>`; the stylesheet holds `.iday-amb` and `.demo-stars` paused under it.
+It is a stored local preference, not a reduced-motion substitute (that still
+stands every loop down on its own), and the off-screen pause keeps working
+independently of it.
+
 #### The motion gate
 
 Only compositing-safe properties may animate — `transform`, the
