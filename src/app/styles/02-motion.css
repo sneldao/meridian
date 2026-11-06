@@ -1934,6 +1934,13 @@ button.f:focus-visible {
     border-left: none;
     border-right: none;
   }
+  /* The data-side stagger margin (0,3,0) outranks the reset above (0,2,0):
+     without this, a left-staggered slab is width:100% pushed 31px right,
+     and .root's overflow-x:clip silently cuts its edge off on phones. */
+  .room[data-side] .slab {
+    margin-left: 0;
+    margin-right: 0;
+  }
   /* The band, not the room: the settled sky sits above the slab where the
      sticky canvas would be. */
   .room-sky {

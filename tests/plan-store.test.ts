@@ -76,11 +76,21 @@ const seedTrip = () => ({
 });
 
 const withStore = (fn: (ls: Storage) => void) => {
-  const orig = globalThis.localStorage;
+  const prev = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
   const ls = mem();
-  Object.defineProperty(globalThis, "localStorage", { value: ls, configurable: true });
-  try { fn(ls); } finally {
-    Object.defineProperty(globalThis, "localStorage", { value: orig, configurable: true });
+  Object.defineProperty(globalThis, "localStorage", {
+    value: ls,
+    writable: true,
+    configurable: true,
+  });
+  try {
+    fn(ls);
+  } finally {
+    /* Restore the real descriptor or remove the stub outright — a
+     * defineProperty without `writable` leaves a readonly global behind,
+     * and any later file's plain `localStorage = …` throws on it. */
+    if (prev) Object.defineProperty(globalThis, "localStorage", prev);
+    else delete (globalThis as Record<string, unknown>).localStorage;
   }
 };
 

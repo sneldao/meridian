@@ -33,13 +33,20 @@ function mockStorage(seed: Record<string, string> = {}) {
 }
 
 function withStorage(storage: unknown, fn: () => void) {
-  const prev = (globalThis as Record<string, unknown>).localStorage;
-  (globalThis as Record<string, unknown>).localStorage = storage;
+  /* defineProperty, not assignment: an earlier file may have left
+   * localStorage as a readonly configurable, and plain assignment throws
+   * on that in strict mode. */
+  const prev = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
+  Object.defineProperty(globalThis, "localStorage", {
+    value: storage,
+    writable: true,
+    configurable: true,
+  });
   try {
     fn();
   } finally {
-    if (prev === undefined) delete (globalThis as Record<string, unknown>).localStorage;
-    else (globalThis as Record<string, unknown>).localStorage = prev;
+    if (prev) Object.defineProperty(globalThis, "localStorage", prev);
+    else delete (globalThis as Record<string, unknown>).localStorage;
   }
 }
 
