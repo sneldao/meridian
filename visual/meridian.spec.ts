@@ -31,7 +31,7 @@ test("home — the journey view under its own sky", async ({ page }) => {
     localStorage.clear();
     localStorage.setItem("meridian:activeTrip", JSON.stringify(trip));
   }, TRIP);
-  await page.goto("/");
+  await page.goto("/?origin=LHR&dest=SIN&date=2026-11-04");
   await page.waitForSelector(".hero", { timeout: 30000 });
   await page.waitForLoadState("networkidle");
   await expect(page).toHaveScreenshot("home.png");
@@ -42,7 +42,7 @@ test("more — the sheet grows out of its tab", async ({ page }) => {
     localStorage.clear();
     localStorage.setItem("meridian:activeTrip", JSON.stringify(trip));
   }, TRIP);
-  await page.goto("/");
+  await page.goto("/?origin=LHR&dest=SIN&date=2026-11-04");
   await page.waitForSelector(".hero", { timeout: 30000 });
   await page.locator(".bottom-nav button", { hasText: "More" }).click();
   await page.waitForSelector(".more-sheet", { timeout: 10000 });
@@ -102,7 +102,7 @@ test("stage — today opens on the full-bleed stage", async ({ page }) => {
     localStorage.clear();
     localStorage.setItem("meridian:activeTrip", JSON.stringify(trip));
   }, TRIP);
-  await page.goto("/");
+  await page.goto("/?origin=LHR&dest=SIN&date=2026-11-04");
   await page.waitForSelector(".today-stage", { timeout: 30000 });
   await page.waitForLoadState("networkidle");
   await expect(page).toHaveScreenshot("today-stage.png");
@@ -113,7 +113,7 @@ test("stage — the hand-off as the pin releases", async ({ page }) => {
     localStorage.clear();
     localStorage.setItem("meridian:activeTrip", JSON.stringify(trip));
   }, TRIP);
-  await page.goto("/");
+  await page.goto("/?origin=LHR&dest=SIN&date=2026-11-04");
   await page.waitForSelector(".today-stage", { timeout: 30000 });
   await page.evaluate(() => window.scrollTo({ top: Math.round(innerHeight * 1.6) }));
   await page.waitForTimeout(300);
