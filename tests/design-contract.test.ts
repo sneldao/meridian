@@ -132,6 +132,28 @@ const MOTION_DEBT: Record<string, number> = {
   "width 0.3s ease-out": 1,
 };
 
+// docs/DESIGN.md "Radii are rectangular": controls 6px, surface cards 10px,
+// pills 999px, discs 50%, plus the --radius-* scale. Anything else is debt.
+// Frozen 6 Nov 2026 at 42 declarations, by exact declaration text, so it can
+// only shrink — the biggest block is 12px ×14, a value the scale never named.
+// (The 12px rows are where the next tightening pass starts: they sit between
+// the 10px card and the 16px set-quote radius, so each one is a choice.)
+const RADIUS_SCALE = /^(?:0|6px|10px|999px|50%|inherit|10px 10px 0 0|var\(--radius-[a-z0-9]+(?:, ?[0-9]+px)?\))$/;
+
+const RADIUS_DEBT: Record<string, number> = {
+  "12px": 14,
+  "8px": 7,
+  "2px": 7,
+  "16px": 3,
+  "14px": 3,
+  "99px": 2,
+  "5px": 2,
+  "9px": 1,
+  "24px": 1,
+  "20px": 1,
+  "1px": 1,
+};
+
 // docs/DESIGN.md — the surfaces allowed to break the reading column, in the order
 // they appear on the page. Adding one is a contract change, so it is a list.
 const INSTRUMENT_BANDS = [
@@ -196,6 +218,26 @@ describe("design contract", () => {
       expect(doc).toContain(name.toLowerCase());
     }
     expect(decl(bodyOf(".wide"), "margin-left")).toContain("--hero-out");
+  });
+
+  test("raw border radii can only come down", () => {
+    // A radius outside the scale (or the token) is an invented value; a new
+    // one has to be added to RADIUS_DEBT deliberately, which is the point.
+    const counts = new Map<string, number>();
+    for (const r of ALL) {
+      for (const m of r.body.matchAll(/border-radius:\s*([^;]+);/g)) {
+        const v = m[1].trim();
+        if (RADIUS_SCALE.test(v)) continue;
+        counts.set(v, (counts.get(v) ?? 0) + 1);
+      }
+    }
+    const over = [...counts]
+      .filter(([v, n]) => n > (RADIUS_DEBT[v] ?? 0))
+      .map(([v, n]) => `${v}: ${n} > ${RADIUS_DEBT[v] ?? 0}`);
+    expect(over).toEqual([]);
+    // And the debt is real: the map may not name values the sheet has dropped.
+    const gone = Object.keys(RADIUS_DEBT).filter((v) => !counts.has(v));
+    expect(gone).toEqual([]);
   });
 
   test("only compositing-safe properties animate", () => {

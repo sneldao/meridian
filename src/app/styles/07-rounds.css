@@ -1304,7 +1304,14 @@ button.sunself-wrap:focus-visible {
 }
 @keyframes lh-char-rise {
   from { transform: translateY(0.45em); opacity: 0; filter: blur(6px); }
-  to { transform: none; opacity: 1; filter: blur(0); }
+  /* The blur finishes at 70% and the last frame does not name `filter` at
+     all. A declared `blur(0)` under `both` outlives the motion it belongs to
+     as a non-`none` filter function — a compositor promotion that rasterises
+     the glyphs once, which is how text goes permanently soft. Dropping it
+     from `to` lets the property fall back to the element's own (none) while
+     the blur still resolves identically. */
+  70% { filter: blur(0); }
+  to { transform: none; opacity: 1; }
 }
 /* The line rhythm under the headline: lede, rubric and links arrive a line
    beat apart, settled rather than sprung. That is the second half of the

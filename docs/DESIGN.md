@@ -544,7 +544,15 @@ kill list landed and supersedes these specifics wherever they conflict:
 - **Radii are rectangular.** Controls, chips and badges take 6px; surface
   cards take 10px; primary CTAs keep their pill radius; discs, dials, rays,
   progress bars and dot geometry are untouched. The BottomNav active
-  indicator is a 2px rule, not a filled pill.
+  indicator is a 2px accent rule, not a filled pill — and since craft
+  convention forbids marking a state with a partial edge, the exception
+  carries its reason: the rule is **one** element that slides between tabs
+  (`data-idx`), not one stripe per row. The defect that convention names —
+  every marked row adds another line to the page — cannot occur with a single
+  travelling rule, and its position adds a channel the `aria-current` label
+  colour cannot carry. Rectangles stay rectangles: no new fill appears under
+  the active tab. `tests/design-contract.test.ts` freezes off-scale radii at
+  42 declarations so the scale can only tighten, never widen.
 - **The 60s beam shade is deleted.** The static `.beam` tint stays; the
   travelling layer and `--beam-phase` are gone — ambient motion must be
   perceivable, and this loop measured invisible.

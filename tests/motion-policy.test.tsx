@@ -78,6 +78,21 @@ describe("the stagger has two rungs", () => {
   });
 });
 
+describe("text stays sharp at rest", () => {
+  test("the character rise does not leave a filter on the headline", () => {
+    // `animation-fill-mode: both` keeps the last frame's declarations. A
+    // `filter: blur(0)` there is a non-`none` filter that outlives the
+    // animation, promotes the text to its own compositor layer and rasterises
+    // the glyphs once — permanently soft type. The blur must resolve before
+    // the final frame, and that frame must not name `filter` at all.
+    const kf = css.match(/@keyframes lh-char-rise \{[\s\S]*?\n\}/)?.[0] ?? "";
+    expect(kf).toContain("filter: blur(6px)");
+    const last = kf.slice(kf.lastIndexOf("to {"));
+    expect(last).toContain("transform: none");
+    expect(last).not.toContain("filter");
+  });
+});
+
 describe("the ambient loops have a switch", () => {
   test("the pause attribute stops both stages' loops", () => {
     expect(css).toContain(':root[data-motion-pause="1"] .iday-amb');
