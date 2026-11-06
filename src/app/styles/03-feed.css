@@ -754,8 +754,10 @@ textarea:focus-visible,
   .p1,
   .p2 { padding-block: 13px; }
   /* The ask-and-send pair: the input is 34 tall, so a 44px send button sets
-     the row's height and the two line up instead of the button floating. */
-  .crew-ask-go { width: 44px; height: 44px; }
+     the row's height and the two line up instead of the button floating.
+     The .crew-ask-form prefix is load-bearing: the base rule below sets
+     width/height at the same single-class weight and would win on order. */
+  .crew-ask-form .crew-ask-go { width: 44px; height: 44px; }
   .hist-empty-cta {
     display: inline-flex;
     align-items: center;

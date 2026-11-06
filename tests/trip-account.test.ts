@@ -3,6 +3,7 @@ import { buildTrip, GARMIN_BASELINE } from "@/domain/fixtures";
 import type { TripData } from "@/domain/types";
 import { writeTripTaste } from "@/lib/use-trip-taste";
 import { buildTripAccountRows, validateTripPayload } from "@/lib/trip-account";
+import { withStubbedGlobal } from "./stub-global";
 
 /* The crew's account, extracted from the Home fetch effect: the payload
  * check and the three account rows are pure functions of the payload. */
@@ -32,23 +33,8 @@ function mockStorage(seed: Record<string, string> = {}) {
   };
 }
 
-function withStorage(storage: unknown, fn: () => void) {
-  /* defineProperty, not assignment: an earlier file may have left
-   * localStorage as a readonly configurable, and plain assignment throws
-   * on that in strict mode. */
-  const prev = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
-  Object.defineProperty(globalThis, "localStorage", {
-    value: storage,
-    writable: true,
-    configurable: true,
-  });
-  try {
-    fn();
-  } finally {
-    if (prev) Object.defineProperty(globalThis, "localStorage", prev);
-    else delete (globalThis as Record<string, unknown>).localStorage;
-  }
-}
+const withStorage = (storage: unknown, fn: () => void) =>
+  withStubbedGlobal("localStorage", storage, fn);
 
 describe("validateTripPayload", () => {
   test("accepts the route and date that were asked for", () => {

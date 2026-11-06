@@ -2379,7 +2379,35 @@ bug the static audit could not see: every left-staggered room clipped ~31px
 off the slab's right edge — `.room[data-side] .slab`'s margin (0,3,0) beat
 the ≤759px full-width reset (0,2,0). Pinned to `margin: 0` at matching
 specificity in `02-motion.css`; `.slab` now runs flush and `.iday` sits
-inside it. The demo-dot ring overlap stands as the one accepted trade.
+inside it. The demo-dot ring overlap stands as the one accepted trade —
+until it was measured, that is, and found to be a dead rule, not a trade:
+the coarse `gap: 34px` sat above the base `gap: 8px` at equal weight and
+silently lost on order. It is now `.demo-foot .demo-dots` (43px centres,
+rings tile with a hairline) — and the same audit found `.crew-ask-go`'s
+44px send button losing its `width`/`height` to a later base rule for the
+same reason, now qualified under `.crew-ask-form`. Both fixes carry a
+load-bearing comment so the qualifier is never "simplified" away.
+
+###### The rest of the coarse map, seen (same day)
+
+`.crew-ask-go` 44×44 after the fix; `.dial-btn` 44 on `/shift`; the dot
+strip 181px at the revived gap; `.offline-toggle` carries its −10px ring;
+`.scrub-reset` renders at 28.5px under a forced override and stays the
+documented exception; `.more-sheet-item` measured 63.5px — the audit was
+right that it was never small. Still unseen because they need live flows,
+not viewports: `.chip`, `.setup-back`, `.tier-badge-*`, `.insight-ask`,
+`.feed-pin-ask`, `.journey-step-link`.
+
+###### The widening pass, first tranche
+
+The phone scan named the informative text under the 13px floor: the dial's
+labels and notes (`.dac-pill` 10px, `.dac-note` and `.dial-legend-row`
+11px, `.dac-time`, `.dac-done`, `.mascot-say` 12px, `.dac-evidence` 11px)
+and the crew page's `text-xs` at 11.2px — the token's own floor. The dial
+classes now take 13px at ≤720px in `04-dial.css`, pinned in
+`stage-css.test.ts`. The token floor itself is the next tranche — it is
+used by kickers, stamps and badges composed tight, so it is still not a
+blind bump.
 
 
 ##### Round 26 — The done step answers (2026-11-01)

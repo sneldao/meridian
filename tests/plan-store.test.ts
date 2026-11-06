@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { withStubbedGlobal } from "./stub-global";
 import { memoryPlanStore } from "../src/lib/plan-store";
 import { planVersion } from "../src/domain/plan-edit";
 import { buildDemoScenario } from "../src/domain/demo-scenarios";
@@ -76,22 +77,8 @@ const seedTrip = () => ({
 });
 
 const withStore = (fn: (ls: Storage) => void) => {
-  const prev = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
   const ls = mem();
-  Object.defineProperty(globalThis, "localStorage", {
-    value: ls,
-    writable: true,
-    configurable: true,
-  });
-  try {
-    fn(ls);
-  } finally {
-    /* Restore the real descriptor or remove the stub outright — a
-     * defineProperty without `writable` leaves a readonly global behind,
-     * and any later file's plain `localStorage = …` throws on it. */
-    if (prev) Object.defineProperty(globalThis, "localStorage", prev);
-    else delete (globalThis as Record<string, unknown>).localStorage;
-  }
+  withStubbedGlobal("localStorage", ls, () => fn(ls));
 };
 
 describe("localPlanStore", () => {

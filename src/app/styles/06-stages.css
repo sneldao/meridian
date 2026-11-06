@@ -2425,14 +2425,17 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
   /* The nine-pixel pagination dots are the smallest target in the app. The
      dot keeps its size — it is part of the film's composition — and the hit
      area is a ring. The row gap grows by the same amount, so neighbouring
-     rings tile with a hairline of overlap instead of covering each other. */
+     rings tile with a hairline of overlap instead of covering each other.
+     The .demo-foot prefix is load-bearing: the base .demo-dots rule sits
+     below this block at the same single-class weight, so an unqualified
+     gap here would silently lose to it. */
   .demo-dot { position: relative; }
   .demo-dot::after {
     content: "";
     position: absolute;
     inset: -17.5px;
   }
-  .demo-dots { gap: 34px; }
+  .demo-foot .demo-dots { gap: 34px; }
 }
 .demo-nav-cta { color: var(--m-accent); }
 .demo-dots { display: flex; gap: 8px; }

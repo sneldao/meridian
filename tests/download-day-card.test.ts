@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from "bun:test";
+import { stubGlobal } from "./stub-global";
 import { downloadDayCard } from "../src/lib/download-day-card";
 import { publicDayCard, snapshotDayCard } from "../src/lib/day-card";
 import { buildDayScene } from "../src/domain/day-scene";
@@ -10,6 +11,7 @@ const card = publicDayCard(snapshotDayCard(scene, { fictionalTrip: true }), { in
 
 type Spy = { calls: unknown[]; urls: Map<string, string>; revoked: string[]; anchors: { href: string; download: string; clicked: boolean }[] };
 const real = { Image: globalThis.Image, document: globalThis.document, URL: globalThis.URL };
+const restores: Array<() => void> = [];
 let spy: Spy;
 
 function install(opts: { ctxNull?: boolean; blobNull?: boolean; imgErr?: boolean }) {
@@ -27,7 +29,7 @@ function install(opts: { ctxNull?: boolean; blobNull?: boolean; imgErr?: boolean
     click() { this.clicked = true; },
     remove() { spy.calls.push(["remove", this]); },
   };
-  globalThis.document = {
+  restores.push(stubGlobal("document", {
     createElement(tag: string) {
       if (tag === "a") { anchors.push(fakeAnchor); return fakeAnchor; }
       if (tag === "canvas") {
@@ -40,20 +42,18 @@ function install(opts: { ctxNull?: boolean; blobNull?: boolean; imgErr?: boolean
       return {} as never;
     },
     body: { appendChild: (el: unknown) => spy.calls.push(["append", el]) },
-  } as unknown as Document;
-  globalThis.Image = FakeImage as unknown as typeof Image;
+  } as unknown as Document));
+  restores.push(stubGlobal("Image", FakeImage));
   let n = 0;
-  globalThis.URL = Object.assign(Object.create(real.URL), {
+  restores.push(stubGlobal("URL", Object.assign(Object.create(real.URL), {
     createObjectURL: () => { const u = `blob:fake-${n++}`; spy.urls.set(u, "created"); return u; },
     revokeObjectURL: (u: string) => { spy.revoked.push(u); },
-  }) as unknown as typeof URL;
+  })));
   return fakeAnchor;
 }
 
 afterEach(() => {
-  globalThis.Image = real.Image;
-  globalThis.document = real.document;
-  globalThis.URL = real.URL;
+  while (restores.length) restores.pop()!();
 });
 
 describe("downloadDayCard lifecycle", () => {

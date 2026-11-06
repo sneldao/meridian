@@ -212,6 +212,20 @@ html[data-theme="night"] {
     justify-content: center;
   }
 }
+/* The dial's informative type was set for a desktop composition — 10–12px
+   under a phone's thumb. The 13px floor the stage already keeps applies to
+   everything that carries information (first tranche of the widening pass
+   named in DESIGN.md, round 24.5 — measured on a 390px render, not audited
+   blind). Decorative glyphs and SVG text are untouched. */
+@media (max-width: 720px) {
+  .dac-pill,
+  .dac-note,
+  .dac-time,
+  .dac-done,
+  .dial-legend-row,
+  .mascot-say,
+  .dac-evidence { font-size: 13px; }
+}
 .dac-evidence {
   font-size: 11px;
   line-height: 1.45;

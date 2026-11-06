@@ -194,6 +194,17 @@ describe("the stage answers the first viewport", () => {
     expect(px(".trip-chip-change")).toBeGreaterThanOrEqual(13);
   });
 
+  /* First tranche of the widening pass (round 24.5): the dial's informative
+     type was measured at 10–12px on a 390px render. The ≤720px block lifts
+     it to the 13px floor the stage keeps — if the block shrinks or a class
+     falls out of it, the phone goes back to squinting. */
+  test("the dial's informative type honours the 13px floor on small screens", () => {
+    const normalized = css.replace(/\s+/g, " ");
+    expect(normalized).toContain(
+      "@media (max-width: 720px) { .dac-pill, .dac-note, .dac-time, .dac-done, .dial-legend-row, .mascot-say, .dac-evidence { font-size: 13px; }",
+    );
+  });
+
   test("the run's door has a quiet home on the stage", () => {
     const block = blockAfter(".stage-start").replace(/\s+/g, " ");
     expect(block).toContain("margin-top:");
