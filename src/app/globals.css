@@ -6275,6 +6275,89 @@ html[data-theme="night"] .entry .rp-input[type="date"] {
 .entry-crate-route {
   margin-top: 8px;
 }
+/* Free-text favorites (agent-native §4b): a combobox over the bundled
+   entity catalog. The input reuses the taste-field idiom, the listbox the
+   route picker's dark menu — all token-driven, no new motion (the demand-
+   drawn law; a dropdown appears or doesn't). */
+.entry-crate-type {
+  position: relative;
+  margin-top: 10px;
+}
+.entry-crate-input {
+  font: inherit;
+  font-size: 16px;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid var(--m-border);
+  border-radius: var(--radius-sm);
+  background: var(--m-card);
+  color: var(--m-text);
+}
+.entry-crate-input::placeholder {
+  color: var(--m-muted);
+}
+.entry-crate-input:disabled {
+  opacity: 0.45;
+}
+.entry-crate-listbox {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  overflow: hidden;
+  border: 1px solid var(--m-border);
+  border-radius: var(--radius-sm);
+  background: var(--m-card);
+}
+.entry-crate-option {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: var(--m-text);
+  cursor: pointer;
+}
+.entry-crate-option.is-active {
+  background: var(--m-tag);
+}
+.entry-crate-option-name {
+  min-width: 0;
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+.entry-crate-option-kind {
+  flex-shrink: 0;
+  font-family: var(--font-mono2);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--m-muted);
+}
+/* The honest miss — same telemetry idiom as the crate count, naming the
+   catalog and what a live key would have done. */
+.entry-crate-miss {
+  font-family: var(--font-mono2);
+  font-size: 12px;
+  line-height: 1.5;
+  letter-spacing: 0.04em;
+  color: var(--m-muted);
+  margin: 6px 0 0;
+}
+.entry-crate-chips {
+  margin-top: 10px;
+}
+.entry-crate-chip-kind {
+  font-family: var(--font-mono2);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--m-faint);
+}
 .entry-example-row {
   margin-top: var(--space-sm);
   display: flex;

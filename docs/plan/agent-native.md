@@ -198,9 +198,11 @@ badges are interactive ("what is this?" / "Live since 09:14 · refresh");
 with a key, divergence markers ("new since the capture") make the live
 upgrade visible proof.
 
-Order: ladder + live-failure fallback (a real bug-class fix) → memory on
-the sample path → interactive badges → write-through cache → entity catalog
-→ graph materialization.
+Order: ladder + live-failure fallback (a real bug-class fix) ✅ → memory on
+the sample path ✅ → interactive badges ✅ → write-through cache ✅ →
+entity catalog ✅ (bundled `src/lib/entity-catalog.ts` — ~65 entities,
+name/alias matching only, free-text crate field on the entry screen) →
+graph materialization.
 
 ## 5. Explicitly not doing
 
