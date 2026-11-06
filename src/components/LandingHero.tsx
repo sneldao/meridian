@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { routeGapHeadline, type RouteGapRead } from "@/domain/route-gap";
+import { NAV_FORWARD } from "@/lib/nav-transitions";
 import { useFilament } from "@/lib/tca/useFilament";
 
 /* Design reset Phase 1 — the Statement hero: one line of type, the
@@ -58,7 +59,7 @@ export function LandingHero({
             around (and the one its social card describes); the landing
             does not have to send a visitor to a different traveller's
             story than the one it just showed them. */}
-        <Link href="/demo?s=diego" className="lh-link lh-link--quiet" transitionTypes={["nav-forward"]}>
+        <Link href="/demo?s=diego" className="lh-link lh-link--quiet" transitionTypes={[NAV_FORWARD]}>
           Watch the example
         </Link>
       </p>

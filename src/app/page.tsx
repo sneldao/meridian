@@ -77,7 +77,7 @@ import { isValidHomeRoute, resolveHomeEntry, type HomeEntry, type HomeRoute } fr
 import { useMorphTransition } from "@/lib/use-morph-transition";
 import { funnelKey, recordFunnel } from "@/lib/funnel";
 import { useLightSweep } from "@/components/LightSweep";
-import { safeStorageGet } from "@/lib/local-data";
+import { safeStorageGet, safeStorageSet } from "@/lib/local-data";
 import { useTripActions } from "@/lib/use-trip-actions";
 import { readTasteProfile, readTripTaste, useTripTaste } from "@/lib/use-trip-taste";
 import { usePlaceChoices } from "@/lib/use-place-choices";
@@ -2401,12 +2401,10 @@ export default function Home() {
                 wakeBand={wakeBand}
                 onWakeBand={(b) => {
                   setWakeBand(b);
-                  try {
+                  safeStorageSet(() => {
                     if (b) localStorage.setItem("meridian:wakeBand", b);
                     else localStorage.removeItem("meridian:wakeBand");
-                  } catch {
-                    /* memory-only answer when storage is blocked */
-                  }
+                  }, "wakeBand");
                 }}
                 onChangeRoute={(next) => {
                   commitRoute({ origin: next.origin, dest: next.dest, date: next.date });
@@ -2425,6 +2423,7 @@ export default function Home() {
                 onStart={startShift}
                 onCancel={cancelShift}
                 onBackToGuide={closeSetup}
+                onWearableUploaded={() => setFetchNonce((n) => n + 1)}
               />
             </div>
           </div>

@@ -1546,6 +1546,46 @@ a[href]:active {
   text-transform: uppercase;
   color: var(--m-muted);
 }
+/* Route rows are buttons (a11y: div-onClick can't take keyboard focus).
+   Reset button chrome so they read as fields, not CTAs. */
+button.f {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+  border-radius: 8px;
+}
+button.f:focus-visible {
+  outline: 2px solid var(--m-accent, #d96b43);
+  outline-offset: 2px;
+}
+.f-route .f-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--m-muted);
+}
+.f-route .f-value {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--m-ink);
+}
+/* Full-bleed primitive: escape a centered measure to the frame edge without
+   hand-computed negative margins at each call site. */
+.bleed {
+  margin-inline: calc(50% - 50vw);
+  padding-inline: max(16px, calc(50vw - 570px));
+}
+/* Token-backed helper text: replaces hardcoded #4a7a5c / #b04523 / #8b93a7
+   in JSX so cream/ink themes can't drift. */
+.src-line { font-size: 11px; color: var(--m-muted); }
+.src-line--ok { color: var(--color-clay-pass, #2a6f4e); }
+.src-line--err { color: var(--color-clay-fail, #b23a2e); }
 .f div,
 /* Trip-entry fields lift on a soft spring when focused, like a drop that has
    been touched, and settle back when left. Transform only. */

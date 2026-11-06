@@ -47,6 +47,9 @@ interface TripSetupScreenProps {
   onStart: () => void;
   onCancel: () => void;
   onBackToGuide: () => void;
+  /** Called after a successful Garmin CSV upload so the host can re-fetch
+   *  /api/trip in place instead of a full reload (which drops run state). */
+  onWearableUploaded?: () => void;
 }
 
 export function TripSetupScreen({
@@ -72,6 +75,7 @@ export function TripSetupScreen({
   onStart,
   onCancel,
   onBackToGuide,
+  onWearableUploaded,
 }: TripSetupScreenProps) {
   const [editingRoute, setEditingRoute] = useState(false);
   // Garmin CSV upload (item 12): the POST has existed since 92299c3 with zero
@@ -95,8 +99,16 @@ export function TripSetupScreen({
       if (!res.ok || !body?.ok) {
         throw new Error(body?.error ?? `upload failed (${res.status})`);
       }
-      // The new baseline is per-tenant server-side; the page re-reads it.
-      window.location.reload();
+      // The new baseline is per-tenant server-side. Prefer an in-place
+      // re-fetch via the host so run/entry state survives; reload only when
+      // no host handler is wired (back-compat).
+      setUploadState("idle");
+      if (onWearableUploaded) {
+        onWearableUploaded();
+      } else if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("meridian:wearable-uploaded"));
+        window.location.reload();
+      }
     } catch (e) {
       setUploadState("error");
       setUploadError(e instanceof Error ? e.message : "upload failed");
@@ -146,18 +158,8 @@ export function TripSetupScreen({
             </div>
           ) : (
             <>
-              <div className="f" onClick={() => setEditingRoute(true)}>
-                <label>Origin</label>
-                <div style={{ cursor: "pointer" }} title="Click to change origin airport">
-                  {origin}
-                </div>
-              </div>
-              <div className="f" onClick={() => setEditingRoute(true)}>
-                <label>Destination</label>
-                <div style={{ cursor: "pointer" }} title="Click to change destination airport">
-                  {dest}
-                </div>
-              </div>
+              <button type="button" className="f f-route" onClick={() => setEditingRoute(true)} aria-label="Change origin airport, currently selected"> <span className="f-label" aria-hidden="true">Origin</span> <span className="f-value">{origin}</span> </button>
+              <button type="button" className="f f-route" onClick={() => setEditingRoute(true)} aria-label="Change destination airport, currently selected"> <span className="f-label" aria-hidden="true">Destination</span> <span className="f-value">{dest}</span> </button>
               <div className="f">
                 <label htmlFor="departure-date-input">Departure</label>
                 <input
@@ -206,7 +208,7 @@ export function TripSetupScreen({
               {(() => {
                 const ack = wakeAck(baselineKind, wakeBand);
                 return ack ? (
-                  <p className="src-line" style={{ fontSize: "11px", color: "#4a7a5c", margin: "6px 0 0" }}>
+                  <p className="src-line src-line--ok" style={{ margin: "6px 0 0" }}>
                     {ack}
                   </p>
                 ) : null;
@@ -263,7 +265,7 @@ export function TripSetupScreen({
             );
           })}
         </div>
-        <p className="src-line" style={{ fontSize: "11px", color: "var(--m-muted)", margin: "8px 0 0" }}>
+        <p className="src-line" style={{ margin: "8px 0 0" }}>
           These are times of day, not specific flights.
         </p>
       </div>
@@ -306,14 +308,14 @@ export function TripSetupScreen({
               {(() => {
                 const ack = wakeAck(baselineKind, wakeBand);
                 return ack ? (
-                  <p className="src-line" style={{ fontSize: "11px", color: "#4a7a5c", margin: "6px 0 0" }}>
+                  <p className="src-line src-line--ok" style={{ margin: "6px 0 0" }}>
                     {ack}
                   </p>
                 ) : null;
               })()}
             </div>
           )}
-          <p className="src-line" style={{ fontSize: "11px", color: "var(--m-muted)", margin: "0 0 6px" }}>
+          <p className="src-line" style={{ margin: "0 0 6px" }}>
             {baselineSource === "garmin" ? "Using your Garmin data" : "Using example sleep data"}
           </p>
           {hasAllBio && (
@@ -338,7 +340,7 @@ export function TripSetupScreen({
           {baselineSource !== "garmin" && (
             <div className="f" style={{ marginTop: 8 }}>
               <label>Connect your wearable</label>
-              <p style={{ fontSize: "11px", color: "var(--m-muted)", margin: "0 0 6px" }}>
+              <p className="src-line" style={{ margin: "0 0 6px" }}>
                 Have a Garmin? Upload your sleep export for a more accurate plan.
               </p>
               <input
@@ -358,7 +360,7 @@ export function TripSetupScreen({
                 {uploadState === "sending" ? "Reading export…" : "Upload Garmin file"}
               </button>
               {uploadState === "error" && (
-                <p role="alert" style={{ fontSize: "11px", color: "#b04523", margin: "6px 0 0" }}>
+                <p role="alert" className="src-line src-line--err" style={{ margin: "6px 0 0" }}>
                   {uploadError ?? "Upload failed"} — the file needs a header row
                   and at least two nights of sleep.
                 </p>
@@ -369,7 +371,7 @@ export function TripSetupScreen({
 
         <div className="card">
           <h3>Your calendar</h3>
-          <p className="src-line" style={{ fontSize: "11px", color: "var(--m-muted)", margin: "0 0 6px" }}>
+          <p className="src-line" style={{ margin: "0 0 6px" }}>
             {calendarSource === "google"
               ? "Connected to Google Calendar"
               : "Using an example calendar"}
@@ -395,7 +397,7 @@ export function TripSetupScreen({
         </div>
       )}
 
-      <p style={{ margin: "16px 0 0", fontSize: "11px", color: "var(--color-mist)" }}>
+      <p className="src-line" style={{ margin: "16px 0 0" }}>
         Timing guidance, not medical advice.
       </p>
     </>

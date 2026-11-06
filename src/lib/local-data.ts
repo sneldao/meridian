@@ -12,7 +12,18 @@ export function meridianStorageKeys(
 export function safeStorageGet(read: () => string | null): string | null {
   try {
     return read();
-  } catch {
+  } catch (err) {
+    if (typeof console !== "undefined") console.warn("meridian: storage read blocked", err);
     return null;
+  }
+}
+
+export function safeStorageSet(write: () => void, label = "write"): boolean {
+  try {
+    write();
+    return true;
+  } catch (err) {
+    if (typeof console !== "undefined") console.warn(`meridian: storage ${label} blocked`, err);
+    return false;
   }
 }

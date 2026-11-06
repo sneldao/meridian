@@ -75,7 +75,7 @@ export function CalendarApprovalCard({ approval, result }: Props) {
           </button>
         </div>
       )}
-      {localError && <p role="alert" style={{ margin: "8px 0 0", fontSize: 12, color: "#b04523" }}>{localError}</p>}
+      {localError && <p role="alert" className="src-line src-line--err" style={{ margin: "8px 0 0", fontSize: 12 }}>{localError}</p>}
     </section>
   );
 }

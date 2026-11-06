@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Ellipsis, History, Home } from "lucide-react";
 import { MoreSheet } from "@/components/MoreSheet";
 import { useMorphTransition } from "@/lib/use-morph-transition";
+import { NAV_BACK, NAV_FORWARD } from "@/lib/nav-transitions";
 
 /* Two tabs, shaped like the journey: what do I do today, and what happened
    on my trips. The plan is a view of Today (the Now / The plan switch), and
@@ -47,7 +48,7 @@ export function BottomNav() {
             className="bottom-nav-item"
             aria-label={label}
             aria-current={active(pathname) ? "page" : undefined}
-            transitionTypes={[currentIdx >= 0 && i > currentIdx ? "nav-forward" : "nav-back"]}
+            transitionTypes={[currentIdx >= 0 && i > currentIdx ? NAV_FORWARD : NAV_BACK]}
           >
             <Icon size={18} aria-hidden="true" />
             <span>{label}</span>

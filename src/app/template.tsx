@@ -1,7 +1,8 @@
 "use client";
 
-import { ViewTransition, useEffect, useRef, type ReactNode } from "react";
+import { ViewTransition, useEffect, useRef, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
+import { NAV_BACK, NAV_FADE, NAV_FORWARD } from "@/lib/nav-transitions";
 
 /* Dawn sweep (docs/DESIGN.md · Motion) — the brand's terminator hairline crosses
    the frame once as each route mounts. The content itself is wrapped in a
@@ -18,9 +19,17 @@ import { usePathname } from "next/navigation";
    position the browser restores. The Navigation API reports traversal vs
    push; without it we reset unconditionally — the pages here are short
    enough that landing top on back is the better trade. */
+function sweepGroup(path: string): "landing" | "app" {
+  // Brand sweep only across groups (landing <-> app), not on every tab switch.
+  if (path === "/" || path.startsWith("/demo") || path.startsWith("/arrival")) return "landing";
+  return "app";
+}
+
 export default function Template({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const traversal = useRef(false);
+  const prevGroup = useRef<string | null>(null);
+  const [sweepKey, setSweepKey] = useState(0);
   useEffect(() => {
     const nav = (window as { navigation?: EventTarget & { currentEntry?: unknown } }).navigation;
     if (!nav) return;
@@ -31,6 +40,11 @@ export default function Template({ children }: { children: ReactNode }) {
     return () => nav.removeEventListener("navigate", onNavigate);
   }, []);
   useEffect(() => {
+    const group = sweepGroup(pathname);
+    if (prevGroup.current !== null && prevGroup.current !== group) {
+      setSweepKey((k) => k + 1);
+    }
+    prevGroup.current = group;
     if (traversal.current) {
       traversal.current = false;
       return;
@@ -40,19 +54,19 @@ export default function Template({ children }: { children: ReactNode }) {
 
   return (
     <>
-      <div className="dawn-sweep" aria-hidden="true" />
+      {sweepKey > 0 && <div key={sweepKey} className="dawn-sweep" aria-hidden="true" />}
       <ViewTransition
         enter={{
-          "nav-forward": "nav-forward",
-          "nav-back": "nav-back",
-          default: "nav-fade",
+          [NAV_FORWARD]: NAV_FORWARD,
+          [NAV_BACK]: NAV_BACK,
+          default: NAV_FADE,
         }}
         exit={{
-          "nav-forward": "nav-forward",
-          "nav-back": "nav-back",
-          default: "nav-fade",
+          [NAV_FORWARD]: NAV_FORWARD,
+          [NAV_BACK]: NAV_BACK,
+          default: NAV_FADE,
         }}
-        default="nav-fade"
+        default={NAV_FADE}
       >
         <div className="page-enter">{children}</div>
       </ViewTransition>

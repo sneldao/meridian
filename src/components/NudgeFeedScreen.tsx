@@ -168,7 +168,7 @@ function DayStepper({
                 {totalSteps > 0 && (
                   <span style={{ display: "block", marginTop: 4 }}>
                     <span style={{ display: "block", height: 3, borderRadius: 999, background: "var(--m-border-2)", overflow: "hidden" }}>
-                      <span style={{ display: "block", height: "100%", width: `${progressPct}%`, background: "#D96B43", transition: "width 0.3s ease-out" }} />
+                      <span style={{ display: "block", height: "100%", width: `${progressPct}%`, background: "var(--m-accent, #D96B43)", transition: "width 0.3s ease-out" }} />
                     </span>
                     <span style={{ fontSize: 10, fontWeight: 600, color: todayIdx === activeDaySpec.dayIndex ? "var(--m-on-accent)" : "var(--m-muted)" }}>
                       {previewMode ? `Example plan · ${completedCount} of ${totalSteps} done` : `${completedCount} of ${totalSteps} done`}
